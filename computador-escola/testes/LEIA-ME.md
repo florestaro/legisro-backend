@@ -17,7 +17,7 @@ Liga o servidor da sala sozinho (sem abrir o programa) e confere, pedido por ped
 - dois instrutores criam aulas ao mesmo tempo;
 - um arquivo de dados está estragado.
 
-Leva menos de 1 minuto. Usa uma pasta temporária e a porta 47199 (para usar outra: variável `PORTA_TESTE`).
+Leva menos de 1 minuto. Usa uma pasta temporária e a porta 47199 (para usar outra, veja "Outra porta" abaixo).
 
 ## Teste com a turma inteira (20 alunos ao mesmo tempo)
 
@@ -43,11 +43,21 @@ e 20 computadores de aluno ligados a ele. Eles usam o sistema ao mesmo tempo:
   outro.
 
 Cada linha do resultado começa com ✔ (passou) ou ✘ (falhou); no fim aparecem `FALHAS 0` e onde ficaram as capturas
-de tela. Leva uns 2 minutos.
+de tela (cada rodada tem a sua pasta, dentro da pasta temporária do sistema). Leva uns 2 minutos. O número de alunos vai
+de 5 a 20.
 
 Cuidados:
-- precisa da porta 47123 livre: feche antes o Computador Escola que estiver em modo "Computador do INSTRUTOR" (ou
-  use outra porta com a variável `PORTA`);
+- precisa da porta 47123 livre: feche antes o Computador Escola que estiver em modo "Computador do INSTRUTOR" (o
+  teste avisa se a porta estiver ocupada) ou use outra porta;
+- os programas do teste não carregam a IA local, mesmo que haja um modelo na pasta `modelos`;
 - com 20 alunos usa uns 6 GB de memória; em computador mais fraco, use menos alunos (`npm run teste:sala -- 5`);
 - tudo roda num computador só, então as respostas ficam mais lentas do que numa sala de verdade, onde cada aluno
   tem o próprio computador.
+
+## Outra porta
+
+| Onde | Teste com 20 alunos | Teste do servidor |
+|---|---|---|
+| PowerShell (Windows) | `$env:PORTA=47130; npm run teste:sala` | `$env:PORTA_TESTE=47200; npm run teste:servidor` |
+| Prompt de Comando (Windows) | `set PORTA=47130&& npm run teste:sala` | `set PORTA_TESTE=47200&& npm run teste:servidor` |
+| Linux / macOS | `PORTA=47130 npm run teste:sala` | `PORTA_TESTE=47200 npm run teste:servidor` |

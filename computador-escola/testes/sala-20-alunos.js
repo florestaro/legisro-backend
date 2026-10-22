@@ -9,11 +9,13 @@
 // memória para 20 alunos. As capturas de tela ficam na pasta temporária do sistema (o caminho aparece no fim).
 const { _electron: electron } = require('playwright-core');
 const fs = require('fs'); const os = require('os'); const path = require('path'); const { execSync } = require('child_process');
-const N = Math.min(20, Math.max(5, Number(process.argv[2] || process.env.N || 20))); // de 5 a 20 alunos
+const N = Number(process.argv[2] || process.env.N || 20);
+if (!Number.isInteger(N) || N < 5 || N > 20) { console.error('O número de alunos vai de 5 a 20 (ex.: npm run teste:sala -- 5).'); process.exit(1); }
 const CODIGO = '482913', PORTA = Number(process.env.PORTA || 47123), URL = `http://127.0.0.1:${PORTA}`;
 const EXE = require('electron'); // o Electron instalado no projeto
 const APP = path.join(__dirname, '..');
-const RAIZ = path.join(os.tmpdir(), 'computador-escola-teste-sala');
+// Cada rodada tem a sua pasta: duas rodadas ao mesmo tempo não mexem uma nos dados da outra.
+const RAIZ = fs.mkdtempSync(path.join(os.tmpdir(), 'computador-escola-teste-sala-'));
 const TELAS = path.join(RAIZ, 'telas');
 const foto = (nome) => path.join(TELAS, nome);
 const NOMES = ['Ana Souza', 'Bruno Lima', 'Carla Dias', 'Diego Rocha', 'Elisa Melo', 'Fábio Nunes', 'Gabi Torres', 'Heitor Ramos', 'Iara Castro', 'João Pires',
@@ -27,13 +29,13 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 const inicio = Date.now(); const T = () => ((Date.now() - inicio) / 1000).toFixed(1) + 's';
 const erros = [];
 
-fs.rmSync(RAIZ, { recursive: true, force: true });
 fs.mkdirSync(TELAS, { recursive: true });
 const pastaPc = (nome) => { const d = path.join(RAIZ, nome); fs.mkdirSync(path.join(d, 'dados'), { recursive: true }); return d; };
 const DI = pastaPc('instrutor');
 fs.writeFileSync(path.join(DI, 'dados', 'sala.json'), JSON.stringify({ modo: 'servidor', codigo: CODIGO, porta: PORTA }));
 const abrir = async (D, rotulo) => {
-  const app = await electron.launch({ executablePath: EXE, args: ['--no-sandbox', '--disable-gpu', `--user-data-dir=${path.join(D, 'perfil')}`, APP, '--janela'], env: { ...process.env, PORTABLE_EXECUTABLE_DIR: D }, timeout: 120000 });
+  // CE_SEM_IA: os 21 programas não carregam a IA local, mesmo com um modelo .gguf na pasta modelos.
+  const app = await electron.launch({ executablePath: EXE, args: ['--no-sandbox', '--disable-gpu', `--user-data-dir=${path.join(D, 'perfil')}`, APP, '--janela'], env: { ...process.env, PORTABLE_EXECUTABLE_DIR: D, CE_SEM_IA: '1' }, timeout: 120000 });
   const p = await app.firstWindow(); await p.setViewportSize({ width: 1366, height: 768 });
   p.on('pageerror', (e) => erros.push(`${rotulo}: ${e.message}`));
   p.on('console', (m) => { if (m.type() === 'error') erros.push(`${rotulo} (console): ${m.text().slice(0, 200)}`); });
@@ -77,7 +79,21 @@ async function seguirAula(p, idLicao, paciencia = 1) {
   return false;
 }
 
+// A porta precisa estar livre (senão o teste conversaria com outro Computador Escola aberto como instrutor).
+function portaLivre(porta) {
+  return new Promise((resolver) => {
+    const s = require('net').createServer();
+    s.once('error', () => resolver(false));
+    s.listen(porta, '0.0.0.0', () => s.close(() => resolver(true)));
+  });
+}
+
 (async () => {
+  if (!(await portaLivre(PORTA))) {
+    console.error(`A porta ${PORTA} já está em uso. Feche o Computador Escola que está como "Computador do INSTRUTOR" ou rode com outra porta (veja testes/LEIA-ME.md).`);
+    fs.rmSync(RAIZ, { recursive: true, force: true });
+    process.exit(1);
+  }
   // Memória somada dos Electron (só no Linux; a soma conta em dobro a memória compartilhada).
   const memoria = () => { if (process.platform !== 'linux') return ''; try { return `, memória dos Electron: ${Math.round(Number(execSync("ps -eo rss,comm | grep -i electron | awk '{s+=$1} END {print s}'").toString().trim()) / 1024)} MB`; } catch { return ''; } };
   // ---------------- Computador do instrutor ----------------
@@ -375,5 +391,8 @@ async function seguirAula(p, idLicao, paciencia = 1) {
   ok(!errosUnicos.length, `nenhum erro de JavaScript nas ${N + 1} telas${errosUnicos.length ? ':\n     ' + errosUnicos.slice(0, 15).join('\n     ') : ''}`);
   console.log('FALHAS', falhas);
   await Promise.all(pcs.map((x) => x.app.close().catch(() => {})));
+  // Os perfis do Electron ocupam espaço: ficam só os dados e as capturas de tela.
+  for (const { D } of pcs) fs.rmSync(path.join(D, 'perfil'), { recursive: true, force: true, maxRetries: 5 });
+  fs.rmSync(path.join(DI, 'perfil'), { recursive: true, force: true, maxRetries: 5 });
   process.exit(process.exitCode || 0);
-})().catch(async (e) => { console.error('ERRO NO TESTE:', e); process.exit(1); });
+})().catch(async (e) => { console.error('ERRO NO TESTE:', e); console.error('Dados e capturas de tela desta rodada em', RAIZ); process.exit(1); });

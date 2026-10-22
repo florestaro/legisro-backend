@@ -91,8 +91,8 @@ app.whenReady().then(() => {
   registrarCanais();
   sala.iniciar();
   criarJanela();
-  // A IA carrega em segundo plano para a tela abrir rápido.
-  ia.iniciar([path.join(pastaBase, 'modelos'), path.join(__dirname, 'modelos'), path.join(app.getPath('userData'), 'modelos')]);
+  // A IA carrega em segundo plano para a tela abrir rápido (CE_SEM_IA desliga, como nos testes com 21 programas abertos).
+  ia.iniciar(process.env.CE_SEM_IA ? [] : [path.join(pastaBase, 'modelos'), path.join(__dirname, 'modelos'), path.join(app.getPath('userData'), 'modelos')]);
 });
 
 app.on('window-all-closed', () => app.quit());

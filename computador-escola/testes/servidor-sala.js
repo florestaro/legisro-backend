@@ -11,12 +11,24 @@ const { criarCanais } = require(APP + '/src/canais');
 const { criarSala } = require(APP + '/src/sala');
 let falhas = 0; const ok = (c, m) => { console.log((c ? '✔ ' : '✘ ') + m); if (!c) falhas++; };
 const URL = `http://127.0.0.1:${PORTA}/api`;
+function portaLivre(porta) {
+  return new Promise((resolver) => {
+    const s = require('net').createServer();
+    s.once('error', () => resolver(false));
+    s.listen(porta, '0.0.0.0', () => s.close(() => resolver(true)));
+  });
+}
 const pedir = async (canal, args = [], token = null, codigo = '135790') => {
   const r = await fetch(URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-sala': codigo }, body: JSON.stringify({ canal, args, token }) });
   return { status: r.status, ...(await r.json()) };
 };
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 (async () => {
+  if (!(await portaLivre(PORTA))) {
+    console.error(`A porta ${PORTA} já está em uso. Rode com outra porta (veja testes/LEIA-ME.md).`);
+    fs.rmSync(PASTA, { recursive: true, force: true });
+    process.exit(1);
+  }
   let sala = criarSala({ pastaDados: PASTA, canais: criarCanais(dados) }); sala.iniciar(); await espera(300);
   const prof = await pedir('usuarios:primeiro-instrutor', [{ nome: 'Prof', segredo: '1234' }]); const tp = prof.token;
   const alunos = [];
@@ -180,4 +192,4 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   console.log('FALHAS', falhas);
   if (!falhas) fs.rmSync(PASTA, { recursive: true, force: true }); else console.log('Dados do teste em', PASTA);
   process.exit(falhas ? 1 : 0);
-})().catch((e) => { console.error(e); process.exit(1); });
+})().catch((e) => { console.error(e); console.error('Dados do teste em', PASTA); process.exit(1); });
