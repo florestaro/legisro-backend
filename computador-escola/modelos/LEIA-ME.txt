@@ -1,0 +1,12 @@
+Coloque aqui o arquivo do modelo de IA (extensão .gguf).
+
+O programa usa automaticamente o primeiro arquivo .gguf que encontrar nesta pasta.
+Sem modelo, o Professor Virtual continua funcionando com respostas prontas.
+
+Para computadores com 4 GB de RAM, recomendados:
+  - Qwen2.5-1.5B-Instruct  (arquivo Q4_K_M, ~1 GB)   -> melhor qualidade
+  - Qwen2.5-0.5B-Instruct  (arquivo Q4_K_M, ~400 MB) -> mais leve, respostas mais simples
+
+Onde baixar (faça uma vez, num computador com internet, e copie por pen drive):
+  https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF
+  https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF

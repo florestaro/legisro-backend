@@ -1,0 +1,59 @@
+{
+  "name": "computador-escola",
+  "productName": "Computador Escola",
+  "version": "0.1.0",
+  "description": "Computador simulado para aulas de informática, com professor virtual que funciona sem internet",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis portable --x64"
+  },
+  "dependencies": {
+    "node-llama-cpp": "^3.22.2"
+  },
+  "devDependencies": {
+    "electron": "^45.0.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "br.escola.computador",
+    "productName": "Computador Escola",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**",
+      "app/**",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/node-llama-cpp/**",
+      "node_modules/@node-llama-cpp/**"
+    ],
+    "extraFiles": [
+      {
+        "from": "modelos",
+        "to": "modelos",
+        "filter": [
+          "LEIA-ME.txt",
+          "*.gguf"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": true
+    },
+    "publish": null
+  }
+}

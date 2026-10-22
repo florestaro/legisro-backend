@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
+  <title>Computador Escola</title>
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+  <!-- Tela de entrada -->
+  <main id="tela-login" class="tela-login"></main>
+
+  <!-- Computador simulado -->
+  <div id="area-de-trabalho" class="area-de-trabalho fundo-azul" hidden>
+    <div id="icones" class="icones"></div>
+    <div id="area-janelas" class="area-janelas"></div>
+
+    <aside id="professor" class="professor" hidden></aside>
+
+    <div id="menu-iniciar" class="menu-iniciar" hidden></div>
+    <div id="menu-contexto" class="menu-contexto" hidden></div>
+
+    <footer id="barra-tarefas" class="barra-tarefas">
+      <button id="botao-iniciar" class="botao-iniciar" title="Iniciar">
+        <span class="logo-iniciar" aria-hidden="true"><i></i><i></i><i></i><i></i></span> Iniciar
+      </button>
+      <div id="tarefas-programas" class="tarefas-programas"></div>
+      <div class="bandeja">
+        <span id="status-ia" class="bandeja-item" title="Professor Virtual">💬</span>
+        <button id="botao-voz" class="bandeja-item" title="Voz do professor ligada (clique para desligar)">🔊</button>
+        <div id="relogio" class="relogio"></div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="js/eventos.js"></script>
+  <script src="js/respostas-prontas.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/voz.js"></script>
+  <script src="js/sessao.js"></script>
+  <script src="js/janelas.js"></script>
+  <script src="js/apps/aulas.js"></script>
+  <script src="js/apps/editor.js"></script>
+  <script src="js/apps/digitacao.js"></script>
+  <script src="js/apps/arquivos.js"></script>
+  <script src="js/apps/calculadora.js"></script>
+  <script src="js/apps/painel-instrutor.js"></script>
+  <script src="js/licoes/licoes.js"></script>
+  <script src="js/professor.js"></script>
+  <script src="js/login.js"></script>
+  <script src="js/area-trabalho.js"></script>
+  <script src="js/principal.js"></script>
+</body>
+</html>

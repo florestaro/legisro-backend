@@ -1,0 +1,75 @@
+// Acesso ao processo principal. Quando a tela é aberta direto no navegador (sem Electron),
+// usa o armazenamento do navegador — útil só para testar o visual.
+window.CE = window.CE || {};
+
+(function () {
+  const temElectron = !!window.api;
+  let idPergunta = 0;
+  const ouvintesIA = {};
+
+  if (temElectron) {
+    window.api.aoReceberTrechoIA((id, trecho) => ouvintesIA[id] && ouvintesIA[id](trecho));
+  }
+
+  async function chamar(canal, ...args) {
+    const resultado = temElectron ? await window.api.chamar(canal, ...args) : await simulado(canal, ...args);
+    if (!resultado.ok) throw new Error(resultado.erro);
+    return resultado.valor;
+  }
+
+  // ---------- Modo de teste no navegador ----------
+  const ler = (k, p) => { try { const v = localStorage.getItem('ce-' + k); return v ? JSON.parse(v) : p; } catch { return p; } };
+  const gravar = (k, v) => { try { localStorage.setItem('ce-' + k, JSON.stringify(v)); } catch { /* ignora */ } return true; };
+  let atual = null;
+
+  async function simulado(canal, ...a) {
+    try {
+      const usuarios = ler('usuarios', []);
+      const publico = (u) => ({ id: u.id, nome: u.nome, papel: u.papel, turma: u.turma || '', avatar: u.avatar });
+      const criar = (info, papel) => {
+        if (!info.nome || !info.nome.trim()) throw new Error('Informe o nome.');
+        if (!info.segredo || info.segredo.length < 4) throw new Error('A senha precisa ter pelo menos 4 caracteres.');
+        if (usuarios.some((u) => u.nome.toLowerCase() === info.nome.trim().toLowerCase())) throw new Error('Já existe alguém com esse nome.');
+        const u = { id: String(Date.now()) + Math.random().toString(16).slice(2), nome: info.nome.trim(), papel, turma: info.turma || '', avatar: info.avatar || '🙂', segredo: info.segredo };
+        usuarios.push(u); gravar('usuarios', usuarios); return publico(u);
+      };
+      const valor = {
+        'usuarios:listar': () => usuarios.map(publico),
+        'usuarios:existe-instrutor': () => usuarios.some((u) => u.papel === 'instrutor'),
+        'usuarios:primeiro-instrutor': () => (atual = criar({ ...a[0], avatar: '🧑‍🏫' }, 'instrutor')),
+        'usuarios:criar': () => criar(a[0], a[0].papel === 'instrutor' ? 'instrutor' : 'aluno'),
+        'usuarios:trocar-senha': () => { const u = usuarios.find((x) => x.id === a[0]); u.segredo = a[1]; return gravar('usuarios', usuarios); },
+        'usuarios:remover': () => gravar('usuarios', usuarios.filter((u) => u.id !== a[0])),
+        'sessao:entrar': () => {
+          const u = usuarios.find((x) => x.id === a[0]);
+          if (!u || u.segredo !== a[1]) throw new Error('Senha incorreta. Tente de novo.');
+          return (atual = publico(u));
+        },
+        'sessao:sair': () => { atual = null; return true; },
+        'dados:ler': () => ler(a[0], a[1]),
+        'dados:salvar': () => gravar(a[0], a[1]),
+        'ia:status': () => ({ estado: 'sem-modelo', detalhe: 'Modo de teste no navegador.' }),
+        'ia:perguntar': () => CE.responderSemIA(a[1], a[2]),
+        'app:sair': () => location.reload(),
+      }[canal];
+      return { ok: true, valor: await valor() };
+    } catch (erro) {
+      return { ok: false, erro: erro.message };
+    }
+  }
+
+  CE.api = {
+    chamar,
+    temElectron,
+    // Pergunta ao professor; aoReceberTrecho recebe o texto aos poucos (quando há IA).
+    async perguntarIA(pergunta, situacao, aoReceberTrecho) {
+      const id = ++idPergunta;
+      if (aoReceberTrecho) ouvintesIA[id] = aoReceberTrecho;
+      try {
+        return await chamar('ia:perguntar', id, pergunta, situacao);
+      } finally {
+        delete ouvintesIA[id];
+      }
+    },
+  };
+})();
