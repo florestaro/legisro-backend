@@ -9,11 +9,7 @@ window.CE = window.CE || {};
   CE.NIVEIS_CURSO = [
     { id: 'n1', nome: 'Iniciante', icone: '🌱', descricao: 'Usar o computador com confiança' },
     { id: 'n2', nome: 'Intermediário', icone: '🌿', descricao: 'Computador para estudo e trabalho' },
-    {
-      id: 'n3', nome: 'Avançado', icone: '🌳', descricao: 'Produtividade e autonomia',
-      emBreve: ['Editor de Texto avançado: trabalho escolar', 'Planilha avançada: fórmulas e gráficos', 'Apresentações',
-        'Configurações do computador', 'Segurança digital avançada', 'Computador e trabalho', 'Projeto final'],
-    },
+    { id: 'n3', nome: 'Avançado', icone: '🌳', descricao: 'Produtividade e autonomia' },
   ];
 
   CE.MODULOS = [];

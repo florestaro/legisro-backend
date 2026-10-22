@@ -137,6 +137,8 @@ window.CE = window.CE || {};
     const categorias = [], series = [];
     for (let l = inicio; l <= r.l2; l++) categorias.push(comNomes ? textoCelula(F.endereco(r.c1, l)) : String(l - inicio + 1));
     for (let c = comNomes ? r.c1 + 1 : r.c1; c <= r.c2; c++) {
+      // g.colunas: só as colunas que o aluno marcou para aparecer no gráfico.
+      if (g.colunas && g.colunas.length && !g.colunas.includes(F.numeroParaLetra(c))) continue;
       const valores = [];
       for (let l = inicio; l <= r.l2; l++) { const v = valorDe(F.endereco(c, l)); valores.push(typeof v === 'number' ? v : ''); }
       series.push({ nome: cab ? String(valorDe(F.endereco(c, r.l1))) : `Série ${series.length + 1}`, valores });

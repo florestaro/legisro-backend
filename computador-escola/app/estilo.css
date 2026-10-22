@@ -1000,7 +1000,8 @@ button.bandeja-item:hover { background: rgba(255,255,255,.15); }
 .sumario-pontos { flex: 1; border-bottom: 2px dotted #999; transform: translateY(-4px); }
 .colunas { column-gap: 28px; column-rule: 1px solid #e2e2e2; }
 mark.ed-achado { background: #ffe066; padding: 0 1px; }
-.dialogo-fundo.transparente { background: rgba(0,0,0,.08); place-items: start end; padding: 90px 40px; }
+.dialogo-fundo.transparente { background: none; place-items: start end; padding: 90px 40px; pointer-events: none; }
+.dialogo-fundo.transparente .dialogo { pointer-events: auto; box-shadow: 0 6px 24px rgba(0,0,0,.3); }
 .ed-rotulo { display: grid; gap: 4px; font-size: 14px; }
 .ed-check { display: flex; gap: 8px; align-items: center; font-size: 15px; }
 
@@ -1254,3 +1255,4 @@ body.cursor-grande, body.cursor-grande * { cursor: url("data:image/svg+xml,%3Csv
 .rn-chat-enviar { display: flex; gap: 6px; }
 .rn-campo { flex: 1; min-width: 0; padding: 8px; border-radius: 6px; border: none; user-select: text; }
 .rn-barra { display: flex; gap: 10px; justify-content: center; padding: 12px; background: #15181d; flex-wrap: wrap; }
+.pl-series { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; font-size: 15px; } .pl-series span { font-weight: 600; } .pl-series label { display: flex; gap: 4px; align-items: center; cursor: pointer; }

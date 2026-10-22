@@ -696,6 +696,18 @@
         const inicial = dadosDoGrafico(g);
         if (inicial.series.length === 1 && !/^Série/.test(inicial.series[0].nome)) g.titulo = inicial.series[0].nome;
         const previa = CE.el('div', { class: 'pl-previa-grafico' });
+        // Quando tem mais de uma coluna de números, o aluno escolhe quais entram no gráfico.
+        const numericas = [];
+        for (let c = r.c2 > r.c1 ? r.c1 + 1 : r.c1; c <= r.c2; c++) {
+          let tem = false;
+          for (let l = r.l1; l <= r.l2; l++) if (typeof valorDe(F.endereco(c, l)) === 'number') tem = true;
+          if (tem) numericas.push({ letra: F.numeroParaLetra(c), nome: temCabecalho(r) ? String(valorDe(F.endereco(c, r.l1))) : `Coluna ${F.numeroParaLetra(c)}` });
+        }
+        const escolhaSeries = numericas.length > 1 ? CE.el('div', { class: 'pl-series' }, CE.el('span', {}, 'Mostrar no gráfico:'),
+          ...numericas.map((s) => CE.el('label', { 'data-serie': s.letra }, CE.el('input', { type: 'checkbox', checked: true, onchange: () => {
+            g.colunas = [...escolhaSeries.querySelectorAll('input')].map((i, k) => (i.checked ? numericas[k].letra : null)).filter(Boolean);
+            mostrar();
+          } }), ` ${s.nome}`))) : null;
         const botoes = Object.entries(CE.graficos.TIPOS).map(([id, t]) => CE.el('button', { class: 'pl-tipo-grafico', 'data-tipo-grafico': id, onclick: () => { g.tipo = id; mostrar(); } }, CE.el('span', {}, t.icone), t.nome));
         const titulo = CE.el('input', { class: 'campo', 'data-campo': 'titulo-grafico', value: g.titulo, placeholder: 'Título do gráfico', oninput: () => { g.titulo = titulo.value; mostrar(); } });
         function mostrar() {
@@ -706,6 +718,7 @@
           CE.el('div', { class: 'dialogo largo' },
             CE.el('p', {}, `📊 Inserir gráfico com os dados ${g.intervalo}`),
             CE.el('div', { class: 'pl-tipos-grafico' }, ...botoes),
+            escolhaSeries,
             CE.el('label', {}, 'Título ', titulo),
             previa,
             CE.el('div', { class: 'dialogo-botoes' },
@@ -717,7 +730,7 @@
                 graficoSelecionado = g.id;
                 alterar(() => { dados.graficos.push(g); });
                 const d = dadosDoGrafico(g);
-                CE.emitir('planilha:grafico', { id: g.id, tipo: g.tipo, intervalo: g.intervalo, titulo: g.titulo, categorias: d.categorias.length, series: d.series.length });
+                CE.emitir('planilha:grafico', { id: g.id, tipo: g.tipo, intervalo: g.intervalo, titulo: g.titulo, categorias: d.categorias.length, series: d.series.length, nomesSeries: d.series.map((x) => x.nome) });
               } }, 'Inserir gráfico'))));
         document.body.append(fundo);
         mostrar();

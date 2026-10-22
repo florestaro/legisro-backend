@@ -230,10 +230,19 @@
       }
 
       // ---------- Páginas: quebra, cabeçalho, rodapé e sumário ----------
+      // A página nova começa no parágrafo onde está o cursor.
       function quebraDePagina() {
         recuperarSelecao();
-        document.execCommand('insertHTML', false, '<div class="quebra-pagina" contenteditable="false"></div><div><br></div>');
-        avisarFormatacao('quebraPagina', totalPaginas(), { paginas: totalPaginas() });
+        const sel = window.getSelection();
+        let alvo = sel.rangeCount && pagina.contains(sel.anchorNode) ? sel.anchorNode : null;
+        while (alvo && alvo.parentNode !== pagina) alvo = alvo.parentNode;
+        const quebra = CE.el('div', { class: 'quebra-pagina', contenteditable: 'false' });
+        if (alvo && alvo !== pagina.firstChild) alvo.before(quebra);
+        else if (alvo) alvo.after(quebra, CE.el('div', {}, CE.el('br')));
+        else pagina.append(quebra, CE.el('div', {}, CE.el('br')));
+        modificado = true;
+        atualizarStatus();
+        avisarFormatacao('quebraPagina', totalPaginas(), { paginas: totalPaginas(), antesDe: alvo && alvo !== pagina.firstChild ? alvo.textContent.trim().slice(0, 60) : '' });
       }
       const paginaDe = (el) => 1 + [...pagina.querySelectorAll('.quebra-pagina')].filter((q) => q.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING).length;
       function sumario() {
@@ -331,7 +340,7 @@
         const procurar = CE.el('input', { class: 'campo', 'data-campo': 'procurar', value: textoSelecionado().trim(), placeholder: 'Palavra que você procura' });
         const trocar = CE.el('input', { class: 'campo', 'data-campo': 'trocar', placeholder: 'Trocar por (opcional)' });
         const resultado = CE.el('p', { class: 'ed-dica', 'data-resultado': '' }, '');
-        const fechar = () => { removerMarcas(pagina, '.ed-achado'); fundo.remove(); };
+        const fechar = () => { removerMarcas(pagina, '.ed-achado'); fundo.remove(); CE.emitir('editor:localizar-fechado'); };
         const fundo = CE.el('div', { class: 'dialogo-fundo transparente' },
           CE.el('div', { class: 'dialogo' },
             CE.el('p', {}, '🔎 Localizar e substituir'),
