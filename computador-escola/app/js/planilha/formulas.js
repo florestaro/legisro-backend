@@ -2,8 +2,8 @@
 // e funções em português (SOMA, MÉDIA, MÁXIMO, MÍNIMO, SE, CONT.SE...).
 // Funciona tanto na tela quanto no Node (para testes).
 (function (raiz) {
-  const ERRO = { DIV: '#DIV/0!', NOME: '#NOME?', VALOR: '#VALOR!', REF: '#REF!', CIRC: '#CIRC!' };
-  const ehErro = (v) => typeof v === 'string' && v[0] === '#' && /!|\?$/.test(v);
+  const ERRO = { DIV: '#DIV/0!', NOME: '#NOME?', VALOR: '#VALOR!', REF: '#REF!', CIRC: '#CIRC!', ND: '#N/D' };
+  const ehErro = (v) => typeof v === 'string' && v[0] === '#' && (/!|\?$/.test(v) || v === ERRO.ND);
 
   // ---------- Endereços ----------
   const letraParaNumero = (l) => [...l].reduce((n, c) => n * 26 + c.charCodeAt(0) - 64, 0) - 1;
@@ -137,10 +137,40 @@
     },
     E: (a) => a.flat(Infinity).every(Boolean),
     OU: (a) => a.flat(Infinity).some(Boolean),
+    'MÉDIASE': ([intervalo, regra, media]) => {
+      const lista = [].concat(intervalo).flat(Infinity), valores = media ? [].concat(media).flat(Infinity) : lista;
+      const teste = criterio(regra);
+      const n = lista.map((v, i) => (teste(v) && typeof valores[i] === 'number' ? valores[i] : null)).filter((v) => v != null);
+      if (!n.length) throw new Error(ERRO.DIV);
+      return n.reduce((s, x) => s + x, 0) / n.length;
+    },
+    // PROCV(valor; tabela; coluna; [aproximado]): procura o valor na 1ª coluna e devolve a coluna pedida da mesma linha.
+    PROCV: ([valor, tabela, coluna, aproximado = true]) => {
+      const largura = (tabela && tabela.colunas) || 1;
+      const c = Math.floor(num(coluna));
+      if (!Array.isArray(tabela) || c < 1 || c > largura) throw new Error(ERRO.REF);
+      const linhas = [];
+      for (let i = 0; i < tabela.length; i += largura) linhas.push(tabela.slice(i, i + largura));
+      const igual = (a) => (typeof a === 'string' && typeof valor === 'string' ? a.toLowerCase() === valor.toLowerCase() : a === valor);
+      let achou = linhas.find((l) => igual(l[0]));
+      if (!achou && aproximado && typeof valor === 'number') {
+        const menores = linhas.filter((l) => typeof l[0] === 'number' && l[0] <= valor);
+        achou = menores[menores.length - 1];
+      }
+      if (!achou) throw new Error(ERRO.ND);
+      return achou[c - 1];
+    },
+    CONCATENAR: (a) => a.flat(Infinity).map((v) => textoDe(v)).join(''),
+    'MAIÚSCULA': ([t]) => textoDe(t).toUpperCase(),
+    'MINÚSCULA': ([t]) => textoDe(t).toLowerCase(),
+    'CONT.VAZIO': (a) => a.flat(Infinity).filter((v) => v === '' || v == null).length,
     ABS: ([n]) => Math.abs(num(n)),
     HOJE: () => new Date().toLocaleDateString('pt-BR'),
   };
-  const APELIDOS = { MEDIA: 'MÉDIA', MAXIMO: 'MÁXIMO', MINIMO: 'MÍNIMO', MAX: 'MÁXIMO', MIN: 'MÍNIMO', 'CONT.NUM': 'CONT.NÚM', ARREDONDAR: 'ARRED' };
+  const APELIDOS = {
+    MEDIA: 'MÉDIA', MAXIMO: 'MÁXIMO', MINIMO: 'MÍNIMO', MAX: 'MÁXIMO', MIN: 'MÍNIMO', 'CONT.NUM': 'CONT.NÚM', ARREDONDAR: 'ARRED',
+    MEDIASE: 'MÉDIASE', MAIUSCULA: 'MAIÚSCULA', MINUSCULA: 'MINÚSCULA', CONCAT: 'CONCATENAR',
+  };
 
   function num(v) {
     if (ehErro(v)) throw new Error(v);
@@ -159,7 +189,12 @@
     if ('texto' in no) return no.texto;
     if ('bool' in no) return no.bool;
     if (no.ref) { const v = obterCelula(no.ref); if (ehErro(v)) throw new Error(v); return v; }
-    if (no.intervalo) return celulasDoIntervalo(...no.intervalo).map((r) => { const v = obterCelula(r); if (ehErro(v)) throw new Error(v); return v; });
+    if (no.intervalo) {
+      const lista = celulasDoIntervalo(...no.intervalo).map((r) => { const v = obterCelula(r); if (ehErro(v)) throw new Error(v); return v; });
+      const [a, b] = no.intervalo.map(lerEndereco);
+      lista.colunas = Math.abs(b.col - a.col) + 1; // o PROCV precisa saber a largura da tabela
+      return lista;
+    }
     if (no.funcao) {
       const nome = APELIDOS[no.funcao] || no.funcao;
       if (nome === 'SE') {

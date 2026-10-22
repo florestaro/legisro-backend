@@ -1,10 +1,15 @@
 // Editor de Texto (parecido com o Word): escrever, formatar, tabelas, imagens, modelos prontos,
 // corretor ortográfico, imprimir, salvar e abrir documentos.
+// No nível avançado: estilos de título, sumário, quebra de página, cabeçalho e rodapé com número de página,
+// colunas, localizar e substituir, exportar PDF e o modelo de trabalho escolar (ABNT).
 (function () {
   const FONTES = ['Calibri', 'Arial', 'Times New Roman', 'Verdana', 'Comic Sans MS', 'Courier New'];
   const TAMANHOS = [['1', '8'], ['2', '10'], ['3', '12'], ['4', '14'], ['5', '18'], ['6', '24'], ['7', '36']];
   const ESPACAMENTOS = [['1', '1,0'], ['1.15', '1,15'], ['1.5', '1,5'], ['2', '2,0']];
-  const MARGENS = { estreita: '36px 40px', normal: '72px 80px', larga: '96px 120px' };
+  // ABNT: 3 cm em cima e à esquerda, 2 cm embaixo e à direita.
+  const MARGENS = { estreita: '36px 40px', normal: '72px 80px', larga: '96px 120px', abnt: '113px 76px 76px 113px' };
+  const ESTILOS = [['normal', 'Normal'], ['h1', 'Título 1'], ['h2', 'Título 2'], ['h3', 'Título 3'], ['blockquote', 'Citação'], ['abnt', 'Parágrafo ABNT']];
+  const DOCUMENTO_PADRAO = { margem: 'normal', cabecalho: '', rodape: '', numerar: false };
   const NOMES_COMANDOS = {
     bold: 'negrito', italic: 'itálico', underline: 'sublinhado',
     justifyLeft: 'alinhar à esquerda', justifyCenter: 'centralizar', justifyRight: 'alinhar à direita', justifyFull: 'justificar',
@@ -12,6 +17,7 @@
     fontName: 'fonte', fontSize: 'tamanho da letra', foreColor: 'cor da letra', undo: 'desfazer', redo: 'refazer',
     lineHeight: 'espaçamento entre linhas', inserirTabela: 'tabela', inserirLinhaTabela: 'linha na tabela', inserirImagem: 'imagem',
     insertHorizontalRule: 'linha horizontal', margem: 'margens',
+    estilo: 'estilo', colunas: 'colunas', quebraPagina: 'quebra de página', sumario: 'sumário', cabecalhoRodape: 'cabeçalho e rodapé',
   };
 
   // Erros comuns de português -> forma certa (o corretor funciona sem internet).
@@ -66,6 +72,28 @@
         <div>${campo('Cidade')}, ${hoje()}.</div><div><br></div><div style="text-align: center;">_______________________________________</div><div style="text-align: center;">${campo('Seu nome')}</div>`,
     },
   };
+  const abnt = (t) => `<div style="text-align: justify; text-indent: 47px; line-height: 1.5;">${t}</div>`;
+  const centro = (t, extra = '') => `<div style="text-align: center;${extra}">${t}</div>`;
+  MODELOS.trabalho = {
+    nome: 'Trabalho escolar (ABNT)',
+    documento: { margem: 'abnt', numerar: true },
+    html: () => `${centro(`<b>${campo('NOME DA ESCOLA')}</b>`)}${centro(campo('Nome do curso ou da turma'))}<div><br></div><div><br></div>
+      ${centro(`<b>${campo('SEU NOME COMPLETO')}</b>`)}<div><br></div><div><br></div><div><br></div><div><br></div>
+      ${centro(`<b><font size="5">${campo('TÍTULO DO TRABALHO')}</font></b>`)}${centro(campo('Subtítulo, se tiver'))}<div><br></div><div><br></div><div><br></div><div><br></div>
+      ${centro(campo('CIDADE'))}${centro(String(new Date().getFullYear()))}
+      <div class="quebra-pagina" contenteditable="false"></div>
+      <div class="sumario" contenteditable="false"><div class="sumario-titulo">SUMÁRIO</div><div class="sumario-vazio">Quando terminar o trabalho, clique em "📑 Sumário" para montar esta lista sozinha.</div></div>
+      <div class="quebra-pagina" contenteditable="false"></div>
+      <h1>1 INTRODUÇÃO</h1>${abnt(campo('Apresente o assunto do trabalho, o objetivo e como ele está organizado.'))}
+      <div class="quebra-pagina" contenteditable="false"></div>
+      <h1>2 DESENVOLVIMENTO</h1>${abnt(campo('Explique o assunto com as suas palavras. Use parágrafos curtos.'))}
+      <h2>2.1 ${campo('Primeira parte do assunto')}</h2>${abnt(campo('Texto da primeira parte.'))}
+      <div class="quebra-pagina" contenteditable="false"></div>
+      <h1>3 CONCLUSÃO</h1>${abnt(campo('O que você aprendeu e a resposta ao objetivo da introdução.'))}
+      <div class="quebra-pagina" contenteditable="false"></div>
+      <h1>REFERÊNCIAS</h1><div>SOBRENOME, Nome. <b>Título do livro</b>. Cidade: Editora, ano.</div>
+      <div>NOME DO SITE. <b>Título da página</b>. Disponível em: endereço do site. Acesso em: ${new Date().toLocaleDateString('pt-BR')}.</div>`,
+  };
   const FIGURAS = ['🌻', '🎂', '🏠', '🐶', '🐱', '⭐', '❤️', '🎉', '🌳', '☀️', '⚽', '📚'];
 
   function emojiParaImagem(emoji) {
@@ -79,6 +107,15 @@
     return tela.toDataURL('image/png');
   }
 
+  // Separa as configurações da página (margem, cabeçalho...) do texto do documento.
+  CE.lerDocumento = function (conteudo = '') {
+    const novo = conteudo.match(/^<!--ce:(\{.*?\})-->/);
+    if (novo) { try { return { meta: JSON.parse(novo[1]), html: conteudo.slice(novo[0].length) }; } catch { /* segue */ } }
+    const antigo = conteudo.match(/^<!--ce:margem=(\w+)-->/);
+    if (antigo) return { meta: { margem: antigo[1] }, html: conteudo.slice(antigo[0].length) };
+    return { meta: {}, html: conteudo };
+  };
+
   CE.registrarApp({
     id: 'editor',
     nome: 'Editor de Texto',
@@ -91,14 +128,25 @@
       let podeFechar = false;
       let aviso = null;
       let margem = 'normal';
+      let documento = { ...DOCUMENTO_PADRAO };
 
       const pagina = CE.el('div', { class: 'editor-pagina', contenteditable: 'true', spellcheck: 'false', 'aria-label': 'Página do documento' });
       const status = CE.el('div', { class: 'editor-status' });
+      const cabecalhoEl = CE.el('div', { class: 'ed-cabecalho', 'aria-hidden': 'true' });
+      const rodapeEl = CE.el('div', { class: 'ed-rodape', 'aria-hidden': 'true' });
+      const folha = CE.el('div', { class: 'editor-folha' }, cabecalhoEl, pagina, rodapeEl);
+      const totalPaginas = () => pagina.querySelectorAll('.quebra-pagina').length + 1;
+      function mostrarCabecalhoRodape() {
+        cabecalhoEl.textContent = documento.cabecalho;
+        rodapeEl.textContent = [documento.rodape, documento.numerar ? `Página 1${totalPaginas() > 1 ? ` de ${totalPaginas()}` : ''}` : ''].filter(Boolean).join('   ·   ');
+      }
 
       function atualizarStatus() {
         const texto = pagina.innerText.trim();
         const palavras = texto ? texto.split(/\s+/).length : 0;
-        status.textContent = `${nomeArquivo || 'Documento sem nome'}${modificado ? ' (não salvo)' : ''} · ${palavras} palavra${palavras === 1 ? '' : 's'}`;
+        const paginas = totalPaginas();
+        status.textContent = `${nomeArquivo || 'Documento sem nome'}${modificado ? ' (não salvo)' : ''} · ${palavras} palavra${palavras === 1 ? '' : 's'}${paginas > 1 ? ` · ${paginas} páginas` : ''}`;
+        mostrarCabecalhoRodape();
         janela.definirTitulo(nomeArquivo || 'Documento sem nome');
       }
 
@@ -111,11 +159,14 @@
       // o foco sai do texto, e a seleção precisa voltar antes de aplicar a formatação.
       let ultimaFaixa = null;
       function recuperarSelecao() {
+        // Se a seleção ainda está na página, ela é a mais nova; senão, usa a última guardada.
+        const sel = window.getSelection();
+        const atual = sel.rangeCount && pagina.contains(sel.getRangeAt(0).commonAncestorContainer) ? sel.getRangeAt(0).cloneRange() : null;
         pagina.focus();
-        if (ultimaFaixa) {
-          const sel = window.getSelection();
+        const faixa = atual || ultimaFaixa;
+        if (faixa) {
           sel.removeAllRanges();
-          sel.addRange(ultimaFaixa);
+          sel.addRange(faixa);
         }
       }
 
@@ -137,23 +188,191 @@
         avisarFormatacao(comando, valor);
       }
 
-      // Espaçamento entre linhas: vale para os parágrafos que estão selecionados.
-      function aplicarEspacamento(valor) {
+      // Os parágrafos que estão selecionados (ou o parágrafo onde está o cursor).
+      function blocosSelecionados() {
         recuperarSelecao();
         const sel = window.getSelection();
-        if (!sel.rangeCount) return;
+        if (!sel.rangeCount) return [];
         const faixa = sel.getRangeAt(0);
-        let blocos = [...pagina.querySelectorAll('div, p, li, h1, h2, h3')].filter((b) => faixa.intersectsNode(b) && !b.querySelector('div, p, li'));
-        if (!blocos.length) {
-          document.execCommand('formatBlock', false, 'div');
-          blocos = [...pagina.querySelectorAll('div, p, li')].filter((b) => faixa.intersectsNode(b) && !b.querySelector('div, p, li'));
-        }
-        blocos.forEach((b) => { b.style.lineHeight = valor; });
+        const achar = () => [...pagina.querySelectorAll('div, p, li, h1, h2, h3, blockquote')]
+          .filter((b) => faixa.intersectsNode(b) && !b.querySelector('div, p, li, h1, h2, h3') && !b.closest('.sumario') && !b.classList.contains('quebra-pagina') && !b.classList.contains('colunas'));
+        let blocos = achar();
+        if (!blocos.length) { document.execCommand('formatBlock', false, 'div'); blocos = achar(); }
+        return blocos;
+      }
+
+      // Espaçamento entre linhas: vale para os parágrafos que estão selecionados.
+      function aplicarEspacamento(valor) {
+        blocosSelecionados().forEach((b) => { b.style.lineHeight = valor; });
         avisarFormatacao('lineHeight', valor);
+      }
+
+      // ---------- Estilos (Título 1, Título 2...) ----------
+      function aplicarEstilo(valor) {
+        if (valor === 'abnt') {
+          blocosSelecionados().forEach((b) => Object.assign(b.style, { textAlign: 'justify', textIndent: '47px', lineHeight: '1.5' }));
+        } else {
+          recuperarSelecao();
+          document.execCommand('formatBlock', false, valor === 'normal' ? 'div' : valor);
+        }
+        avisarFormatacao('estilo', valor, { nomeEstilo: (ESTILOS.find(([v]) => v === valor) || [])[1] });
+        seletorEstilo.value = estiloAtual();
+      }
+      function estiloAtual() {
+        const sel = window.getSelection();
+        if (!sel.rangeCount || !pagina.contains(sel.anchorNode)) return 'normal';
+        const no = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
+        const bloco = no.closest('h1, h2, h3, blockquote, div, p, li');
+        if (!bloco || bloco === pagina) return 'normal';
+        const tag = bloco.tagName.toLowerCase();
+        if (['h1', 'h2', 'h3', 'blockquote'].includes(tag)) return tag;
+        return bloco.style.textIndent ? 'abnt' : 'normal';
+      }
+
+      // ---------- Páginas: quebra, cabeçalho, rodapé e sumário ----------
+      function quebraDePagina() {
+        recuperarSelecao();
+        document.execCommand('insertHTML', false, '<div class="quebra-pagina" contenteditable="false"></div><div><br></div>');
+        avisarFormatacao('quebraPagina', totalPaginas(), { paginas: totalPaginas() });
+      }
+      const paginaDe = (el) => 1 + [...pagina.querySelectorAll('.quebra-pagina')].filter((q) => q.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING).length;
+      function sumario() {
+        const titulos = [...pagina.querySelectorAll('h1, h2')].filter((h) => h.textContent.trim());
+        if (!titulos.length) { CE.avisar('Para fazer o sumário, primeiro use os estilos "Título 1" e "Título 2" nos títulos do texto.'); return; }
+        const html = `<div class="sumario-titulo">SUMÁRIO</div>${titulos.map((h) => `<div class="sumario-item nivel-${h.tagName[1]}"><span>${CE.escapar(h.textContent.trim())}</span><span class="sumario-pontos"></span><span>${paginaDe(h)}</span></div>`).join('')}`;
+        const existente = pagina.querySelector('.sumario');
+        if (existente) existente.innerHTML = html;
+        else {
+          // Entra como um bloco inteiro antes do parágrafo onde está o cursor (nunca no meio de um título).
+          const sel = window.getSelection();
+          let alvo = ultimaFaixa ? ultimaFaixa.startContainer : sel.rangeCount && pagina.contains(sel.anchorNode) ? sel.anchorNode : null;
+          while (alvo && alvo.parentNode !== pagina) alvo = alvo.parentNode;
+          const caixa = CE.el('div', { class: 'sumario', contenteditable: 'false', html });
+          if (alvo) alvo.before(caixa); else pagina.prepend(caixa);
+          modificado = true;
+          atualizarStatus();
+        }
+        avisarFormatacao('sumario', titulos.length, { itens: titulos.map((h) => h.textContent.trim()), acao: existente ? 'atualizar' : 'inserir' });
+        CE.emitir('editor:sumario', { itens: titulos.length, acao: existente ? 'atualizar' : 'inserir' });
+        CE.avisar(existente ? '📑 Sumário atualizado!' : '📑 Sumário criado! Se mudar os títulos, clique em "Sumário" de novo para atualizar.');
+      }
+      function dialogoCabecalhoRodape() {
+        const cab = CE.el('input', { class: 'campo', 'data-campo': 'cabecalho', value: documento.cabecalho, placeholder: 'Ex.: Escola Estadual Esperança' });
+        const rod = CE.el('input', { class: 'campo', 'data-campo': 'rodape', value: documento.rodape, placeholder: 'Ex.: Trabalho de Ciências' });
+        const num = CE.el('input', { type: 'checkbox', 'data-campo': 'numerar', checked: documento.numerar });
+        const fundo = CE.el('div', { class: 'dialogo-fundo' },
+          CE.el('div', { class: 'dialogo' },
+            CE.el('p', {}, '🔢 Cabeçalho e rodapé'),
+            CE.el('p', { class: 'ed-dica' }, 'O cabeçalho aparece no alto de TODAS as páginas, e o rodapé embaixo.'),
+            CE.el('label', { class: 'ed-rotulo' }, 'Cabeçalho (em cima)', cab),
+            CE.el('label', { class: 'ed-rotulo' }, 'Rodapé (embaixo)', rod),
+            CE.el('label', { class: 'ed-check' }, num, 'Numerar as páginas (o número vai no rodapé)'),
+            CE.el('div', { class: 'dialogo-botoes' },
+              CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Cancelar'),
+              CE.el('button', { class: 'botao', 'data-acao': 'confirmar-cabecalho', onclick: () => {
+                documento = { ...documento, cabecalho: cab.value.trim(), rodape: rod.value.trim(), numerar: num.checked };
+                fundo.remove();
+                modificado = true;
+                atualizarStatus();
+                CE.emitir('editor:cabecalho', { cabecalho: documento.cabecalho, rodape: documento.rodape, numerar: documento.numerar });
+              } }, 'OK'))));
+        document.body.append(fundo);
+        cab.focus();
+      }
+
+      // ---------- Colunas ----------
+      function aplicarColunas(valor) {
+        const n = Number(valor) || 1;
+        const blocos = blocosSelecionados();
+        if (!blocos.length) return;
+        const topo = (b) => { let x = b; while (x.parentElement && x.parentElement !== pagina && !x.parentElement.classList.contains('colunas')) x = x.parentElement; return x; };
+        const caixaAtual = blocos[0].closest('.colunas');
+        if (caixaAtual && blocos.every((b) => caixaAtual.contains(b))) {
+          if (n === 1) caixaAtual.replaceWith(...caixaAtual.childNodes);
+          else caixaAtual.style.columnCount = n;
+        } else if (n > 1) {
+          const grupo = [...new Set(blocos.map(topo))];
+          const caixa = CE.el('div', { class: 'colunas', style: `column-count: ${n}` });
+          grupo[0].before(caixa);
+          caixa.append(...grupo);
+        }
+        avisarFormatacao('colunas', n);
+        seletorColunas.value = '';
+      }
+
+      // ---------- Localizar e substituir ----------
+      const procurarRegex = (termo) => new RegExp(termo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      function nosDeTexto() {
+        const andar = document.createTreeWalker(pagina, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.parentElement.closest('.sumario') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT) });
+        const nos = [];
+        while (andar.nextNode()) nos.push(andar.currentNode);
+        return nos;
+      }
+      function marcarAchados(termo) {
+        removerMarcas(pagina, '.ed-achado');
+        if (!termo) return 0;
+        let total = 0;
+        nosDeTexto().forEach((no) => {
+          const re = procurarRegex(termo);
+          if (!re.test(no.textContent)) return;
+          const frag = document.createDocumentFragment();
+          let ultimo = 0;
+          no.textContent.replace(procurarRegex(termo), (achado, pos) => {
+            frag.append(document.createTextNode(no.textContent.slice(ultimo, pos)), CE.el('mark', { class: 'ed-achado' }, achado));
+            ultimo = pos + achado.length;
+            total++;
+          });
+          frag.append(document.createTextNode(no.textContent.slice(ultimo)));
+          no.replaceWith(frag);
+        });
+        return total;
+      }
+      function dialogoSubstituir() {
+        const procurar = CE.el('input', { class: 'campo', 'data-campo': 'procurar', value: textoSelecionado().trim(), placeholder: 'Palavra que você procura' });
+        const trocar = CE.el('input', { class: 'campo', 'data-campo': 'trocar', placeholder: 'Trocar por (opcional)' });
+        const resultado = CE.el('p', { class: 'ed-dica', 'data-resultado': '' }, '');
+        const fechar = () => { removerMarcas(pagina, '.ed-achado'); fundo.remove(); };
+        const fundo = CE.el('div', { class: 'dialogo-fundo transparente' },
+          CE.el('div', { class: 'dialogo' },
+            CE.el('p', {}, '🔎 Localizar e substituir'),
+            CE.el('label', { class: 'ed-rotulo' }, 'Localizar', procurar),
+            CE.el('label', { class: 'ed-rotulo' }, 'Substituir por', trocar),
+            resultado,
+            CE.el('div', { class: 'dialogo-botoes' },
+              CE.el('button', { class: 'botao secundario', onclick: fechar }, 'Fechar'),
+              CE.el('button', { class: 'botao secundario', 'data-acao': 'localizar', onclick: () => {
+                const n = marcarAchados(procurar.value);
+                resultado.textContent = n ? `Achei ${n} vez${n > 1 ? 'es' : ''} (marcado em amarelo).` : 'Não achei essa palavra no texto.';
+                CE.emitir('editor:localizado', { termo: procurar.value, quantidade: n });
+              } }, 'Localizar'),
+              CE.el('button', { class: 'botao', 'data-acao': 'substituir-tudo', onclick: () => {
+                const termo = procurar.value;
+                if (!termo) { procurar.focus(); return; }
+                removerMarcas(pagina, '.ed-achado');
+                let n = 0;
+                nosDeTexto().forEach((no) => { no.textContent = no.textContent.replace(procurarRegex(termo), () => { n++; return trocar.value; }); });
+                modificado = true;
+                atualizarStatus();
+                resultado.textContent = n ? `Troquei ${n} vez${n > 1 ? 'es' : ''}.` : 'Não achei essa palavra no texto.';
+                CE.emitir('editor:substituido', { procurar: termo, trocar: trocar.value, quantidade: n });
+                CE.emitir('editor:texto', { texto: pagina.innerText, html: pagina.innerHTML });
+              } }, 'Substituir tudo'))));
+        document.body.append(fundo);
+        procurar.focus();
+      }
+
+      // ---------- PDF ----------
+      async function exportarPdf() {
+        const nome = await CE.perguntar('Nome do PDF:', nomeArquivo || 'Meu documento');
+        if (!nome) return;
+        await CE.sessao.salvarArquivo({ nome, tipo: 'pdf', conteudo: htmlParaSalvar() });
+        CE.emitir('editor:pdf', { nome, paginas: totalPaginas() });
+        CE.avisar(`📕 PDF "${nome}" salvo em Meus Documentos. O PDF fica igualzinho em qualquer computador e não dá para mudar sem querer.`);
       }
 
       function aplicarMargem(valor, avisar = true) {
         margem = MARGENS[valor] ? valor : 'normal';
+        documento.margem = margem;
         pagina.style.padding = MARGENS[margem];
         seletorMargem.value = margem;
         if (avisar) avisarFormatacao('margem', margem);
@@ -231,8 +450,8 @@
         CE.avisar(encontrados ? `✏️ Encontrei ${encontrados} palavra${encontrados > 1 ? 's' : ''} com erro. Clique em cada palavra sublinhada de vermelho para corrigir.` : '✅ Não encontrei erros de ortografia!');
       }
 
-      function removerMarcas(raiz) {
-        raiz.querySelectorAll('.erro-ortografia').forEach((s) => s.replaceWith(document.createTextNode(s.textContent)));
+      function removerMarcas(raiz, seletor = '.erro-ortografia, .ed-achado') {
+        raiz.querySelectorAll(seletor).forEach((s) => s.replaceWith(document.createTextNode(s.textContent)));
         raiz.normalize();
       }
 
@@ -301,7 +520,9 @@
         removerMarcas(copia);
         // Campos de modelo já preenchidos deixam de ser campos.
         copia.querySelectorAll('.campo-modelo').forEach((c) => { if (!/^\[.*\]$/.test(c.textContent.trim())) c.replaceWith(...c.childNodes); });
-        return (margem !== 'normal' ? `<!--ce:margem=${margem}-->` : '') + copia.innerHTML;
+        // As configurações da página vão num comentário no começo do arquivo.
+        const meta = Object.fromEntries(Object.entries(documento).filter(([k, v]) => v !== DOCUMENTO_PADRAO[k]));
+        return (Object.keys(meta).length ? `<!--ce:${JSON.stringify(meta)}-->` : '') + copia.innerHTML;
       }
 
       async function salvar() {
@@ -326,17 +547,18 @@
         ultimaFaixa = null;
         nomeArquivo = null;
         modificado = modelo !== 'branco';
-        aplicarMargem('normal', false);
+        documento = { ...DOCUMENTO_PADRAO, ...(MODELOS[modelo].documento || {}) };
+        aplicarMargem(documento.margem, false);
         atualizarStatus();
         CE.emitir('editor:novo', { modelo });
         pagina.focus();
       }
 
       function carregar(arquivo) {
-        const conteudo = arquivo.conteudo || '';
-        const m = conteudo.match(/^<!--ce:margem=(\w+)-->/);
-        aplicarMargem(m ? m[1] : 'normal', false);
-        pagina.innerHTML = m ? conteudo.slice(m[0].length) : conteudo;
+        const { meta, html } = CE.lerDocumento(arquivo.conteudo);
+        documento = { ...DOCUMENTO_PADRAO, ...meta };
+        aplicarMargem(documento.margem, false);
+        pagina.innerHTML = html;
         ultimaFaixa = null;
         nomeArquivo = arquivo.nome;
         modificado = false;
@@ -361,7 +583,12 @@
       const seletorEspacamento = CE.el('select', { class: 'ferramenta-select pequeno', 'data-comando': 'lineHeight', title: 'Espaçamento entre as linhas', onchange: (e) => aplicarEspacamento(e.target.value) },
         CE.el('option', { value: '', disabled: true, selected: true }, '↕'), ...ESPACAMENTOS.map(([v, r]) => CE.el('option', { value: v }, r)));
       const seletorMargem = CE.el('select', { class: 'ferramenta-select', 'data-comando': 'margem', title: 'Margens da página', onchange: (e) => aplicarMargem(e.target.value) },
-        CE.el('option', { value: 'estreita' }, 'Margem estreita'), CE.el('option', { value: 'normal', selected: true }, 'Margem normal'), CE.el('option', { value: 'larga' }, 'Margem larga'));
+        CE.el('option', { value: 'estreita' }, 'Margem estreita'), CE.el('option', { value: 'normal', selected: true }, 'Margem normal'), CE.el('option', { value: 'larga' }, 'Margem larga'),
+        CE.el('option', { value: 'abnt' }, 'Margem ABNT (3 e 2 cm)'));
+      const seletorEstilo = CE.el('select', { class: 'ferramenta-select', 'data-comando': 'estilo', title: 'Estilo do parágrafo (Título 1, Título 2...)', onchange: (e) => aplicarEstilo(e.target.value) },
+        ...ESTILOS.map(([v, r]) => CE.el('option', { value: v }, r)));
+      const seletorColunas = CE.el('select', { class: 'ferramenta-select pequeno', 'data-comando': 'colunas', title: 'Dividir o texto selecionado em colunas (como jornal)', onchange: (e) => aplicarColunas(e.target.value) },
+        CE.el('option', { value: '', disabled: true, selected: true }, '▥'), CE.el('option', { value: '1' }, '1 col.'), CE.el('option', { value: '2' }, '2 col.'), CE.el('option', { value: '3' }, '3 col.'));
 
       function atualizarBotoes() {
         corpo.querySelectorAll('[data-comando="bold"],[data-comando="italic"],[data-comando="underline"]').forEach((b) => {
@@ -414,6 +641,15 @@
           seletorMargem,
           botao('ortografia', '✔️ Ortografia', 'Procurar erros de português', 'texto', verificarOrtografia),
         ),
+        CE.el('div', { class: 'ferramentas-grupo' },
+          seletorEstilo,
+          seletorColunas,
+          botao('quebraPagina', '📄 Quebra', 'Quebra de página: o texto continua na página seguinte', 'texto', quebraDePagina),
+          botao('cabecalhoRodape', '🔢 Cabeçalho', 'Cabeçalho, rodapé e número das páginas', 'texto', dialogoCabecalhoRodape),
+          botao('sumario', '📑 Sumário', 'Criar ou atualizar o sumário (usa os Títulos 1 e 2)', 'texto', sumario),
+          botao('substituir', '🔎 Localizar', 'Localizar e substituir palavras (Ctrl+H)', 'texto', dialogoSubstituir),
+          botao('pdf', '📕 PDF', 'Salvar uma cópia em PDF', 'texto', exportarPdf),
+        ),
       );
 
       let esperaTexto = null;
@@ -429,6 +665,7 @@
         if (s.rangeCount && pagina.contains(s.getRangeAt(0).commonAncestorContainer)) ultimaFaixa = s.getRangeAt(0).cloneRange();
         const sel = textoSelecionado();
         atualizarBotoes();
+        if (s.rangeCount && pagina.contains(s.anchorNode)) seletorEstilo.value = estiloAtual();
         if (sel.trim()) CE.emitir('editor:selecao', { selecionado: sel });
       });
       // Atalhos de teclado: passam pelo mesmo caminho dos botões, para as lições perceberem.
@@ -438,11 +675,12 @@
         const tecla = e.key.toLowerCase();
         if (tecla === 's') { e.preventDefault(); salvar(); }
         else if (tecla === 'p') { e.preventDefault(); imprimir(); }
+        else if (tecla === 'h') { e.preventDefault(); dialogoSubstituir(); }
         else if (atalhos[tecla]) { e.preventDefault(); executar(atalhos[tecla]); }
       });
 
       corpo.classList.add('editor');
-      corpo.append(barraFerramentas, CE.el('div', { class: 'editor-fundo' }, pagina), status);
+      corpo.append(barraFerramentas, CE.el('div', { class: 'editor-fundo' }, folha), status);
       atualizarStatus();
       if (argumento && argumento.arquivo) carregar(argumento.arquivo);
       setTimeout(() => pagina.focus(), 50);

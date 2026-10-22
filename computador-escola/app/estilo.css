@@ -952,3 +952,67 @@ button.bandeja-item:hover { background: rgba(255,255,255,.15); }
 .cd-boleto { border: 2px dashed #999; border-radius: 8px; padding: 14px 18px; max-width: 620px; background: #fff; }
 .cd-barras { height: 50px; background: repeating-linear-gradient(90deg, #000 0 2px, #fff 2px 4px, #000 4px 5px, #fff 5px 8px, #000 8px 11px, #fff 11px 12px); margin: 8px 0; }
 .cd-codigo { font: 700 18px Consolas, "Courier New", monospace; letter-spacing: 1px; user-select: text; cursor: text; }
+
+/* ---------- Planilha avançada: filtro, gráficos, destaques ---------- */
+.pl-tabela tr.pl-oculta { display: none; }
+.pl-filtro-botao { float: right; margin: 3px -2px 0 4px; width: 17px; height: 17px; line-height: 15px; font-size: 11px; text-align: center; border: 1px solid #b9b9b9; border-radius: 3px; background: #fff; color: #333; cursor: pointer; }
+.pl-filtro-botao.ativo { background: #d3e3fd; border-color: #0b57d0; color: #0b57d0; }
+.pl-filtro-menu { position: absolute; z-index: 8; width: 240px; padding: 6px; background: #fff; border: 1px solid var(--borda); box-shadow: var(--sombra); border-radius: 6px; display: grid; gap: 4px; }
+.pl-filtro-menu .menu-item { font-size: 14px; padding: 6px 8px; }
+.pl-filtro-menu .menu-item:hover { background: var(--azul-claro); }
+.pl-filtro-menu hr { width: 100%; border: none; border-top: 1px solid #e3e3e3; margin: 2px 0; }
+.pl-filtro-lista { max-height: 190px; overflow: auto; display: grid; border: 1px solid #e3e3e3; border-radius: 4px; padding: 4px; }
+.pl-filtro-item { display: flex; gap: 8px; align-items: center; padding: 3px 4px; font-size: 14px; cursor: pointer; }
+.pl-filtro-item:hover { background: #f2f6fc; }
+.pl-filtro-menu .dialogo-botoes .botao { padding: 6px 14px; font-size: 14px; }
+.pl-graficos { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 5; }
+.pl-grafico { position: absolute; width: 444px; background: #fff; border: 1px solid #c8c8c8; box-shadow: 0 3px 12px rgba(0,0,0,.18); border-radius: 4px; }
+.pl-grafico.selecionado { outline: 2px solid var(--azul); }
+.pl-grafico-barra { display: flex; align-items: center; gap: 6px; padding: 3px 6px; background: #f3f3f3; border-bottom: 1px solid #ddd; cursor: move; font-size: 13px; }
+.pl-grafico-barra span { flex: 1; color: #777; }
+.pl-grafico-barra select { font-size: 13px; padding: 2px; }
+.pl-grafico-barra button { border: none; background: none; font-size: 14px; padding: 2px 6px; border-radius: 3px; }
+.pl-grafico-barra button:hover { background: #fde2e2; color: var(--vermelho); }
+.pl-grafico-area svg, .pl-previa-grafico svg { display: block; width: 100%; height: auto; }
+.pl-previa-grafico { border: 1px solid #ddd; border-radius: 6px; max-width: 460px; margin: 0 auto; width: 100%; }
+.pl-tipos-grafico { display: flex; gap: 8px; flex-wrap: wrap; }
+.pl-tipo-grafico { display: grid; justify-items: center; gap: 2px; width: 96px; padding: 8px; border: 2px solid #dde3ea; border-radius: 8px; background: #fff; font-size: 14px; }
+.pl-tipo-grafico span { font-size: 28px; }
+.pl-tipo-grafico.ligado { border-color: var(--azul); background: var(--azul-claro); }
+
+/* ---------- Editor avançado ---------- */
+.editor-folha { position: relative; max-width: 794px; margin: 0 auto; }
+.ed-cabecalho, .ed-rodape { position: absolute; left: 60px; right: 60px; z-index: 1; color: #8a8a8a; font-size: 12px; text-align: center; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ed-cabecalho { top: 22px; }
+.ed-rodape { bottom: 22px; }
+.editor-pagina h1, .pdf-conteudo h1 { font-size: 24px; color: #1f3864; margin: 18px 0 8px; }
+.editor-pagina h2, .pdf-conteudo h2 { font-size: 19px; color: #2f5496; margin: 14px 0 6px; }
+.editor-pagina h3, .pdf-conteudo h3 { font-size: 17px; color: #2f5496; margin: 12px 0 4px; }
+.editor-pagina blockquote, .pdf-conteudo blockquote { margin: 8px 0 8px 40px; padding-left: 12px; border-left: 3px solid #c8c8c8; font-style: italic; color: #444; }
+.editor-pagina .quebra-pagina { position: relative; height: 0; margin: 34px -20px; border-top: 2px dashed #a9b4c2; user-select: none; }
+.editor-pagina .quebra-pagina::after { content: "Quebra de página"; position: absolute; left: 50%; top: -11px; transform: translateX(-50%); background: #fff; color: #7a8796; font-size: 12px; padding: 0 10px; font-style: normal; }
+.sumario { margin: 10px 0 16px; padding: 10px 14px; border: 1px dashed #c8d3e0; border-radius: 4px; background: #fafcff; user-select: none; }
+.sumario-titulo { font-weight: 700; text-align: center; margin-bottom: 8px; letter-spacing: 1px; }
+.sumario-item { display: flex; gap: 6px; align-items: baseline; }
+.sumario-item.nivel-2 { padding-left: 24px; }
+.sumario-pontos { flex: 1; border-bottom: 2px dotted #999; transform: translateY(-4px); }
+.colunas { column-gap: 28px; column-rule: 1px solid #e2e2e2; }
+mark.ed-achado { background: #ffe066; padding: 0 1px; }
+.dialogo-fundo.transparente { background: rgba(0,0,0,.08); place-items: start end; padding: 90px 40px; }
+.ed-rotulo { display: grid; gap: 4px; font-size: 14px; }
+.ed-check { display: flex; gap: 8px; align-items: center; font-size: 15px; }
+
+/* ---------- Leitor de PDF ---------- */
+.janela-corpo.leitor-pdf { display: flex; flex-direction: column; overflow: hidden; }
+.pdf-fundo { flex: 1; overflow: auto; background: #525659; padding: 20px; }
+.pdf-folhas { display: grid; gap: 18px; justify-content: center; }
+.pdf-pagina { position: relative; width: 794px; min-height: 1123px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.5); }
+.pdf-conteudo.editor-pagina { box-shadow: none; min-height: 0; max-width: none; cursor: default; }
+.pdf-cabecalho, .pdf-rodape { position: absolute; left: 60px; right: 60px; color: #777; font-size: 12px; text-align: center; }
+.pdf-cabecalho { top: 22px; }
+.pdf-rodape { bottom: 22px; }
+.pdf-indicador, .pdf-zoom { font-size: 14px; padding: 0 8px; }
+.pdf-aviso { margin-left: auto; align-self: center; font-size: 13px; color: var(--texto-suave); }
+.pdf-vazio { color: #fff; text-align: center; margin-top: 60px; }
+.sumario-vazio { color: #8a8a8a; font-style: italic; text-align: center; font-size: 14px; }
+.pdf-conteudo .campo-modelo { background: none; }

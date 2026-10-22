@@ -1,12 +1,22 @@
 // Planilha (parecida com o Excel): células, fórmulas em português, AutoSoma, formatação de números,
 // cores, alça de preenchimento (arrastar para copiar), largura de coluna, desfazer, salvar e abrir.
+// No nível avançado: classificar, filtro, gráficos e destaque automático (formatação condicional).
 (function () {
   const F = CE.formulas;
   const COLUNAS = 26, LINHAS = 60, LARGURA = 96;
   const FUNCOES_MENU = [
     ['SOMA', 'Soma os números', '=SOMA('], ['MÉDIA', 'Média dos números', '=MÉDIA('], ['MÁXIMO', 'Maior número', '=MÁXIMO('],
     ['MÍNIMO', 'Menor número', '=MÍNIMO('], ['SE', 'Escolhe um resultado conforme uma condição', '=SE('], ['CONT.SE', 'Conta as células que atendem a uma condição', '=CONT.SE('],
+    ['SOMASE', 'Soma só o que atende a uma condição', '=SOMASE('], ['MÉDIASE', 'Média só do que atende a uma condição', '=MÉDIASE('],
+    ['PROCV', 'Procura um valor numa tabela', '=PROCV('], ['CONCATENAR', 'Junta textos', '=CONCATENAR('],
   ];
+  const CORES_DESTAQUE = {
+    vermelho: { nome: 'Vermelho', fundo: '#ffc7ce', texto: '#9c0006' },
+    verde: { nome: 'Verde', fundo: '#c6efce', texto: '#006100' },
+    amarelo: { nome: 'Amarelo', fundo: '#ffeb9c', texto: '#9c5700' },
+  };
+  const REGRAS_DESTAQUE = { maior: 'é maior que', menor: 'é menor que', igual: 'é igual a', contem: 'contém o texto' };
+  const planilhaVazia = () => ({ celulas: {}, larguras: {}, graficos: [], condicionais: [], filtro: null });
 
   CE.registrarApp({
     id: 'planilha',
@@ -15,7 +25,7 @@
     largura: 980,
     altura: 620,
     abrir(corpo, janela, argumento) {
-      let dados = { celulas: {}, larguras: {} };
+      let dados = planilhaVazia();
       let nomeArquivo = null, modificado = false, podeFechar = false, aviso = null;
       let ativa = 'A1', ancora = 'A1', fim = 'A1';
       let editando = null; // { ref, campo, origem }
@@ -41,7 +51,8 @@
       const tabela = CE.el('table', { class: 'pl-tabela' });
       const grade = CE.el('div', { class: 'pl-grade', tabindex: '0', 'aria-label': 'Grade da planilha' }, tabela);
       const alca = CE.el('div', { class: 'pl-alca', title: 'Arraste para copiar para as células vizinhas' });
-      grade.append(alca);
+      const camadaGraficos = CE.el('div', { class: 'pl-graficos' });
+      grade.append(alca, camadaGraficos);
 
       const colgroup = CE.el('colgroup', {}, CE.el('col', { style: 'width:44px' }), ...Array.from({ length: COLUNAS }, (_, c) => CE.el('col', { 'data-col': c })));
       const cabecalho = CE.el('tr', {}, CE.el('th', { class: 'pl-canto' }),
@@ -81,6 +92,9 @@
           td.style.background = f.fundo || '';
           td.style.textAlign = f.alinhar || '';
         });
+        aplicarDestaques();
+        aplicarFiltro();
+        desenharGraficos();
         pintarSelecao();
       }
 
@@ -195,6 +209,8 @@
       // ---------- Mouse ----------
       let arrastando = null; // 'selecao' | 'referencia' | 'alca'
       grade.addEventListener('pointerdown', (e) => {
+        const botaoFiltro = e.target.closest('.pl-filtro-botao');
+        if (botaoFiltro) { e.preventDefault(); e.stopPropagation(); abrirMenuFiltro(botaoFiltro.dataset.filtro); return; }
         const redim = e.target.closest('[data-redim]');
         if (redim) { comecarRedimensionar(e, Number(redim.dataset.redim)); return; }
         if (e.target === alca) { e.preventDefault(); arrastando = 'alca'; destinoAlca = fim; return; }
@@ -434,6 +450,294 @@
         CE.emitir('planilha:autosoma', { celula: alvo, formula, valor: valorDe(alvo) });
       }
 
+
+      // ---------- Nível avançado: região da tabela ----------
+      const nomeFaixa = (r) => `${F.endereco(r.c1, r.l1)}:${F.endereco(r.c2, r.l2)}`;
+      const lerFaixa = (texto) => {
+        const [a, b] = String(texto).split(':').map(posicao);
+        const z = b || a;
+        return { c1: Math.min(a.col, z.col), c2: Math.max(a.col, z.col), l1: Math.min(a.lin, z.lin), l2: Math.max(a.lin, z.lin) };
+      };
+      // Com uma célula só selecionada, pega a tabela inteira em volta dela (como o Excel faz).
+      function regiaoAtual() {
+        if (ancora !== fim) return faixa();
+        const temDado = (c, l) => c >= 0 && l >= 0 && c < COLUNAS && l < LINHAS && entradaDe(F.endereco(c, l)) !== '';
+        const p = posicao(ativa);
+        const r = { c1: p.col, c2: p.col, l1: p.lin, l2: p.lin };
+        const linhaTem = (l) => { for (let c = r.c1 - 1; c <= r.c2 + 1; c++) if (temDado(c, l)) return true; return false; };
+        const colunaTem = (c) => { for (let l = r.l1 - 1; l <= r.l2 + 1; l++) if (temDado(c, l)) return true; return false; };
+        for (let mudou = true; mudou;) {
+          mudou = false;
+          if (r.l1 > 0 && linhaTem(r.l1 - 1)) { r.l1--; mudou = true; }
+          if (r.l2 < LINHAS - 1 && linhaTem(r.l2 + 1)) { r.l2++; mudou = true; }
+          if (r.c1 > 0 && colunaTem(r.c1 - 1)) { r.c1--; mudou = true; }
+          if (r.c2 < COLUNAS - 1 && colunaTem(r.c2 + 1)) { r.c2++; mudou = true; }
+        }
+        return r;
+      }
+      // A primeira linha é de títulos quando só tem texto e embaixo tem números (ou quando está em negrito).
+      function temCabecalho(r) {
+        if (r.l2 <= r.l1) return false;
+        let textos = true, negrito = true, numeros = false;
+        for (let c = r.c1; c <= r.c2; c++) {
+          const ref = F.endereco(c, r.l1), v = valorDe(ref);
+          if (v !== '' && typeof v !== 'string') textos = false;
+          if (v !== '' && !formatoDe(ref).negrito) negrito = false;
+          for (let l = r.l1 + 1; l <= r.l2; l++) if (typeof valorDe(F.endereco(c, l)) === 'number') numeros = true;
+        }
+        return textos && (numeros || negrito);
+      }
+
+      // ---------- Classificar ----------
+      function classificar(ordem, colunaLetra) {
+        terminarEdicao(true);
+        const r = regiaoAtual();
+        if (r.l1 === r.l2) { CE.avisar('Clique numa célula dentro da tabela que você quer organizar.'); return; }
+        const cab = temCabecalho(r);
+        const inicio = r.l1 + (cab ? 1 : 0);
+        const col = colunaLetra ? F.letraParaNumero(colunaLetra) : Math.min(r.c2, Math.max(r.c1, posicao(ativa).col));
+        const linhas = [];
+        for (let l = inicio; l <= r.l2; l++) {
+          const celulas = [];
+          for (let c = r.c1; c <= r.c2; c++) { const x = dados.celulas[F.endereco(c, l)]; celulas.push(x ? JSON.parse(JSON.stringify(x)) : null); }
+          linhas.push({ l, celulas, chave: valorDe(F.endereco(col, l)) });
+        }
+        const peso = (v) => (v === '' ? 3 : typeof v === 'number' ? 0 : typeof v === 'boolean' ? 2 : 1);
+        linhas.sort((a, b) => {
+          const pa = peso(a.chave), pb = peso(b.chave);
+          if (pa === 3 || pb === 3) return pa - pb; // células vazias sempre no fim
+          const d = pa - pb || (pa === 0 ? a.chave - b.chave : String(a.chave).localeCompare(String(b.chave), 'pt-BR', { sensitivity: 'base' }));
+          return ordem === 'za' ? -d : d;
+        });
+        alterar(() => linhas.forEach((linha, i) => {
+          const destino = inicio + i;
+          linha.celulas.forEach((c, j) => {
+            const ref = F.endereco(r.c1 + j, destino);
+            if (!c) delete dados.celulas[ref];
+            else dados.celulas[ref] = { v: String(c.v || '').startsWith('=') ? F.ajustarFormula(c.v, destino - linha.l, 0) : c.v, f: c.f || {} };
+          });
+        }));
+        CE.emitir('planilha:classificada', { coluna: F.numeroParaLetra(col), ordem, intervalo: nomeFaixa(r), cabecalho: cab, primeiro: valorDe(F.endereco(col, inicio)) });
+        CE.avisar(`${ordem === 'az' ? '🔤 Organizado do menor para o maior (A→Z)' : '🔤 Organizado do maior para o menor (Z→A)'} pela coluna ${F.numeroParaLetra(col)}.`);
+        grade.focus({ preventScroll: true });
+      }
+
+      // ---------- Filtro ----------
+      function fimDoFiltro() {
+        const f = dados.filtro;
+        const tem = (l) => { for (let c = f.c1; c <= f.c2; c++) if (entradaDe(F.endereco(c, l)) !== '') return true; return false; };
+        let l = f.l;
+        while (l + 1 < LINHAS && tem(l + 1)) l++;
+        return l;
+      }
+      const textoCelula = (ref) => F.textoDe(valorDe(ref), formatoDe(ref).formato);
+      function aplicarFiltro() {
+        corpoTabela.querySelectorAll('tr.pl-oculta').forEach((tr) => tr.classList.remove('pl-oculta'));
+        const f = dados.filtro;
+        if (!f) return;
+        for (let c = f.c1; c <= f.c2; c++) {
+          const letra = F.numeroParaLetra(c), ativo = (f.ocultos[letra] || []).length > 0;
+          tds[F.endereco(c, f.l)].append(CE.el('span', { class: 'pl-filtro-botao' + (ativo ? ' ativo' : ''), 'data-filtro': letra, title: ativo ? 'Esta coluna está filtrada. Clique para mudar.' : 'Filtrar esta coluna' }, ativo ? '⏷' : '▾'));
+        }
+        const l2 = fimDoFiltro();
+        for (let l = f.l + 1; l <= l2; l++) {
+          const esconder = Object.entries(f.ocultos).some(([letra, lista]) => lista.length && lista.includes(textoCelula(letra + (l + 1))));
+          if (esconder) corpoTabela.children[l].classList.add('pl-oculta');
+        }
+      }
+      function alternarFiltro() {
+        terminarEdicao(true);
+        if (dados.filtro) {
+          alterar(() => { dados.filtro = null; });
+          CE.emitir('planilha:filtro', { ligado: false });
+          CE.avisar('Filtro desligado: todas as linhas aparecem de novo.');
+          return;
+        }
+        const r = regiaoAtual();
+        if (r.l1 === r.l2) { CE.avisar('Clique dentro de uma tabela que tenha os títulos na primeira linha.'); return; }
+        alterar(() => { dados.filtro = { l: r.l1, c1: r.c1, c2: r.c2, ocultos: {} }; });
+        CE.emitir('planilha:filtro', { ligado: true, intervalo: nomeFaixa(r) });
+        CE.avisar('🔽 Filtro ligado! Clique na setinha ▾ do título de uma coluna para escolher o que aparece.');
+      }
+      let menuFiltro = null;
+      const fecharMenuFiltro = () => { if (menuFiltro) { menuFiltro.remove(); menuFiltro = null; } };
+      document.addEventListener('pointerdown', (e) => { if (menuFiltro && !menuFiltro.contains(e.target) && !e.target.closest('.pl-filtro-botao')) fecharMenuFiltro(); });
+      function abrirMenuFiltro(letra) {
+        terminarEdicao(true);
+        fecharMenuFiltro();
+        const f = dados.filtro;
+        if (!f) return;
+        const l2 = fimDoFiltro();
+        const valores = [];
+        for (let l = f.l + 1; l <= l2; l++) valores.push(textoCelula(letra + (l + 1)));
+        const unicos = [...new Set(valores)].sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }));
+        const ocultos = new Set(f.ocultos[letra] || []);
+        const itens = unicos.map((v) => CE.el('label', { class: 'pl-filtro-item', 'data-valor': v }, CE.el('input', { type: 'checkbox', checked: !ocultos.has(v) }), v === '' ? '(Vazias)' : v));
+        const todos = CE.el('input', { type: 'checkbox', checked: !ocultos.size, onchange: (ev) => itens.forEach((i) => { i.firstChild.checked = ev.target.checked; }) });
+        const ordenar = (ordem) => { fecharMenuFiltro(); ativa = ancora = fim = F.endereco(F.letraParaNumero(letra), f.l); classificar(ordem, letra); };
+        const td = tds[letra + (f.l + 1)];
+        menuFiltro = CE.el('div', { class: 'pl-filtro-menu', 'data-coluna': letra },
+          CE.el('button', { class: 'menu-item', 'data-acao': 'filtro-az', onclick: () => ordenar('az') }, '🔤 Classificar de A a Z'),
+          CE.el('button', { class: 'menu-item', 'data-acao': 'filtro-za', onclick: () => ordenar('za') }, '🔤 Classificar de Z a A'),
+          CE.el('hr'),
+          CE.el('label', { class: 'pl-filtro-item' }, todos, CE.el('b', {}, '(Selecionar tudo)')),
+          CE.el('div', { class: 'pl-filtro-lista' }, ...itens),
+          CE.el('div', { class: 'dialogo-botoes' },
+            CE.el('button', { class: 'botao secundario', onclick: fecharMenuFiltro }, 'Cancelar'),
+            CE.el('button', { class: 'botao', 'data-acao': 'filtrar', onclick: () => {
+              const escondidos = itens.filter((i) => !i.firstChild.checked).map((i) => i.dataset.valor);
+              fecharMenuFiltro();
+              alterar(() => { f.ocultos[letra] = escondidos; });
+              const visiveis = [...Array(l2 - f.l).keys()].filter((i) => !corpoTabela.children[f.l + 1 + i].classList.contains('pl-oculta')).length;
+              CE.emitir('planilha:filtrada', { coluna: letra, escondidos, mostrando: unicos.filter((v) => !escondidos.includes(v)), visiveis });
+            } }, 'OK')));
+        menuFiltro.style.left = Math.max(0, td.offsetLeft) + 'px';
+        menuFiltro.style.top = td.offsetTop + td.offsetHeight + 'px';
+        grade.append(menuFiltro);
+        CE.emitir('planilha:menu-filtro', { coluna: letra });
+      }
+
+      // ---------- Destaque automático (formatação condicional) ----------
+      function regraCumprida(regra, v) {
+        const n = F.lerNumero(regra.valor);
+        if (regra.regra === 'contem') return String(F.textoDe(v)).toLowerCase().includes(String(regra.valor).toLowerCase());
+        if (regra.regra === 'igual') return n != null && typeof v === 'number' ? v === n : String(v).toLowerCase() === String(regra.valor).toLowerCase();
+        if (typeof v !== 'number' || n == null) return false;
+        return regra.regra === 'maior' ? v > n : v < n;
+      }
+      function aplicarDestaques() {
+        (dados.condicionais || []).forEach((regra) => {
+          const r = lerFaixa(regra.intervalo), cor = CORES_DESTAQUE[regra.cor] || CORES_DESTAQUE.vermelho;
+          F.celulasDoIntervalo(F.endereco(r.c1, r.l1), F.endereco(r.c2, r.l2)).forEach((ref) => {
+            const v = valorDe(ref);
+            if (v !== '' && regraCumprida(regra, v)) { tds[ref].style.background = cor.fundo; tds[ref].style.color = cor.texto; tds[ref].classList.add('destacada'); }
+          });
+        });
+      }
+      function dialogoDestacar() {
+        terminarEdicao(true);
+        const r = ancora !== fim ? faixa() : regiaoAtual();
+        const intervalo = nomeFaixa(r);
+        const regra = CE.el('select', { class: 'campo', 'data-campo': 'regra' }, ...Object.entries(REGRAS_DESTAQUE).map(([id, t]) => CE.el('option', { value: id }, t)));
+        const valor = CE.el('input', { class: 'campo', 'data-campo': 'valor', placeholder: 'Ex.: 6' });
+        const cor = CE.el('select', { class: 'campo', 'data-campo': 'cor' }, ...Object.entries(CORES_DESTAQUE).map(([id, c]) => CE.el('option', { value: id }, c.nome)));
+        const fundo = CE.el('div', { class: 'dialogo-fundo' },
+          CE.el('div', { class: 'dialogo' },
+            CE.el('p', {}, '🎨 Destacar células automaticamente'),
+            CE.el('p', { class: 'ed-dica' }, `Nas células ${intervalo}, pintar quando o valor...`),
+            regra, valor,
+            CE.el('label', {}, 'Cor do destaque ', cor),
+            CE.el('div', { class: 'dialogo-botoes' },
+              (dados.condicionais || []).length ? CE.el('button', { class: 'botao secundario', 'data-acao': 'limpar-destaques', onclick: () => {
+                fundo.remove(); alterar(() => { dados.condicionais = []; }); CE.emitir('planilha:condicional', { limpar: true });
+              } }, 'Limpar destaques') : null,
+              CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Cancelar'),
+              CE.el('button', { class: 'botao', 'data-acao': 'aplicar-destaque', onclick: () => {
+                if (!valor.value.trim()) { valor.focus(); return; }
+                const nova = { intervalo, regra: regra.value, valor: valor.value.trim(), cor: cor.value };
+                fundo.remove();
+                alterar(() => { dados.condicionais.push(nova); });
+                const celulas = F.celulasDoIntervalo(F.endereco(r.c1, r.l1), F.endereco(r.c2, r.l2)).filter((ref) => valorDe(ref) !== '' && regraCumprida(nova, valorDe(ref))).length;
+                CE.emitir('planilha:condicional', { ...nova, celulas });
+                CE.avisar(`🎨 ${celulas} célula${celulas === 1 ? '' : 's'} destacada${celulas === 1 ? '' : 's'}. Se os valores mudarem, o destaque muda sozinho!`);
+              } }, 'Aplicar'))));
+        document.body.append(fundo);
+        valor.focus();
+      }
+
+      // ---------- Gráficos ----------
+      let graficoSelecionado = null;
+      function dadosDoGrafico(g) {
+        const r = lerFaixa(g.intervalo);
+        const comNomes = r.c2 > r.c1;
+        let cab = r.l2 > r.l1;
+        for (let c = comNomes ? r.c1 + 1 : r.c1; c <= r.c2 && cab; c++) { const v = valorDe(F.endereco(c, r.l1)); if (v === '' || typeof v !== 'string') cab = false; }
+        const inicio = r.l1 + (cab ? 1 : 0);
+        const categorias = [], series = [];
+        for (let l = inicio; l <= r.l2; l++) categorias.push(comNomes ? textoCelula(F.endereco(r.c1, l)) : String(l - inicio + 1));
+        for (let c = comNomes ? r.c1 + 1 : r.c1; c <= r.c2; c++) {
+          const valores = [];
+          for (let l = inicio; l <= r.l2; l++) { const v = valorDe(F.endereco(c, l)); valores.push(typeof v === 'number' ? v : ''); }
+          series.push({ nome: cab ? String(valorDe(F.endereco(c, r.l1))) : `Série ${series.length + 1}`, valores });
+        }
+        const formato = formatoDe(F.endereco(comNomes ? r.c1 + 1 : r.c1, inicio)).formato;
+        return { tipo: g.tipo, titulo: g.titulo, categorias, series, formato };
+      }
+      function desenharGraficos() {
+        camadaGraficos.replaceChildren(...(dados.graficos || []).map((g) => CE.el('div', {
+          class: 'pl-grafico' + (graficoSelecionado === g.id ? ' selecionado' : ''), 'data-grafico': g.id, style: `left:${g.x}px;top:${g.y}px`,
+        },
+          CE.el('div', { class: 'pl-grafico-barra', title: 'Segure aqui e arraste para mudar o gráfico de lugar' },
+            CE.el('span', {}, '✥'),
+            CE.el('select', { 'data-grafico-tipo': g.id, title: 'Trocar o tipo do gráfico', onchange: (e) => {
+              alterar(() => { g.tipo = e.target.value; });
+              CE.emitir('planilha:grafico-tipo', { id: g.id, tipo: g.tipo });
+            } }, ...Object.entries(CE.graficos.TIPOS).map(([id, t]) => CE.el('option', { value: id, selected: id === g.tipo }, `${t.icone} ${t.nome}`))),
+            CE.el('button', { 'data-acao': 'remover-grafico', title: 'Apagar este gráfico', onclick: () => {
+              alterar(() => { dados.graficos = dados.graficos.filter((x) => x.id !== g.id); });
+              CE.emitir('planilha:grafico-removido', { id: g.id });
+            } }, '✕')),
+          CE.el('div', { class: 'pl-grafico-area', html: CE.graficos.desenhar(dadosDoGrafico(g), 440, 270) }))));
+      }
+      camadaGraficos.addEventListener('pointerdown', (e) => {
+        const caixa = e.target.closest('.pl-grafico');
+        if (!caixa) return;
+        e.stopPropagation();
+        terminarEdicao(true);
+        graficoSelecionado = caixa.dataset.grafico;
+        camadaGraficos.querySelectorAll('.pl-grafico').forEach((x) => x.classList.toggle('selecionado', x === caixa));
+        if (!e.target.closest('.pl-grafico-barra') || e.target.closest('select, button')) return;
+        e.preventDefault();
+        const g = dados.graficos.find((x) => x.id === caixa.dataset.grafico);
+        const ix = e.clientX, iy = e.clientY, gx = g.x, gy = g.y;
+        const mover = (ev) => {
+          g.x = Math.max(44, gx + ev.clientX - ix); g.y = Math.max(24, gy + ev.clientY - iy);
+          caixa.style.left = g.x + 'px'; caixa.style.top = g.y + 'px';
+        };
+        const soltar = () => {
+          document.removeEventListener('pointermove', mover);
+          document.removeEventListener('pointerup', soltar);
+          modificado = true; pintarSelecao();
+          CE.emitir('planilha:grafico-movido', { id: g.id, x: g.x, y: g.y });
+        };
+        document.addEventListener('pointermove', mover);
+        document.addEventListener('pointerup', soltar);
+      });
+      function dialogoGrafico() {
+        terminarEdicao(true);
+        const r = regiaoAtual();
+        if (r.c1 === r.c2 && r.l1 === r.l2) { CE.avisar('Primeiro selecione os dados do gráfico: a coluna dos nomes e a dos números.'); return; }
+        const g = { id: 'g' + Date.now().toString(36), tipo: 'colunas', intervalo: nomeFaixa(r), titulo: '' };
+        const inicial = dadosDoGrafico(g);
+        if (inicial.series.length === 1 && !/^Série/.test(inicial.series[0].nome)) g.titulo = inicial.series[0].nome;
+        const previa = CE.el('div', { class: 'pl-previa-grafico' });
+        const botoes = Object.entries(CE.graficos.TIPOS).map(([id, t]) => CE.el('button', { class: 'pl-tipo-grafico', 'data-tipo-grafico': id, onclick: () => { g.tipo = id; mostrar(); } }, CE.el('span', {}, t.icone), t.nome));
+        const titulo = CE.el('input', { class: 'campo', 'data-campo': 'titulo-grafico', value: g.titulo, placeholder: 'Título do gráfico', oninput: () => { g.titulo = titulo.value; mostrar(); } });
+        function mostrar() {
+          previa.innerHTML = CE.graficos.desenhar(dadosDoGrafico(g), 440, 260);
+          botoes.forEach((b) => b.classList.toggle('ligado', b.dataset.tipoGrafico === g.tipo));
+        }
+        const fundo = CE.el('div', { class: 'dialogo-fundo' },
+          CE.el('div', { class: 'dialogo largo' },
+            CE.el('p', {}, `📊 Inserir gráfico com os dados ${g.intervalo}`),
+            CE.el('div', { class: 'pl-tipos-grafico' }, ...botoes),
+            CE.el('label', {}, 'Título ', titulo),
+            previa,
+            CE.el('div', { class: 'dialogo-botoes' },
+              CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Cancelar'),
+              CE.el('button', { class: 'botao', 'data-acao': 'inserir-grafico', onclick: () => {
+                fundo.remove();
+                const ref = tds[F.endereco(Math.min(COLUNAS - 1, r.c2 + 2), r.l1)];
+                g.x = ref.offsetLeft; g.y = ref.offsetTop;
+                graficoSelecionado = g.id;
+                alterar(() => { dados.graficos.push(g); });
+                const d = dadosDoGrafico(g);
+                CE.emitir('planilha:grafico', { id: g.id, tipo: g.tipo, intervalo: g.intervalo, titulo: g.titulo, categorias: d.categorias.length, series: d.series.length });
+              } }, 'Inserir gráfico'))));
+        document.body.append(fundo);
+        mostrar();
+      }
+
       // ---------- Arquivo ----------
       async function salvar() {
         terminarEdicao(true);
@@ -451,15 +755,14 @@
       }
       async function novo() {
         if (modificado && await CE.confirmar('Quer salvar a planilha atual antes de começar uma nova?')) { if (!await salvar()) return; }
-        dados = { celulas: {}, larguras: {} };
+        dados = planilhaVazia();
         nomeArquivo = null; modificado = false; desfazer = []; refazer = [];
         aplicarLarguras(); selecionar('A1'); recalcular();
         CE.emitir('planilha:nova');
       }
       function carregar(arquivo) {
         try { dados = JSON.parse(arquivo.conteudo || '{}'); } catch { dados = {}; }
-        dados.celulas = dados.celulas || {};
-        dados.larguras = dados.larguras || {};
+        dados = { ...planilhaVazia(), ...dados };
         nomeArquivo = arquivo.nome; modificado = false; desfazer = []; refazer = [];
         aplicarLarguras(); selecionar('A1'); recalcular();
         CE.emitir('arquivo:aberto', { nome: arquivo.nome, tipo: 'planilha' });
@@ -498,6 +801,12 @@
           CE.el('div', { class: 'ferramentas-grupo' },
             fb('autosoma', 'Σ AutoSoma', 'Soma automática dos números de cima', autoSoma, 'texto'),
             CE.el('div', { class: 'ed-novo pl-fx' }, fb('funcoes', 'fx Funções ▾', 'Escolher uma função', () => { menuFuncoes.hidden = !menuFuncoes.hidden; }, 'texto'), menuFuncoes)),
+          CE.el('div', { class: 'ferramentas-grupo' },
+            fb('classificar-az', '🔤 A→Z', 'Classificar em ordem crescente (de A a Z, do menor para o maior)', () => classificar('az'), 'texto'),
+            fb('classificar-za', 'Z→A', 'Classificar em ordem decrescente (de Z a A, do maior para o menor)', () => classificar('za'), 'texto'),
+            fb('filtro', '🔽 Filtro', 'Ligar ou desligar o filtro (mostrar só algumas linhas)', alternarFiltro, 'texto'),
+            fb('grafico', '📊 Gráfico', 'Fazer um gráfico com os dados selecionados', dialogoGrafico, 'texto'),
+            fb('destacar', '🎨 Destacar', 'Pintar sozinho as células que seguem uma regra (formatação condicional)', dialogoDestacar, 'texto')),
         ),
         CE.el('div', { class: 'pl-barra' }, caixaNome, CE.el('span', { class: 'pl-fx-rotulo' }, 'fx'), barraFormula),
         grade,
@@ -515,6 +824,11 @@
         formato: (ref) => formatoDe(String(ref).toUpperCase()),
         texto: (ref) => F.textoDe(valorDe(String(ref).toUpperCase()), formatoDe(String(ref).toUpperCase()).formato),
         largura: (col) => dados.larguras[String(col).toUpperCase()] || LARGURA,
+        graficos: () => (dados.graficos || []).map((g) => ({ ...g, dados: dadosDoGrafico(g) })),
+        filtro: () => dados.filtro,
+        condicionais: () => dados.condicionais || [],
+        linhaVisivel: (n) => !corpoTabela.children[n - 1].classList.contains('pl-oculta'),
+        destacada: (ref) => tds[String(ref).toUpperCase()].classList.contains('destacada'),
       };
       CE.planilhaAtiva = api;
       const pararAtivar = CE.ouvir('janela:ativada', (d) => { if (d.app === 'planilha') CE.planilhaAtiva = api; });
@@ -537,6 +851,7 @@
           }
           pararAtivar();
           document.removeEventListener('pointerup', aoSoltar);
+          fecharMenuFiltro();
           if (CE.planilhaAtiva === api) CE.planilhaAtiva = null;
           return true;
         },

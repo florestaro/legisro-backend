@@ -6,6 +6,8 @@
     documento: { icone: '📄', app: 'editor', nome: 'Documento de texto' },
     imagem: { icone: '🖼️', app: 'desenho', nome: 'Desenho' },
     planilha: { icone: '📊', app: 'planilha', nome: 'Planilha' },
+    pdf: { icone: '📕', app: 'leitor-pdf', nome: 'Documento PDF' },
+    apresentacao: { icone: '📽️', app: 'apresentacoes', nome: 'Apresentação' },
   };
   const NOME_LOCAL = { pc: 'Meus Documentos', pendrive: 'Pen drive (E:)', lixeira: 'Lixeira' };
   const { juntar, dentroDe } = CE.caminhos;

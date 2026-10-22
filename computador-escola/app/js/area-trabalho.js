@@ -15,7 +15,7 @@ window.CE = window.CE || {};
 
   function montarIcones() {
     const lista = $('icones');
-    lista.replaceChildren(...appsDoUsuario().map((app) => {
+    lista.replaceChildren(...appsDoUsuario().filter((a) => !a.semIcone).map((app) => {
       const icone = CE.el('button', { class: 'icone', 'data-icone': app.id, title: app.nome },
         CE.el('span', { class: 'icone-imagem' }, app.icone),
         CE.el('span', { class: 'icone-nome' }, app.nome),
