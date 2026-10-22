@@ -209,6 +209,25 @@
       // ---------- Mouse ----------
       let arrastando = null; // 'selecao' | 'referencia' | 'alca'
       grade.addEventListener('pointerdown', (e) => {
+        // Cabeçalho de linha (1, 2, 3...) ou de coluna (A, B, C...): seleciona a linha ou a coluna inteira.
+        const cabLinha = e.target.closest('th.pl-cab-lin'), cabColuna = e.target.closest('th.pl-cab-col');
+        if ((cabLinha || cabColuna) && !e.target.closest('[data-redim]')) {
+          if (editando) terminarEdicao(true);
+          e.preventDefault();
+          const l = cabLinha ? Number(cabLinha.textContent) - 1 : null, c = cabColuna ? F.letraParaNumero(cabColuna.dataset.coluna) : null;
+          const dentro = e.button === 2 && (cabLinha ? linhaInteira(l) : colunaInteira(c));
+          if (!dentro) selecionarFaixa(cabLinha ? F.endereco(0, l) : F.endereco(c, 0), cabLinha ? F.endereco(COLUNAS - 1, l) : F.endereco(c, LINHAS - 1));
+          grade.focus({ preventScroll: true });
+          return;
+        }
+        // Botão direito numa célula: se ela está fora da seleção, seleciona só ela (como no Excel); o menu aparece no "contextmenu".
+        if (e.button === 2) {
+          const tdDireito = e.target.closest('td[data-celula]');
+          if (tdDireito && !celulasDaSelecao().includes(tdDireito.dataset.celula)) { if (editando) terminarEdicao(true); selecionar(tdDireito.dataset.celula); }
+          e.preventDefault();
+          grade.focus({ preventScroll: true });
+          return;
+        }
         const botaoFiltro = e.target.closest('.pl-filtro-botao');
         if (botaoFiltro) { e.preventDefault(); e.stopPropagation(); abrirMenuFiltro(botaoFiltro.dataset.filtro); return; }
         const redim = e.target.closest('[data-redim]');
@@ -381,6 +400,7 @@
         CE.avisar(recortar ? '✂️ Recortado. Clique na célula de destino e aperte Ctrl+V.' : '📋 Copiado. Clique na célula de destino e aperte Ctrl+V.');
         CE.emitir('planilha:copiada', { intervalo: nomeSelecao(), recortar });
       }
+      function colarCelulas() { colar(); }
       function colar() {
         if (!areaCopia) return;
         const de = posicao(areaCopia.de), para = posicao(ativa);
@@ -486,6 +506,138 @@
           for (let l = r.l1 + 1; l <= r.l2; l++) if (typeof valorDe(F.endereco(c, l)) === 'number') numeros = true;
         }
         return textos && (numeros || negrito);
+      }
+
+      // ---------- Linhas e colunas inteiras (cabeçalhos e botão direito) ----------
+      function selecionarFaixa(de, ate) {
+        ancora = de; ativa = de; fim = ate;
+        pintarSelecao();
+        CE.emitir('planilha:selecao', { de, ate, intervalo: nomeSelecao(), celulas: celulasDaSelecao().length });
+      }
+      const linhaInteira = (l) => { const r = faixa(); return r.c1 === 0 && r.c2 === COLUNAS - 1 && l >= r.l1 && l <= r.l2; };
+      const colunaInteira = (c) => { const r = faixa(); return r.l1 === 0 && r.l2 === LINHAS - 1 && c >= r.c1 && c <= r.c2; };
+
+      // Inserir ou excluir uma linha ou coluna: as células andam e as fórmulas continuam apontando para os mesmos
+      // dados (=SOMA(B2:B5) vira =SOMA(B2:B6) quando entra uma linha no meio), como no Excel.
+      function deslocar(texto, tipo, k, delta) {
+        const num = (letras) => F.letraParaNumero(letras.toUpperCase());
+        const mover = (fixaC, col, fixaL, lin, papel) => {
+          let c = num(col), l = Number(lin) - 1;
+          let p = tipo === 'lin' ? l : c;
+          if (delta > 0) { if (p >= k) p += delta; } else if (papel === 'fim' ? p >= k : p > k) p += delta;
+          if (p < 0) return null;
+          if (tipo === 'lin') l = p; else c = p;
+          return `${fixaC}${F.numeroParaLetra(c)}${fixaL}${l + 1}`;
+        };
+        const removida = (col, lin) => (tipo === 'lin' ? Number(lin) - 1 : num(col)) === k;
+        return texto.replace(/("[^"]*")|(\$?)([A-Z]{1,2})(\$?)(\d+)(?::(\$?)([A-Z]{1,2})(\$?)(\d+))?(?![\w(.])/gi, (tudo, aspas, fc1, c1, fl1, l1, fc2, c2, fl2, l2) => {
+          if (aspas) return aspas;
+          if (c2 == null) { // uma célula só
+            if (delta < 0 && removida(c1, l1)) return F.ERRO.REF;
+            return mover(fc1, c1, fl1, l1, 'inicio') || F.ERRO.REF;
+          }
+          // intervalo: se a linha (ou coluna) apagada era o intervalo inteiro, vira #REF!
+          if (delta < 0 && removida(c1, l1) && removida(c2, l2)) return F.ERRO.REF;
+          const a = mover(fc1, c1, fl1, l1, 'inicio'), b = mover(fc2, c2, fl2, l2, 'fim');
+          return a && b ? `${a}:${b}` : F.ERRO.REF;
+        });
+      }
+      function inserirOuExcluir(tipo, delta) {
+        terminarEdicao(true);
+        const r = faixa();
+        const k = tipo === 'lin' ? r.l1 : r.c1;
+        const ultimo = tipo === 'lin' ? LINHAS - 1 : COLUNAS - 1;
+        const temNaUltima = Object.keys(dados.celulas).some((ref) => { const p = posicao(ref); return (tipo === 'lin' ? p.lin : p.col) === ultimo && dados.celulas[ref].v !== ''; });
+        if (delta > 0 && temNaUltima) { CE.avisar(`Não dá para inserir: a última ${tipo === 'lin' ? 'linha' : 'coluna'} da planilha tem dados.`); return; }
+        alterar(() => {
+          const novas = {};
+          Object.entries(dados.celulas).forEach(([ref, c]) => {
+            const p = posicao(ref);
+            let { col, lin } = p;
+            const pos = tipo === 'lin' ? lin : col;
+            if (delta < 0 && pos === k) return; // a linha (ou coluna) que saiu
+            if (pos >= k + (delta < 0 ? 1 : 0)) { if (tipo === 'lin') lin += delta; else col += delta; }
+            if (lin < 0 || col < 0 || lin >= LINHAS || col >= COLUNAS) return;
+            novas[F.endereco(col, lin)] = { v: String(c.v || '').startsWith('=') ? deslocar(c.v, tipo, k, delta) : c.v, f: c.f || {} };
+          });
+          dados.celulas = novas;
+          const faixaTexto = (t) => deslocar(t, tipo, k, delta);
+          (dados.graficos || []).forEach((g) => { if (g.intervalo) g.intervalo = faixaTexto(g.intervalo); });
+          dados.condicionais = (dados.condicionais || []).map((x) => ({ ...x, intervalo: faixaTexto(x.intervalo) })).filter((x) => !String(x.intervalo).startsWith('#'));
+          dados.graficos = (dados.graficos || []).filter((g) => !String(g.intervalo || '').startsWith('#'));
+          if (dados.filtro) dados.filtro = null; // o filtro precisa ser ligado de novo depois de mudar as linhas
+          if (tipo === 'col') {
+            const larguras = {};
+            Object.entries(dados.larguras || {}).forEach(([letra, w]) => {
+              const c = F.letraParaNumero(letra);
+              if (delta < 0 && c === k) return;
+              const n = c >= k + (delta < 0 ? 1 : 0) ? c + delta : c;
+              if (n >= 0 && n < COLUNAS) larguras[F.numeroParaLetra(n)] = w;
+            });
+            dados.larguras = larguras;
+            aplicarLarguras();
+          }
+        });
+        const nome = tipo === 'lin' ? `linha ${k + 1}` : `coluna ${F.numeroParaLetra(k)}`;
+        CE.emitir(delta > 0 ? 'planilha:inserida' : 'planilha:excluida', { tipo: tipo === 'lin' ? 'linha' : 'coluna', [tipo === 'lin' ? 'linha' : 'coluna']: tipo === 'lin' ? k + 1 : F.numeroParaLetra(k) });
+        CE.avisar(delta > 0 ? `➕ Nova ${tipo === 'lin' ? 'linha inserida acima da' : 'coluna inserida à esquerda da'} ${nome} antiga.` : `➖ ${nome[0].toUpperCase() + nome.slice(1)} excluída.`);
+        grade.focus({ preventScroll: true });
+      }
+      function limparConteudo() {
+        alterar(() => celulasDaSelecao().forEach((ref) => definirEntrada(ref, '')));
+        CE.emitir('planilha:apagada', { intervalo: nomeSelecao(), pelo: 'menu' });
+      }
+
+      // ---------- Botão direito na planilha ----------
+      grade.addEventListener('contextmenu', (e) => {
+        const naCelula = e.target.closest('td[data-celula]'), cabLinha = e.target.closest('th.pl-cab-lin'), cabColuna = e.target.closest('th.pl-cab-col');
+        if (!naCelula && !cabLinha && !cabColuna) return;
+        if (editando && naCelula) return; // escrevendo dentro da célula: fica o menu de texto
+        const op = (id, rotulo, icone, acao, extra = {}) => ({ id, rotulo, icone, acao, ...extra });
+        const r = faixa();
+        const colar = op('colar', 'Colar', '📌', colarCelulas, { atalho: 'Ctrl+V', desativado: !areaCopia });
+        const basicos = [op('recortar', 'Recortar', '✂️', () => copiar(true), { atalho: 'Ctrl+X' }), op('copiar', 'Copiar', '📋', () => copiar(), { atalho: 'Ctrl+C' }), colar, '-'];
+        if (cabLinha || cabColuna) {
+          const linha = !!cabLinha;
+          CE.menuContexto.abrir(e, linha ? 'planilha-linha' : 'planilha-coluna', [...basicos,
+            op('inserir', 'Inserir', '➕', () => inserirOuExcluir(linha ? 'lin' : 'col', 1)),
+            op('excluir', 'Excluir', '➖', () => inserirOuExcluir(linha ? 'lin' : 'col', -1)),
+            op('limpar', 'Limpar conteúdo', '🧽', limparConteudo),
+            '-',
+            op('formatar', 'Formatar células', '🎨', null, { submenu: submenuFormatar() }),
+          ], linha ? String(r.l1 + 1) : F.numeroParaLetra(r.c1));
+          return;
+        }
+        CE.menuContexto.abrir(e, 'planilha', [...basicos,
+          op('inserir', 'Inserir', '➕', null, { submenu: [
+            op('inserir-linha', 'Linha inteira acima', '⬆️', () => inserirOuExcluir('lin', 1)),
+            op('inserir-coluna', 'Coluna inteira à esquerda', '⬅️', () => inserirOuExcluir('col', 1)),
+          ] }),
+          op('excluir', 'Excluir', '➖', null, { submenu: [
+            op('excluir-linha', `Linha inteira (linha ${r.l1 + 1})`, '↕️', () => inserirOuExcluir('lin', -1)),
+            op('excluir-coluna', `Coluna inteira (coluna ${F.numeroParaLetra(r.c1)})`, '↔️', () => inserirOuExcluir('col', -1)),
+          ] }),
+          op('limpar', 'Limpar conteúdo', '🧽', limparConteudo, { atalho: 'Delete' }),
+          '-',
+          op('classificar', 'Classificar', '🔤', null, { submenu: [
+            op('classificar-az', 'Do menor para o maior (A → Z)', '', () => classificar('az')),
+            op('classificar-za', 'Do maior para o menor (Z → A)', '', () => classificar('za')),
+          ] }),
+          op('filtrar', dados.filtro ? 'Tirar o filtro' : 'Filtrar', '⏷', alternarFiltro),
+          '-',
+          op('formatar', 'Formatar células', '🎨', null, { submenu: submenuFormatar() }),
+        ], ativa);
+      });
+      function submenuFormatar() {
+        const op = (id, rotulo, icone, acao) => ({ id, rotulo, icone, acao });
+        return [
+          op('formatar-negrito', 'Negrito', '𝐍', () => formatar('negrito')),
+          '-',
+          op('formatar-moeda', 'Moeda (R$ 1.234,56)', 'R$', () => formatar('formato', 'moeda')),
+          op('formatar-porcentagem', 'Porcentagem (15%)', '%', () => formatar('formato', 'porcentagem')),
+          op('formatar-decimal', 'Número com 2 casas (1,50)', ',00', () => formatar('formato', 'decimal')),
+          op('formatar-geral', 'Geral (sem formato)', '123', () => formatar('formato', 'geral')),
+        ];
       }
 
       // ---------- Classificar ----------

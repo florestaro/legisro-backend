@@ -55,6 +55,21 @@ window.CE = window.CE || {};
     CE.emitir(maximizada ? 'janela:maximizada' : 'janela:normal', { app: id });
   }
 
+  // Botão direito na barra de título: o mesmo menu do Windows (Restaurar, Minimizar, Maximizar, Fechar).
+  function menuDaJanela(e, id) {
+    const j = abertas[id];
+    if (!j) return;
+    const maximizada = j.elemento.classList.contains('maximizada');
+    focar(id);
+    CE.menuContexto.abrir(e, 'barra-titulo', [
+      { id: 'restaurar', rotulo: 'Restaurar', icone: '🗗', desativado: !maximizada, acao: () => alternarMaximizar(id) },
+      { id: 'minimizar', rotulo: 'Minimizar', icone: '–', acao: () => minimizar(id) },
+      { id: 'maximizar', rotulo: 'Maximizar', icone: '□', desativado: maximizada, acao: () => alternarMaximizar(id) },
+      '-',
+      { id: 'fechar', rotulo: 'Fechar', icone: '✕', negrito: true, acao: () => fechar(id) },
+    ], id);
+  }
+
   function fechar(id) {
     const j = abertas[id];
     if (!j) return;
@@ -89,6 +104,7 @@ window.CE = window.CE || {};
       titulo.addEventListener('pointerup', soltar);
     });
     titulo.addEventListener('dblclick', (e) => { if (!e.target.closest('button')) alternarMaximizar(id); });
+    titulo.addEventListener('contextmenu', (e) => menuDaJanela(e, id));
   }
 
   CE.janelas = {
@@ -136,6 +152,12 @@ window.CE = window.CE || {};
           else minimizar(id);
         },
       }, CE.el('span', {}, app.icone), CE.el('span', { class: 'tarefa-nome' }, app.nome));
+      // Botão direito no programa da barra de tarefas: abrir ou "Fechar janela", como no Windows.
+      botaoTarefa.addEventListener('contextmenu', (e) => CE.menuContexto.abrir(e, 'barra-tarefas', [
+        { id: 'abrir-programa', rotulo: app.nome, icone: app.icone, acao: () => restaurar(id) },
+        '-',
+        { id: 'fechar-janela', rotulo: 'Fechar janela', icone: '✕', acao: () => fechar(id) },
+      ], id));
 
       area().append(janela);
       barra().append(botaoTarefa);
@@ -162,6 +184,11 @@ window.CE = window.CE || {};
       });
     },
     estaAberta: (id) => !!abertas[id],
+    // "Mostrar a área de trabalho": minimiza tudo.
+    minimizarTodas() {
+      Object.keys(abertas).forEach((id) => { if (!abertas[id].elemento.classList.contains('minimizada')) minimizar(id); });
+      CE.emitir('area:mostrada');
+    },
     // Programa em primeiro plano (para o professor saber onde o aluno está).
     ativa() {
       const id = Object.keys(abertas).find((k) => abertas[k].elemento.classList.contains('ativa') && !abertas[k].elemento.classList.contains('minimizada'));

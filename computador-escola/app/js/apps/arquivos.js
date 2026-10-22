@@ -21,6 +21,7 @@
       let lugar = { local: (argumento && argumento.pasta === 'lixeira') ? 'lixeira' : localInicial, pasta: '' };
       let selecionado = null;
       let termo = '';
+      let ordem = 'nome'; // Classificar por: nome, data ou tipo (botão direito no espaço vazio)
       const lista = CE.el('div', { class: 'arq-lista', role: 'list' });
       const status = CE.el('div', { class: 'arq-status' });
       const caminho = CE.el('div', { class: 'arq-caminho' });
@@ -88,10 +89,161 @@
         document.body.append(fundo);
       }
 
+      // Um nome que ainda não existe nesta pasta: "Nova pasta", "Nova pasta (2)"... (como o Windows faz).
+      async function nomeLivre(base) {
+        const aqui = (await tudo()).filter((a) => !a.naLixeira && (a.local || 'pc') === lugar.local && (a.pasta || '') === lugar.pasta).map((a) => a.nome.toLowerCase());
+        if (!aqui.includes(base.toLowerCase())) return base;
+        let n = 2;
+        while (aqui.includes(`${base} (${n})`.toLowerCase())) n++;
+        return `${base} (${n})`;
+      }
+
       async function novaPasta() {
-        const nome = await CE.perguntar('Qual o nome da nova pasta?', 'Nova pasta');
+        const nome = await CE.perguntar('Qual o nome da nova pasta?', await nomeLivre('Nova pasta'));
         if (!nome) return;
         try { await CE.sessao.criarPasta(nome, lugar.local, lugar.pasta); desenhar(); } catch (e) { avisoErro(e); }
+      }
+
+      // Botão direito › Novo › Documento de texto ou Planilha: cria o arquivo vazio aqui e pergunta o nome.
+      const NOVOS = { documento: ['Novo documento', ''], planilha: ['Nova planilha', JSON.stringify({ celulas: {}, larguras: {} })] };
+      async function novoArquivo(tipo) {
+        const [base, conteudo] = NOVOS[tipo];
+        const nome = await CE.perguntar(`Qual o nome do novo ${TIPOS[tipo].nome.toLowerCase()}?`, await nomeLivre(base));
+        if (!nome || !nome.trim()) return;
+        const limpo = nome.trim().replace(/[\\/]/g, '-');
+        if ((await nomeLivre(limpo)) !== limpo) { CE.avisar(`Já existe um arquivo chamado "${limpo}" aqui. Escolha outro nome.`); return; }
+        const criado = await CE.sessao.salvarArquivo({ nome: limpo, tipo, conteudo, local: lugar.local, pasta: lugar.pasta });
+        CE.emitir('arquivo:novo', { nome: limpo, tipo, local: lugar.local, pasta: lugar.pasta });
+        selecionado = criado;
+        desenhar();
+      }
+
+      // Botão direito › Enviar para › Pen drive: copia para a raiz do pen drive.
+      async function enviarParaPendrive(item) {
+        if (!CE.pendrive.conectado) { CE.avisar('Conecte o pen drive primeiro (ícone 🔌 na barra de tarefas).'); return; }
+        try {
+          await CE.sessao.copiarArquivo(item.id, 'pendrive', '');
+          CE.avisar(`💾 "${item.nome}" foi copiado para o Pen drive (E:).`);
+          CE.emitir('arquivo:enviado', { nome: item.nome, tipo: item.tipo, para: 'pendrive' });
+        } catch (e) { avisoErro(e); }
+      }
+
+      const tamanhoDe = (a, todos) => {
+        const bytes = a.tipo === 'pasta'
+          ? todos.filter((x) => !x.naLixeira && (x.local || 'pc') === (a.local || 'pc') && dentroDe(x.pasta || '', juntar(a.pasta, a.nome))).reduce((s, x) => s + String(x.conteudo || '').length, 0)
+          : String(a.conteudo || '').length;
+        return bytes < 1024 ? `${bytes} bytes` : bytes < 1024 * 1024 ? `${(bytes / 1024).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} KB` : `${(bytes / 1048576).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} MB`;
+      };
+      const ondeFica = (local, pasta) => ['Este Computador', NOME_LOCAL[local], ...(pasta ? pasta.split('/') : [])].join(' › ');
+      const quando = (t) => (t ? new Date(t).toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' }) : '—');
+
+      async function propriedades(a) {
+        const todos = await tudo();
+        const local = a.local || 'pc';
+        let conteudo = null;
+        if (a.tipo === 'pasta') {
+          const dentro = todos.filter((x) => !x.naLixeira && (x.local || 'pc') === local && dentroDe(x.pasta || '', juntar(a.pasta, a.nome)));
+          const pastas = dentro.filter((x) => x.tipo === 'pasta').length;
+          conteudo = `${dentro.length - pastas} arquivo${dentro.length - pastas === 1 ? '' : 's'}, ${pastas} pasta${pastas === 1 ? '' : 's'}`;
+        }
+        CE.mostrarPropriedades(a.nome, TIPOS[a.tipo].icone, [
+          ['Tipo', TIPOS[a.tipo].nome],
+          a.tipo !== 'pasta' && TIPOS[a.tipo].app ? ['Abre com', CE.app(TIPOS[a.tipo].app) ? CE.app(TIPOS[a.tipo].app).nome : '—'] : null,
+          ['Local', a.naLixeira ? 'Lixeira' : ondeFica(local, a.pasta || '')],
+          ['Tamanho', tamanhoDe(a, todos)],
+          conteudo ? ['Contém', conteudo] : null,
+          ['Criado em', quando(a.criadoEm)],
+          a.naLixeira ? ['Excluído em', quando(a.excluidoEm)] : ['Modificado em', quando(a.alteradoEm)],
+        ], 'arquivo');
+      }
+
+      async function propriedadesDoLugar() {
+        const todos = await tudo();
+        const dentro = todos.filter((x) => !x.naLixeira && (x.local || 'pc') === lugar.local && (!lugar.pasta || dentroDe(x.pasta || '', lugar.pasta)));
+        CE.mostrarPropriedades(lugar.pasta ? lugar.pasta.split('/').pop() : NOME_LOCAL[lugar.local], lugar.local === 'pendrive' ? '💾' : '📁', [
+          ['Local', ondeFica(lugar.local, lugar.pasta)],
+          ['Contém', `${dentro.filter((x) => x.tipo !== 'pasta').length} arquivo(s), ${dentro.filter((x) => x.tipo === 'pasta').length} pasta(s)`],
+          lugar.local === 'pendrive' ? ['Espaço', 'Pen drive de treino de 8 GB (quase todo livre)'] : null,
+        ], 'pasta');
+      }
+
+      // ---------- Menus do botão direito ----------
+      const op = (id, rotulo, icone, acao, extra = {}) => ({ id, rotulo, icone, acao, ...extra });
+      function menuDoItem(e, a) {
+        if (lugar.local === 'lixeira') {
+          CE.menuContexto.abrir(e, 'lixeira', [
+            op('restaurar', 'Restaurar', '↩️', () => restaurarItem(a), { negrito: true }),
+            '-',
+            op('excluir', 'Excluir', '❌', () => apagarItem(a), { atalho: 'Delete' }),
+            '-',
+            op('propriedades', 'Propriedades', 'ℹ️', () => propriedades(a)),
+          ], a.nome);
+          return;
+        }
+        const local = a.local || 'pc';
+        CE.menuContexto.abrir(e, 'arquivos', [
+          op('abrir', 'Abrir', '📂', () => abrirItem(a), { negrito: true }),
+          a.tipo === 'zip' ? op('extrair', 'Extrair tudo...', '📂', () => extrair(a)) : null,
+          '-',
+          op('recortar', 'Recortar', '✂️', () => guardar('recortar'), { atalho: 'Ctrl+X' }),
+          op('copiar', 'Copiar', '📋', () => guardar('copiar'), { atalho: 'Ctrl+C' }),
+          a.tipo === 'pasta' && CE.areaTransferenciaArquivos ? op('colar-na-pasta', 'Colar', '📌', () => colarEm({ local, pasta: juntar(a.pasta, a.nome) }), { atalho: 'Ctrl+V' }) : null,
+          '-',
+          op('excluir', 'Excluir', '🗑️', excluir, { atalho: 'Delete' }),
+          op('renomear', 'Renomear', '✏️', renomear, { atalho: 'F2' }),
+          '-',
+          op('enviar-para', 'Enviar para', '📤', null, { submenu: [
+            op('enviar-pendrive', 'Pen drive (E:)', '💾', () => enviarParaPendrive(a), { desativado: !CE.pendrive.conectado || local === 'pendrive', dica: CE.pendrive.conectado ? '' : 'Conecte o pen drive primeiro' }),
+            a.tipo !== 'zip' ? op('enviar-zip', 'Pasta compactada (zipada)', '🗜️', compactar) : null,
+          ] }),
+          '-',
+          op('propriedades', 'Propriedades', 'ℹ️', () => propriedades(a)),
+        ], a.nome);
+      }
+
+      function menuDoEspacoVazio(e) {
+        if (lugar.local === 'lixeira') {
+          CE.menuContexto.abrir(e, 'lixeira', [
+            op('esvaziar-lixeira', 'Esvaziar Lixeira', '🧹', esvaziar),
+            '-',
+            submenuClassificar(),
+            op('atualizar', 'Atualizar', '🔄', () => desenhar()),
+          ]);
+          return;
+        }
+        const area = CE.areaTransferenciaArquivos;
+        CE.menuContexto.abrir(e, 'arquivos-vazio', [
+          submenuClassificar(),
+          op('atualizar', 'Atualizar', '🔄', () => desenhar()),
+          '-',
+          op('colar', area ? `Colar "${area.nome}"` : 'Colar', '📌', colar, { atalho: 'Ctrl+V', desativado: !area || !!termo }),
+          '-',
+          op('novo', 'Novo', '✨', null, { desativado: !!termo, submenu: [
+            op('nova-pasta', 'Pasta', '📁', novaPasta),
+            '-',
+            op('novo-documento', 'Documento de texto', '📄', () => novoArquivo('documento')),
+            op('nova-planilha', 'Planilha', '📊', () => novoArquivo('planilha')),
+          ] }),
+          '-',
+          op('propriedades', 'Propriedades', 'ℹ️', propriedadesDoLugar),
+        ]);
+      }
+
+      function submenuClassificar() {
+        const por = (id, rotulo) => op('classificar-' + id, rotulo, '', () => { ordem = id; desenhar(); CE.emitir('arquivos:classificados', { por: id }); }, { marcado: ordem === id });
+        return op('classificar', 'Classificar por', '⇅', null, { submenu: [por('nome', 'Nome'), por('data', 'Data de modificação'), por('tipo', 'Tipo')] });
+      }
+
+      async function restaurarItem(a) { await CE.sessao.restaurarArquivo(a.id); CE.avisar(`"${a.nome}" foi restaurado.`); selecionado = null; desenhar(); }
+      async function apagarItem(a) {
+        if (!await CE.confirmar(`Apagar "${a.nome}" para sempre? Não dá para desfazer.`)) return;
+        await CE.sessao.apagarDeVez(a.id); selecionado = null; desenhar();
+      }
+      async function esvaziar() {
+        const itens = (await tudo()).filter((a) => a.naLixeira && (!a.grupoLixeira || a.grupoLixeira === a.id));
+        if (!itens.length) { CE.avisar('A Lixeira já está vazia.'); return; }
+        if (!await CE.confirmar('Esvaziar a lixeira? Todos os arquivos dela serão apagados para sempre.')) return;
+        await CE.sessao.esvaziarLixeira(); selecionado = null; desenhar();
       }
 
       async function renomear() {
@@ -119,13 +271,15 @@
         desenhar();
       }
 
-      async function colar() {
+      async function colar() { if (lugar.local !== 'lixeira') await colarEm(lugar); }
+      // Colar aqui ou dentro de uma pasta (botão direito na pasta › Colar).
+      async function colarEm(destino) {
         const area = CE.areaTransferenciaArquivos;
-        if (!area || lugar.local === 'lixeira') return;
+        if (!area) return;
         try {
-          if (area.modo === 'copiar') await CE.sessao.copiarArquivo(area.id, lugar.local, lugar.pasta);
-          else { await CE.sessao.moverArquivo(area.id, lugar.local, lugar.pasta); CE.areaTransferenciaArquivos = null; }
-          CE.emitir('arquivo:colado', { nome: area.nome, modo: area.modo, local: lugar.local, pasta: lugar.pasta });
+          if (area.modo === 'copiar') await CE.sessao.copiarArquivo(area.id, destino.local, destino.pasta);
+          else { await CE.sessao.moverArquivo(area.id, destino.local, destino.pasta); CE.areaTransferenciaArquivos = null; }
+          CE.emitir('arquivo:colado', { nome: area.nome, modo: area.modo, local: destino.local, pasta: destino.pasta });
           desenhar();
         } catch (e) { avisoErro(e); }
       }
@@ -174,6 +328,14 @@
         const raiz = (local, rotulo, dataPasta) => {
           const el = CE.el('button', { class: 'arq-pasta' + (lugar.local === local && (!lugar.pasta || local === 'lixeira') ? ' ativa' : ''), 'data-pasta': dataPasta, onclick: () => irPara({ local, pasta: '' }) }, rotulo);
           if (local !== 'lixeira') alvoDeSoltura(el, { local, pasta: '' });
+          // Botão direito na lateral: abrir; no pen drive, "Ejetar"; na Lixeira, "Esvaziar Lixeira".
+          el.addEventListener('contextmenu', (e) => CE.menuContexto.abrir(e, 'arquivos-lateral', [
+            op('abrir', 'Abrir', '📂', () => irPara({ local, pasta: '' }), { negrito: true }),
+            local === 'pendrive' ? '-' : null,
+            local === 'pendrive' ? op('ejetar', 'Ejetar', '⏏️', () => { if (lugar.local === 'pendrive') irPara({ local: 'pc', pasta: '' }); CE.pendrive.remover(); }) : null,
+            local === 'lixeira' ? '-' : null,
+            local === 'lixeira' ? op('esvaziar-lixeira', 'Esvaziar Lixeira', '🧹', esvaziar) : null,
+          ].filter(Boolean), local));
           return el;
         };
         const naLixeira = todos.filter((a) => a.naLixeira && a.grupoLixeira === a.id).length + todos.filter((a) => a.naLixeira && !a.grupoLixeira).length;
@@ -207,7 +369,12 @@
         } else {
           itens = todos.filter((a) => !a.naLixeira && (a.local || 'pc') === lugar.local && (a.pasta || '') === lugar.pasta);
         }
-        itens.sort((a, b) => (a.tipo === 'pasta') === (b.tipo === 'pasta') ? a.nome.localeCompare(b.nome) : a.tipo === 'pasta' ? -1 : 1);
+        const comparar = {
+          nome: (a, b) => a.nome.localeCompare(b.nome),
+          data: (a, b) => (b.alteradoEm || 0) - (a.alteradoEm || 0) || a.nome.localeCompare(b.nome),
+          tipo: (a, b) => TIPOS[a.tipo].nome.localeCompare(TIPOS[b.tipo].nome) || a.nome.localeCompare(b.nome),
+        }[ordem];
+        itens.sort((a, b) => (a.tipo === 'pasta') === (b.tipo === 'pasta') ? comparar(a, b) : a.tipo === 'pasta' ? -1 : 1);
         if (selecionado && !itens.some((a) => a.id === selecionado.id)) selecionado = null;
 
         janela.definirTitulo(termo ? `Pesquisa: ${termo}` : lugar.pasta ? lugar.pasta.split('/').pop() : NOME_LOCAL[lugar.local]);
@@ -260,7 +427,7 @@
             CE.el('span', { class: 'arq-data' }, new Date(naLixeira ? a.excluidoEm : a.alteradoEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })),
             CE.el('span', { class: 'arq-tipo' }, TIPOS[a.tipo].nome),
           );
-          item.addEventListener('click', () => {
+          const selecionar = () => {
             selecionado = a;
             lista.querySelectorAll('.arq-item').forEach((i) => i.classList.remove('selecionado'));
             item.classList.add('selecionado');
@@ -269,7 +436,10 @@
             if (ext) ext.disabled = a.tipo !== 'zip';
             status.textContent = `"${a.nome}" selecionado`;
             CE.emitir('arquivo:selecionado', { nome: a.nome, tipo: a.tipo, pasta: compat(lugar), local: a.local || 'pc', caminho: a.pasta || '' });
-          });
+          };
+          item.addEventListener('click', selecionar);
+          // Botão direito: seleciona o item e mostra o menu dele.
+          item.addEventListener('contextmenu', (e) => { if (!selecionado || selecionado.id !== a.id) selecionar(); menuDoItem(e, a); });
           item.addEventListener('dblclick', () => { if (!naLixeira) abrirItem(a); });
           item.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', a.id); e.dataTransfer.effectAllowed = 'copyMove'; });
           if (a.tipo === 'pasta' && !naLixeira) alvoDeSoltura(item, { local: a.local || 'pc', pasta: juntar(a.pasta, a.nome) });
@@ -292,6 +462,7 @@
         else if (e.key === 'Enter' && selecionado && lugar.local !== 'lixeira') atalho('Enter', () => abrirItem(selecionado));
         else if (e.key === 'Backspace') atalho('Backspace', subir);
       });
+      lista.addEventListener('contextmenu', (e) => { if (!e.defaultPrevented && !e.target.closest('.arq-item')) menuDoEspacoVazio(e); });
       busca.addEventListener('input', () => {
         termo = busca.value.trim();
         selecionado = null;

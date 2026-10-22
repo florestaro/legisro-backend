@@ -93,6 +93,8 @@ function registrarCanais() {
     fs.writeFileSync(destino, String(conteudo || ''), 'utf8');
     return destino;
   });
+  // "Colar" do menu do botão direito: cola o que está na área de transferência do Windows (igual ao Ctrl+V).
+  tratar('janela:colar', () => { if (janela && !janela.isDestroyed()) janela.webContents.paste(); return true; });
   // Acessibilidade: aumenta tudo na tela (letras, botões e janelas), como o zoom do Windows.
   tratar('janela:zoom', (fator) => {
     const f = Math.min(1.6, Math.max(0.8, Number(fator) || 1));

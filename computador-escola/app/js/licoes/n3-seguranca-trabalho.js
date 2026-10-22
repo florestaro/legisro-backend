@@ -144,7 +144,7 @@
           confere('Preencha a FORMAÇÃO, a EXPERIÊNCIA e as HABILIDADES (troque todos os campos entre colchetes). Em habilidades, não esqueça: informática!', () => !/\[[^\]]+\]/.test(texto()), {
             dica: 'Se não tiver experiência, escreva trabalhos voluntários, bicos ou cursos.',
           }),
-          esperar('Passe o corretor: clique em "✔️ Ortografia" e corrija o que aparecer.', 'editor:ortografia', (d) => d.restantes === 0, { destacar: naJanela('editor', '[data-comando="ortografia"]'), mouse: 'esquerdo' }),
+          esperar('Passe o corretor: clique em "✔️ Ortografia" e corrija o que aparecer (botão direito em cada palavra sublinhada).', 'editor:ortografia', (d) => d.restantes === 0, { destacar: naJanela('editor', '[data-comando="ortografia"]'), mouse: 'esquerdo' }),
           editorSalvar('Meu currículo'),
           esperar('Agora clique em "📕 PDF" e salve o PDF com o nome "Meu currículo".', 'editor:pdf', (d) => /curr[ií]culo/i.test(d.nome), { destacar: naJanela('editor', '[data-comando="pdf"]'), mouse: 'esquerdo' }),
           quiz('O currículo deve ter...', ['Informações verdadeiras e sem erros', 'Muitas cores e desenhos', 'Dez páginas'], 0),

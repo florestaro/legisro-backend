@@ -47,11 +47,13 @@
       },
       {
         id: 'n2-editor-ortografia', titulo: 'Corrigindo erros com o corretor', icone: '✔️',
-        descricao: 'Usar o botão Ortografia para achar e corrigir palavras erradas.',
+        descricao: 'Achar as palavras erradas e corrigir com o botão direito.',
         passos: [
           info('Abri um bilhete escrito com pressa, cheio de erros. O corretor ortográfico ajuda a encontrar as palavras erradas.', { emoji: '✔️', preparar: () => abrirExemplo('Bilhete com erros', 'documento', BILHETE_ERROS, true) }),
           esperar('Clique no botão "✔️ Ortografia".', 'editor:ortografia', (d) => d.acao === 'verificar' && d.encontrados > 0, { destacar: ed('[data-comando="ortografia"]'), mouse: 'esquerdo' }),
-          esperar('As palavras erradas ficaram sublinhadas de vermelho. Clique em cada uma para trocar pela forma certa.', 'editor:ortografia', (d) => d.acao === 'corrigir' && d.restantes === 0, { destacar: ed('.erro-ortografia'), mouse: 'esquerdo' }),
+          esperar('As palavras erradas ficaram sublinhadas de vermelho, igual no Word. Clique com o botão DIREITO em cada uma: no menu aparece a forma certa, em negrito. Clique nela.', 'editor:ortografia', (d) => d.acao === 'corrigir' && d.restantes === 0, {
+            destacar: ['.mc-menu [data-opcao="sugestao"]', ed('.erro-ortografia')], mouse: 'direito', dica: 'Botão direito em cima da palavra sublinhada › clique na palavra certa, lá em cima do menu.',
+          }),
           esperar('Tudo corrigido! Salve o bilhete (Ctrl+S).', 'arquivo:salvo', (d) => d.tipo === 'documento'),
           quiz('O corretor ortográfico...', ['Ajuda a achar palavras escritas errado', 'Escreve o texto sozinho', 'Muda a fonte'], 0),
           quiz('Qual é a forma certa?', ['Com certeza', 'Concerteza', 'Com serteza'], 0),

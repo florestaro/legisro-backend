@@ -459,13 +459,13 @@
             const certo = CORRECOES[p.toLowerCase()];
             if (certo) {
               encontrados++;
-              frag.append(CE.el('span', { class: 'erro-ortografia', 'data-sugestao': p[0] === p[0].toUpperCase() ? certo[0].toUpperCase() + certo.slice(1) : certo, title: `Clique para trocar por "${certo}"` }, p));
+              frag.append(CE.el('span', { class: 'erro-ortografia', 'data-sugestao': p[0] === p[0].toUpperCase() ? certo[0].toUpperCase() + certo.slice(1) : certo, title: 'Clique com o botão direito para ver a forma certa' }, p));
             } else if (p) frag.append(document.createTextNode(p));
           });
           no.replaceWith(frag);
         });
         CE.emitir('editor:ortografia', { encontrados, restantes: encontrados, acao: 'verificar' });
-        CE.avisar(encontrados ? `✏️ Encontrei ${encontrados} palavra${encontrados > 1 ? 's' : ''} com erro. Clique em cada palavra sublinhada de vermelho para corrigir.` : '✅ Não encontrei erros de ortografia!');
+        CE.avisar(encontrados ? `✏️ Encontrei ${encontrados} palavra${encontrados > 1 ? 's' : ''} com erro. Clique com o botão DIREITO em cada palavra sublinhada de vermelho e escolha a forma certa.` : '✅ Não encontrei erros de ortografia!');
       }
 
       function removerMarcas(raiz, seletor = '.erro-ortografia, .ed-achado') {
@@ -473,19 +473,100 @@
         raiz.normalize();
       }
 
-      pagina.addEventListener('click', (e) => {
+      // Palavra sublinhada de vermelho: com o botão direito aparecem a forma certa e "Ignorar" (como no Word).
+      function corrigirPalavra(erro, trocar) {
+        const errada = erro.textContent;
+        erro.replaceWith(document.createTextNode(trocar ? erro.dataset.sugestao : errada));
+        pagina.normalize();
+        modificado = true;
+        atualizarStatus();
+        const restantes = pagina.querySelectorAll('.erro-ortografia').length;
+        CE.emitir('editor:ortografia', { errada, certa: trocar ? erro.dataset.sugestao : errada, restantes, acao: trocar ? 'corrigir' : 'ignorar' });
+        CE.emitir('editor:texto', { texto: pagina.innerText, html: pagina.innerHTML });
+      }
+
+      // ---------- Fonte... e Parágrafo... (botão direito) ----------
+      function dialogoFonte() {
+        const faixa = ultimaFaixa && ultimaFaixa.cloneRange();
+        const estado = (c) => document.queryCommandState(c);
+        const fonte = CE.el('select', { class: 'campo', 'data-campo': 'fonte' }, ...FONTES.map((f) => CE.el('option', { value: f, style: `font-family:${f}` }, f)));
+        fonte.value = seletorFonte.value;
+        const estilo = CE.el('select', { class: 'campo', 'data-campo': 'estilo-fonte' }, ...[['normal', 'Normal'], ['negrito', 'Negrito'], ['italico', 'Itálico'], ['negrito-italico', 'Negrito Itálico']].map(([v, r]) => CE.el('option', { value: v }, r)));
+        estilo.value = estado('bold') && estado('italic') ? 'negrito-italico' : estado('bold') ? 'negrito' : estado('italic') ? 'italico' : 'normal';
+        const tamanho = CE.el('select', { class: 'campo', 'data-campo': 'tamanho' }, ...TAMANHOS.map(([v, r]) => CE.el('option', { value: v }, r)));
+        tamanho.value = seletorTamanho.value || '3';
+        const cor = CE.el('input', { type: 'color', class: 'ferramenta-cor', 'data-campo': 'cor', value: seletorCor.value });
+        const sublinhado = CE.el('input', { type: 'checkbox', 'data-campo': 'sublinhado' });
+        sublinhado.checked = estado('underline');
+        const amostra = CE.el('div', { class: 'ed-amostra' }, 'AaBbCc — Exemplo do texto');
+        const atualizarAmostra = () => Object.assign(amostra.style, { fontFamily: fonte.value, fontWeight: estilo.value.includes('negrito') ? '700' : '400', fontStyle: estilo.value.includes('italico') ? 'italic' : 'normal', textDecoration: sublinhado.checked ? 'underline' : 'none', color: cor.value, fontSize: (TAMANHOS.find(([v]) => v === tamanho.value) || [, '12'])[1] + 'px' });
+        [fonte, estilo, tamanho, cor, sublinhado].forEach((c) => c.addEventListener('input', atualizarAmostra));
+        atualizarAmostra();
+        const fundo = CE.el('div', { class: 'dialogo-fundo' }, CE.el('div', { class: 'dialogo ed-dialogo-fonte', 'data-dialogo': 'fonte' },
+          CE.el('p', {}, CE.el('b', {}, 'Fonte')),
+          CE.el('div', { class: 'ed-grade-fonte' },
+            CE.el('label', {}, 'Fonte', fonte), CE.el('label', {}, 'Estilo', estilo), CE.el('label', {}, 'Tamanho', tamanho),
+            CE.el('label', {}, 'Cor', cor), CE.el('label', { class: 'painel-check' }, sublinhado, ' Sublinhado')),
+          amostra,
+          CE.el('div', { class: 'dialogo-botoes' },
+            CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Cancelar'),
+            CE.el('button', { class: 'botao', 'data-acao': 'aplicar-fonte', onclick: () => {
+              fundo.remove();
+              if (faixa) ultimaFaixa = faixa;
+              const quer = { bold: estilo.value.includes('negrito'), italic: estilo.value.includes('italico'), underline: sublinhado.checked };
+              executar('fontName', fonte.value); seletorFonte.value = fonte.value;
+              executar('fontSize', tamanho.value); seletorTamanho.value = tamanho.value;
+              executar('foreColor', cor.value); seletorCor.value = cor.value;
+              Object.entries(quer).forEach(([c, ligado]) => { recuperarSelecao(); if (document.queryCommandState(c) !== ligado) executar(c); });
+              CE.emitir('editor:fonte', { fonte: fonte.value, tamanho: tamanho.value, cor: cor.value, ...quer, selecionado: textoSelecionado() });
+            } }, 'OK'))));
+        document.body.append(fundo);
+        fonte.focus();
+      }
+
+      function dialogoParagrafo() {
+        const faixa = ultimaFaixa && ultimaFaixa.cloneRange();
+        const alinhamento = CE.el('select', { class: 'campo', 'data-campo': 'alinhamento' }, ...[['justifyLeft', 'Esquerda'], ['justifyCenter', 'Centralizado'], ['justifyRight', 'Direita'], ['justifyFull', 'Justificado']].map(([v, r]) => CE.el('option', { value: v }, r)));
+        alinhamento.value = ['justifyCenter', 'justifyRight', 'justifyFull'].find((c) => document.queryCommandState(c)) || 'justifyLeft';
+        const espacamento = CE.el('select', { class: 'campo', 'data-campo': 'espacamento' }, ...ESPACAMENTOS.map(([v, r]) => CE.el('option', { value: v }, r)));
+        espacamento.value = '1.15';
+        const recuo = CE.el('select', { class: 'campo', 'data-campo': 'recuo' }, CE.el('option', { value: '0' }, '(nenhum)'), CE.el('option', { value: '47px' }, 'Primeira linha: 1,25 cm (ABNT)'));
+        const fundo = CE.el('div', { class: 'dialogo-fundo' }, CE.el('div', { class: 'dialogo ed-dialogo-fonte', 'data-dialogo': 'paragrafo' },
+          CE.el('p', {}, CE.el('b', {}, 'Parágrafo')),
+          CE.el('div', { class: 'ed-grade-fonte' },
+            CE.el('label', {}, 'Alinhamento', alinhamento), CE.el('label', {}, 'Espaçamento entre linhas', espacamento), CE.el('label', {}, 'Recuo especial', recuo)),
+          CE.el('div', { class: 'dialogo-botoes' },
+            CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Cancelar'),
+            CE.el('button', { class: 'botao', 'data-acao': 'aplicar-paragrafo', onclick: () => {
+              fundo.remove();
+              if (faixa) ultimaFaixa = faixa;
+              executar(alinhamento.value);
+              aplicarEspacamento(espacamento.value);
+              blocosSelecionados().forEach((b) => { b.style.textIndent = recuo.value === '0' ? '' : recuo.value; });
+              CE.emitir('editor:paragrafo', { alinhamento: alinhamento.value, espacamento: espacamento.value, recuo: recuo.value });
+            } }, 'OK'))));
+        document.body.append(fundo);
+        alinhamento.focus();
+      }
+
+      pagina.addEventListener('contextmenu', (e) => {
         const erro = e.target.closest('.erro-ortografia');
-        if (erro) {
-          const errada = erro.textContent;
-          erro.replaceWith(document.createTextNode(erro.dataset.sugestao));
-          pagina.normalize();
-          modificado = true;
-          atualizarStatus();
-          const restantes = pagina.querySelectorAll('.erro-ortografia').length;
-          CE.emitir('editor:ortografia', { errada, certa: erro.dataset.sugestao, restantes, acao: 'corrigir' });
-          CE.emitir('editor:texto', { texto: pagina.innerText, html: pagina.innerHTML });
-          return;
-        }
+        const celula = e.target.closest('td');
+        const texto = CE.menuContexto.texto;
+        CE.menuContexto.abrir(e, 'editor', [
+          erro ? { id: 'sugestao', rotulo: erro.dataset.sugestao, negrito: true, icone: '✔️', acao: () => corrigirPalavra(erro, true) } : null,
+          erro ? { id: 'ignorar', rotulo: 'Ignorar', acao: () => corrigirPalavra(erro, false) } : null,
+          erro ? '-' : null,
+          ...texto.itens({ desfazer: false, selecionarTudo: false }).filter((i) => i.id !== 'excluir'),
+          '-',
+          { id: 'fonte', rotulo: 'Fonte...', icone: '𝐀', acao: dialogoFonte },
+          { id: 'paragrafo', rotulo: 'Parágrafo...', icone: '¶', acao: dialogoParagrafo },
+          celula ? '-' : null,
+          celula ? { id: 'inserir-linha-tabela', rotulo: 'Inserir linha abaixo', icone: '➕', acao: inserirLinhaTabela } : null,
+        ].filter(Boolean), erro ? erro.textContent : '');
+      });
+
+      pagina.addEventListener('click', (e) => {
         // Clicar num campo [entre colchetes] de um modelo seleciona o campo inteiro: é só escrever por cima.
         const campoModelo = e.target.closest('.campo-modelo');
         if (campoModelo && /^\[.*\]$/.test(campoModelo.textContent.trim())) {

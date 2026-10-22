@@ -7,14 +7,14 @@ conversa e tira dúvidas. **Funciona sem internet.**
 ## O que já tem
 
 ### Curso de Informática: 3 níveis (um por semestre)
-- **Nível Iniciante completo: 46 aulas em 10 módulos.** Os módulos são: Conhecendo o computador, Mouse, Teclado,
+- **Nível Iniciante completo: 48 aulas em 10 módulos.** Os módulos são: Conhecendo o computador, Mouse, Teclado,
   Janelas e menu Iniciar, Arquivos e pastas, Editor de Texto, Calculadora e Desenho, **Internet**, Segurança básica e a
   Prova do nível.
 - **Teste de nivelamento** no primeiro acesso do aluno: com 80% e sem pular tarefas, as aulas do Iniciante ficam
   dispensadas (continuam abertas para revisão).
 - Cada aula tem explicação, prática guiada (com a seta vermelha e o desenho do mouse) e perguntas. Cada módulo termina
   num **desafio sem ajuda**, e o nível termina numa **prova**.
-- **Nível Intermediário completo: 40 aulas em 8 módulos.** Os módulos são: Pastas e organização (com pen drive),
+- **Nível Intermediário completo: 41 aulas em 8 módulos.** Os módulos são: Pastas e organização (com pen drive),
   Atalhos de teclado, Editor de Texto (carta, currículo, requerimento, tabela, imagem, corretor, imprimir),
   **Planilha** (fórmulas, SOMA, alça de preenchimento, notas, orçamento da casa), Internet segura e downloads,
   **E-mail**, **Serviços pela internet** (banco, Pix, boleto, agendamento) e a Prova do nível.
@@ -29,6 +29,15 @@ conversa e tira dúvidas. **Funciona sem internet.**
 - **O aluno só avança quando é aprovado** (70% nas perguntas). O instrutor tem tudo liberado (aulas, níveis de
   digitação, jogos e os programas instaláveis) e pode **liberar aulas fora da sequência** para um aluno ou para a turma
   (veja "Painel do Instrutor" abaixo).
+- **Botão direito do mouse igual ao do Windows**, em todo o sistema: área de trabalho (Exibir › tamanho dos ícones,
+  Atualizar, Personalizar), ícones (Abrir, Propriedades; na Lixeira, Esvaziar Lixeira), botão Iniciar, barra de tarefas
+  ("Fechar janela", "Mostrar a área de trabalho"), barra de título (Restaurar, Minimizar, Maximizar, Fechar), Arquivos e
+  Lixeira (Abrir, Recortar, Copiar, Colar, Excluir, Renomear, Novo › Pasta/Documento/Planilha, Classificar por, Enviar
+  para › Pen drive ou ZIP, Propriedades, Ejetar o pen drive, Restaurar), Editor (sugestões do corretor, Recortar, Copiar,
+  Colar, Fonte..., Parágrafo...), Planilha (Inserir e Excluir linha ou coluna com as fórmulas acompanhando, Limpar
+  conteúdo, Classificar, Filtrar, Formatar), Navegador (Abrir link em uma nova aba, Copiar endereço do link, Voltar,
+  Recarregar), E-mail (Responder, Encaminhar, Marcar como não lida, Excluir) e qualquer campo de texto. Também pelo
+  teclado (setas, Enter, Esc). No Desenho, como no Paint, o botão direito pinta com a "Cor 2". As aulas treinam tudo isso.
 - **🙋 Não entendi**: em todo passo de aula. O Professor Virtual explica de novo, mais devagar, com a dica e a seta, e
   o instrutor vê o pedido na hora, na Sala ao vivo.
 
@@ -232,6 +241,7 @@ src/ia.js                IA local (node-llama-cpp)
 app/index.html           a tela
 app/estilo.css           o visual
 app/js/janelas.js        gerenciador de janelas
+app/js/menu-contexto.js  o menu do botão direito (igual ao do Windows) e a janela "Propriedades"
 app/js/area-trabalho.js  ícones, menu Iniciar, barra de tarefas
 app/js/professor.js      motor das lições e conversa
 app/js/respostas-prontas.js  respostas do professor sem IA

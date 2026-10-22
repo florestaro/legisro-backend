@@ -1,6 +1,7 @@
 // Nível 2 — Módulo 1: Organização de arquivos e pen drive. Módulo 2: Atalhos de teclado.
 (function () {
-  const { info, quiz, esperar, abrir, fechar, naJanela, garantirArquivo, pularSe, editorNovo } = CE.L;
+  const { info, quiz, esperar, abrir, fechar, naJanela, garantirArquivo, pularSe, editorNovo, abrirExemplo } = CE.L;
+  const noMenu = (opcao, ...antes) => [`.mc-menu [data-opcao="${opcao}"]`, ...antes.map((o) => `.mc-menu [data-opcao="${o}"]`)];
   const arq = (s) => naJanela('arquivos', s);
   const igual = (a, b) => String(a || '').trim().toLowerCase() === String(b).toLowerCase();
   const existePasta = async (nome, local = 'pc', pasta = '') => (await CE.sessao.arquivos())
@@ -110,7 +111,11 @@
           esperar('Agora volte para "Meus Documentos" (do lado esquerdo), escolha um arquivo e ARRASTE até o "Pen drive (E:)". Do computador para o pen drive, arrastar faz uma CÓPIA.', 'arquivo:copiado', (d) => d.destinoLocal === 'pendrive', {
             destacar: [arq('[data-pasta="pendrive"]')], mouse: 'arrastar', dica: 'Também dá para usar Copiar e depois Colar dentro do pen drive.',
           }),
-          info('O arquivo foi copiado: ele está no pen drive e continua no computador. Antes de tirar o pen drive, sempre use "Remover com segurança", para não estragar os arquivos.'),
+          info('O arquivo foi copiado: ele está no pen drive e continua no computador.'),
+          esperar('Tem um jeito ainda mais fácil, muito usado no Windows: em "Meus Documentos", clique com o botão DIREITO em outro arquivo, pare a setinha em "Enviar para" e clique em "Pen drive (E:)".', 'arquivo:enviado', (d) => d.para === 'pendrive', {
+            destacar: [...noMenu('enviar-pendrive', 'enviar-para'), arq('[data-pasta="documentos"]')], mouse: 'direito', dica: 'Primeiro volte para "Meus Documentos", do lado esquerdo. Depois botão direito num arquivo › Enviar para › Pen drive (E:).',
+          }),
+          info('Antes de tirar o pen drive, sempre use "Remover com segurança" (ou botão direito no pen drive › Ejetar), para não estragar os arquivos.'),
           esperar('Clique em "⏏️ Remover com segurança", embaixo do pen drive.', 'pendrive:removido', null, { destacar: arq('[data-acao="remover-pendrive"]'), mouse: 'esquerdo' }),
           quiz('Antes de tirar o pen drive do computador, eu...', ['Clico em "Remover com segurança"', 'Puxo de qualquer jeito', 'Desligo o monitor'], 0),
           quiz('Arrastar um arquivo do computador para o pen drive...', ['Faz uma cópia', 'Apaga o arquivo do computador', 'Não faz nada'], 0),
@@ -158,6 +163,28 @@
           quiz('Ctrl+V serve para...', ['Colar', 'Salvar', 'Selecionar tudo'], 0),
         ],
         conclusao: 'Muito bem! Com os atalhos você trabalha bem mais rápido.',
+      },
+      {
+        id: 'n2-botao-direito', titulo: 'Copiar, colar e formatar com o botão direito', icone: '🖱️',
+        descricao: 'O menu do botão direito no Editor: Copiar, Colar e Fonte.',
+        passos: [
+          info('Não lembra do Ctrl+C e do Ctrl+V? O botão DIREITO do mouse mostra as mesmas opções num menu. Abri um recado para treinarmos.', {
+            emoji: '🖱️', preparar: () => abrirExemplo('Recado da escola', 'documento', '<div>Reunião de pais amanhã às 19h.</div>', true),
+          }),
+          esperar('Dê um clique duplo na palavra "Reunião" para selecionar.', 'editor:selecao', (d) => /reuni/i.test(d.selecionado), { destacar: naJanela('editor', '.editor-pagina'), mouse: 'duplo' }),
+          esperar('Agora clique com o botão DIREITO em cima da palavra selecionada e escolha "Copiar".', 'menu-contexto:opcao', (d) => d.onde === 'editor' && d.opcao === 'copiar', {
+            destacar: [...noMenu('copiar'), naJanela('editor', '.editor-pagina')], mouse: 'direito', dica: 'Se o "Copiar" estiver apagado, a palavra não está selecionada: dê o clique duplo nela de novo.',
+          }),
+          esperar('Clique no fim do texto (depois de "19h."), aperte Enter para ir para a linha de baixo e clique com o botão DIREITO ali. Escolha "Colar".', 'editor:texto', (d) => (d.texto.match(/reuni/gi) || []).length >= 2, {
+            destacar: [...noMenu('colar'), naJanela('editor', '.editor-pagina')], mouse: 'direito',
+          }),
+          esperar('Agora selecione a primeira linha inteira (segure o botão e arraste por cima dela), clique com o botão DIREITO e escolha "Fonte...". Escolha o estilo "Negrito", o tamanho 18 e clique em OK.', 'editor:fonte', (d) => d.bold && d.tamanho === '5', {
+            destacar: [...noMenu('fonte'), naJanela('editor', '.editor-pagina')], mouse: 'direito', dica: 'Na janela "Fonte": em Estilo escolha Negrito; em Tamanho escolha 18.',
+          }),
+          quiz('No menu do botão direito de um texto aparecem...', ['Recortar, Copiar e Colar', 'Desligar e Reiniciar', 'Só a Lixeira'], 0),
+          quiz('Para colar com o mouse, eu...', ['Clico com o botão direito onde quero e escolho "Colar"', 'Dou clique duplo na Lixeira', 'Arrasto o relógio'], 0),
+        ],
+        conclusao: 'Muito bem! Com o botão direito você não precisa decorar os atalhos.',
       },
       {
         id: 'n2-atalhos-gerais', titulo: 'Atalhos no Arquivos e no Windows', icone: '⌨️',

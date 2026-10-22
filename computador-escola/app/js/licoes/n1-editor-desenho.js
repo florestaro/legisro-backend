@@ -155,6 +155,11 @@
           corDesenho('amarelo', 'Escolha a cor AMARELA.'),
           ferramentaDesenho('balde', 'Clique no "Balde de tinta" (🪣).'),
           esperar('Clique DENTRO do círculo para pintar o sol de amarelo.', 'desenho:balde', null, { mouse: 'esquerdo' }),
+          ferramentaDesenho('lapis', 'Agora um truque do Paint de verdade. Escolha o "Lápis" (✏️).'),
+          esperar('Clique com o botão DIREITO na cor AZUL da paleta: ela vira a "Cor 2" (veja a caixinha "Cor 2" mudar).', 'desenho:cor2', (d) => d.cor === 'azul', {
+            destacar: naJanela('desenho', '[data-cor="azul"]'), mouse: 'direito',
+          }),
+          esperar('Agora desenhe SEGURANDO o botão DIREITO do mouse: o risco sai azul. Com o botão esquerdo, sai a Cor 1.', 'desenho:traco', (d) => d.botao === 'direito', { destacar: naJanela('desenho', '.ds-tela'), mouse: 'direito' }),
           esperar('Que lindo! Clique em "Salvar" e dê o nome "Meu desenho".', 'arquivo:salvo', (d) => d.tipo === 'imagem', {
             destacar: naJanela('desenho', '[data-comando="salvar"]'), mouse: 'esquerdo',
           }),

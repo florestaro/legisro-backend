@@ -205,6 +205,50 @@
         if (emitir) CE.emitir('navegador:visitou', { url, dominio: destino.dominio, caminho: destino.caminho, titulo, seguro: !!(site && site.seguro), existe: !!site || destino.dominio === INICIO });
       }
 
+      // Botão direito na página: no link, abrir em nova aba ou copiar o endereço; no texto selecionado, copiar ou
+      // pesquisar; no resto, voltar, avançar, recarregar e favoritar (como no Chrome e no Edge).
+      pagina.addEventListener('contextmenu', (e) => {
+        if (e.target.closest('input, textarea, select')) return; // campos dos sites: menu de texto
+        const op = (id, rotulo, icone, acao, extra = {}) => ({ id, rotulo, icone, acao, ...extra });
+        const link = e.target.closest('[data-link]');
+        if (link) {
+          const destino = resolver(link.dataset.link);
+          CE.menuContexto.abrir(e, 'navegador-link', [
+            op('nova-aba', 'Abrir link em uma nova aba', '🗗', () => { novaAba(link.dataset.link); CE.emitir('navegador:link', { url: link.dataset.link, novaAba: true }); }, { negrito: true }),
+            op('abrir-link', 'Abrir link', '🔗', () => { CE.emitir('navegador:link', { url: link.dataset.link }); ir(link.dataset.link); }),
+            '-',
+            op('copiar-link', 'Copiar endereço do link', '📋', () => { CE.menuContexto.texto.copiarTexto(destino); CE.avisar('📋 Endereço do link copiado.'); }),
+          ], destino);
+          return;
+        }
+        const selecao = String(window.getSelection()).trim();
+        if (selecao) {
+          const curto = selecao.length > 24 ? selecao.slice(0, 24) + '…' : selecao;
+          CE.menuContexto.abrir(e, 'navegador-texto', [
+            op('copiar', 'Copiar', '📋', CE.menuContexto.texto.copiar, { atalho: 'Ctrl+C' }),
+            op('pesquisar-selecao', `Pesquisar "${curto}" no Procura`, '🔍', () => {
+              novaAba(montar({ dominio: 'procura.com.br', caminho: '/busca', busca: { q: selecao } }));
+              CE.emitir('navegador:pesquisa', { termo: selecao, onde: 'menu' });
+            }),
+          ], selecao);
+          return;
+        }
+        CE.menuContexto.abrir(e, 'navegador-pagina', [
+          op('voltar', 'Voltar', '←', () => andar(-1), { atalho: 'Alt+←', desativado: atual.indice <= 0 }),
+          op('avancar', 'Avançar', '→', () => andar(1), { atalho: 'Alt+→', desativado: atual.indice >= atual.historico.length - 1 }),
+          op('recarregar', 'Recarregar', '⟳', () => { mostrar(atual.url, false); CE.emitir('navegador:recarregou', { url: atual.url }); }, { atalho: 'F5' }),
+          '-',
+          op('favoritar', 'Adicionar aos favoritos', '☆', favoritar),
+        ], atual.url);
+      });
+
+      // Atalhos do navegador de verdade: Alt+← volta, Alt+→ avança, F5 recarrega.
+      corpo.addEventListener('keydown', (e) => {
+        if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); andar(-1); CE.emitir('atalho:usado', { atalho: 'Alt+←', app: 'navegador' }); }
+        else if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); andar(1); CE.emitir('atalho:usado', { atalho: 'Alt+→', app: 'navegador' }); }
+        else if (e.key === 'F5') { e.preventDefault(); mostrar(atual.url, false); CE.emitir('navegador:recarregou', { url: atual.url }); CE.emitir('atalho:usado', { atalho: 'F5', app: 'navegador' }); }
+      });
+
       // Cliques em links e envio de formulários dos sites.
       pagina.addEventListener('click', (e) => {
         const link = e.target.closest('[data-link]');

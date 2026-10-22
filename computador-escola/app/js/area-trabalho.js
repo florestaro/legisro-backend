@@ -14,16 +14,22 @@ window.CE = window.CE || {};
 
   function montarIcones() {
     const lista = $('icones');
+    // Exibir › Ícones grandes, médios ou pequenos (menu do botão direito da área de trabalho).
+    const tamanho = (CE.config && CE.config.atual.icones) || 'medios';
+    ['grandes', 'medios', 'pequenos'].forEach((t) => lista.classList.toggle('icones-' + t, t === tamanho));
     lista.replaceChildren(...appsDoUsuario().filter((a) => !a.semIcone).map((app) => {
       const icone = CE.el('button', { class: 'icone', 'data-icone': app.id, title: app.nome },
         CE.el('span', { class: 'icone-imagem' }, app.icone),
         CE.el('span', { class: 'icone-nome' }, app.nome),
       );
-      icone.addEventListener('click', () => {
+      const selecionar = () => {
         lista.querySelectorAll('.icone').forEach((i) => i.classList.remove('selecionado'));
         icone.classList.add('selecionado');
         CE.emitir('icone:selecionado', { app: app.id });
-      });
+      };
+      icone.addEventListener('click', selecionar);
+      // Botão direito no ícone: seleciona e mostra o menu dele (como no Windows).
+      icone.addEventListener('contextmenu', (e) => { selecionar(); menuDoIcone(e, app); });
       icone.addEventListener('dblclick', () => CE.janelas.abrir(app.id));
       icone.addEventListener('keydown', (e) => e.key === 'Enter' && CE.janelas.abrir(app.id));
       return icone;
@@ -35,10 +41,18 @@ window.CE = window.CE || {};
     const u = CE.sessao.usuario;
     menu.replaceChildren(
       CE.el('div', { class: 'menu-usuario' }, CE.el('span', { class: 'login-avatar' }, u.avatar), CE.el('strong', {}, u.nome)),
-      CE.el('div', { class: 'menu-lista' }, ...appsDoUsuario().map((app) => CE.el('button', {
-        class: 'menu-item', 'data-app': app.id,
-        onclick: () => { fecharMenu(); CE.janelas.abrir(app.id); },
-      }, CE.el('span', {}, app.icone), app.nome))),
+      CE.el('div', { class: 'menu-lista' }, ...appsDoUsuario().map((app) => {
+        const item = CE.el('button', {
+          class: 'menu-item', 'data-app': app.id,
+          onclick: () => { fecharMenu(); CE.janelas.abrir(app.id); },
+        }, CE.el('span', {}, app.icone), app.nome);
+        item.addEventListener('contextmenu', (e) => CE.menuContexto.abrir(e, 'menu-iniciar', [
+          { id: 'abrir', rotulo: 'Abrir', negrito: true, icone: app.icone, acao: () => { fecharMenu(); CE.janelas.abrir(app.id); } },
+          app.instalavel ? '-' : null,
+          app.instalavel ? { id: 'desinstalar', rotulo: 'Desinstalar', icone: '🗑️', acao: () => { fecharMenu(); CE.janelas.abrir('configuracoes', { secao: 'aplicativos' }); } } : null,
+        ].filter(Boolean), app.id));
+        return item;
+      })),
       CE.el('div', { class: 'menu-rodape' },
         CE.el('button', { class: 'menu-item', 'data-acao': 'sair', onclick: () => { fecharMenu(); CE.sairDoSistema(); } }, CE.el('span', {}, '🚪'), 'Sair (trocar de usuário)'),
         CE.el('button', { class: 'menu-item', 'data-acao': 'desligar', onclick: async () => { fecharMenu(); await CE.sairDoSistema(); CE.api.chamar('app:sair'); } }, CE.el('span', {}, '⏻'), 'Desligar'),
@@ -80,25 +94,69 @@ window.CE = window.CE || {};
     if (s.estado === 'carregando') setTimeout(atualizarStatusIA, 3000);
   }
 
-  function menuDeContexto(e) {
-    if (e.target.closest('.janela, #barra-tarefas, #professor, #menu-iniciar')) return;
-    e.preventDefault();
-    const menu = $('menu-contexto');
-    menu.replaceChildren(
-      CE.el('button', { class: 'menu-item', onclick: () => { trocarFundo(); menu.hidden = true; } }, '🖼️ Mudar o fundo de tela'),
-      CE.el('button', { class: 'menu-item', onclick: () => { montarIcones(); menu.hidden = true; } }, '🔄 Atualizar'),
-    );
-    menu.style.left = e.clientX + 'px';
-    menu.style.top = e.clientY + 'px';
-    menu.hidden = false;
-    CE.emitir('menu-contexto:aberto');
+  // ---------- Botão direito na área de trabalho, nos ícones e na barra de tarefas ----------
+  function menuDaAreaDeTrabalho(e) {
+    if (e.defaultPrevented || e.target.closest('.janela, #barra-tarefas, #professor, #menu-iniciar, .icone')) return;
+    const tamanho = (CE.config && CE.config.atual.icones) || 'medios';
+    const opcao = (id, rotulo) => ({ id: 'icones-' + id, rotulo, marcado: tamanho === id, acao: () => tamanhoDosIcones(id) });
+    CE.menuContexto.abrir(e, 'area-de-trabalho', [
+      { id: 'exibir', rotulo: 'Exibir', icone: '👁️', submenu: [opcao('grandes', 'Ícones grandes'), opcao('medios', 'Ícones médios'), opcao('pequenos', 'Ícones pequenos')] },
+      { id: 'atualizar', rotulo: 'Atualizar', icone: '🔄', acao: () => { montarIcones(); CE.emitir('area:atualizada'); } },
+      '-',
+      { id: 'personalizar', rotulo: 'Personalizar', icone: '🎨', acao: () => CE.janelas.abrir('configuracoes', { secao: 'personalizar' }) },
+      { id: 'configuracoes-exibicao', rotulo: 'Configurações de exibição', icone: '🖥️', acao: () => CE.janelas.abrir('configuracoes', { secao: 'acessibilidade' }) },
+    ]);
   }
 
-  function trocarFundo() {
-    const lista = CE.FUNDOS_TELA.map((f) => f.id);
-    const atual = lista.findIndex((f) => $('area-de-trabalho').classList.contains(f));
-    definirFundo(lista[(atual + 1) % lista.length]);
-    CE.emitir('fundo:trocado', { fundo: lista[(atual + 1) % lista.length] });
+  function tamanhoDosIcones(tamanho) {
+    if (CE.config) CE.config.guardar({ icones: tamanho });
+    montarIcones();
+    CE.emitir('area:icones', { tamanho });
+  }
+
+  function menuDoIcone(e, app) {
+    CE.menuContexto.abrir(e, 'icone', [
+      { id: 'abrir', rotulo: 'Abrir', negrito: true, icone: app.icone, acao: () => CE.janelas.abrir(app.id) },
+      app.id === 'lixeira' ? { id: 'esvaziar-lixeira', rotulo: 'Esvaziar Lixeira', icone: '🧹', acao: esvaziarLixeira } : null,
+      '-',
+      app.instalavel ? { id: 'desinstalar', rotulo: 'Desinstalar', icone: '🗑️', acao: () => CE.janelas.abrir('configuracoes', { secao: 'aplicativos' }) } : null,
+      '-',
+      { id: 'propriedades', rotulo: 'Propriedades', icone: 'ℹ️', acao: () => CE.mostrarPropriedades(app.nome, app.icone, [
+        ['Tipo', app.instalavel ? 'Programa instalado pelas Configurações' : 'Programa do computador'],
+        ['Abrir', 'Clique duplo no ícone, Enter, ou botão direito › Abrir'],
+        ['Local', 'Área de trabalho e menu Iniciar'],
+      ], 'programa') },
+    ].filter(Boolean), app.id);
+  }
+
+  async function esvaziarLixeira() {
+    const itens = (await CE.sessao.arquivos()).filter((a) => a.naLixeira && (!a.grupoLixeira || a.grupoLixeira === a.id));
+    if (!itens.length) { CE.avisar('A Lixeira já está vazia.'); return; }
+    if (!await CE.confirmar(`Tem certeza de que deseja excluir permanentemente ${itens.length === 1 ? `"${itens[0].nome}"` : `estes ${itens.length} itens`}? Não dá para desfazer.`)) return;
+    await CE.sessao.esvaziarLixeira();
+    CE.avisar('🧹 A Lixeira foi esvaziada.');
+  }
+
+  function menuDaBarraDeTarefas(e) {
+    if (e.defaultPrevented) return;
+    if (e.target.closest('#botao-iniciar')) {
+      CE.menuContexto.abrir(e, 'botao-iniciar', [
+        { id: 'configuracoes', rotulo: 'Configurações', icone: '⚙️', acao: () => CE.janelas.abrir('configuracoes') },
+        { id: 'explorador', rotulo: 'Explorador de Arquivos', icone: '📁', acao: () => CE.janelas.abrir('arquivos') },
+        '-',
+        { id: 'area-de-trabalho', rotulo: 'Área de trabalho', icone: '🖥️', acao: () => CE.janelas.minimizarTodas() },
+        '-',
+        { id: 'desligar-ou-sair', rotulo: 'Desligar ou sair', icone: '⏻', submenu: [
+          { id: 'sair', rotulo: 'Sair (trocar de usuário)', icone: '🚪', acao: () => CE.sairDoSistema() },
+          { id: 'desligar', rotulo: 'Desligar', icone: '⏻', acao: async () => { await CE.sairDoSistema(); CE.api.chamar('app:sair'); } },
+        ] },
+      ]);
+      return;
+    }
+    if (e.target.closest('.tarefa, .bandeja')) return;
+    CE.menuContexto.abrir(e, 'barra-tarefas', [
+      { id: 'mostrar-area-de-trabalho', rotulo: 'Mostrar a área de trabalho', icone: '🖥️', acao: () => CE.janelas.minimizarTodas() },
+    ]);
   }
   function definirFundo(fundo) {
     const area = $('area-de-trabalho');
@@ -123,10 +181,10 @@ window.CE = window.CE || {};
     });
     document.addEventListener('pointerdown', (e) => {
       if (!e.target.closest('#menu-iniciar, #botao-iniciar')) fecharMenu();
-      if (!e.target.closest('#menu-contexto')) $('menu-contexto').hidden = true;
       if (!e.target.closest('.icone')) document.querySelectorAll('.icone.selecionado').forEach((i) => i.classList.remove('selecionado'));
     });
-    $('area-de-trabalho').addEventListener('contextmenu', menuDeContexto);
+    $('area-de-trabalho').addEventListener('contextmenu', menuDaAreaDeTrabalho);
+    $('barra-tarefas').addEventListener('contextmenu', menuDaBarraDeTarefas);
     $('botao-voz').addEventListener('click', () => {
       const ligada = CE.voz.alternar();
       $('botao-voz').textContent = ligada ? '🔊' : '🔇';

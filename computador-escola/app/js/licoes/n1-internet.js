@@ -81,9 +81,13 @@
           visitar('Na aba nova, clique no atalho "Jornal do Bairro".', (d) => d.dominio === 'jornaldobairro.com.br', { destacar: nav('[data-atalho="jornaldobairro.com.br"]') }),
           visitar('Clique numa notícia para ler.', (d) => d.caminho.startsWith('/noticia/'), { destacar: nav('[data-noticia]') }),
           esperar('Gostou do jornal? Clique na estrela (☆), no fim da barra de endereço, para guardar nos favoritos.', 'navegador:favorito', null, { destacar: nav('[data-acao="favoritar"]'), mouse: 'esquerdo' }),
+          esperar('Outro jeito de abrir uma aba, muito usado: volte (←) para a lista de notícias, clique com o botão DIREITO em outra notícia e escolha "Abrir link em uma nova aba".', 'navegador:link', (d) => d.novaAba, {
+            destacar: ['.mc-menu [data-opcao="nova-aba"]', nav('[data-noticia]'), nav('[data-acao="voltar"]')], mouse: 'direito', dica: 'Botão da DIREITA em cima do título de uma notícia › "Abrir link em uma nova aba".',
+          }),
           esperar('Veja: a página foi para a barra de favoritos, embaixo da barra de endereço. Agora clique na PRIMEIRA aba, lá em cima à esquerda, para trocar de página.', 'navegador:aba-trocada', null, { destacar: nav('.nav-aba[data-aba="0"]'), mouse: 'esquerdo' }),
           esperar('Para fechar uma aba, clique no ✕ dela. Feche uma das abas.', 'navegador:aba-fechada', null, { destacar: nav('.nav-aba-fechar'), mouse: 'esquerdo' }),
           quiz('Para abrir uma nova aba, eu clico...', ['No botão + ao lado das abas', 'No X vermelho da janela', 'No relógio'], 0),
+          quiz('Para abrir um link numa aba nova, sem sair da página, eu...', ['Clico nele com o botão direito e escolho "Abrir link em uma nova aba"', 'Desligo o computador', 'Aperto o Esc'], 0),
           quiz('Para guardar um site que uso sempre, eu...', ['Adiciono aos favoritos (☆)', 'Anoto num papel colado na tela', 'Desligo o computador'], 0),
           fechar('navegador', 'Navegador'),
         ],

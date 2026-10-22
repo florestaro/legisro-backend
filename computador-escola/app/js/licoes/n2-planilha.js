@@ -42,7 +42,12 @@
             () => ['A2', 'A3', 'A4'].every((r) => typeof celula(r) === 'string' && celula(r)) && ['B2', 'B3', 'B4'].every((r) => typeof celula(r) === 'number'),
             { destacar: td('A2'), dica: 'Os preços precisam ser só números, com vírgula: 5,99. A planilha alinha os números à direita.' }),
           info('Repare: os textos ficam à esquerda e os NÚMEROS ficam à direita. Assim você sabe que a planilha entendeu que é número.'),
+          esperar('Esqueceu uma fruta no meio da lista? Clique com o botão DIREITO no número 3, à esquerda da planilha (o cabeçalho da linha 3), e escolha "Inserir". Aparece uma linha vazia ali.', 'planilha:inserida', (d) => d.tipo === 'linha' && d.linha === 3, {
+            destacar: ['.mc-menu [data-opcao="inserir"]', pl('tbody tr:nth-child(3) th.pl-cab-lin')], mouse: 'direito', dica: 'É o número 3 cinza, do lado esquerdo das células. Clique nele com o botão da DIREITA.',
+          }),
+          editou('Na linha nova, escreva mais uma fruta em A3 e o preço dela em B3.', () => typeof celula('A3') === 'string' && celula('A3') && typeof celula('B3') === 'number', { destacar: td('A3') }),
           quiz('Depois de digitar numa célula, a tecla Enter...', ['Confirma e desce para a célula de baixo', 'Apaga a célula', 'Fecha a planilha'], 0),
+          quiz('Para colocar uma linha nova no meio da tabela, eu...', ['Clico com o botão direito no número da linha e escolho "Inserir"', 'Apago tudo e começo de novo', 'Aperto o F5'], 0),
           quiz('Para escrever um número com centavos na planilha, eu uso...', ['Vírgula, como 5,99', 'A palavra "reais"', 'Ponto e vírgula'], 0),
         ],
         conclusao: 'Ótimo! Você preencheu a sua primeira tabela de dados.',

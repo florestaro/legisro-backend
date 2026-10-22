@@ -175,7 +175,7 @@
           ? CE.el('button', { class: 'botao secundario pequeno em-esvaziar', 'data-acao': 'esvaziar-lixeira', onclick: () => apagarDeVez(daPasta) }, '🗑️ Esvaziar a Lixeira') : null;
         const lista = CE.el('div', { class: 'em-lista' }, esvaziar, ...(daPasta.length ? daPasta.map((m) => CE.el('button', {
           class: 'em-item' + (m.lida ? '' : ' nao-lida') + (aberta && aberta.id === m.id ? ' aberta' : ''), 'data-mensagem': m.assunto,
-          onclick: () => abrirMensagem(m),
+          onclick: () => abrirMensagem(m), oncontextmenu: (e) => menuDaMensagem(e, m),
         },
           CE.el('div', { class: 'em-item-linha' }, CE.el('strong', {}, pasta === 'enviados' ? `Para: ${m.para}` : (m.deNome || m.de)), CE.el('small', {}, formatarData(m.em))),
           CE.el('div', { class: 'em-item-assunto' }, (m.anexos && m.anexos.length ? '📎 ' : '') + (m.assunto || '(sem assunto)')),
@@ -219,10 +219,36 @@
         desenhar();
       }
 
+      const responder = (m) => escrever({ para: m.de, assunto: m.assunto.startsWith('Re:') ? m.assunto : `Re: ${m.assunto}`, texto: `\n\n--- Em ${new Date(m.em).toLocaleString('pt-BR')}, ${m.deNome || m.de} escreveu:\n${m.texto}`, resposta: true });
+      const encaminhar = (m) => escrever({ para: '', assunto: `Enc: ${m.assunto}`, texto: `\n\n--- Mensagem encaminhada ---\nDe: ${m.deNome || ''} <${m.de}>\nAssunto: ${m.assunto}\n\n${m.texto}`, anexos: [...(m.anexos || [])], encaminhamento: true });
+
+      // Botão direito numa mensagem da lista (como no Outlook e no Gmail).
+      function menuDaMensagem(e, m) {
+        const op = (id, rotulo, icone, acao, extra = {}) => ({ id, rotulo, icone, acao, ...extra });
+        const naLixeira = m.pasta === 'lixeira';
+        CE.menuContexto.abrir(e, 'email', [
+          op('abrir', 'Abrir', '📖', () => abrirMensagem(m), { negrito: true }),
+          m.pasta !== 'enviados' ? op('responder', 'Responder', '↩️', () => responder(m)) : null,
+          op('encaminhar', 'Encaminhar', '➡️', () => encaminhar(m)),
+          '-',
+          op(m.lida ? 'marcar-nao-lida' : 'marcar-lida', m.lida ? 'Marcar como não lida' : 'Marcar como lida', m.lida ? '✉️' : '📭', async () => {
+            m.lida = !m.lida;
+            try { await gravar(); } catch (err) { m.lida = !m.lida; CE.avisar(`⚠️ ${err.message}`); return; }
+            CE.emitir('email:marcado', { assunto: m.assunto, lida: m.lida });
+            desenhar();
+          }),
+          m.pasta === 'spam' ? op('nao-spam', 'Não é spam', '✅', () => moverPara(m, 'entrada', 'email:nao-spam'))
+            : m.pasta !== 'enviados' && !naLixeira ? op('spam', 'É spam / golpe', '🚫', () => moverPara(m, 'spam', 'email:spam')) : null,
+          '-',
+          naLixeira ? op('restaurar', 'Voltar para a entrada', '↩️', () => moverPara(m, 'entrada', 'email:restaurado')) : null,
+          naLixeira ? op('apagar-de-vez', 'Apagar de vez', '❌', () => apagarDeVez([m])) : op('excluir', 'Excluir', '🗑️', () => moverPara(m, 'lixeira', 'email:excluido'), { atalho: 'Delete' }),
+        ].filter(Boolean), m.assunto);
+      }
+
       function telaMensagem(m) {
         const acoes = [];
-        if (m.pasta !== 'enviados') acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'responder', onclick: () => escrever({ para: m.de, assunto: m.assunto.startsWith('Re:') ? m.assunto : `Re: ${m.assunto}`, texto: `\n\n--- Em ${new Date(m.em).toLocaleString('pt-BR')}, ${m.deNome || m.de} escreveu:\n${m.texto}`, resposta: true }) }, '↩️ Responder'));
-        acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'encaminhar', onclick: () => escrever({ para: '', assunto: `Enc: ${m.assunto}`, texto: `\n\n--- Mensagem encaminhada ---\nDe: ${m.deNome || ''} <${m.de}>\nAssunto: ${m.assunto}\n\n${m.texto}`, anexos: [...(m.anexos || [])], encaminhamento: true }) }, '➡️ Encaminhar'));
+        if (m.pasta !== 'enviados') acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'responder', onclick: () => responder(m) }, '↩️ Responder'));
+        acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'encaminhar', onclick: () => encaminhar(m) }, '➡️ Encaminhar'));
         if (m.pasta === 'spam') acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'nao-spam', onclick: () => moverPara(m, 'entrada', 'email:nao-spam') }, '✅ Não é spam'));
         else if (m.pasta !== 'enviados' && m.pasta !== 'lixeira') acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'spam', onclick: () => moverPara(m, 'spam', 'email:spam') }, '🚫 É spam / golpe'));
         if (m.pasta === 'lixeira') {
