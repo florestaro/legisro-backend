@@ -14,9 +14,27 @@ window.CE = window.CE || {};
   }
 
   function rodape() {
+    const rede = CE.el('button', { class: 'botao-desligar', 'data-acao': 'rede-sala', title: 'Configurar a rede da sala de aula', onclick: () => CE.abrirRedeSala(() => CE.mostrarLogin()) }, '🖧 Rede da sala');
+    CE.api.chamar('sala:status').then((st) => {
+      if (st.modo === 'servidor') rede.textContent = `🖧 Computador do instrutor${st.erro ? ' ⚠️' : ''}`;
+      if (st.modo === 'aluno') rede.textContent = `🖧 Ligado ao instrutor (${st.servidor})`;
+    }).catch(() => {});
     return CE.el('div', { class: 'login-rodape' },
+      rede,
       CE.el('button', { class: 'botao-desligar', title: 'Desligar', onclick: () => CE.api.chamar('app:sair') }, '⏻ Desligar'),
     );
+  }
+
+  // Computador de aluno sem conseguir falar com o computador do instrutor.
+  function semConexao(mensagem) {
+    tela().replaceChildren(relogio(), CE.el('div', { class: 'login-caixa' },
+      CE.el('div', { class: 'login-avatar grande' }, '🔌'),
+      CE.el('h1', {}, 'Sem conexão com o computador do instrutor'),
+      CE.el('p', { 'data-erro-rede': '' }, mensagem),
+      CE.el('div', { class: 'login-acoes' },
+        CE.el('button', { class: 'botao grande', 'data-acao': 'tentar-de-novo', onclick: () => CE.mostrarLogin() }, '🔄 Tentar de novo')),
+      CE.el('p', { class: 'login-dica' }, 'Peça ajuda ao instrutor. Ele pode conferir o cabo de rede e se o programa está aberto no computador dele.'),
+    ), rodape());
   }
 
   async function primeiroAcesso() {
@@ -106,7 +124,11 @@ window.CE = window.CE || {};
   CE.mostrarLogin = async function () {
     document.getElementById('area-de-trabalho').hidden = true;
     tela().hidden = false;
-    if (await CE.api.chamar('usuarios:existe-instrutor')) escolherUsuario();
-    else primeiroAcesso();
+    try {
+      const st = await CE.api.chamar('sala:status').catch(() => ({ modo: 'local' }));
+      if (await CE.api.chamar('usuarios:existe-instrutor')) await escolherUsuario();
+      else if (st.modo === 'aluno') semConexao('O computador do instrutor ainda não tem o instrutor cadastrado. Cadastre primeiro lá, depois clique em "Tentar de novo".');
+      else primeiroAcesso();
+    } catch (e) { semConexao(e.message); }
   };
 })();

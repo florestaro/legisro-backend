@@ -147,6 +147,15 @@ Os sites de treino do Navegador ficam em `app/js/navegador/sites.js`.
 
 Os exercícios de digitação ficam em `app/js/digitacao/exercicios.js`.
 
+## Aulas sem programar
+O instrutor também pode criar aulas pelo **Painel do Instrutor → 📝 Criar aulas**, sem mexer em código. Elas ficam
+guardadas no computador do instrutor (`aulas-professor.json`) e aparecem em **Aulas → 📌 Do professor**. As tarefas
+disponíveis estão em `app/js/licoes/aulas-professor.js` (`TAREFAS`): para acrescentar uma tarefa nova, basta incluir
+um item com `nome`, `campo` (o que o instrutor preenche) e `montar` (que devolve um passo, como nos exemplos acima).
+
+Eventos da sala de aula: `sala:pausada` (`pausada`), `sala:mensagem` (`texto`), `instrutor:pausou`, `instrutor:mensagem`
+e `instrutor:aula-salva`.
+
 ## Ideias de lição para depois
 Me mande as suas ideias de lição em texto simples, como "o aluno abre o editor, escreve uma carta para um amigo, coloca o
 título em negrito e salva com o nome Carta", que eu transformo em lição.

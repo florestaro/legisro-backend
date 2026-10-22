@@ -11,9 +11,17 @@ window.CE = window.CE || {};
     window.api.aoReceberTrechoIA((id, trecho) => ouvintesIA[id] && ouvintesIA[id](trecho));
   }
 
+  // Computador de aluno sem conexão com o instrutor: avisa (no máximo a cada 15 s) que algo não foi salvo.
+  let ultimoAvisoRede = 0;
   async function chamar(canal, ...args) {
     const resultado = temElectron ? await window.api.chamar(canal, ...args) : await simulado(canal, ...args);
-    if (!resultado.ok) throw new Error(resultado.erro);
+    if (!resultado.ok) {
+      if (/^Sem conexão com o computador do instrutor/.test(resultado.erro) && canal !== 'sala:presenca' && CE.sessao && CE.sessao.usuario && Date.now() - ultimoAvisoRede > 15000) {
+        ultimoAvisoRede = Date.now();
+        if (CE.avisar) CE.avisar('⚠️ Sem conexão com o computador do instrutor: o que você fez agora pode não ter sido salvo. Chame o instrutor.');
+      }
+      throw new Error(resultado.erro);
+    }
     return resultado.valor;
   }
 
@@ -21,6 +29,8 @@ window.CE = window.CE || {};
   const ler = (k, p) => { try { const v = localStorage.getItem('ce-' + k); return v ? JSON.parse(v) : p; } catch { return p; } };
   const gravar = (k, v) => { try { localStorage.setItem('ce-' + k, JSON.stringify(v)); } catch { /* ignora */ } return true; };
   let atual = null;
+  // Sala de aula no navegador de teste: só este computador (a rede só funciona no programa instalado).
+  const salaTeste = { pausada: false, mensagem: null, presencas: {} };
 
   async function simulado(canal, ...a) {
     try {
@@ -65,6 +75,20 @@ window.CE = window.CE || {};
         'ia:perguntar': () => CE.responderSemIA(a[1], a[2]),
         'app:sair': () => location.reload(),
         'janela:zoom': () => { document.documentElement.style.zoom = a[0]; return a[0]; },
+        'aulas:listar': () => ler('aulas-professor', []),
+        'aulas:salvar': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); return gravar('aulas-professor', a[0]); },
+        'sala:ler': () => ({ modo: 'local', navegador: true, servidor: '', codigo: '', protegido: false, nomePc: 'Navegador de teste', ips: [] }),
+        'sala:status': () => ({ modo: 'local', conectado: null, erro: '' }),
+        'sala:procurar': () => [],
+        'sala:salvar': () => { throw new Error('A rede da sala só funciona no programa instalado nos computadores (não neste teste pelo navegador).'); },
+        'sala:presenca': () => {
+          if (!atual) throw new Error('Ninguém entrou no sistema.');
+          salaTeste.presencas[atual.id] = { usuario: atual, pc: 'Este computador', atividade: a[0] || {}, em: Date.now() };
+          return { pausada: salaTeste.pausada && atual.papel !== 'instrutor', mensagem: atual.papel !== 'instrutor' ? salaTeste.mensagem : null };
+        },
+        'sala:turma': () => ({ pausada: salaTeste.pausada, mensagem: salaTeste.mensagem, alunos: Object.values(salaTeste.presencas).filter((x) => Date.now() - x.em < 45000).map((x) => ({ ...x, ha: Math.round((Date.now() - x.em) / 1000) })) }),
+        'sala:pausar': () => (salaTeste.pausada = !!a[0]),
+        'sala:mensagem': () => (salaTeste.mensagem = String(a[0] || '').trim() ? { id: Date.now(), texto: String(a[0]).trim().slice(0, 300), de: atual.nome } : null),
       }[canal];
       return { ok: true, valor: await valor() };
     } catch (erro) {

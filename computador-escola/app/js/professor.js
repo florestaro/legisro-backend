@@ -454,5 +454,7 @@ window.CE = window.CE || {};
       $('professor').hidden = true;
     },
     comecarLicao,
+    // Para o painel da sala ao vivo: em que aula e passo o aluno está.
+    situacao: () => (licao ? { id: licao.id, titulo: licao.titulo, passo: `${Math.min(indicePasso + 1, licao.passos.length)} de ${licao.passos.length}` } : null),
   };
 })();

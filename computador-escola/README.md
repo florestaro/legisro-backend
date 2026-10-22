@@ -125,21 +125,64 @@ Para sair da tela cheia use o botão **Iniciar → Desligar**.
 3. Os alunos entram clicando no próprio nome.
 
 ## Onde ficam os dados
-- Versão instalada: `%APPDATA%\Computador Escola\dados` (em cada computador)
+- Versão instalada: `%APPDATA%\Computador Escola\dados`
 - Versão portátil: pasta `dados` ao lado do `.exe`
 
-Cada computador guarda os próprios dados. Na **Entrega 5** entra o "modo sala de aula": o computador do instrutor vira
-o servidor pela rede (cabo) e todos os alunos aparecem no mesmo painel.
+No modo **sozinho** (o padrão), cada computador guarda os próprios dados. No **modo sala de aula** (abaixo), tudo fica
+no computador do instrutor.
 
-## Próximas fases
-- **Entrega 5:** Modo sala de aula em rede, painel do instrutor ao vivo, editor de lições sem programar.
-- **Extra:** o aluno falar com o professor pelo microfone (reconhecimento de voz offline com Whisper).
+## Modo sala de aula (rede por cabo)
+O computador do instrutor guarda os dados de todos e os outros computadores se ligam nele pela rede. Assim o aluno pode
+sentar em **qualquer computador** e continuar de onde parou, e o instrutor acompanha a turma **ao vivo**.
+
+**1. No computador do instrutor**
+1. Na tela de entrada, clique em **🖧 Rede da sala** (embaixo, à direita).
+2. Escolha **Computador do INSTRUTOR** e clique em **Salvar**.
+3. Abra **🖧 Rede da sala** de novo: aparecem o **endereço** deste computador (ex.: 192.168.0.10) e o **código da
+   sala** (6 números). Anote os dois.
+4. Na primeira vez, o Windows pode perguntar se o programa pode usar a rede (Firewall do Windows). Marque **Redes
+   privadas** e clique em **Permitir acesso**. (Se precisar liberar à mão: porta TCP 47123 e porta UDP 47124.)
+
+**2. Em cada computador de aluno**
+1. Na tela de entrada, clique em **🖧 Rede da sala** e escolha **Computador de ALUNO**.
+2. Clique em **🔎 Procurar o computador do instrutor** e escolha o que aparecer (ou escreva o endereço anotado).
+3. Digite o **código da sala** e clique em **Salvar**. Pronto: a tela de entrada mostra os alunos cadastrados no
+   computador do instrutor.
+
+**Painel do Instrutor → 🖥️ Sala ao vivo**: mostra quem está em cada computador, a aula e o passo em que está e o
+programa aberto. Botões: **⏸️ Pausar todas as telas** (os alunos veem "O professor pausou as telas" e o teclado para)
+e **📢 Mandar mensagem** (aparece na tela de todos, com a voz do professor).
+
+**Segurança**: só fala com o computador do instrutor quem tem o código da sala; cada aluno só lê e grava os próprios
+dados (como no modo sozinho); depois de várias senhas erradas seguidas, é preciso esperar um minuto. Depois de
+configurado, só muda o modo de um computador quem souber o código da sala. A rede da sala é para a rede interna da
+escola (não use pela internet).
+
+**Se o computador do instrutor estiver desligado**, os computadores dos alunos mostram "Sem conexão com o computador do
+instrutor" e um botão **Tentar de novo**.
+
+## Criar aulas sem programar
+No **Painel do Instrutor → 📝 Criar aulas**, o instrutor monta aulas novas com três tipos de passo:
+- **💬 Explicação**: um texto que o Professor Virtual lê em voz alta;
+- **❓ Pergunta**: com 2 ou 3 respostas e a certa marcada;
+- **🎯 Tarefa**: escolhida de uma lista (abrir um programa, salvar um arquivo com um nome, escrever no Editor, formatar,
+  criar pasta, escrever numa célula da Planilha, entrar num site, pesquisar, mandar e-mail, digitação, jogo do mouse,
+  desenho, apresentar os slides).
+
+As aulas aparecem para todos os alunos em **Aulas → 📌 Do professor** (no modo sala de aula, em todos os computadores).
+O botão **▶ Testar** abre a aula para conferir antes.
+
+## Próximas ideias
+- O aluno falar com o professor pelo microfone (reconhecimento de voz offline com Whisper).
+- Relatório da turma para imprimir ou salvar em PDF.
 
 ## Organização do código
 ```
 main.js                  programa principal (janela, dados, IA)
 preload.js               ponte segura entre a tela e o programa principal
 src/armazenamento.js     usuários (senhas com hash) e dados em JSON
+src/canais.js            os pedidos de dados (usuários, progresso, arquivos, e-mail, sala ao vivo, aulas do professor)
+src/sala.js              modo sala de aula: servidor do instrutor, computador de aluno e busca na rede
 src/ia.js                IA local (node-llama-cpp)
 app/index.html           a tela
 app/estilo.css           o visual
@@ -148,7 +191,8 @@ app/js/area-trabalho.js  ícones, menu Iniciar, barra de tarefas
 app/js/professor.js      motor das lições e conversa
 app/js/respostas-prontas.js  respostas do professor sem IA
 app/js/curso.js          níveis, módulos e regra de liberação das aulas
-app/js/licoes/           as aulas (n1-*.js, n2-*.js) e os atalhos para escrever aulas (ajudantes.js)
+app/js/licoes/           as aulas (n1-*, n2-*, n3-*), os atalhos para escrever aulas (ajudantes.js) e as aulas do professor
+app/js/sala.js           a sala ao vivo do lado do aluno (presença, pausa, mensagens) e a janela "Rede da sala"
 app/js/apps/             os programas (editor, planilha, e-mail, digitação, arquivos...)
 app/js/planilha/         as fórmulas da planilha
 app/js/navegador/        os sites de treino

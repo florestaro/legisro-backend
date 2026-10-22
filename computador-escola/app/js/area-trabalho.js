@@ -144,6 +144,8 @@ window.CE = window.CE || {};
     clearInterval(relogioTimer);
     relogioTimer = setInterval(atualizarRelogio, 15000);
     if (CE.config) CE.config.carregar();
+    if (CE.sala) CE.sala.iniciar();
+    if (CE.aulasProfessor) CE.aulasProfessor.carregar();
     atualizarStatusIA();
     CE.professor.iniciar();
   };
@@ -151,10 +153,12 @@ window.CE = window.CE || {};
   CE.sairDoSistema = async function () {
     CE.janelas.fecharTodas();
     if (CE.config) CE.config.reiniciar();
+    if (CE.sala) CE.sala.parar();
     CE.pendrive.reiniciar();
     CE.areaTransferenciaArquivos = null;
     CE.professor.parar();
-    await CE.api.chamar('sessao:sair');
+    // Sem conexão com o computador do instrutor, a saída continua: volta para a tela de entrada do mesmo jeito.
+    await CE.api.chamar('sessao:sair').catch(() => {});
     CE.sessao.usuario = null;
     CE.mostrarLogin();
   };

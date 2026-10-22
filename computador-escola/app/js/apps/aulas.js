@@ -23,6 +23,8 @@
             return CE.el('button', { class: 'chip' + (aba === n.id ? ' ativo' : ''), 'data-nivel': n.id, onclick: () => { aba = n.id; desenhar(); } },
               `${n.icone} ${n.nome}${aulas.length ? ` · ${feitas}/${aulas.length}` : ''}`);
           }),
+          CE.LICOES_EXTRAS.length ? CE.el('button', { class: 'chip' + (aba === 'professor' ? ' ativo' : ''), 'data-nivel': 'professor', onclick: () => { aba = 'professor'; desenhar(); } },
+            `📌 Do professor · ${CE.LICOES_EXTRAS.filter((l) => CE.curso.aprovada(l, p)).length}/${CE.LICOES_EXTRAS.length}`) : null,
           CE.el('button', { class: 'chip' + (aba === 'medalhas' ? ' ativo' : ''), 'data-nivel': 'medalhas', onclick: () => { aba = 'medalhas'; desenhar(); } },
             `🏅 Medalhas · ${Object.keys(p.medalhas || {}).length}/${CE.MEDALHAS.length}`),
         );
@@ -36,6 +38,21 @@
                 CE.el('strong', {}, m.nome),
                 CE.el('span', {}, m.descricao),
                 ganha ? CE.el('small', {}, `Ganha em ${new Date(ganha).toLocaleDateString('pt-BR')}`) : null);
+            })));
+          return;
+        }
+
+        if (aba === 'professor') {
+          corpo.replaceChildren(abas,
+            CE.el('div', { class: 'aulas-topo' }, CE.el('h2', {}, '📌 Aulas do professor'), CE.el('p', {}, 'Aulas extras que o seu instrutor preparou. Faça quando quiser!')),
+            CE.el('section', { class: 'aulas-modulo' }, ...CE.LICOES_EXTRAS.map((l) => {
+              const r = p.licoes && p.licoes[l.id];
+              const feita = CE.curso.aprovada(l, p);
+              return CE.el('div', { class: 'aula' + (feita ? ' feita' : ''), 'data-licao': l.id },
+                CE.el('span', { class: 'aula-icone' }, feita ? '✅' : l.icone),
+                CE.el('div', { class: 'aula-info' }, CE.el('strong', {}, l.titulo), CE.el('span', {}, l.descricao),
+                  r && r.nota != null ? CE.el('small', { class: r.concluida ? 'ok' : 'abaixo' }, `Nota: ${r.nota}%`) : null),
+                CE.el('button', { class: 'botao' + (feita ? ' secundario' : ''), onclick: () => CE.professor.comecarLicao(l.id) }, feita ? 'Fazer de novo' : 'Começar ▶'));
             })));
           return;
         }
@@ -88,7 +105,7 @@
       }
 
       desenhar();
-      const parar = [CE.ouvir('licao:concluida', desenhar), CE.ouvir('licao:reprovada', desenhar), CE.ouvir('medalha:ganha', desenhar)];
+      const parar = [CE.ouvir('licao:concluida', desenhar), CE.ouvir('licao:reprovada', desenhar), CE.ouvir('medalha:ganha', desenhar), CE.ouvir('aulas-professor:carregadas', desenhar)];
       return { aoFechar() { parar.forEach((f) => f()); return true; } };
     },
   });

@@ -14,6 +14,7 @@ window.CE = window.CE || {};
 
   CE.MODULOS = [];
   CE.LICOES = [];
+  CE.LICOES_EXTRAS = []; // aulas criadas pelo instrutor (ficam fora da sequência do curso)
 
   // Usado pelos arquivos de lições: registra um módulo com as suas aulas, na ordem do curso.
   CE.adicionarModulo = function ({ id, nivel, titulo, icone, licoes }) {
@@ -26,13 +27,13 @@ window.CE = window.CE || {};
   CE.curso = {
     NOTA_MINIMA,
     modulo: (id) => CE.MODULOS.find((m) => m.id === id),
-    licao: (id) => CE.LICOES.find((l) => l.id === id) || (CE.LICOES_ESPECIAIS && CE.LICOES_ESPECIAIS[id]),
+    licao: (id) => CE.LICOES.find((l) => l.id === id) || CE.LICOES_EXTRAS.find((l) => l.id === id) || (CE.LICOES_ESPECIAIS && CE.LICOES_ESPECIAIS[id]),
     aprovada(licao, progresso) {
       const r = progresso.licoes && progresso.licoes[licao.id];
       return !!(r && r.concluida);
     },
     liberada(licao, progresso) {
-      if (ehInstrutor() || licao.especial) return true;
+      if (ehInstrutor() || licao.especial || licao.extra) return true;
       const i = CE.LICOES.indexOf(licao);
       return i <= 0 || CE.curso.aprovada(CE.LICOES[i - 1], progresso);
     },
