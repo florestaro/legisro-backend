@@ -119,6 +119,13 @@ npm start -- --janela   # em janela (mais fácil para testar)
 ```
 Para sair da tela cheia use o botão **Iniciar → Desligar**.
 
+Testes automáticos do modo sala de aula (detalhes em `testes/LEIA-ME.md`):
+```
+npm run teste:servidor        # servidor da sala, sem tela (menos de 1 minuto)
+npm run teste:sala            # 1 instrutor + 20 alunos usando o sistema ao mesmo tempo (uns 2 minutos)
+npm run teste:sala -- 5       # o mesmo com 5 alunos
+```
+
 ## Primeiro uso
 1. Na primeira vez, o programa pede para cadastrar o **instrutor** (nome e senha).
 2. Entre como instrutor, abra o **Painel do Instrutor → Alunos** e cadastre os alunos (nome, turma, senha e figurinha).
@@ -214,4 +221,5 @@ app/js/sala.js           a sala ao vivo do lado do aluno (presença, pausa, mens
 app/js/apps/             os programas (editor, planilha, e-mail, digitação, arquivos...)
 app/js/planilha/         as fórmulas da planilha
 app/js/navegador/        os sites de treino
+testes/                  testes automáticos do modo sala de aula (servidor e turma de 20 alunos)
 ```

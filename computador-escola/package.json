@@ -8,14 +8,17 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win nsis portable --x64",
-    "demo-web": "node scripts/gerar-demo-web.js"
+    "demo-web": "node scripts/gerar-demo-web.js",
+    "teste:servidor": "node testes/servidor-sala.js",
+    "teste:sala": "node testes/sala-20-alunos.js"
   },
   "dependencies": {
     "node-llama-cpp": "^3.22.2"
   },
   "devDependencies": {
     "electron": "^45.0.0",
-    "electron-builder": "^26.15.3"
+    "electron-builder": "^26.15.3",
+    "playwright-core": "1.56.0"
   },
   "build": {
     "appId": "br.escola.computador",
