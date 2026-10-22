@@ -27,15 +27,17 @@ window.CE = window.CE || {};
   }
 
   CE.voz = {
-    falar(texto) {
-      if (!ligada || !sintese) return;
+    // opcoes.velocidade: 1 = normal; opcoes.forcar: fala mesmo com a voz desligada (usado no ditado).
+    falar(texto, opcoes = {}) {
+      if ((!ligada && !opcoes.forcar) || !sintese) return;
       sintese.cancel();
       const fala = new SpeechSynthesisUtterance(limpar(texto));
       fala.lang = 'pt-BR';
-      fala.rate = 1.4;
+      fala.rate = opcoes.velocidade || 1.4;
       if (vozEscolhida) fala.voice = vozEscolhida;
       sintese.speak(fala);
     },
+    disponivel() { return !!(sintese && sintese.getVoices().length); },
     parar() { sintese && sintese.cancel(); },
     get ligada() { return ligada; },
     alternar() { ligada = !ligada; if (!ligada) this.parar(); return ligada; },

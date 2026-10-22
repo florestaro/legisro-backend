@@ -25,12 +25,12 @@ window.CE = window.CE || {};
   async function simulado(canal, ...a) {
     try {
       const usuarios = ler('usuarios', []);
-      const publico = (u) => ({ id: u.id, nome: u.nome, papel: u.papel, turma: u.turma || '', avatar: u.avatar });
+      const publico = (u) => ({ id: u.id, nome: u.nome, papel: u.papel, turma: u.turma || '', avatar: u.avatar, crianca: !!u.crianca });
       const criar = (info, papel) => {
         if (!info.nome || !info.nome.trim()) throw new Error('Informe o nome.');
         if (!info.segredo || info.segredo.length < 4) throw new Error('A senha precisa ter pelo menos 4 caracteres.');
         if (usuarios.some((u) => u.nome.toLowerCase() === info.nome.trim().toLowerCase())) throw new Error('Já existe alguém com esse nome.');
-        const u = { id: String(Date.now()) + Math.random().toString(16).slice(2), nome: info.nome.trim(), papel, turma: info.turma || '', avatar: info.avatar || '🙂', segredo: info.segredo };
+        const u = { id: String(Date.now()) + Math.random().toString(16).slice(2), nome: info.nome.trim(), papel, turma: info.turma || '', avatar: info.avatar || '🙂', crianca: !!info.crianca, segredo: info.segredo };
         usuarios.push(u); gravar('usuarios', usuarios); return publico(u);
       };
       const valor = {

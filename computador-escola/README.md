@@ -4,28 +4,38 @@ Um "computador dentro do computador" para aulas de informática. O aluno entra c
 área de trabalho parecida com a do Windows, com programas de treino e um **Professor Virtual** que ensina passo a passo,
 conversa e tira dúvidas. **Funciona sem internet.**
 
-## O que já tem (Fase 1)
+## O que já tem
 
-| Parte | O que faz |
-|---|---|
-| **Entrada com perfis** | Aluno escolhe o nome (com figurinha) e digita a senha. Filtro por turma. Instrutor tem conta própria. |
-| **Área de trabalho** | Ícones (clique e clique duplo), botão Iniciar, barra de tarefas, relógio, botão direito do mouse, troca de fundo de tela. |
-| **Janelas** | Mover arrastando, maximizar, minimizar, restaurar pela barra de tarefas, fechar, redimensionar pelo canto. |
-| **Editor de Texto** | Parecido com o Word: fonte, tamanho, negrito, itálico, sublinhado, cor, alinhamento, listas, desfazer, salvar e abrir. |
-| **Digitação** | 9 exercícios em níveis (fileira do meio até frases com números e acentos), teclado ABNT2 na tela com cor por dedo, velocidade, acertos e estrelas. |
-| **Arquivos** | Pasta "Meus Documentos" de cada aluno: abrir, renomear, excluir. |
-| **Calculadora** | Para treinar cliques e o teclado numérico. |
-| **Aulas** | Lista de lições com o progresso do aluno. |
-| **Professor Virtual** | Conduz as lições, faz piscar o botão certo, fala em voz alta (voz do Windows), dá dicas se o aluno demorar e responde perguntas escritas. |
-| **Painel do Instrutor** | Cadastrar alunos e turmas, trocar senhas, ver o progresso de cada aluno em todas as aulas e na digitação. |
+### Curso de Informática: 3 níveis (um por semestre)
+- **Nível Iniciante completo: 38 aulas em 9 módulos, com 64 perguntas.** Os módulos são: Conhecendo o computador, Mouse,
+  Teclado, Janelas e menu Iniciar, Arquivos e pastas, Editor de Texto, Calculadora e Desenho, Segurança básica e a
+  Prova do nível.
+- Cada aula tem explicação, prática guiada (com a seta vermelha e o desenho do mouse) e perguntas. Cada módulo termina
+  num **desafio sem ajuda**, e o nível termina numa **prova**.
+- **O aluno só avança quando é aprovado** (70% nas perguntas). O instrutor tem tudo liberado.
+- Os níveis Intermediário e Avançado aparecem como "em breve", com o conteúdo planejado.
 
-### Lições prontas
-1. Conhecendo o mouse
-2. Trabalhando com janelas
-3. Botão Iniciar e botão direito
-4. Posição das mãos no teclado
-5. Meu primeiro documento
-6. Encontrando seus documentos
+### Curso de Digitação: 108 exercícios em 3 níveis
+- **Iniciante** (39): fileiras do meio, de cima e de baixo, Shift, acentos e cedilha, palavras e frases.
+- **Intermediário** (35): números, pontuação, frases, textos curtos, ritmo e trava-línguas.
+- **Avançado** (31): símbolos, dados do dia a dia (e-mail, telefone, CEP), teclado numérico, textos de Machado de Assis,
+  Gonçalves Dias e Olavo Bilac, **ditado** (o professor fala e o aluno digita) e testes de velocidade.
+- **Cada exercício tem meta de velocidade (ppm) e de acertos (%)**, e o próximo só libera quando bate as duas.
+- **Provas cronometradas**: Iniciante (3 min, 20 ppm, 92%), Intermediário (5 min, 35 ppm, 95%) e Avançado
+  (5 min, 45 ppm, 97%). Crianças têm metas menores.
+- O teclado ABNT2 aparece na tela, com uma cor por dedo e a dica de como fazer acentos e símbolos.
+- **Jogos e treinos**: Chuva de palavras, Treino das teclas difíceis (feito com as teclas em que o aluno mais erra)
+  e o gráfico de evolução.
+
+### Programas do computador simulado
+Editor de Texto, Digitação, Arquivos, **Lixeira**, Calculadora, **Conhecendo o Computador** (desenho interativo das
+peças), **Jogos do Mouse** (balões, presentes, feira, caixas secretas e caça ao tesouro), **Treino do Teclado**,
+**Desenho** (parecido com o Paint), Aulas e Painel do Instrutor.
+
+### Outros
+- **19 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova.
+- **Painel do Instrutor**: cadastro (com a opção "criança"), aula atual de cada aluno, média, exercício de digitação
+  atual, melhor velocidade, provas e medalhas.
 
 Para criar novas lições, veja [LEIA-ME-LICOES.md](LEIA-ME-LICOES.md).
 

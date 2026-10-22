@@ -46,7 +46,7 @@ function confere(segredo, usuario) {
 }
 
 function publico(u) {
-  return { id: u.id, nome: u.nome, papel: u.papel, turma: u.turma || '', avatar: u.avatar || '🙂' };
+  return { id: u.id, nome: u.nome, papel: u.papel, turma: u.turma || '', avatar: u.avatar || '🙂', crianca: !!u.crianca };
 }
 
 function listarUsuarios() {
@@ -57,7 +57,7 @@ function existeInstrutor() {
   return ler('usuarios', []).some((u) => u.papel === 'instrutor');
 }
 
-function criarUsuario({ nome, segredo, papel = 'aluno', turma = '', avatar = '🙂' }) {
+function criarUsuario({ nome, segredo, papel = 'aluno', turma = '', avatar = '🙂', crianca = false }) {
   nome = String(nome || '').trim();
   if (!nome) throw new Error('Informe o nome.');
   if (!segredo || String(segredo).length < 4) throw new Error('A senha precisa ter pelo menos 4 caracteres.');
@@ -65,7 +65,7 @@ function criarUsuario({ nome, segredo, papel = 'aluno', turma = '', avatar = '�
   if (usuarios.some((u) => u.nome.toLowerCase() === nome.toLowerCase())) {
     throw new Error('Já existe alguém com esse nome.');
   }
-  const novo = { id: crypto.randomUUID(), nome, papel, turma, avatar, ...gerarHash(segredo), criadoEm: Date.now() };
+  const novo = { id: crypto.randomUUID(), nome, papel, turma, avatar, crianca: !!crianca, ...gerarHash(segredo), criadoEm: Date.now() };
   usuarios.push(novo);
   salvar('usuarios', usuarios);
   return publico(novo);

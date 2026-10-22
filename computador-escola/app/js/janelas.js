@@ -16,7 +16,13 @@ window.CE = window.CE || {};
   function area() { return document.getElementById('area-janelas'); }
   function barra() { return document.getElementById('tarefas-programas'); }
 
+  let ultimaAtiva = null;
+
   function focar(id) {
+    if (abertas[id] && ultimaAtiva !== id) {
+      ultimaAtiva = id;
+      setTimeout(() => CE.emitir('janela:ativada', { app: id }), 0);
+    }
     Object.values(abertas).forEach((j) => {
       j.elemento.classList.remove('ativa');
       j.botaoTarefa.classList.remove('ativa');
@@ -56,6 +62,7 @@ window.CE = window.CE || {};
     j.elemento.remove();
     j.botaoTarefa.remove();
     delete abertas[id];
+    if (ultimaAtiva === id) ultimaAtiva = null;
     CE.emitir('janela:fechada', { app: id });
   }
 
@@ -108,9 +115,14 @@ window.CE = window.CE || {};
         ),
         CE.el('div', { class: 'janela-corpo' }),
       );
-      janela.style.width = Math.min(largura, limite.width - 20) + 'px';
+      // A janela abre no espaço livre à esquerda do painel do professor, para não ficar escondida atrás dele.
+      const professor = document.getElementById('professor');
+      const reservado = professor && !professor.hidden && !professor.classList.contains('recolhido') ? professor.offsetWidth + 24 : 0;
+      const livre = limite.width - reservado;
+      const larguraFinal = Math.min(largura, livre - 20 > 500 ? livre - 20 : limite.width - 20);
+      janela.style.width = larguraFinal + 'px';
       janela.style.height = Math.min(altura, limite.height - 20) + 'px';
-      janela.style.left = Math.max(10, (limite.width - largura) / 2 - 84 + deslocamento) + 'px';
+      janela.style.left = Math.max(10, Math.min((livre - larguraFinal) / 2 - 84 + deslocamento, livre - larguraFinal - 10)) + 'px';
       janela.style.top = Math.max(10, (limite.height - altura) / 2 - 84 + deslocamento) + 'px';
       janela.addEventListener('pointerdown', () => focar(id));
 

@@ -61,7 +61,7 @@ window.CE = window.CE || {};
       const resposta = await CE.api.perguntarIA(pergunta, {
         app: app ? app.nome : 'nenhum (área de trabalho)',
         licao: licao ? licao.titulo : '',
-        passo: passo ? passo.texto : '',
+        passo: passo ? (passo.quiz ? `Responder a pergunta: ${passo.quiz.pergunta}` : passo.texto) : '',
       }, (trecho) => {
         recebido += trecho;
         balao.textContent = recebido;
@@ -140,32 +140,97 @@ window.CE = window.CE || {};
 
   // ---------- Lições ----------
 
+  // Pontos das perguntas: acertar de primeira vale 1, na segunda tentativa vale 0,5 (na prova, só de primeira).
+  let quizPontos = 0;
+  let quizTotal = 0;
+  let errosNestaPergunta = 0;
+
+  function cabecalhoDoCartao(passo) {
+    return [
+      CE.el('div', { class: 'prof-titulo' }, `${licao.icone} ${licao.titulo}`,
+        licao.desafio ? CE.el('span', { class: 'prof-selo desafio' }, 'Desafio: sem ajuda') : null,
+        licao.prova ? CE.el('span', { class: 'prof-selo prova' }, 'Prova') : null),
+      CE.el('div', { class: 'prof-progresso' },
+        CE.el('div', { class: 'prof-progresso-cheio', style: `width:${Math.round((indicePasso / licao.passos.length) * 100)}%` })),
+      CE.el('div', { class: 'prof-passo-num' }, `Passo ${indicePasso + 1} de ${licao.passos.length}`),
+      passo.emoji ? CE.el('div', { class: 'prof-emoji', 'aria-hidden': 'true' }, passo.emoji) : null,
+    ];
+  }
+
+  function botoesFixos(passo, ...extras) {
+    return CE.el('div', { class: 'prof-botoes' },
+      CE.el('button', { class: 'botao secundario pequeno', title: 'Ouvir de novo', onclick: () => CE.voz.falar(textoFalado(passo)) }, '🔊 Repetir'),
+      CE.el('button', { class: 'botao secundario pequeno', onclick: sairDaLicao }, 'Sair da aula'),
+      ...extras,
+    );
+  }
+
+  function textoFalado(passo) {
+    if (!passo.quiz) return passo.texto;
+    return `${passo.quiz.pergunta} ${passo.quiz.opcoes.map((o, i) => `Opção ${i + 1}: ${o}.`).join(' ')}`;
+  }
+
   function desenharLicao() {
     const area = $('prof-licao');
     const passo = passoAtual();
     if (!licao || !passo) { area.replaceChildren(); return; }
+    if (passo.quiz) { desenharPergunta(passo); return; }
+    const mostrarMouse = passo.mouse && !licao.desafio;
     area.replaceChildren(CE.el('div', { class: 'prof-cartao' },
-      CE.el('div', { class: 'prof-titulo' }, `${licao.icone} ${licao.titulo}`),
-      CE.el('div', { class: 'prof-progresso' },
-        CE.el('div', { class: 'prof-progresso-cheio', style: `width:${Math.round((indicePasso / licao.passos.length) * 100)}%` })),
-      CE.el('div', { class: 'prof-passo-num' }, `Passo ${indicePasso + 1} de ${licao.passos.length}`),
-      passo.mouse
+      ...cabecalhoDoCartao(passo),
+      mostrarMouse
         ? CE.el('div', { class: 'prof-com-mouse' }, CE.figuraMouse(passo.mouse), CE.el('p', { class: 'prof-texto' }, passo.texto))
         : CE.el('p', { class: 'prof-texto' }, passo.texto),
       CE.el('p', { class: 'prof-dica', hidden: true }),
-      CE.el('div', { class: 'prof-botoes' },
-        CE.el('button', { class: 'botao secundario pequeno', title: 'Ouvir de novo', onclick: () => CE.voz.falar(passo.texto) }, '🔊 Repetir'),
-        CE.el('button', { class: 'botao secundario pequeno', onclick: sairDaLicao }, 'Sair da aula'),
-        passo.espera ? null : CE.el('button', { class: 'botao', 'data-acao': 'continuar', onclick: avancar }, 'Continuar ▶'),
-      ),
+      botoesFixos(passo, passo.espera ? null : CE.el('button', { class: 'botao', 'data-acao': 'continuar', onclick: avancar }, 'Continuar ▶')),
+    ));
+  }
+
+  // Pergunta de múltipla escolha.
+  function desenharPergunta(passo) {
+    const { pergunta, opcoes, correta, explicacao } = passo.quiz;
+    errosNestaPergunta = 0;
+    const retorno = CE.el('p', { class: 'prof-retorno', hidden: true });
+    const continuar = CE.el('button', { class: 'botao', 'data-acao': 'continuar', hidden: true, onclick: avancar }, 'Continuar ▶');
+    const botoes = opcoes.map((texto, i) => CE.el('button', {
+      class: 'prof-opcao', 'data-opcao': i,
+      onclick: (e) => {
+        if (!continuar.hidden) return;
+        if (i === correta) {
+          e.currentTarget.classList.add('certa');
+          quizPontos += errosNestaPergunta === 0 ? 1 : errosNestaPergunta === 1 && !licao.prova ? 0.5 : 0;
+          retorno.textContent = '✅ Isso mesmo! ' + (explicacao || '');
+          retorno.className = 'prof-retorno certo';
+          continuar.hidden = false;
+          CE.voz.falar('Isso mesmo! ' + (explicacao || ''));
+          CE.emitir('quiz:respondido', { certo: true, primeira: errosNestaPergunta === 0 });
+        } else {
+          errosNestaPergunta++;
+          e.currentTarget.classList.add('errada');
+          e.currentTarget.disabled = true;
+          retorno.textContent = '❌ Ainda não. Leia de novo e tente outra opção.';
+          retorno.className = 'prof-retorno errado';
+          CE.voz.falar('Ainda não. Tente outra opção.');
+          CE.emitir('quiz:respondido', { certo: false });
+        }
+        retorno.hidden = false;
+      },
+    }, CE.el('span', { class: 'prof-opcao-letra' }, 'ABCDE'[i]), texto));
+    $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao' },
+      ...cabecalhoDoCartao(passo),
+      CE.el('p', { class: 'prof-texto' }, '❓ ' + pergunta),
+      CE.el('div', { class: 'prof-opcoes' }, ...botoes),
+      retorno,
+      botoesFixos(passo, continuar),
     ));
   }
 
   function mostrarDica() {
     const passo = passoAtual();
-    const texto = passo && (passo.dica || 'Tem alguma dúvida? Escreva ali embaixo que eu te ajudo!');
+    if (!passo || licao.desafio) return;
+    const texto = passo.dica || 'Tem alguma dúvida? Escreva ali embaixo que eu te ajudo!';
     const elemento = document.querySelector('#prof-licao .prof-dica');
-    if (!elemento || !texto) return;
+    if (!elemento) return;
     elemento.textContent = '💡 ' + texto;
     elemento.hidden = false;
     CE.voz.falar(texto);
@@ -176,11 +241,15 @@ window.CE = window.CE || {};
     clearTimeout(timerDica);
     const passo = passoAtual();
     if (!passo) { concluirLicao(); return; }
+    // Tira o foco do botão "Continuar", para as teclas apertadas a seguir não "clicarem" nele de novo.
+    if (document.activeElement && $('professor').contains(document.activeElement)) document.activeElement.blur();
     if (passo.preparar) await passo.preparar();
     if (passo.jaFeito && passo.jaFeito()) { avancar(); return; }
+    if (passo.quiz) quizTotal++;
     desenharLicao();
-    destacar(passo.destacar);
-    CE.voz.falar(passo.texto);
+    // No desafio o aluno faz sozinho: sem seta e sem destaque.
+    destacar(licao.desafio ? null : passo.destacar);
+    CE.voz.falar(textoFalado(passo));
     if (passo.espera) {
       const estaLicao = licao, esteIndice = indicePasso;
       pararDeOuvir = CE.ouvir(passo.espera, (dados) => {
@@ -202,19 +271,44 @@ window.CE = window.CE || {};
 
   async function concluirLicao() {
     const terminada = licao;
+    const nota = quizTotal ? Math.round((quizPontos / quizTotal) * 100) : null;
+    const aprovada = nota == null || nota >= CE.curso.NOTA_MINIMA;
     encerrar();
     await CE.sessao.atualizarProgresso((p) => {
       p.licoes = p.licoes || {};
       const antes = p.licoes[terminada.id] || { vezes: 0 };
-      p.licoes[terminada.id] = { concluida: true, vezes: antes.vezes + 1, em: Date.now() };
+      const jaAprovada = antes.concluida;
+      p.licoes[terminada.id] = {
+        concluida: jaAprovada || aprovada,
+        nota: jaAprovada && antes.nota != null && (nota == null || antes.nota > nota) ? antes.nota : nota,
+        vezes: antes.vezes + 1,
+        em: Date.now(),
+      };
     });
-    CE.emitir('licao:concluida', { licao: terminada.id });
+    if (!aprovada) {
+      const texto = `Sua nota foi ${nota}%. Para passar, precisa de pelo menos ${CE.curso.NOTA_MINIMA}%. Vamos refazer a aula com calma? Você consegue!`;
+      $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao reprovada' },
+        CE.el('div', { class: 'prof-titulo' }, `${terminada.icone} ${terminada.titulo}`),
+        CE.el('div', { class: 'prof-nota baixa' }, `${nota}%`),
+        CE.el('p', { class: 'prof-texto' }, texto),
+        CE.el('div', { class: 'prof-botoes' },
+          CE.el('button', { class: 'botao', 'data-acao': 'refazer', onclick: () => comecarLicao(terminada.id) }, 'Refazer a aula ↻'),
+          CE.el('button', { class: 'botao secundario pequeno', onclick: () => CE.janelas.abrir('aulas') }, 'Ver todas as aulas'),
+        ),
+      ));
+      CE.voz.falar(texto);
+      CE.emitir('licao:reprovada', { licao: terminada.id, nota });
+      return;
+    }
+    CE.emitir('licao:concluida', { licao: terminada.id, nota });
+    CE.comemorar(terminada.prova ? 'grande' : 'pequena');
     const proxima = await proximaLicao();
     $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao concluida' },
-      CE.el('div', { class: 'prof-titulo' }, '🎉 Aula concluída!'),
+      CE.el('div', { class: 'prof-titulo' }, terminada.prova ? '🏆 Prova aprovada!' : '🎉 Aula concluída!'),
+      nota != null ? CE.el('div', { class: 'prof-nota' }, `${nota}%`) : null,
       CE.el('p', { class: 'prof-texto' }, terminada.conclusao),
       CE.el('div', { class: 'prof-botoes' },
-        proxima ? CE.el('button', { class: 'botao', onclick: () => comecarLicao(proxima.id) }, `Próxima: ${proxima.titulo} ▶`) : null,
+        proxima ? CE.el('button', { class: 'botao', 'data-acao': 'proxima', onclick: () => comecarLicao(proxima.id) }, `Próxima: ${proxima.titulo} ▶`) : null,
         CE.el('button', { class: 'botao secundario pequeno', onclick: () => CE.janelas.abrir('aulas') }, 'Ver todas as aulas'),
       ),
     ));
@@ -236,16 +330,21 @@ window.CE = window.CE || {};
   }
 
   async function proximaLicao() {
-    const feitas = (await CE.sessao.progresso()).licoes || {};
-    return CE.LICOES.find((l) => !(feitas[l.id] && feitas[l.id].concluida));
+    return CE.curso.proxima(await CE.sessao.progresso());
   }
 
-  function comecarLicao(id) {
-    const encontrada = CE.LICOES.find((l) => l.id === id);
+  async function comecarLicao(id) {
+    const encontrada = CE.curso.licao(id);
     if (!encontrada) return;
+    if (!CE.curso.liberada(encontrada, await CE.sessao.progresso())) {
+      CE.avisar('🔒 Esta aula ainda está bloqueada. Termine a aula anterior primeiro!');
+      return;
+    }
     encerrar();
     licao = encontrada;
     indicePasso = 0;
+    quizPontos = 0;
+    quizTotal = 0;
     $('professor').classList.remove('recolhido');
     CE.emitir('licao:iniciada', { licao: id });
     iniciarPasso();
@@ -257,7 +356,7 @@ window.CE = window.CE || {};
     const proxima = await proximaLicao();
     const texto = proxima
       ? `Olá, ${primeiroNome}! Que bom te ver. Vamos aprender? Sua próxima aula é "${proxima.titulo}".`
-      : `Olá, ${primeiroNome}! Você já fez todas as aulas. Que tal treinar no programa Digitação ou escrever um documento?`;
+      : `Olá, ${primeiroNome}! Você já fez todas as aulas disponíveis. Que tal treinar no programa Digitação?`;
     $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao' },
       CE.el('p', { class: 'prof-texto' }, texto),
       CE.el('div', { class: 'prof-botoes' },
