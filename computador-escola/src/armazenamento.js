@@ -40,9 +40,11 @@ function gerarHash(segredo, sal = crypto.randomBytes(16).toString('hex')) {
   return { sal, hash };
 }
 
+// Conferir a senha em segundo plano: com a sala inteira entrando ao mesmo tempo, o computador do instrutor não trava.
 function confere(segredo, usuario) {
-  const { hash } = gerarHash(segredo, usuario.sal);
-  return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(usuario.hash, 'hex'));
+  return new Promise((resolver, falhar) => crypto.scrypt(String(segredo), usuario.sal, 32, (erro, hash) => {
+    if (erro) falhar(erro); else resolver(crypto.timingSafeEqual(hash, Buffer.from(usuario.hash, 'hex')));
+  }));
 }
 
 function publico(u) {
@@ -71,9 +73,11 @@ function criarUsuario({ nome, segredo, papel = 'aluno', turma = '', avatar = '�
   return publico(novo);
 }
 
-function entrar(id, segredo) {
+async function entrar(id, segredo) {
   const usuario = ler('usuarios', []).find((u) => u.id === id);
-  if (!usuario || !confere(segredo, usuario)) throw new Error('Senha incorreta. Tente de novo.');
+  if (!usuario || !(await confere(segredo, usuario))) throw new Error('Senha incorreta. Tente de novo.');
+  // O instrutor pode ter removido a conta enquanto a senha era conferida.
+  if (!ler('usuarios', []).some((u) => u.id === id)) throw new Error('Usuário não encontrado.');
   return publico(usuario);
 }
 

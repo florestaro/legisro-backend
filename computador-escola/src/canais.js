@@ -41,10 +41,22 @@ function criarCanais(dados) {
       if (id === s.usuario.id) throw new Error('Você não pode remover a si mesmo.');
       return dados.removerUsuario(id);
     },
-    'sessao:entrar': (s, id, segredo) => { s.usuario = dados.entrar(id, segredo); return s.usuario; },
+    'sessao:entrar': async (s, id, segredo) => { s.usuario = await dados.entrar(id, segredo); return s.usuario; },
     'sessao:sair': (s) => { if (s.usuario) presencas.delete(s.usuario.id); s.usuario = null; return true; },
     'dados:ler': (s, chave, padrao) => dados.ler(conferirChave(s, chave), padrao),
-    'dados:salvar': (s, chave, valor) => dados.salvar(conferirChave(s, chave), valor),
+    'dados:salvar': (s, chave, valor) => {
+      const arquivo = conferirChave(s, chave);
+      // Um colega pode entregar um e-mail (email:entregar) entre a hora em que a tela leu a caixa e a hora em que
+      // ela grava: as mensagens que estão guardadas e que a tela ainda não conhece continuam na caixa.
+      // (O Correio não apaga mensagens de vez, só muda de pasta, então juntar nunca traz de volta algo apagado.)
+      if (arquivo.startsWith('email-') && valor && Array.isArray(valor.mensagens)) {
+        const guardada = dados.ler(arquivo, null);
+        const conhecidas = new Set(valor.mensagens.map((m) => m && m.id));
+        const chegaram = (guardada && Array.isArray(guardada.mensagens) ? guardada.mensagens : []).filter((m) => m && !conhecidas.has(m.id));
+        if (chegaram.length) valor = { ...valor, mensagens: valor.mensagens.concat(chegaram) };
+      }
+      return dados.salvar(arquivo, valor);
+    },
 
     // E-mail entre alunos: o remetente só escreve na caixa do destinatário por aqui,
     // e só pode acrescentar uma mensagem na Caixa de entrada (nunca ler ou apagar as mensagens dele).

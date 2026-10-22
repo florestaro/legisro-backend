@@ -415,9 +415,10 @@ window.CE = window.CE || {};
     const novato = u.papel !== 'instrutor' && !progresso.nivelamento && !Object.keys(progresso.licoes || {}).length;
     if (novato) {
       const texto = `Olá, ${primeiroNome}! Seja bem-vindo ao curso. É a sua primeira vez aqui? Se você já sabe usar o computador, faça o teste de nivelamento: se for bem, pula as aulas do começo. Se está começando agora, é só começar a primeira aula!`;
-      const pularNivelamento = async () => {
-        await CE.sessao.atualizarProgresso((p) => { p.nivelamento = { em: Date.now(), resultado: 'pulado' }; });
+      // A aula começa na hora; a escolha é gravada em seguida (pela rede, no modo sala de aula, pode demorar um pouco).
+      const pularNivelamento = () => {
         comecarLicao(proxima.id);
+        CE.sessao.atualizarProgresso((p) => { p.nivelamento = { em: Date.now(), resultado: 'pulado' }; }).catch((e) => CE.avisar(e.message));
       };
       $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao' },
         CE.el('div', { class: 'prof-emoji', 'aria-hidden': 'true' }, '👋'),

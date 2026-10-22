@@ -3,6 +3,14 @@ window.CE = window.CE || {};
 
 (function () {
   let filaProgresso = Promise.resolve();
+  // As mudanças nos arquivos também entram numa fila: cada uma lê a lista, altera e grava antes da próxima começar
+  // (no modo sala de aula a gravação vai pela rede e demora mais; sem a fila, uma mudança apagaria a outra).
+  let filaArquivos = Promise.resolve();
+  function naFilaDosArquivos(tarefa) {
+    const vez = filaArquivos.then(tarefa);
+    filaArquivos = vez.catch(() => {});
+    return vez;
+  }
 
   const novoId = () => String(Date.now()) + Math.random().toString(16).slice(2, 8);
   const juntar = (pasta, nome) => (pasta ? pasta + '/' : '') + nome;
@@ -54,12 +62,15 @@ window.CE = window.CE || {};
     // Cada item tem "local" ('pc' ou 'pendrive') e "pasta" (o caminho dentro do local, '' = raiz).
     // Pastas também são itens, com tipo 'pasta'. O caminho de uma pasta é pasta + '/' + nome.
     async salvarArquivo({ nome, tipo, conteudo, local = 'pc', pasta = '' }) {
-      const lista = await CE.sessao.arquivos();
-      const existente = lista.find((a) => !a.naLixeira && mesmoLugar(a, local, pasta) && a.nome.toLowerCase() === nome.toLowerCase() && a.tipo === tipo);
-      const arquivo = existente || { id: novoId(), nome, tipo, local, pasta, criadoEm: Date.now() };
-      Object.assign(arquivo, { nome, conteudo, alteradoEm: Date.now() });
-      if (!existente) lista.push(arquivo);
-      await CE.sessao.gravarArquivos(lista);
+      const { arquivo, existente } = await naFilaDosArquivos(async () => {
+        const lista = await CE.sessao.arquivos();
+        const existente = lista.find((a) => !a.naLixeira && mesmoLugar(a, local, pasta) && a.nome.toLowerCase() === nome.toLowerCase() && a.tipo === tipo);
+        const arquivo = existente || { id: novoId(), nome, tipo, local, pasta, criadoEm: Date.now() };
+        Object.assign(arquivo, { nome, conteudo, alteradoEm: Date.now() });
+        if (!existente) lista.push(arquivo);
+        await CE.sessao.gravarArquivos(lista);
+        return { arquivo, existente };
+      });
       CE.emitir('arquivo:salvo', { nome, tipo, novo: !existente, conteudo, local, pasta });
       return arquivo;
     },
@@ -67,32 +78,43 @@ window.CE = window.CE || {};
     async criarPasta(nome, local = 'pc', pasta = '') {
       nome = String(nome || '').trim().replace(/[\\/]/g, '-');
       if (!nome) throw new Error('Escreva um nome para a pasta.');
-      const lista = await CE.sessao.arquivos();
-      if (lista.some((a) => !a.naLixeira && a.tipo === 'pasta' && mesmoLugar(a, local, pasta) && a.nome.toLowerCase() === nome.toLowerCase())) {
-        throw new Error('Já existe uma pasta com esse nome aqui.');
-      }
-      const item = { id: novoId(), nome, tipo: 'pasta', local, pasta, criadoEm: Date.now(), alteradoEm: Date.now() };
-      lista.push(item);
-      await CE.sessao.gravarArquivos(lista);
+      const item = await naFilaDosArquivos(async () => {
+        const lista = await CE.sessao.arquivos();
+        if (lista.some((a) => !a.naLixeira && a.tipo === 'pasta' && mesmoLugar(a, local, pasta) && a.nome.toLowerCase() === nome.toLowerCase())) {
+          throw new Error('Já existe uma pasta com esse nome aqui.');
+        }
+        const item = { id: novoId(), nome, tipo: 'pasta', local, pasta, criadoEm: Date.now(), alteradoEm: Date.now() };
+        lista.push(item);
+        await CE.sessao.gravarArquivos(lista);
+        return item;
+      });
       CE.emitir('pasta:criada', { nome, local, pasta, caminho: juntar(pasta, nome) });
       return item;
     },
 
     // Garante que exista uma pasta (usado pelos Downloads). Devolve o caminho dela.
     async garantirPasta(nome, local = 'pc', pasta = '') {
-      const lista = await CE.sessao.arquivos();
-      if (!lista.some((a) => !a.naLixeira && a.tipo === 'pasta' && mesmoLugar(a, local, pasta) && a.nome === nome)) {
-        await CE.sessao.criarPasta(nome, local, pasta);
-      }
+      const criada = await naFilaDosArquivos(async () => {
+        const lista = await CE.sessao.arquivos();
+        if (lista.some((a) => !a.naLixeira && a.tipo === 'pasta' && mesmoLugar(a, local, pasta) && a.nome === nome)) return false;
+        lista.push({ id: novoId(), nome, tipo: 'pasta', local, pasta, criadoEm: Date.now(), alteradoEm: Date.now() });
+        await CE.sessao.gravarArquivos(lista);
+        return true;
+      });
+      if (criada) CE.emitir('pasta:criada', { nome, local, pasta, caminho: juntar(pasta, nome) });
       return juntar(pasta, nome);
     },
 
     async alterarArquivo(id, alterar, evento, dadosExtras = {}) {
-      const lista = await CE.sessao.arquivos();
-      const arquivo = lista.find((a) => a.id === id);
+      const arquivo = await naFilaDosArquivos(async () => {
+        const lista = await CE.sessao.arquivos();
+        const arquivo = lista.find((a) => a.id === id);
+        if (!arquivo) return null;
+        const resultado = alterar(arquivo, lista);
+        await CE.sessao.gravarArquivos(Array.isArray(resultado) ? resultado : lista);
+        return arquivo;
+      });
       if (!arquivo) return;
-      const resultado = alterar(arquivo, lista);
-      await CE.sessao.gravarArquivos(Array.isArray(resultado) ? resultado : lista);
       CE.emitir(evento, { nome: arquivo.nome, tipo: arquivo.tipo, local: arquivo.local || 'pc', pasta: arquivo.pasta || '', ...dadosExtras });
     },
 
@@ -156,6 +178,7 @@ window.CE = window.CE || {};
     },
     // Compactar: junta um arquivo (ou uma pasta com tudo dentro) num só arquivo .zip, no mesmo lugar.
     async compactar(id) {
+      const r = await naFilaDosArquivos(async () => {
       const lista = await CE.sessao.arquivos();
       const a = lista.find((x) => x.id === id);
       if (!a) return null;
@@ -172,12 +195,17 @@ window.CE = window.CE || {};
       zip.nome = nomeLivre(lista, { ...a, tipo: 'zip' }, local, a.pasta || '');
       lista.push(zip);
       await CE.sessao.gravarArquivos(lista);
+      return { a, zip, itens, antes, local };
+      });
+      if (!r) return null;
+      const { a, zip, itens, antes, local } = r;
       const arquivos = itens.filter((i) => i.tipo !== 'pasta').length;
       CE.emitir('arquivo:compactado', { nome: zip.nome, origem: a.nome, arquivos, local, pasta: zip.pasta });
       return { zip, arquivos, antes, depois: Math.round(antes * 0.45) };
     },
     // Extrair: recria o que está dentro do .zip numa pasta com o mesmo nome.
     async extrair(id) {
+      const r = await naFilaDosArquivos(async () => {
       const lista = await CE.sessao.arquivos();
       const zip = lista.find((x) => x.id === id && x.tipo === 'zip');
       if (!zip) return null;
@@ -189,6 +217,10 @@ window.CE = window.CE || {};
       const base = juntar(zip.pasta, pastaNova.nome);
       lista.push(pastaNova, ...itens.map((i) => ({ id: novoId(), nome: i.nome, tipo: i.tipo, conteudo: i.conteudo, local, pasta: juntar(base, i.pasta), criadoEm: Date.now(), alteradoEm: Date.now() })));
       await CE.sessao.gravarArquivos(lista);
+      return { zip, pastaNova, itens, local };
+      });
+      if (!r) return null;
+      const { zip, pastaNova, itens, local } = r;
       CE.emitir('arquivo:extraido', { nome: zip.nome, pasta: pastaNova.nome, arquivos: itens.filter((i) => i.tipo !== 'pasta').length, local });
       return pastaNova;
     },
@@ -197,13 +229,16 @@ window.CE = window.CE || {};
       if (!CE.pendrive.conectado) throw new Error('Conecte o pen drive primeiro (botão 🔌 na barra de tarefas).');
       const nome = 'Backup ' + new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
       const pasta = await CE.sessao.garantirPasta(nome, 'pendrive', '');
-      const lista = await CE.sessao.arquivos();
-      const doPc = lista.filter((x) => !x.naLixeira && (x.local || 'pc') === 'pc');
-      const ja = new Set(lista.filter((x) => x.local === 'pendrive' && dentroDe(x.pasta, pasta)).map((x) => `${x.pasta}|${x.nome}|${x.tipo}`));
-      const copias = doPc.map((x) => ({ ...x, id: novoId(), local: 'pendrive', pasta: juntar(pasta, x.pasta || ''), alteradoEm: Date.now() }))
-        .filter((x) => !ja.has(`${x.pasta}|${x.nome}|${x.tipo}`));
-      lista.push(...copias);
-      await CE.sessao.gravarArquivos(lista);
+      const doPc = await naFilaDosArquivos(async () => {
+        const lista = await CE.sessao.arquivos();
+        const doPc = lista.filter((x) => !x.naLixeira && (x.local || 'pc') === 'pc');
+        const ja = new Set(lista.filter((x) => x.local === 'pendrive' && dentroDe(x.pasta, pasta)).map((x) => `${x.pasta}|${x.nome}|${x.tipo}`));
+        const copias = doPc.map((x) => ({ ...x, id: novoId(), local: 'pendrive', pasta: juntar(pasta, x.pasta || ''), alteradoEm: Date.now() }))
+          .filter((x) => !ja.has(`${x.pasta}|${x.nome}|${x.tipo}`));
+        lista.push(...copias);
+        await CE.sessao.gravarArquivos(lista);
+        return doPc;
+      });
       const arquivos = doPc.filter((x) => x.tipo !== 'pasta').length;
       CE.emitir('config:backup', { pasta: nome, arquivos });
       return { pasta: nome, arquivos };
@@ -219,7 +254,7 @@ window.CE = window.CE || {};
     },
 
     async esvaziarLixeira() {
-      await CE.sessao.gravarArquivos((await CE.sessao.arquivos()).filter((a) => !a.naLixeira));
+      await naFilaDosArquivos(async () => CE.sessao.gravarArquivos((await CE.sessao.arquivos()).filter((a) => !a.naLixeira)));
       CE.emitir('lixeira:esvaziada');
     },
   };
