@@ -7,7 +7,7 @@ conversa e tira dúvidas. **Funciona sem internet.**
 ## O que já tem
 
 ### Curso de Informática: 3 níveis (um por semestre)
-- **Nível Iniciante completo: 45 aulas em 10 módulos.** Os módulos são: Conhecendo o computador, Mouse, Teclado,
+- **Nível Iniciante completo: 46 aulas em 10 módulos.** Os módulos são: Conhecendo o computador, Mouse, Teclado,
   Janelas e menu Iniciar, Arquivos e pastas, Editor de Texto, Calculadora e Desenho, **Internet**, Segurança básica e a
   Prova do nível.
 - **Teste de nivelamento** no primeiro acesso do aluno: com 80% e sem pular tarefas, as aulas do Iniciante ficam
@@ -41,7 +41,7 @@ e CONT.SE, formatação de moeda e porcentagem e alça de preenchimento), **E-ma
 endereço `@correio.escola` e manda mensagens com anexo para os colegas e para contatos de treino que respondem),
 Digitação, **Arquivos** (pastas e subpastas, copiar/recortar/colar, arrastar, pesquisar e **pen drive** simulado),
 **Lixeira**, Calculadora, **Conhecendo o Computador** (desenho interativo das
-peças), **Jogos do Mouse** (balões, presentes, feira, caixas secretas e caça ao tesouro), **Treino do Teclado**,
+peças), **Jogos do Mouse** (7 jogos: balões, presentes, feira, caixas secretas, caça ao tesouro, pontaria e labirinto, cada um com os níveis Fácil, Médio e Difícil; o nível seguinte só libera quando o aluno vence o anterior), **Treino do Teclado**,
 **Desenho** (parecido com o Paint), **Navegador** (abas, favoritos, voltar/avançar e barra de endereço com cadeado),
 Aulas e Painel do Instrutor.
 
@@ -54,7 +54,7 @@ prêmio falso e banco falso), que mostram uma página explicando os sinais de go
 Os arquivos baixados vão para a pasta **Downloads**.
 
 ### Outros
-- **28 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova.
+- **30 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova.
 - **Painel do Instrutor**: cadastro (com a opção "criança"), aula atual de cada aluno, média, exercício de digitação
   atual, melhor velocidade, provas e medalhas.
 

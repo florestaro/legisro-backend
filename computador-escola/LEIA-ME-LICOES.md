@@ -96,7 +96,7 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `navegador:download` | Baixou um arquivo num site | `site`, `nome` |
 | `janela:ativada` | Trouxe uma janela para a frente | `app` |
 | `peca:clicada` / `computador:ligado` / `computador:desligado` | Conhecendo o Computador | `peca`, `tipo`, `total` |
-| `jogo:iniciado` / `jogo:concluido` | Jogos do Mouse | `jogo` (`baloes`, `presentes`, `feira`, `caixas`, `tesouro`), `segundos` |
+| `jogo:iniciado` / `jogo:concluido` / `jogo:perdido` | Jogos do Mouse | `jogo` (`baloes`, `presentes`, `feira`, `caixas`, `tesouro`, `pontaria`, `labirinto`), `nivel` (`facil`, `medio`, `dificil`), `segundos`, `motivo` |
 | `rolagem:fundo` | Chegou ao fundo do mar no jogo do tesouro | |
 | `tecla:apertada` / `teclas:texto` | Treino do Teclado | `tecla` (ex.: `Enter`, `Backspace`, `CapsLock`, `ArrowLeft`, `" "`) / `texto` |
 | `desenho:traco` / `desenho:forma` / `desenho:cor` / `desenho:ferramenta` / `desenho:balde` / `desenho:desfeito` / `desenho:limpo` | Desenho | `ferramenta`, `forma`, `cor` (ex.: `vermelho`) |

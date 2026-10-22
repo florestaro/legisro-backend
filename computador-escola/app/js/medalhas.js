@@ -32,6 +32,8 @@ window.CE = window.CE || {};
     { id: 'n2-email', icone: '📧', nome: 'Carteiro digital', descricao: 'Terminou o módulo de e-mail.', ganhou: (p) => moduloAprovado(p, 'n2-email') },
     { id: 'n2-servicos', icone: '🏛️', nome: 'Cidadão digital', descricao: 'Terminou o módulo de banco e serviços digitais.', ganhou: (p) => moduloAprovado(p, 'n2-servicos') },
     { id: 'formado-n2', icone: '🏆', nome: 'Formado no Intermediário', descricao: 'Passou na prova do nível Intermediário de informática.', ganhou: (p) => moduloAprovado(p, 'n2-prova') },
+    { id: 'mouse-medio', icone: '🎯', nome: 'Mouse afiado', descricao: 'Venceu todos os Jogos do Mouse no nível Médio.', ganhou: (p) => CE.jogosMouse.venceuTodos(p, 'medio') },
+    { id: 'mouse-dificil', icone: '🏅', nome: 'Campeão do mouse', descricao: 'Venceu todos os Jogos do Mouse no nível Difícil.', ganhou: (p) => CE.jogosMouse.venceuTodos(p, 'dificil') },
     { id: 'ppm-10', icone: '🐢', nome: '10 palavras por minuto', descricao: 'Digitou a 10 ppm batendo a meta.', ganhou: (p) => melhorPpm(p) >= 10 },
     { id: 'ppm-20', icone: '🐇', nome: '20 palavras por minuto', descricao: 'Digitou a 20 ppm.', ganhou: (p) => melhorPpm(p) >= 20 },
     { id: 'ppm-35', icone: '🐎', nome: '35 palavras por minuto', descricao: 'Digitou a 35 ppm.', ganhou: (p) => melhorPpm(p) >= 35 },
@@ -62,7 +64,7 @@ window.CE = window.CE || {};
     },
   };
 
-  ['licao:concluida', 'digitacao:concluida', 'digitacao:jogo'].forEach((evento) => CE.ouvir(evento, () => CE.medalhas.verificar()));
+  ['licao:concluida', 'digitacao:concluida', 'digitacao:jogo', 'jogo:concluido'].forEach((evento) => CE.ouvir(evento, () => CE.medalhas.verificar()));
   CE.ouvir('golpe:evitado', async () => {
     if (!CE.sessao.usuario) return;
     await CE.sessao.atualizarProgresso((p) => { p.navegador = p.navegador || {}; p.navegador.golpesEvitados = (p.navegador.golpesEvitados || 0) + 1; });

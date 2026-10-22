@@ -103,6 +103,24 @@
         conclusao: 'Tesouro encontrado! Agora você sabe usar todos os botões do mouse.',
       },
       {
+        id: 'mouse-mira', titulo: 'Mira e controle: pontaria e labirinto', icone: '🎯',
+        descricao: 'Levar a setinha exatamente aonde você quer.',
+        passos: [
+          info('Para usar bem o computador, a setinha precisa ir EXATAMENTE aonde você quer. Mexa o mouse devagar e com calma: a precisão vem antes da pressa.', { mouse: 'mover' }),
+          abrir('jogos-mouse', 'Jogos do Mouse'),
+          escolherJogo('pontaria', 'Pontaria'),
+          terminarJogo('pontaria', 'Clique bem no meio de cada alvo que aparecer.', 'esquerdo', 'Leve a setinha até o centro vermelho e só então clique.'),
+          info('Muito bem! Agora o labirinto: clique no ratinho e, SEM APERTAR NADA, leve a setinha pelo caminho claro até o queijo. Se encostar na parede, volta para o começo.', { mouse: 'mover' }),
+          esperar('Clique em "← Jogos" para voltar ao menu e escolha "Labirinto do ratinho".', 'jogo:iniciado', (d) => d.jogo === 'labirinto', {
+            destacar: [naJanela('jogos-mouse', '[data-jogo="labirinto"]'), naJanela('jogos-mouse', '.jm-cabecalho .botao')], mouse: 'esquerdo',
+          }),
+          terminarJogo('labirinto', 'Leve o ratinho até o queijo sem encostar na parede.', 'mover', 'Vá devagar! Pode apoiar o pulso na mesa.'),
+          info('Cada jogo tem os níveis Médio e Difícil. Quando quiser treinar mais, volte aos Jogos do Mouse e vá subindo de nível. Tem até medalha para quem vencer todos!', { emoji: '🏅' }),
+          quiz('Para acertar um botão pequeno, o melhor é...', ['Mexer o mouse com calma e clicar quando a setinha estiver em cima', 'Clicar várias vezes bem rápido', 'Fechar os olhos'], 0),
+        ],
+        conclusao: 'Excelente! Sua mira está ótima.',
+      },
+      {
         id: 'mouse-desafio', titulo: 'Desafio do mouse', icone: '🏅', desafio: true,
         descricao: 'Três jogos seguidos, sem ajuda.',
         passos: [
