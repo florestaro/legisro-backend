@@ -55,6 +55,7 @@
             CE.el('div', { class: 'aula-info' },
               CE.el('strong', {}, l.titulo, tipo ? CE.el('span', { class: 'aula-tipo' }, tipo) : null),
               CE.el('span', {}, l.descricao),
+              r && r.dispensada ? CE.el('small', { class: 'ok' }, 'Dispensada pelo teste de nivelamento') : null,
               r && r.nota != null ? CE.el('small', { class: r.concluida ? 'ok' : 'abaixo' }, `Nota: ${r.nota}%${r.concluida ? '' : ` (precisa de ${CE.curso.NOTA_MINIMA}%)`}`) : null),
             liberada
               ? CE.el('button', { class: 'botao' + (feita ? ' secundario' : ''), onclick: () => CE.professor.comecarLicao(l.id) },

@@ -1,6 +1,6 @@
 # Como criar uma lição
 
-As lições ficam em `app/js/licoes/licoes.js`. Cada lição é uma lista de **passos**. O professor mostra e fala o
+Cada lição é uma lista de **passos**. O professor mostra e fala o
 texto de cada passo e espera o aluno fazer a ação pedida. Quando o aluno faz, ele vai para o passo seguinte sozinho.
 
 ## Onde ficam
@@ -58,8 +58,7 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `emoji` | Uma figura grande no cartão do professor. |
 | `quiz` | Pergunta de múltipla escolha (use o atalho `quiz(...)`). |
 
-Os atalhos `passoAbrir('editor', 'Editor de Texto')` e `passoFechar('editor', 'Editor de Texto')`, no começo do arquivo,
-criam os passos de abrir e fechar programas.
+`espera` também aceita uma lista de eventos, como `['golpe:evitado', 'golpe:caiu']`: vale o primeiro que acontecer.
 
 ## Eventos disponíveis
 
@@ -92,8 +91,18 @@ criam os passos de abrir e fechar programas.
 | `calculadora:resultado` | Apertou "=" na Calculadora | `a`, `b`, `operacao` (`+ − × ÷`), `resultado` |
 | `digitacao:iniciada` / `digitacao:concluida` | Exercício de digitação | `exercicio`, `ppm`, `precisao`, `estrelas`, `aprovado` |
 | `professor:respondeu` | O professor respondeu uma pergunta | `pergunta` |
+| `navegador:visitou` | Abriu uma página no Navegador | `url`, `dominio`, `caminho`, `titulo`, `seguro`, `existe` |
+| `navegador:pesquisa` | Pesquisou no Procura ou na barra de endereço | `termo`, `onde` (`procura` ou `barra`) |
+| `navegador:voltou` / `navegador:avancou` / `navegador:recarregou` / `navegador:inicio` | Botões da barra do Navegador | `url` |
+| `navegador:aba-nova` / `navegador:aba-trocada` / `navegador:aba-fechada` | Abas | `url` |
+| `navegador:favorito` / `navegador:rolou-fim` / `navegador:link` | Favoritou / chegou ao fim da página / clicou num link | `url`, `dominio`, `caminho` |
+| `loja:carrinho` / `loja:compra` | Loja Compra Certa | `produto`, `itens` / `total`, `pagamento` |
+| `golpe:caiu` / `golpe:evitado` | Clicou na armadilha de um site falso / saiu dele sem cair | `site` |
+| `nivelamento:concluido` / `digitacao:nivelamento` | Testes de nivelamento | `nota`, `pulados`, `dispensa` / `ppm`, `precisao`, `niveis` |
 
-Os códigos dos programas (`app`) são: `aulas`, `editor`, `digitacao`, `arquivos`, `lixeira`, `calculadora`, `computador`, `jogos-mouse`, `teclas`, `desenho`, `instrutor`.
+Os códigos dos programas (`app`) são: `aulas`, `editor`, `digitacao`, `arquivos`, `lixeira`, `calculadora`, `computador`, `jogos-mouse`, `teclas`, `desenho`, `navegador`, `instrutor`.
+
+Os sites de treino do Navegador ficam em `app/js/navegador/sites.js`.
 
 Os exercícios de digitação ficam em `app/js/digitacao/exercicios.js`.
 

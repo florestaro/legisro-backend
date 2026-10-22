@@ -2,16 +2,18 @@
 window.CE = window.CE || {};
 
 (function () {
+  // Medalha é para aula feita de verdade: aulas dispensadas pelo nivelamento não contam.
+  const feita = (l, p) => CE.curso.aprovada(l, p) && !p.licoes[l.id].dispensada;
   const moduloAprovado = (p, modulo) => {
     const aulas = CE.LICOES.filter((l) => l.modulo === modulo);
-    return aulas.length > 0 && aulas.every((l) => CE.curso.aprovada(l, p));
+    return aulas.length > 0 && aulas.every((l) => feita(l, p));
   };
-  const digAprovado = (p, id) => !!(p.digitacao && p.digitacao[id] && p.digitacao[id].aprovado);
+  const digAprovado = (p, id) => !!(p.digitacao && p.digitacao[id] && p.digitacao[id].aprovado && !p.digitacao[id].dispensado);
   const melhorPpm = (p) => Math.max(0, ...Object.entries(p.digitacao || {}).filter(([k]) => !k.startsWith('_')).map(([, r]) => r.ppm || 0));
-  const exerciciosAprovados = (p) => Object.entries(p.digitacao || {}).filter(([k, r]) => !k.startsWith('_') && r.aprovado).length;
+  const exerciciosAprovados = (p) => Object.entries(p.digitacao || {}).filter(([k, r]) => !k.startsWith('_') && r.aprovado && !r.dispensado).length;
 
   CE.MEDALHAS = [
-    { id: 'primeira-aula', icone: '🎓', nome: 'Primeira aula', descricao: 'Concluiu a primeira aula.', ganhou: (p) => CE.LICOES.some((l) => CE.curso.aprovada(l, p)) },
+    { id: 'primeira-aula', icone: '🎓', nome: 'Primeira aula', descricao: 'Concluiu a primeira aula.', ganhou: (p) => CE.LICOES.some((l) => feita(l, p)) },
     { id: 'computador', icone: '🖥️', nome: 'Conhece o computador', descricao: 'Terminou o módulo "Conhecendo o computador".', ganhou: (p) => moduloAprovado(p, 'n1-computador') },
     { id: 'mouse', icone: '🖱️', nome: 'Mestre do mouse', descricao: 'Terminou todas as aulas e jogos do mouse.', ganhou: (p) => moduloAprovado(p, 'n1-mouse') },
     { id: 'teclado', icone: '⌨️', nome: 'Amigo do teclado', descricao: 'Terminou o módulo do teclado.', ganhou: (p) => moduloAprovado(p, 'n1-teclado') },
@@ -19,6 +21,8 @@ window.CE = window.CE || {};
     { id: 'arquivos', icone: '📁', nome: 'Organizado', descricao: 'Terminou o módulo de arquivos e pastas.', ganhou: (p) => moduloAprovado(p, 'n1-arquivos') },
     { id: 'escritor', icone: '📝', nome: 'Escritor', descricao: 'Terminou o módulo do Editor de Texto.', ganhou: (p) => moduloAprovado(p, 'n1-editor') },
     { id: 'artista', icone: '🎨', nome: 'Artista', descricao: 'Terminou o módulo de Calculadora e Desenho.', ganhou: (p) => moduloAprovado(p, 'n1-desenho') },
+    { id: 'internet', icone: '🌐', nome: 'Navegante', descricao: 'Terminou o módulo de Internet.', ganhou: (p) => moduloAprovado(p, 'n1-internet') },
+    { id: 'antigolpe', icone: '🕵️', nome: 'Detetive de golpes', descricao: 'Saiu de um site falso sem cair no golpe.', ganhou: (p) => !!(p.navegador && p.navegador.golpesEvitados) },
     { id: 'seguranca', icone: '🛡️', nome: 'Esperto contra golpes', descricao: 'Terminou o módulo de segurança.', ganhou: (p) => moduloAprovado(p, 'n1-seguranca') },
     { id: 'formado-n1', icone: '🏆', nome: 'Formado no Iniciante', descricao: 'Passou na prova do nível Iniciante de informática.', ganhou: (p) => moduloAprovado(p, 'n1-prova') },
     { id: 'ppm-10', icone: '🐢', nome: '10 palavras por minuto', descricao: 'Digitou a 10 ppm batendo a meta.', ganhou: (p) => melhorPpm(p) >= 10 },
@@ -52,4 +56,9 @@ window.CE = window.CE || {};
   };
 
   ['licao:concluida', 'digitacao:concluida', 'digitacao:jogo'].forEach((evento) => CE.ouvir(evento, () => CE.medalhas.verificar()));
+  CE.ouvir('golpe:evitado', async () => {
+    if (!CE.sessao.usuario) return;
+    await CE.sessao.atualizarProgresso((p) => { p.navegador = p.navegador || {}; p.navegador.golpesEvitados = (p.navegador.golpesEvitados || 0) + 1; });
+    CE.medalhas.verificar();
+  });
 })();

@@ -143,6 +143,7 @@ window.CE = window.CE || {};
   // Pontos das perguntas: acertar de primeira vale 1, na segunda tentativa vale 0,5 (na prova, só de primeira).
   let quizPontos = 0;
   let quizTotal = 0;
+  let pulados = 0;       // tarefas puladas com "Não sei fazer" (só no teste de nivelamento)
   let errosNestaPergunta = 0;
 
   function cabecalhoDoCartao(passo) {
@@ -182,7 +183,9 @@ window.CE = window.CE || {};
         ? CE.el('div', { class: 'prof-com-mouse' }, CE.figuraMouse(passo.mouse), CE.el('p', { class: 'prof-texto' }, passo.texto))
         : CE.el('p', { class: 'prof-texto' }, passo.texto),
       CE.el('p', { class: 'prof-dica', hidden: true }),
-      botoesFixos(passo, passo.espera ? null : CE.el('button', { class: 'botao', 'data-acao': 'continuar', onclick: avancar }, 'Continuar ▶')),
+      botoesFixos(passo,
+        passo.espera && licao.permitePular ? CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'pular', onclick: () => { pulados++; avancar(); } }, 'Não sei fazer ⏭') : null,
+        passo.espera ? null : CE.el('button', { class: 'botao', 'data-acao': 'continuar', onclick: avancar }, 'Continuar ▶')),
     ));
   }
 
@@ -252,13 +255,16 @@ window.CE = window.CE || {};
     CE.voz.falar(textoFalado(passo));
     if (passo.espera) {
       const estaLicao = licao, esteIndice = indicePasso;
-      pararDeOuvir = CE.ouvir(passo.espera, (dados) => {
-        if (!passo.se || passo.se(dados)) {
+      // "espera" pode ser um evento ou uma lista de eventos (vale o primeiro que acontecer).
+      const desligar = [].concat(passo.espera).map((evento) => CE.ouvir(evento, (dados) => {
+        if (!passo.se || passo.se(dados, evento)) {
           if (pararDeOuvir) { pararDeOuvir(); pararDeOuvir = null; }
+          if (passo.aoCumprir) passo.aoCumprir(dados, evento);
           // Um pequeno intervalo deixa o aluno ver o resultado do que fez antes do próximo passo.
           setTimeout(() => { if (licao === estaLicao && indicePasso === esteIndice) avancar(); }, 600);
         }
-      });
+      }));
+      pararDeOuvir = () => desligar.forEach((f) => f());
       timerDica = setTimeout(mostrarDica, TEMPO_PARA_DICA);
     }
   }
@@ -274,6 +280,7 @@ window.CE = window.CE || {};
     const nota = quizTotal ? Math.round((quizPontos / quizTotal) * 100) : null;
     const aprovada = nota == null || nota >= CE.curso.NOTA_MINIMA;
     encerrar();
+    if (terminada.especial) { await concluirEspecial(terminada, nota); return; }
     await CE.sessao.atualizarProgresso((p) => {
       p.licoes = p.licoes || {};
       const antes = p.licoes[terminada.id] || { vezes: 0 };
@@ -315,6 +322,23 @@ window.CE = window.CE || {};
     CE.voz.falar(terminada.conclusao);
   }
 
+  // Lições especiais (como o teste de nivelamento) decidem sozinhas o que fazer com o resultado.
+  async function concluirEspecial(terminada, nota) {
+    const r = await terminada.aoConcluir({ nota: nota || 0, pulados });
+    if (r.comemorar) CE.comemorar('grande');
+    const proxima = await proximaLicao();
+    $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao concluida' },
+      CE.el('div', { class: 'prof-titulo' }, r.titulo),
+      CE.el('p', { class: 'prof-texto' }, r.texto),
+      CE.el('div', { class: 'prof-botoes' },
+        r.digitacao ? CE.el('button', { class: 'botao', 'data-acao': 'nivelamento-digitacao', onclick: () => CE.janelas.abrir('digitacao', { nivelamento: true }) }, 'Nivelamento de digitação ⌨️') : null,
+        proxima && !r.digitacao ? CE.el('button', { class: 'botao', 'data-acao': 'proxima', onclick: () => comecarLicao(proxima.id) }, `Começar: ${proxima.titulo} ▶`) : null,
+        CE.el('button', { class: 'botao secundario pequeno', onclick: () => CE.janelas.abrir('aulas') }, 'Ver todas as aulas'),
+      ),
+    ));
+    CE.voz.falar(r.texto);
+  }
+
   function encerrar() {
     if (pararDeOuvir) { pararDeOuvir(); pararDeOuvir = null; }
     clearTimeout(timerDica);
@@ -345,6 +369,7 @@ window.CE = window.CE || {};
     indicePasso = 0;
     quizPontos = 0;
     quizTotal = 0;
+    pulados = 0;
     $('professor').classList.remove('recolhido');
     CE.emitir('licao:iniciada', { licao: id });
     iniciarPasso();
@@ -353,7 +378,26 @@ window.CE = window.CE || {};
   async function boasVindas(falar = true) {
     const u = CE.sessao.usuario;
     const primeiroNome = u.nome.split(' ')[0];
-    const proxima = await proximaLicao();
+    const progresso = await CE.sessao.progresso();
+    const proxima = CE.curso.proxima(progresso);
+    const novato = u.papel !== 'instrutor' && !progresso.nivelamento && !Object.keys(progresso.licoes || {}).length;
+    if (novato) {
+      const texto = `Olá, ${primeiroNome}! Seja bem-vindo ao curso. É a sua primeira vez aqui? Se você já sabe usar o computador, faça o teste de nivelamento: se for bem, pula as aulas do começo. Se está começando agora, é só começar a primeira aula!`;
+      const pularNivelamento = async () => {
+        await CE.sessao.atualizarProgresso((p) => { p.nivelamento = { em: Date.now(), resultado: 'pulado' }; });
+        comecarLicao(proxima.id);
+      };
+      $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao' },
+        CE.el('div', { class: 'prof-emoji', 'aria-hidden': 'true' }, '👋'),
+        CE.el('p', { class: 'prof-texto' }, texto),
+        CE.el('div', { class: 'prof-botoes' },
+          CE.el('button', { class: 'botao secundario', 'data-acao': 'fazer-nivelamento', onclick: () => comecarLicao('nivelamento') }, 'Já sei usar: fazer o teste 🧭'),
+          CE.el('button', { class: 'botao', 'data-acao': 'comecar', onclick: pularNivelamento }, 'Estou começando: 1ª aula ▶'),
+        ),
+      ));
+      if (falar) CE.voz.falar(texto);
+      return;
+    }
     const texto = proxima
       ? `Olá, ${primeiroNome}! Que bom te ver. Vamos aprender? Sua próxima aula é "${proxima.titulo}".`
       : `Olá, ${primeiroNome}! Você já fez todas as aulas disponíveis. Que tal treinar no programa Digitação?`;

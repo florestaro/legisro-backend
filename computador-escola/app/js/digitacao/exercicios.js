@@ -336,5 +336,12 @@ window.CE = window.CE || {};
   // Palavras para os jogos e para o treino das teclas difíceis.
   CE.palavrasDigitacao = { comuns: PALAVRAS_COMUNS, acento: PALAVRAS_ACENTO, todas: [...new Set(PALAVRAS)] };
 
-  CE.DIGITACAO = { niveis: NIVEIS, lista: LISTA };
+  // Teste de nivelamento: 1 minuto digitando frases do dia a dia (com acentos e pontuação).
+  const NIVELAMENTO = {
+    id: 'nivelamento-digitacao', titulo: 'Teste de nivelamento', modulo: 'Nivelamento', nivel: 'iniciante', tipo: 'tempo', duracao: 60, nivelamento: true,
+    meta: { ppm: 0, precisao: 0 }, texto: FRASES_SIMPLES.slice(0, 8).concat(FRASES_DIA_A_DIA).join(' '),
+    dica: 'Digite com calma e atenção, no seu ritmo normal. O resultado mostra em que nível você começa.',
+  };
+
+  CE.DIGITACAO = { niveis: NIVEIS, lista: LISTA, nivelamento: NIVELAMENTO };
 })();

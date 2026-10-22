@@ -157,12 +157,15 @@
             CE.el('span', { class: 'dig-ex-icone' }, !liberado ? '🔒' : r && r.aprovado ? '✅' : ex.prova ? '🏁' : ex.tipo === 'ditado' ? '🎧' : ex.tipo === 'tempo' ? '⏱️' : '▶'),
             CE.el('span', { class: 'dig-ex-nome' }, ex.titulo, CE.el('small', {}, textoMeta)),
             CE.el('span', { class: 'dig-estrelas', title: r ? `Melhor: ${r.ppm} ppm, ${r.precisao}% de acertos` : 'Ainda não feito' },
-              r && r.aprovado ? '★'.repeat(r.estrelas) + '☆'.repeat(3 - r.estrelas) : r ? `${r.ppm} ppm · ${r.precisao}%` : ''),
+              r && r.dispensado ? 'dispensado' : r && r.aprovado ? '★'.repeat(r.estrelas) + '☆'.repeat(3 - r.estrelas) : r ? `${r.ppm} ppm · ${r.precisao}%` : ''),
           );
         });
 
         trocarTela(CE.el('div', { class: 'dig-lista' },
           abas,
+          CE.el('button', { class: 'dig-nivelamento', 'data-acao': 'nivelamento-digitacao', onclick: () => praticar(CE.DIGITACAO.nivelamento) },
+            CE.el('span', { class: 'dig-ex-icone' }, '🧭'),
+            CE.el('span', { class: 'dig-ex-nome' }, 'Teste de nivelamento (1 minuto)', CE.el('small', {}, 'Já sabe digitar? Faça o teste: os níveis em que você já bate a meta da prova ficam dispensados.'))),
           CE.el('p', { class: 'dig-intro' }, ehInstrutor()
             ? 'Você é instrutor: todos os exercícios estão liberados.'
             : 'Faça os exercícios na ordem. Para liberar o próximo, bata a meta de velocidade (ppm = palavras por minuto) e de acertos.'),
@@ -204,8 +207,8 @@
           dica.textContent = como.dica;
           const r = resultadoAtual();
           placar.replaceChildren(
-            CE.el('span', { class: inicio && r.ppm >= meta.ppm ? 'ok' : '' }, `Velocidade: ${inicio ? r.ppm : 0} ppm (meta ${meta.ppm})`),
-            CE.el('span', { class: r.precisao >= meta.precisao ? 'ok' : 'abaixo' }, `Acertos: ${r.precisao}% (meta ${meta.precisao}%)`),
+            CE.el('span', { class: inicio && meta.ppm && r.ppm >= meta.ppm ? 'ok' : '' }, `Velocidade: ${inicio ? r.ppm : 0} ppm${meta.ppm ? ` (meta ${meta.ppm})` : ''}`),
+            CE.el('span', { class: !meta.precisao ? '' : r.precisao >= meta.precisao ? 'ok' : 'abaixo' }, `Acertos: ${r.precisao}%${meta.precisao ? ` (meta ${meta.precisao}%)` : ''}`),
             CE.el('span', {}, `Erros: ${erros}`),
           );
         }
@@ -215,16 +218,27 @@
           terminou = true;
           clearInterval(relogio);
           const r = resultadoAtual();
+          if (ex.nivelamento) { await aplicarNivelamento(r, errosPorTecla); return; }
           const resultado = { ...r, aprovado: r.ppm >= meta.ppm && r.precisao >= meta.precisao };
           resultado.estrelas = estrelasDe(resultado, meta, ex.tipo);
           await guardarResultado(ex, resultado, errosPorTecla);
           mostrarResultado(ex, resultado, meta, erros);
         }
 
-        areaTexto.addEventListener('keydown', (e) => {
-          if (terminou || e.key === 'Dead' || e.key === 'Shift' || e.key === 'CapsLock' || e.ctrlKey || e.altKey) return;
-          if (e.key.length !== 1) return;
-          e.preventDefault();
+        // O aluno digita num campo invisível. Lemos o caractere já pronto (e não a tecla apertada), assim os acentos
+        // funcionam em qualquer teclado: ´ seguido de e chega como "é".
+        const captura = CE.el('textarea', { class: 'dig-captura', 'aria-label': 'Digite aqui', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
+        areaTexto.append(captura);
+        areaTexto.addEventListener('focus', () => captura.focus());
+        areaTexto.addEventListener('mousedown', (e) => { e.preventDefault(); captura.focus(); });
+        captura.addEventListener('beforeinput', (e) => {
+          if (e.inputType === 'insertText' && e.data) { e.preventDefault(); [...e.data].forEach(processar); }
+          else if (e.inputType === 'insertLineBreak' || e.inputType.startsWith('delete') || e.inputType === 'insertFromPaste') e.preventDefault();
+        });
+        captura.addEventListener('compositionend', (e) => { [...(e.data || '')].forEach(processar); captura.value = ''; });
+
+        function processar(caractere) {
+          if (terminou) return;
           if (!inicio) {
             inicio = Date.now();
             if (ex.duracao) {
@@ -237,7 +251,7 @@
             }
           }
           const esperado = ex.texto[posicao];
-          if (e.key === esperado) {
+          if (caractere === esperado) {
             letras[posicao].classList.add(errouAgora ? 'corrigida' : 'certa');
             letras[posicao].classList.remove('errada');
             errouAgora = false;
@@ -254,7 +268,7 @@
             areaTexto.classList.add('tremer');
           }
           atualizar();
-        });
+        }
 
         trocarTela(CE.el('div', { class: 'dig-pratica' },
           CE.el('div', { class: 'dig-cabecalho' },
@@ -268,8 +282,46 @@
         ));
         encerrarAtual = () => clearInterval(relogio);
         atualizar();
-        areaTexto.focus();
+        captura.focus();
         CE.emitir('digitacao:iniciada', { exercicio: ex.id });
+      }
+
+      // ---------- Nivelamento ----------
+
+      // Dispensa, em ordem, cada nível cuja meta da prova o aluno bateu no teste.
+      async function aplicarNivelamento(r, errosPorTecla) {
+        const dispensados = [];
+        for (const nivel of CE.DIGITACAO.niveis) {
+          const meta = CE.metaDigitacao(nivel.prova, CE.sessao.usuario);
+          if (r.ppm >= meta.ppm && r.precisao >= meta.precisao) dispensados.push(nivel); else break;
+        }
+        await CE.sessao.atualizarProgresso((p) => {
+          p.digitacao = p.digitacao || {};
+          const d = p.digitacao;
+          d._nivelamento = { ppm: r.ppm, precisao: r.precisao, niveis: dispensados.map((n) => n.id), em: Date.now() };
+          d._teclas = d._teclas || {};
+          Object.entries(errosPorTecla).forEach(([c, n]) => { d._teclas[c] = (d._teclas[c] || 0) + n; });
+          dispensados.forEach((nivel) => {
+            CE.DIGITACAO.lista.filter((e) => e.nivel === nivel.id).forEach((e) => {
+              if (!(d[e.id] && d[e.id].aprovado)) d[e.id] = { ppm: r.ppm, precisao: r.precisao, aprovado: true, estrelas: 1, dispensado: true, em: Date.now() };
+            });
+          });
+        });
+        CE.emitir('digitacao:nivelamento', { ppm: r.ppm, precisao: r.precisao, niveis: dispensados.map((n) => n.id) });
+        CE.emitir('digitacao:concluida', { exercicio: 'nivelamento-digitacao', ppm: r.ppm, precisao: r.precisao, aprovado: true, nivelamento: true });
+        if (dispensados.length) CE.comemorar('grande');
+        const proximo = CE.DIGITACAO.niveis[dispensados.length];
+        corpo.replaceChildren(CE.el('div', { class: 'dig-resultado' },
+          CE.el('h2', {}, '🧭 Resultado do nivelamento'),
+          CE.el('p', {}, `Você digitou a ${r.ppm} palavras por minuto, com ${r.precisao}% de acertos.`),
+          CE.el('p', { class: 'dig-conselho' }, dispensados.length
+            ? `Muito bem! ${dispensados.length > 1
+              ? `Os níveis ${dispensados.map((n) => n.nome).join(dispensados.length > 2 ? ', ' : ' e ').replace(/, ([^,]*)$/, ' e $1')} foram dispensados`
+              : `O nível ${dispensados[0].nome} foi dispensado`}. ${proximo ? `Você começa no nível ${proximo.nome}.` : 'Você já digita como um profissional!'}`
+            : `Você começa no nível Iniciante. Para dispensar um nível, é preciso bater a meta da prova dele (Iniciante: ${CE.metaDigitacao(CE.DIGITACAO.niveis[0].prova, CE.sessao.usuario).ppm} ppm e ${CE.metaDigitacao(CE.DIGITACAO.niveis[0].prova, CE.sessao.usuario).precisao}%).`),
+          CE.el('div', { class: 'dialogo-botoes' },
+            CE.el('button', { class: 'botao', onclick: () => mostrarLista(proximo ? proximo.id : 'avancado') }, 'Ver os exercícios →')),
+        ));
       }
 
       // ---------- Ditado ----------
@@ -515,9 +567,14 @@
         if (CE.digitacaoLiberado(ex, resultados)) praticar(ex); else mostrarLista(ex.nivel);
       }
 
-      if (argumento && argumento.exercicio) abrirExercicio(argumento.exercicio); else mostrarLista();
+      if (argumento && argumento.nivelamento) praticar(CE.DIGITACAO.nivelamento);
+      else if (argumento && argumento.exercicio) abrirExercicio(argumento.exercicio);
+      else mostrarLista();
       return {
-        receber(arg) { if (arg && arg.exercicio) abrirExercicio(arg.exercicio); },
+        receber(arg) {
+          if (arg && arg.nivelamento) praticar(CE.DIGITACAO.nivelamento);
+          else if (arg && arg.exercicio) abrirExercicio(arg.exercicio);
+        },
         aoFechar() { encerrarAtual(); return true; },
       };
     },

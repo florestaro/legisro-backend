@@ -7,9 +7,11 @@ conversa e tira dúvidas. **Funciona sem internet.**
 ## O que já tem
 
 ### Curso de Informática: 3 níveis (um por semestre)
-- **Nível Iniciante completo: 38 aulas em 9 módulos, com 64 perguntas.** Os módulos são: Conhecendo o computador, Mouse,
-  Teclado, Janelas e menu Iniciar, Arquivos e pastas, Editor de Texto, Calculadora e Desenho, Segurança básica e a
+- **Nível Iniciante completo: 45 aulas em 10 módulos.** Os módulos são: Conhecendo o computador, Mouse, Teclado,
+  Janelas e menu Iniciar, Arquivos e pastas, Editor de Texto, Calculadora e Desenho, **Internet**, Segurança básica e a
   Prova do nível.
+- **Teste de nivelamento** no primeiro acesso do aluno: com 80% e sem pular tarefas, as aulas do Iniciante ficam
+  dispensadas (continuam abertas para revisão).
 - Cada aula tem explicação, prática guiada (com a seta vermelha e o desenho do mouse) e perguntas. Cada módulo termina
   num **desafio sem ajuda**, e o nível termina numa **prova**.
 - **O aluno só avança quando é aprovado** (70% nas perguntas). O instrutor tem tudo liberado.
@@ -24,13 +26,21 @@ conversa e tira dúvidas. **Funciona sem internet.**
 - **Provas cronometradas**: Iniciante (3 min, 20 ppm, 92%), Intermediário (5 min, 35 ppm, 95%) e Avançado
   (5 min, 45 ppm, 97%). Crianças têm metas menores.
 - O teclado ABNT2 aparece na tela, com uma cor por dedo e a dica de como fazer acentos e símbolos.
+- **Teste de nivelamento de digitação** (1 minuto): dispensa os níveis em que o aluno já bate a meta da prova.
 - **Jogos e treinos**: Chuva de palavras, Treino das teclas difíceis (feito com as teclas em que o aluno mais erra)
   e o gráfico de evolução.
 
 ### Programas do computador simulado
 Editor de Texto, Digitação, Arquivos, **Lixeira**, Calculadora, **Conhecendo o Computador** (desenho interativo das
 peças), **Jogos do Mouse** (balões, presentes, feira, caixas secretas e caça ao tesouro), **Treino do Teclado**,
-**Desenho** (parecido com o Paint), Aulas e Painel do Instrutor.
+**Desenho** (parecido com o Paint), **Navegador** (abas, favoritos, voltar/avançar e barra de endereço com cadeado),
+Aulas e Painel do Instrutor.
+
+### Internet de treino (offline)
+O Navegador tem sites inventados que funcionam sem internet: o buscador **Procura**, a enciclopédia **Saber Livre**,
+as receitas do **Cozinha Fácil**, o **Jornal do Bairro** (com anúncios enganosos), a loja segura **Compra Certa**
+(carrinho e compra de treino) e dois sites de **golpe** (loja falsa e prêmio falso), que mostram uma página explicando
+os sinais de golpe quando o aluno cai na armadilha.
 
 ### Outros
 - **19 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova.
