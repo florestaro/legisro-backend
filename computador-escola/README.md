@@ -14,8 +14,12 @@ conversa e tira dúvidas. **Funciona sem internet.**
   dispensadas (continuam abertas para revisão).
 - Cada aula tem explicação, prática guiada (com a seta vermelha e o desenho do mouse) e perguntas. Cada módulo termina
   num **desafio sem ajuda**, e o nível termina numa **prova**.
+- **Nível Intermediário completo: 40 aulas em 8 módulos.** Os módulos são: Pastas e organização (com pen drive),
+  Atalhos de teclado, Editor de Texto (carta, currículo, requerimento, tabela, imagem, corretor, imprimir),
+  **Planilha** (fórmulas, SOMA, alça de preenchimento, notas, orçamento da casa), Internet segura e downloads,
+  **E-mail**, **Serviços pela internet** (banco, Pix, boleto, agendamento) e a Prova do nível.
 - **O aluno só avança quando é aprovado** (70% nas perguntas). O instrutor tem tudo liberado.
-- Os níveis Intermediário e Avançado aparecem como "em breve", com o conteúdo planejado.
+- O nível Avançado aparece como "em breve", com o conteúdo planejado.
 
 ### Curso de Digitação: 108 exercícios em 3 níveis
 - **Iniciante** (39): fileiras do meio, de cima e de baixo, Shift, acentos e cedilha, palavras e frases.
@@ -31,7 +35,12 @@ conversa e tira dúvidas. **Funciona sem internet.**
   e o gráfico de evolução.
 
 ### Programas do computador simulado
-Editor de Texto, Digitação, Arquivos, **Lixeira**, Calculadora, **Conhecendo o Computador** (desenho interativo das
+**Editor de Texto** (modelos de carta, currículo, requerimento e recibo; tabela, imagem, margens, espaçamento,
+corretor ortográfico e impressão de treino), **Planilha** (tipo Excel, com fórmulas em português como SOMA, MÉDIA, SE
+e CONT.SE, formatação de moeda e porcentagem e alça de preenchimento), **E-mail** (Correio: cada aluno cria o próprio
+endereço `@correio.escola` e manda mensagens com anexo para os colegas e para contatos de treino que respondem),
+Digitação, **Arquivos** (pastas e subpastas, copiar/recortar/colar, arrastar, pesquisar e **pen drive** simulado),
+**Lixeira**, Calculadora, **Conhecendo o Computador** (desenho interativo das
 peças), **Jogos do Mouse** (balões, presentes, feira, caixas secretas e caça ao tesouro), **Treino do Teclado**,
 **Desenho** (parecido com o Paint), **Navegador** (abas, favoritos, voltar/avançar e barra de endereço com cadeado),
 Aulas e Painel do Instrutor.
@@ -39,11 +48,13 @@ Aulas e Painel do Instrutor.
 ### Internet de treino (offline)
 O Navegador tem sites inventados que funcionam sem internet: o buscador **Procura**, a enciclopédia **Saber Livre**,
 as receitas do **Cozinha Fácil**, o **Jornal do Bairro** (com anúncios enganosos), a loja segura **Compra Certa**
-(carrinho e compra de treino) e dois sites de **golpe** (loja falsa e prêmio falso), que mostram uma página explicando
-os sinais de golpe quando o aluno cai na armadilha.
+(carrinho e compra de treino), o **Banco Escola** (conta de treino com saldo, extrato, Pix e boleto),
+o **Cidadão Digital** (agendar atendimento e tirar 2ª via da conta de água) e sites de **golpe** (loja falsa,
+prêmio falso e banco falso), que mostram uma página explicando os sinais de golpe quando o aluno cai na armadilha.
+Os arquivos baixados vão para a pasta **Downloads**.
 
 ### Outros
-- **19 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova.
+- **28 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova.
 - **Painel do Instrutor**: cadastro (com a opção "criança"), aula atual de cada aluno, média, exercício de digitação
   atual, melhor velocidade, provas e medalhas.
 
@@ -100,13 +111,13 @@ Para sair da tela cheia use o botão **Iniciar → Desligar**.
 - Versão instalada: `%APPDATA%\Computador Escola\dados` (em cada computador)
 - Versão portátil: pasta `dados` ao lado do `.exe`
 
-Cada computador guarda os próprios dados. Na **Fase 4** entra o "modo sala de aula": o computador do instrutor vira
+Cada computador guarda os próprios dados. Na **Entrega 5** entra o "modo sala de aula": o computador do instrutor vira
 o servidor pela rede (cabo) e todos os alunos aparecem no mesmo painel.
 
 ## Próximas fases
-- **Fase 2:** Planilha (tipo Excel), mais lições de Editor de Texto (carta, currículo), Bloco de Notas, lixeira.
-- **Fase 3:** Navegador com sites de treino offline (busca, loja, banco, gov.br, como reconhecer golpes) e E-mail simulado.
-- **Fase 4:** Modo sala de aula em rede, painel do instrutor ao vivo, editor de lições sem programar.
+- **Entrega 4:** Nível Avançado: Editor e Planilha avançados (gráficos), Apresentações, Configurações, segurança
+  digital avançada, computador e trabalho, projeto final e prova.
+- **Entrega 5:** Modo sala de aula em rede, painel do instrutor ao vivo, editor de lições sem programar.
 - **Extra:** o aluno falar com o professor pelo microfone (reconhecimento de voz offline com Whisper).
 
 ## Organização do código
@@ -121,6 +132,9 @@ app/js/janelas.js        gerenciador de janelas
 app/js/area-trabalho.js  ícones, menu Iniciar, barra de tarefas
 app/js/professor.js      motor das lições e conversa
 app/js/respostas-prontas.js  respostas do professor sem IA
-app/js/licoes/licoes.js  as lições
-app/js/apps/             os programas (editor, digitação, arquivos...)
+app/js/curso.js          níveis, módulos e regra de liberação das aulas
+app/js/licoes/           as aulas (n1-*.js, n2-*.js) e os atalhos para escrever aulas (ajudantes.js)
+app/js/apps/             os programas (editor, planilha, e-mail, digitação, arquivos...)
+app/js/planilha/         as fórmulas da planilha
+app/js/navegador/        os sites de treino
 ```

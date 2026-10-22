@@ -46,6 +46,19 @@ window.CE = window.CE || {};
           return (atual = publico(u));
         },
         'sessao:sair': () => { atual = null; return true; },
+        'email:endereco-livre': () => !usuarios.some((u) => u.id !== (atual && atual.id) && (ler('email:' + u.id, {}).conta || {}).endereco === String(a[0]).toLowerCase()),
+        'email:contatos': () => usuarios.filter((u) => u.id !== (atual && atual.id) && (ler('email:' + u.id, {}).conta))
+          .map((u) => ({ nome: ler('email:' + u.id).conta.nome, endereco: ler('email:' + u.id).conta.endereco })),
+        'email:entregar': () => {
+          const para = String(a[0].para || '').toLowerCase();
+          const u = usuarios.find((x) => (ler('email:' + x.id, {}).conta || {}).endereco === para);
+          if (!u) return { entregue: false };
+          const caixa = ler('email:' + u.id);
+          const minha = (ler('email:' + atual.id, {}).conta) || {};
+          caixa.mensagens = (caixa.mensagens || []).concat({ ...a[0], de: minha.endereco, deNome: minha.nome, id: String(Date.now()) + Math.random(), pasta: 'entrada', lida: false, em: Date.now(), para });
+          gravar('email:' + u.id, caixa);
+          return { entregue: true, nome: caixa.conta.nome };
+        },
         'dados:ler': () => ler(a[0], a[1]),
         'dados:salvar': () => gravar(a[0], a[1]),
         'ia:status': () => ({ estado: 'sem-modelo', detalhe: 'Modo de teste no navegador.' }),

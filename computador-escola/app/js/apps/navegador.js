@@ -6,10 +6,12 @@
 
   // "https://www.Cozinha Facil.com.br/receita/bolo?x=1" -> { dominio, caminho, busca }
   function interpretar(endereco) {
-    let texto = String(endereco || '').trim().toLowerCase();
-    if (!texto || texto === INICIO) return { dominio: INICIO, caminho: '/', busca: {} };
-    texto = texto.replace(/^[a-z]+:\/\//, '').replace(/^www\./, '');
-    const [semBusca, consulta = ''] = texto.split('?');
+    let texto = String(endereco || '').trim();
+    if (!texto || texto.toLowerCase() === INICIO) return { dominio: INICIO, caminho: '/', busca: {} };
+    texto = texto.replace(/^[a-z]+:\/\//i, '').replace(/^www\./i, '');
+    // Só o endereço vira minúsculo; o que vem depois do "?" (dados de formulário) fica como foi digitado.
+    const [comMaiusculas, consulta = ''] = texto.split('?');
+    const semBusca = comMaiusculas.toLowerCase();
     const barra = semBusca.indexOf('/');
     const dominio = barra === -1 ? semBusca : semBusca.slice(0, barra);
     const caminho = barra === -1 ? '/' : semBusca.slice(barra) || '/';

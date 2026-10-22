@@ -11,7 +11,8 @@ window.CE = window.CE || {};
   };
 
   CE.emitir = function (nome, dados = {}) {
-    [...(ouvintes[nome] || []), ...(ouvintes['*'] || [])].forEach((f) => {
+    // Quem escuta tudo ('*') recebe primeiro: assim o registro do evento vem antes de quem reage a ele.
+    [...(ouvintes['*'] || []), ...(ouvintes[nome] || [])].forEach((f) => {
       try { f(dados, nome); } catch (erro) { console.error(erro); }
     });
   };

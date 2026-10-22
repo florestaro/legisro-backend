@@ -8,11 +8,7 @@ window.CE = window.CE || {};
 
   CE.NIVEIS_CURSO = [
     { id: 'n1', nome: 'Iniciante', icone: '🌱', descricao: 'Usar o computador com confiança' },
-    {
-      id: 'n2', nome: 'Intermediário', icone: '🌿', descricao: 'Computador para estudo e trabalho',
-      emBreve: ['Organização de arquivos e pen drive', 'Atalhos de teclado', 'Editor de Texto: carta, currículo e requerimento',
-        'Planilha básica: orçamento doméstico', 'Internet: pesquisa, abas e formulários', 'E-mail', 'Serviços digitais: gov.br, banco e Pix'],
-    },
+    { id: 'n2', nome: 'Intermediário', icone: '🌿', descricao: 'Computador para estudo e trabalho' },
     {
       id: 'n3', nome: 'Avançado', icone: '🌳', descricao: 'Produtividade e autonomia',
       emBreve: ['Editor de Texto avançado: trabalho escolar', 'Planilha avançada: fórmulas e gráficos', 'Apresentações',

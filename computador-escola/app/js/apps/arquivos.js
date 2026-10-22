@@ -164,7 +164,8 @@
         let itens;
         if (termo) {
           const t = termo.toLowerCase();
-          itens = todos.filter((a) => !a.naLixeira && (naLixeira || (a.local || 'pc') === lugar.local) && a.nome.toLowerCase().includes(t));
+          // A pesquisa procura em todo lugar (computador e pen drive conectado), menos na lixeira.
+          itens = todos.filter((a) => !a.naLixeira && ((a.local || 'pc') === 'pc' || CE.pendrive.conectado) && a.nome.toLowerCase().includes(t));
         } else if (naLixeira) {
           itens = todos.filter((a) => a.naLixeira && (!a.grupoLixeira || a.grupoLixeira === a.id));
         } else {
@@ -174,10 +175,10 @@
         if (selecionado && !itens.some((a) => a.id === selecionado.id)) selecionado = null;
 
         janela.definirTitulo(termo ? `Pesquisa: ${termo}` : lugar.pasta ? lugar.pasta.split('/').pop() : NOME_LOCAL[lugar.local]);
-        caminho.replaceChildren(
+        caminho.replaceChildren(...[
           lugar.pasta && !naLixeira ? CE.el('button', { class: 'arq-subir', 'data-acao': 'subir', title: 'Voltar uma pasta', onclick: subir }, '⬆️') : null,
           CE.el('span', {}, termo ? `Resultados da pesquisa por "${termo}"` : ['Este Computador', NOME_LOCAL[lugar.local], ...(lugar.pasta ? lugar.pasta.split('/') : [])].join(' › ')),
-        );
+        ].filter(Boolean));
 
         const area = CE.areaTransferenciaArquivos;
         const grupo = naLixeira

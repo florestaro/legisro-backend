@@ -38,9 +38,9 @@ function exigirInstrutor() {
   if (!usuarioAtual || usuarioAtual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.');
 }
 
-// Chaves que a tela pode usar: "progresso:<id do usuário>" e "arquivos:<id do usuário>".
+// Chaves que a tela pode usar: "progresso:<id>", "arquivos:<id>" e "email:<id>" (a caixa de e-mail do aluno).
 // Cada aluno só lê e grava os próprios dados; o instrutor pode ler e gravar os de todos.
-const TIPOS_DE_DADOS = ['progresso', 'arquivos'];
+const TIPOS_DE_DADOS = ['progresso', 'arquivos', 'email'];
 
 function conferirChave(chave) {
   const [tipo, dono] = String(chave).split(':');
@@ -94,6 +94,38 @@ function registrarCanais() {
   });
   tratar('dados:ler', (chave, padrao) => dados.ler(conferirChave(chave), padrao));
   tratar('dados:salvar', (chave, valor) => dados.salvar(conferirChave(chave), valor));
+
+  // E-mail entre alunos do mesmo computador: o remetente só escreve na caixa do destinatário por aqui,
+  // e só pode acrescentar uma mensagem na Caixa de entrada (nunca ler ou apagar as mensagens dele).
+  const caixas = () => dados.listarUsuarios().map((u) => ({ usuario: u, caixa: dados.ler(`email-${u.id}`, null) }));
+  tratar('email:endereco-livre', (endereco) => {
+    if (!usuarioAtual) throw new Error('Ninguém entrou no sistema.');
+    const alvo = String(endereco).toLowerCase();
+    return !caixas().some(({ usuario, caixa }) => usuario.id !== usuarioAtual.id && caixa && caixa.conta && caixa.conta.endereco === alvo);
+  });
+  tratar('email:contatos', () => {
+    if (!usuarioAtual) throw new Error('Ninguém entrou no sistema.');
+    return caixas().filter(({ usuario, caixa }) => usuario.id !== usuarioAtual.id && caixa && caixa.conta)
+      .map(({ usuario, caixa }) => ({ nome: caixa.conta.nome || usuario.nome, endereco: caixa.conta.endereco }));
+  });
+  tratar('email:entregar', (mensagem) => {
+    if (!usuarioAtual) throw new Error('Ninguém entrou no sistema.');
+    // O remetente é sempre o dono da sessão: ninguém consegue mandar e-mail fingindo ser outra pessoa.
+    const minha = dados.ler(`email-${usuarioAtual.id}`, null);
+    if (!minha || !minha.conta) throw new Error('Crie a sua conta de e-mail primeiro.');
+    const para = String(mensagem.para || '').toLowerCase();
+    const destino = caixas().find(({ caixa }) => caixa && caixa.conta && caixa.conta.endereco === para);
+    if (!destino) return { entregue: false };
+    const recebida = {
+      id: `${Date.now()}${Math.random().toString(16).slice(2, 8)}`, pasta: 'entrada', lida: false, em: Date.now(),
+      de: minha.conta.endereco, deNome: minha.conta.nome, para,
+      assunto: String(mensagem.assunto || '').slice(0, 200), texto: String(mensagem.texto || '').slice(0, 20000),
+      anexos: Array.isArray(mensagem.anexos) ? mensagem.anexos.slice(0, 5) : [],
+    };
+    destino.caixa.mensagens = (destino.caixa.mensagens || []).concat(recebida);
+    dados.salvar(`email-${destino.usuario.id}`, destino.caixa);
+    return { entregue: true, nome: destino.caixa.conta.nome };
+  });
 
   tratar('ia:status', () => ia.status());
   tratar('ia:perguntar', async (idPergunta, pergunta, situacao) => {

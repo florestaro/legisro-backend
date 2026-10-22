@@ -252,7 +252,7 @@ window.CE = window.CE || {};
     // Tira o foco do botão "Continuar", para as teclas apertadas a seguir não "clicarem" nele de novo.
     if (document.activeElement && $('professor').contains(document.activeElement)) document.activeElement.blur();
     if (passo.preparar) await passo.preparar();
-    if (passo.jaFeito && passo.jaFeito()) { avancar(); return; }
+    if (passo.jaFeito && passo.jaFeito()) { avancar('evento'); return; }
     if (passo.quiz) quizTotal++;
     desenharLicao();
     // No desafio o aluno faz sozinho: sem seta e sem destaque.
@@ -260,22 +260,40 @@ window.CE = window.CE || {};
     CE.voz.falar(textoFalado(passo));
     if (passo.espera) {
       const estaLicao = licao, esteIndice = indicePasso;
+      const eventos = [].concat(passo.espera);
+      let cumprido = false;
+      const cumprir = (dados, evento) => {
+        if (cumprido || (passo.se && !passo.se(dados, evento))) return;
+        cumprido = true;
+        desde = performance.now();
+        if (pararDeOuvir) { pararDeOuvir(); pararDeOuvir = null; }
+        if (passo.aoCumprir) passo.aoCumprir(dados, evento);
+        // Um pequeno intervalo deixa o aluno ver o resultado do que fez antes do próximo passo.
+        setTimeout(() => { if (licao === estaLicao && indicePasso === esteIndice) avancar('evento'); }, 600);
+      };
       // "espera" pode ser um evento ou uma lista de eventos (vale o primeiro que acontecer).
-      const desligar = [].concat(passo.espera).map((evento) => CE.ouvir(evento, (dados) => {
-        if (!passo.se || passo.se(dados, evento)) {
-          if (pararDeOuvir) { pararDeOuvir(); pararDeOuvir = null; }
-          if (passo.aoCumprir) passo.aoCumprir(dados, evento);
-          // Um pequeno intervalo deixa o aluno ver o resultado do que fez antes do próximo passo.
-          setTimeout(() => { if (licao === estaLicao && indicePasso === esteIndice) avancar(); }, 600);
-        }
-      }));
+      const desligar = eventos.map((evento) => CE.ouvir(evento, (dados) => cumprir(dados, evento)));
       pararDeOuvir = () => desligar.forEach((f) => f());
+      // O aluno pode ter feito a tarefa antes de o passo aparecer (durante a troca de passo): vale também.
+      recentes.filter((r) => r.t > desde && eventos.includes(r.nome)).forEach((r) => cumprir(r.dados, r.nome));
       timerDica = setTimeout(mostrarDica, TEMPO_PARA_DICA);
     }
   }
 
-  function avancar() {
+  // Ações recentes do aluno (para não perder uma tarefa feita no meio da troca de passo).
+  const recentes = [];
+  let desde = 0;
+  CE.ouvir('*', (dados, nome) => {
+    const agora = performance.now();
+    recentes.push({ nome, dados, t: agora });
+    while (recentes.length && (recentes.length > 40 || agora - recentes[0].t > 5000)) recentes.shift();
+  });
+
+  // origem 'evento': o passo anterior foi cumprido por uma ação (vale o que veio depois dela).
+  // Sem origem: o aluno clicou em "Continuar" ou respondeu (vale só o que vier a partir de agora).
+  function avancar(origem) {
     if (!licao) return;
+    if (origem !== 'evento') desde = performance.now();
     indicePasso++;
     iniciarPasso();
   }
@@ -375,6 +393,7 @@ window.CE = window.CE || {};
     quizPontos = 0;
     quizTotal = 0;
     pulados = 0;
+    desde = performance.now();
     $('professor').classList.remove('recolhido');
     CE.emitir('licao:iniciada', { licao: id });
     iniciarPasso();

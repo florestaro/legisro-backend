@@ -154,6 +154,15 @@ window.CE = window.CE || {};
     apagarDeVez(id) {
       return CE.sessao.alterarArquivo(id, (a, lista) => lista.filter((x) => x.id !== id && x.grupoLixeira !== id), 'arquivo:apagado');
     },
+    // Baixar (da internet ou de um e-mail): o arquivo vai para a pasta Downloads.
+    async baixarArquivo({ nome, tipo, conteudo }, origem = 'internet') {
+      const pasta = await CE.sessao.garantirPasta('Downloads');
+      const salvo = await CE.sessao.salvarArquivo({ nome, tipo, conteudo, local: 'pc', pasta });
+      CE.emitir('arquivo:baixado', { nome, tipo, origem });
+      CE.avisar(`⬇️ "${nome}" baixado para a pasta Downloads.`);
+      return salvo;
+    },
+
     async esvaziarLixeira() {
       await CE.sessao.gravarArquivos((await CE.sessao.arquivos()).filter((a) => !a.naLixeira));
       CE.emitir('lixeira:esvaziada');

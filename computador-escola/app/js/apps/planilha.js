@@ -121,6 +121,7 @@
         if (!estender) ancora = ref;
         pintarSelecao();
         mostrarCelula(ref);
+        CE.emitir('planilha:celula', { celula: ref });
       }
 
       function mover(dCol, dLin, estender = false) {

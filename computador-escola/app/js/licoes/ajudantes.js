@@ -60,10 +60,41 @@ window.CE = window.CE || {};
       dica: 'Se o documento já tinha um nome, ele salva direto, sem perguntar.',
     }),
 
-    // Garante que exista um arquivo de exemplo na pasta do aluno.
-    garantirArquivo: async (nome, conteudo) => {
-      const existe = (await CE.sessao.arquivos()).some((a) => a.nome === nome && !a.naLixeira);
-      if (!existe) await CE.sessao.salvarArquivo({ nome, tipo: 'documento', conteudo });
+    // Garante que exista um arquivo de exemplo na pasta do aluno (na raiz de Meus Documentos, se não existir em lugar nenhum).
+    garantirArquivo: async (nome, conteudo, tipo = 'documento') => {
+      const lista = await CE.sessao.arquivos();
+      const existente = lista.find((a) => a.nome === nome && a.tipo === tipo && !a.naLixeira);
+      return existente || CE.sessao.salvarArquivo({ nome, tipo, conteudo });
     },
+
+    // Cria (se preciso) um arquivo de exemplo e abre no programa certo. Útil no "preparar" de um passo.
+    // Com recriar = true, o arquivo volta ao conteúdo original (para o exercício começar sempre do mesmo jeito).
+    abrirExemplo: async (nome, tipo, conteudo, recriar = false) => {
+      const texto = typeof conteudo === 'function' ? conteudo() : conteudo;
+      const arquivo = recriar ? await CE.sessao.salvarArquivo({ nome, tipo, conteudo: texto }) : await CE.L.garantirArquivo(nome, texto, tipo);
+      CE.janelas.abrir(CE.TIPOS_ARQUIVO[tipo].app, { arquivo });
+    },
+
+    // Para pular um passo que já está feito, quando a conferência precisa ler os dados (assíncrona):
+    // ...CE.L.pularSe(async () => condição)  ->  { preparar, jaFeito }
+    pularSe: (teste) => {
+      let feito = false;
+      return { preparar: async () => { feito = !!(await teste()); }, jaFeito: () => feito };
+    },
+
+    // Planilha de exemplo a partir de uma tabela simples: [['Produto', 'Qtd'], ['Arroz', '2'], ...] (começa em A1).
+    planilhaDe: (linhas, extras = {}) => {
+      const celulas = {};
+      linhas.forEach((linha, l) => linha.forEach((v, c) => {
+        if (v !== '' && v != null) celulas[CE.formulas.endereco(c, l)] = { v: String(v), f: l === 0 ? { negrito: true } : {} };
+      }));
+      Object.entries(extras).forEach(([ref, v]) => { celulas[ref] = { v: String(v), f: {} }; });
+      return JSON.stringify({ celulas, larguras: {} });
+    },
+
+    // Confere valores da planilha aberta (ex.: CE.L.celula('D2') === 51.8).
+    celula: (ref) => (CE.planilhaAtiva ? CE.planilhaAtiva.valor(ref) : undefined),
+    entrada: (ref) => (CE.planilhaAtiva ? CE.planilhaAtiva.entrada(ref) : ''),
+    perto: (a, b) => typeof a === 'number' && Math.abs(a - b) < 0.005,
   };
 })();

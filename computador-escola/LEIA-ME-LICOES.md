@@ -76,11 +76,24 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `editor:texto` | Escreveu no Editor de Texto | `texto`, `html` |
 | `editor:selecao` | Selecionou texto no Editor | `selecionado` |
 | `editor:formatado` | Usou um botão de formatação | `comando` (`bold`, `italic`, `underline`, `fontSize`, `fontName`, `foreColor`, `justifyCenter`...), `valor`, `ativo`, `selecionado`, `html` |
-| `editor:novo` | Clicou em "Novo" | |
-| `arquivo:salvo` | Salvou um arquivo | `nome`, `tipo` (`documento` ou `imagem`), `novo`, `conteudo` |
+| `editor:novo` | Clicou em "Novo" ou escolheu um modelo | `modelo` (`branco`, `carta`, `curriculo`, `requerimento`, `recibo`) |
+| `editor:ortografia` | Corretor ortográfico | `acao` (`verificar` ou `corrigir`), `encontrados`, `restantes` |
+| `editor:impresso` | Imprimiu (impressora de treino) | `copias` |
+| `arquivo:salvo` | Salvou um arquivo | `nome`, `tipo` (`documento`, `imagem` ou `planilha`), `novo`, `conteudo` |
 | `arquivo:aberto` | Abriu um arquivo no Editor | `nome`, `tipo` |
 | `arquivo:selecionado` / `arquivo:renomeado` / `arquivo:removido` (foi para a lixeira) / `arquivo:restaurado` / `arquivo:apagado` | No programa Arquivos | `nome`, `tipo` |
-| `pasta:aberta` / `lixeira:esvaziada` | Trocou de pasta / esvaziou a lixeira | `pasta` (`documentos` ou `lixeira`) |
+| `pasta:aberta` / `lixeira:esvaziada` | Trocou de pasta / esvaziou a lixeira | `pasta`, `local` (`pc` ou `pendrive`), `caminho` |
+| `pasta:criada` / `arquivo:movido` / `arquivo:copiado` / `arquivo:colado` / `arquivo:arrastado` | Pastas no Arquivos | `nome`, `destino`, `destinoLocal`, `modo` |
+| `arquivo:baixado` | Baixou um arquivo da internet (vai para Downloads) | `nome`, `origem` |
+| `arquivos:pesquisa` | Pesquisou no Arquivos | `termo` |
+| `pendrive:conectado` / `pendrive:removido` | Pen drive simulado | |
+| `atalho:usado` | Usou um atalho de teclado | `atalho` (ex.: `Ctrl+C`, `F2`, `Delete`), `app` |
+| `planilha:editada` | Escreveu numa célula | `celula`, `entrada`, `valor`, `formula`, `texto` |
+| `planilha:formatada` / `planilha:autosoma` / `planilha:preenchida` / `planilha:largura` | Formatação, AutoSoma, alça e largura da coluna | `comando`, `intervalo`, `celulas`, `coluna` |
+| `email:conta-criada` / `email:aberto` / `email:enviado` / `email:respondido` / `email:encaminhado` / `email:recebido` / `email:spam` / `email:anexo-baixado` | E-mail | `para`, `assunto`, `anexos`, `nomesAnexos`, `de` |
+| `banco:login` / `banco:saldo` / `banco:pix` / `banco:pix-cancelado` / `banco:boleto` / `banco:sair` | Banco Escola | `valor`, `chave`, `nome` |
+| `servico:agendado` / `servico:segunda-via` | Cidadão Digital | `especialidade`, `matricula` |
+| `navegador:download` | Baixou um arquivo num site | `site`, `nome` |
 | `janela:ativada` | Trouxe uma janela para a frente | `app` |
 | `peca:clicada` / `computador:ligado` / `computador:desligado` | Conhecendo o Computador | `peca`, `tipo`, `total` |
 | `jogo:iniciado` / `jogo:concluido` | Jogos do Mouse | `jogo` (`baloes`, `presentes`, `feira`, `caixas`, `tesouro`), `segundos` |
@@ -100,7 +113,15 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `golpe:caiu` / `golpe:evitado` | Clicou na armadilha de um site falso / saiu dele sem cair | `site` |
 | `nivelamento:concluido` / `digitacao:nivelamento` | Testes de nivelamento | `nota`, `pulados`, `dispensa` / `ppm`, `precisao`, `niveis` |
 
-Os códigos dos programas (`app`) são: `aulas`, `editor`, `digitacao`, `arquivos`, `lixeira`, `calculadora`, `computador`, `jogos-mouse`, `teclas`, `desenho`, `navegador`, `instrutor`.
+Os códigos dos programas (`app`) são: `aulas`, `editor`, `planilha`, `email`, `digitacao`, `arquivos`, `lixeira`, `calculadora`, `computador`, `jogos-mouse`, `teclas`, `desenho`, `navegador`, `instrutor`.
+
+## Atalhos para escrever aulas (`CE.L`, em `ajudantes.js`)
+- `info(texto)`, `quiz(pergunta, opcoes, certa)`, `esperar(texto, evento, condicao, extras)`, `abrir(app, nome)`, `fechar(app)`
+- `editorBotao(comando, texto)`, `editorNovo(modelo, nome)`, `editorSalvar(nome)`
+- `garantirArquivo(nome, conteudo, tipo)` e `abrirExemplo(nome, tipo, conteudo)`: deixam um arquivo pronto para a aula
+- `pularSe(teste)`: pula o passo se o aluno já fez
+- `planilhaDe(linhas)`, `celula('B2')`, `entrada('B2')`, `perto(a, b)`: para aulas de planilha
+- `naJanela(app, seletor)`: monta o seletor de algo dentro de uma janela
 
 Os sites de treino do Navegador ficam em `app/js/navegador/sites.js`.
 
