@@ -4,6 +4,8 @@
   const ed = (s) => naJanela('editor', s);
   const pag = () => document.querySelector('.janela[data-app="editor"] .editor-pagina');
   const texto = () => (pag() ? pag().innerText : '');
+  // Confere o texto da página; se o aluno já tiver feito antes de o passo aparecer, o passo é pulado.
+  const confere = (fala, teste, extra = {}) => esperar(fala, 'editor:texto', teste, { jaFeito: () => !!pag() && teste(), ...extra });
   const temTitulo = (tag, re) => !!pag() && [...pag().querySelectorAll(tag)].some((h) => re.test(h.textContent));
   const paginas = () => (pag() ? pag().querySelectorAll('.quebra-pagina').length + 1 : 0);
   const estilo = (texto, valor, teste, extra = {}) => esperar(texto, 'editor:formatado', (d) => d.comando === 'estilo' && d.valor === valor && (!teste || teste()), {
@@ -61,10 +63,10 @@
           abrir('editor', 'Editor de Texto'),
           editorNovo('trabalho', 'Trabalho escolar (ABNT)'),
           info('O modelo já vem com CAPA, SUMÁRIO, INTRODUÇÃO, DESENVOLVIMENTO, CONCLUSÃO e REFERÊNCIAS, cada parte numa página. Os textos entre [colchetes] são para você trocar.'),
-          esperar('Clique em [NOME DA ESCOLA] e escreva o nome da sua escola.', 'editor:texto', () => !/\[NOME DA ESCOLA\]/.test(texto()), { destacar: ed('.campo-modelo'), mouse: 'esquerdo', dica: 'Um clique no campo seleciona tudo. É só escrever por cima.' }),
-          esperar('Agora troque [SEU NOME COMPLETO] pelo seu nome.', 'editor:texto', () => !/\[SEU NOME COMPLETO\]/.test(texto())),
-          esperar('Troque [TÍTULO DO TRABALHO] por:  O computador no dia a dia', 'editor:texto', () => /computador no dia a dia/i.test(texto())),
-          esperar('Desça até a INTRODUÇÃO e troque o texto entre colchetes por uma frase sua sobre o assunto.', 'editor:texto', () => !/\[Apresente o assunto/.test(texto()), { dica: 'Use a rodinha do mouse para descer.' }),
+          confere('Clique em [NOME DA ESCOLA] e escreva o nome da sua escola.', () => !/\[NOME DA ESCOLA\]/.test(texto()), { destacar: ed('.campo-modelo'), mouse: 'esquerdo', dica: 'Um clique no campo seleciona tudo. É só escrever por cima.' }),
+          confere('Agora troque [SEU NOME COMPLETO] pelo seu nome.', () => !/\[SEU NOME COMPLETO\]/.test(texto())),
+          confere('Troque [TÍTULO DO TRABALHO] por:  O computador no dia a dia', () => /computador no dia a dia/i.test(texto())),
+          confere('Desça até a INTRODUÇÃO e troque o texto entre colchetes por uma frase sua sobre o assunto.', () => !/\[Apresente o assunto/.test(texto()), { dica: 'Use a rodinha do mouse para descer.' }),
           info('Repare: a caixa de margens mostra "Margem ABNT" e o parágrafo da introdução tem recuo e fica justificado. É o estilo "Parágrafo ABNT".', { destacar: ed('[data-comando="margem"]') }),
           quiz('No padrão ABNT, as margens de cima e da esquerda têm...', ['3 cm', '1 cm', '10 cm'], 0),
           quiz('O espaço entre as linhas no corpo do trabalho é de...', ['1,5', '3', '0,5'], 0),
@@ -166,7 +168,7 @@
         passos: [
           info('Desafio! Faça um trabalho escolar completo sozinho. Clique em "Continuar".'),
           esperar('Abra o Editor e comece um "Trabalho escolar (ABNT)".', 'editor:novo', (d) => d.modelo === 'trabalho'),
-          esperar('Coloque o título do trabalho:  A internet', 'editor:texto', () => /a internet/i.test(texto()) && !/\[TÍTULO DO TRABALHO\]/.test(texto())),
+          confere('Coloque o título do trabalho:  A internet', () => /a internet/i.test(texto()) && !/\[TÍTULO DO TRABALHO\]/.test(texto())),
           esperar('Coloque o nome da escola no cabeçalho e numere as páginas.', 'editor:cabecalho', (d) => d.cabecalho && d.numerar),
           esperar('Monte o sumário.', 'editor:sumario'),
           esperar('Salve o documento com o nome:  A internet', 'arquivo:salvo', (d) => d.tipo === 'documento' && /internet/i.test(d.nome)),

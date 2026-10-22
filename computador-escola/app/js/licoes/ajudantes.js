@@ -17,7 +17,7 @@ window.CE = window.CE || {};
     esperar: (texto, espera, se, extra = {}) => ({ texto, espera, se, ...extra }),
 
     abrir: (id, nome, extra = {}) => ({
-      texto: `Agora abra o programa "${nome}": coloque a setinha em cima do ícone dele e dê um clique duplo (dois cliques rápidos).`,
+      texto: `Agora abra o programa "${nome}": coloque a setinha em cima do ícone dele e dê um clique duplo (dois cliques rápidos). Se uma janela cobrir o ícone, a seta mostra o caminho pelo Iniciar.`,
       mouse: 'duplo',
       espera: 'app:aberto',
       se: (d) => d.app === id,

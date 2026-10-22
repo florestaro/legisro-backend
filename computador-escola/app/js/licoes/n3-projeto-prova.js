@@ -6,7 +6,7 @@
   const ap = (s) => naJanela('apresentacoes', s);
   const pag = () => document.querySelector('.janela[data-app="editor"] .editor-pagina');
   const slides = () => (CE.apresentacaoAtiva ? CE.apresentacaoAtiva.slides() : []);
-  const editou = (texto, teste, extra = {}) => esperar(texto, ['planilha:editada', 'planilha:preenchida', 'planilha:autosoma'], () => teste(), extra);
+  const editou = (texto, teste, extra = {}) => esperar(texto, ['planilha:editada', 'planilha:preenchida', 'planilha:autosoma'], () => teste(), { jaFeito: () => !!CE.planilhaAtiva && teste(), ...extra });
   const CUSTOS = [['Item', 'Quantidade', 'Preço', 'Total'], ['Bolo', '2', '80'], ['Salgados (cento)', '3', '45'], ['Refrigerante', '10', '8,50'], ['Decoração', '1', '120']];
 
   CE.adicionarModulo({

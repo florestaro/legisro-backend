@@ -94,6 +94,23 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `banco:login` / `banco:saldo` / `banco:pix` / `banco:pix-cancelado` / `banco:boleto` / `banco:sair` | Banco Escola | `valor`, `chave`, `nome` |
 | `servico:agendado` / `servico:segunda-via` | Cidadão Digital | `especialidade`, `matricula` |
 | `navegador:download` | Baixou um arquivo num site | `site`, `nome` |
+| `editor:formatado` (avançado) | Estilo, colunas, quebra de página, sumário | `comando` (`estilo`, `colunas`, `quebraPagina`, `sumario`), `valor` (`h1`, `h2`, `abnt`... / nº de colunas), `antesDe` |
+| `editor:cabecalho` / `editor:sumario` / `editor:pdf` | Cabeçalho e rodapé / sumário / PDF | `cabecalho`, `rodape`, `numerar` / `itens`, `acao` (`inserir` ou `atualizar`) / `nome`, `paginas` |
+| `editor:localizado` / `editor:substituido` / `editor:localizar-fechado` | Localizar e substituir | `termo`, `quantidade` / `procurar`, `trocar`, `quantidade` |
+| `pdf:zoom` / `pdf:impresso` | Leitor de PDF | `zoom` / `nome` |
+| `planilha:classificada` / `planilha:filtro` / `planilha:menu-filtro` / `planilha:filtrada` | Classificar e filtro | `coluna`, `ordem` (`az`, `za`) / `ligado` / `coluna`, `mostrando`, `escondidos`, `visiveis` |
+| `planilha:grafico` / `planilha:grafico-tipo` / `planilha:grafico-movido` / `planilha:condicional` | Gráficos e destaque automático | `tipo`, `intervalo`, `series`, `nomesSeries` / `regra`, `valor`, `cor` |
+| `apresentacao:nova` / `apresentacao:slide-novo` / `apresentacao:texto` / `apresentacao:imagem` / `apresentacao:grafico` | Apresentações | `layout`, `total` / `slide`, `campo` (`titulo`, `texto`), `texto` / `planilha` |
+| `apresentacao:tema` / `apresentacao:transicao` / `apresentacao:slide-movido` / `apresentacao:notas` | Temas e organização | `tema` / `transicao` / `de`, `para` / `texto` |
+| `apresentacao:iniciada` / `apresentacao:slide` / `apresentacao:fim` | Modo Apresentar | `total` / `numero` / `vistos`, `completa` |
+| `config:secao` / `config:fundo` / `config:zoom` / `config:cursor` / `config:fuso` / `config:volume` / `config:som-testado` | Configurações | `secao` / `fundo` / `zoom` / `grande` / `fuso` / `volume` |
+| `config:instalado` / `config:desinstalado` / `config:bloqueado` / `config:verificacao` / `config:ameaca-removida` / `config:antivirus-atualizado` | Programas e antivírus | `app`, `confiavel` / `ameacas` |
+| `config:atualizacoes` / `config:reiniciado` / `config:impressora` / `config:backup` | Atualizações, impressoras, backup | `acao` / `acao` (`adicionada`, `padrao`, `teste`) e `nome` / `pasta`, `arquivos` |
+| `arquivo:compactado` / `arquivo:zip-aberto` / `arquivo:extraido` | ZIP no Arquivos | `nome`, `origem`, `arquivos` |
+| `seguranca:senha` / `seguranca:2etapas` / `seguranca:login-2etapas` / `seguranca:quiz-golpe` / `seguranca:privacidade` / `seguranca:boato` | Escudo Digital | `forca` (`fraca`, `media`, `forte`) / `acertos`, `total` / `seguro` |
+| `vagas:filtro` / `vagas:vaga` / `vagas:candidatura` | Emprega Já | `cidade`, `resultados` / `vaga`, `golpe` / `vaga`, `curriculo` |
+| `reuniao:camera` / `reuniao:microfone` / `reuniao:mao` / `reuniao:entrou` / `reuniao:chat` / `reuniao:saiu` | Sala de Reunião | `ligado` / `camera`, `microfone` / `texto` |
+| `jogo:memoria` / `cronometro:iniciado` / `notas:texto` | Programas instaláveis | `jogadas` |
 | `janela:ativada` | Trouxe uma janela para a frente | `app` |
 | `peca:clicada` / `computador:ligado` / `computador:desligado` | Conhecendo o Computador | `peca`, `tipo`, `total` |
 | `jogo:iniciado` / `jogo:concluido` / `jogo:perdido` | Jogos do Mouse | `jogo` (`baloes`, `presentes`, `feira`, `caixas`, `tesouro`, `pontaria`, `labirinto`), `nivel` (`facil`, `medio`, `dificil`), `segundos`, `motivo` |
@@ -113,7 +130,7 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `golpe:caiu` / `golpe:evitado` | Clicou na armadilha de um site falso / saiu dele sem cair | `site` |
 | `nivelamento:concluido` / `digitacao:nivelamento` | Testes de nivelamento | `nota`, `pulados`, `dispensa` / `ppm`, `precisao`, `niveis` |
 
-Os códigos dos programas (`app`) são: `aulas`, `editor`, `planilha`, `email`, `digitacao`, `arquivos`, `lixeira`, `calculadora`, `computador`, `jogos-mouse`, `teclas`, `desenho`, `navegador`, `instrutor`.
+Os códigos dos programas (`app`) são: `aulas`, `editor`, `planilha`, `apresentacoes`, `configuracoes`, `leitor-pdf`, `bloco-notas`, `cronometro`, `jogo-memoria`, `email`, `digitacao`, `arquivos`, `lixeira`, `calculadora`, `computador`, `jogos-mouse`, `teclas`, `desenho`, `navegador`, `instrutor`.
 
 ## Atalhos para escrever aulas (`CE.L`, em `ajudantes.js`)
 - `info(texto)`, `quiz(pergunta, opcoes, certa)`, `esperar(texto, evento, condicao, extras)`, `abrir(app, nome)`, `fechar(app)`
@@ -122,6 +139,9 @@ Os códigos dos programas (`app`) são: `aulas`, `editor`, `planilha`, `email`, 
 - `pularSe(teste)`: pula o passo se o aluno já fez
 - `planilhaDe(linhas)`, `celula('B2')`, `entrada('B2')`, `perto(a, b)`: para aulas de planilha
 - `naJanela(app, seletor)`: monta o seletor de algo dentro de uma janela
+
+Dica: um passo que confere o resultado (e não uma ação) pode ter `jaFeito` com o mesmo teste. Assim, se o aluno já
+fez a tarefa antes de o passo aparecer, o passo é pulado. Ações feitas durante a troca de passo também contam.
 
 Os sites de treino do Navegador ficam em `app/js/navegador/sites.js`.
 

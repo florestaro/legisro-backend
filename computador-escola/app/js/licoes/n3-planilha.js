@@ -4,7 +4,8 @@
   const pl = (s) => naJanela('planilha', s);
   const td = (ref) => pl(`td[data-celula="${ref}"]`);
   const botao = (b) => pl(`[data-comando="${b}"]`);
-  const editou = (texto, teste, extra = {}) => esperar(texto, ['planilha:editada', 'planilha:preenchida', 'planilha:autosoma', 'planilha:colada', 'planilha:classificada'], () => teste(), extra);
+  // Se o aluno já fez a conta antes de o passo aparecer, o passo é pulado.
+  const editou = (texto, teste, extra = {}) => esperar(texto, ['planilha:editada', 'planilha:preenchida', 'planilha:autosoma', 'planilha:colada', 'planilha:classificada'], () => teste(), { jaFeito: () => !!CE.planilhaAtiva && teste(), ...extra });
   const salvar = (nome) => esperar(`Salve a planilha: clique em "💾 Salvar"${nome ? ` (o nome é "${nome}")` : ''}.`, 'arquivo:salvo', (d) => d.tipo === 'planilha', { destacar: botao('salvar'), mouse: 'esquerdo' });
 
   const GASTOS = [['Data', 'Descrição', 'Categoria', 'Valor'],

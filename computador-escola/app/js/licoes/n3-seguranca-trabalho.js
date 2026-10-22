@@ -15,6 +15,8 @@
   ];
   const pag = () => document.querySelector('.janela[data-app="editor"] .editor-pagina');
   const texto = () => (pag() ? pag().innerText : '');
+  // Confere o texto da página; se o aluno já tiver feito antes de o passo aparecer, o passo é pulado.
+  const confere = (fala, teste, extra = {}) => esperar(fala, 'editor:texto', teste, { jaFeito: () => !!pag() && teste(), ...extra });
   const contaEmail = async () => !!(await CE.api.chamar('dados:ler', `email:${CE.sessao.usuario.id}`, {})).conta;
   const criarContaSePrecisar = () => esperar('Você ainda não tem e-mail aqui. Crie a sua conta: preencha os campos e clique em "Criar conta".', 'email:conta-criada', null, {
     destacar: em('[data-acao="criar-conta"]'), mouse: 'esquerdo', ...pularSe(contaEmail),
@@ -136,10 +138,10 @@
           info('O CURRÍCULO é o seu cartão de visitas para o emprego. Regras: uma ou duas páginas, informações verdadeiras, sem erros de português, e um e-mail sério (nada de "gatinha123").', { emoji: '📄' }),
           abrir('editor', 'Editor de Texto'),
           editorNovo('curriculo', 'Currículo'),
-          esperar('Troque [Seu nome completo] pelo seu nome.', 'editor:texto', () => !/\[Seu nome completo\]/.test(texto()), { destacar: naJanela('editor', '.campo-modelo'), mouse: 'esquerdo' }),
-          esperar('Preencha o endereço, o telefone e o e-mail.', 'editor:texto', () => !/\[Endereço\]|\[Telefone\]|\[E-mail\]/.test(texto())),
-          esperar('No OBJETIVO, escreva a vaga que você quer (ex.: Auxiliar administrativo).', 'editor:texto', () => !/\[Ex\.: Vaga de/.test(texto())),
-          esperar('Preencha a FORMAÇÃO, a EXPERIÊNCIA e as HABILIDADES (troque todos os campos entre colchetes). Em habilidades, não esqueça: informática!', 'editor:texto', () => !/\[[^\]]+\]/.test(texto()), {
+          confere('Troque [Seu nome completo] pelo seu nome.', () => !/\[Seu nome completo\]/.test(texto()), { destacar: naJanela('editor', '.campo-modelo'), mouse: 'esquerdo' }),
+          confere('Preencha o endereço, o telefone e o e-mail.', () => !/\[Endereço\]|\[Telefone\]|\[E-mail\]/.test(texto())),
+          confere('No OBJETIVO, escreva a vaga que você quer (ex.: Auxiliar administrativo).', () => !/\[Ex\.: Vaga de/.test(texto())),
+          confere('Preencha a FORMAÇÃO, a EXPERIÊNCIA e as HABILIDADES (troque todos os campos entre colchetes). Em habilidades, não esqueça: informática!', () => !/\[[^\]]+\]/.test(texto()), {
             dica: 'Se não tiver experiência, escreva trabalhos voluntários, bicos ou cursos.',
           }),
           esperar('Passe o corretor: clique em "✔️ Ortografia" e corrija o que aparecer.', 'editor:ortografia', (d) => d.restantes === 0, { destacar: naJanela('editor', '[data-comando="ortografia"]'), mouse: 'esquerdo' }),

@@ -18,8 +18,15 @@ conversa e tira dúvidas. **Funciona sem internet.**
   Atalhos de teclado, Editor de Texto (carta, currículo, requerimento, tabela, imagem, corretor, imprimir),
   **Planilha** (fórmulas, SOMA, alça de preenchimento, notas, orçamento da casa), Internet segura e downloads,
   **E-mail**, **Serviços pela internet** (banco, Pix, boleto, agendamento) e a Prova do nível.
+- **Nível Avançado completo: 48 aulas em 8 módulos.** Os módulos são: Editor de Texto avançado (estilos, trabalho
+  escolar no padrão ABNT, sumário automático, quebra de página, cabeçalho e número de página, colunas, localizar e
+  substituir, PDF), **Planilha avançada** (porcentagem, classificar, filtro, SOMASE e CONT.SE, destaque automático,
+  gráficos, PROCV e controle de caixa), **Apresentações**, **Configurações do computador** (personalizar,
+  acessibilidade, fuso horário, som, instalar e desinstalar, antivírus, atualizações, impressoras e ZIP),
+  **Segurança digital avançada** (senha forte, duas etapas, golpes, backup, privacidade e fake news),
+  **Computador e trabalho** (currículo em PDF, e-mail profissional, vagas e entrevista por vídeo),
+  **Projeto final** (organizar um evento com planilha, convite, apresentação e e-mail) e a Prova do nível.
 - **O aluno só avança quando é aprovado** (70% nas perguntas). O instrutor tem tudo liberado.
-- O nível Avançado aparece como "em breve", com o conteúdo planejado.
 
 ### Curso de Digitação: 108 exercícios em 3 níveis
 - **Iniciante** (39): fileiras do meio, de cima e de baixo, Shift, acentos e cedilha, palavras e frases.
@@ -35,11 +42,18 @@ conversa e tira dúvidas. **Funciona sem internet.**
   e o gráfico de evolução.
 
 ### Programas do computador simulado
-**Editor de Texto** (modelos de carta, currículo, requerimento e recibo; tabela, imagem, margens, espaçamento,
-corretor ortográfico e impressão de treino), **Planilha** (tipo Excel, com fórmulas em português como SOMA, MÉDIA, SE
-e CONT.SE, formatação de moeda e porcentagem e alça de preenchimento), **E-mail** (Correio: cada aluno cria o próprio
+**Editor de Texto** (modelos de carta, currículo, requerimento, recibo e trabalho escolar ABNT; tabela, imagem,
+margens, espaçamento, estilos de título, sumário, quebra de página, cabeçalho e rodapé numerados, colunas, localizar e
+substituir, corretor ortográfico, impressão e exportar PDF), **Planilha** (tipo Excel, com fórmulas em português como
+SOMA, MÉDIA, SE, CONT.SE, SOMASE e PROCV, formatação de moeda e porcentagem, alça de preenchimento, classificar,
+filtro, gráficos de colunas, barras, linhas e pizza e destaque automático), **Apresentações** (tipo PowerPoint: slides,
+temas, transições, imagens, gráficos da planilha, anotações e modo Apresentar), **Configurações** (fundo de tela,
+acessibilidade, data e hora, som, instalar e desinstalar programas, antivírus, atualizações, impressoras, backup no
+pen drive), **Leitor de PDF**, **E-mail** (Correio: cada aluno cria o próprio
 endereço `@correio.escola` e manda mensagens com anexo para os colegas e para contatos de treino que respondem),
-Digitação, **Arquivos** (pastas e subpastas, copiar/recortar/colar, arrastar, pesquisar e **pen drive** simulado),
+Digitação, **Arquivos** (pastas e subpastas, copiar/recortar/colar, arrastar, pesquisar, compactar e extrair ZIP e
+**pen drive** simulado), programas que o aluno instala pelas Configurações (**Bloco de Notas**, **Relógio e
+Cronômetro** e **Jogo da Memória**),
 **Lixeira**, Calculadora, **Conhecendo o Computador** (desenho interativo das
 peças), **Jogos do Mouse** (7 jogos: balões, presentes, feira, caixas secretas, caça ao tesouro, pontaria e labirinto, cada um com os níveis Fácil, Médio e Difícil; o nível seguinte só libera quando o aluno vence o anterior), **Treino do Teclado**,
 **Desenho** (parecido com o Paint), **Navegador** (abas, favoritos, voltar/avançar e barra de endereço com cadeado),
@@ -49,12 +63,15 @@ Aulas e Painel do Instrutor.
 O Navegador tem sites inventados que funcionam sem internet: o buscador **Procura**, a enciclopédia **Saber Livre**,
 as receitas do **Cozinha Fácil**, o **Jornal do Bairro** (com anúncios enganosos), a loja segura **Compra Certa**
 (carrinho e compra de treino), o **Banco Escola** (conta de treino com saldo, extrato, Pix e boleto),
-o **Cidadão Digital** (agendar atendimento e tirar 2ª via da conta de água) e sites de **golpe** (loja falsa,
+o **Cidadão Digital** (agendar atendimento e tirar 2ª via da conta de água), o **Escudo Digital** (teste de senha,
+verificação em duas etapas com um celular de treino, jogo "Golpe ou não?", privacidade de rede social e "Boato ou
+verdade?"), o **Emprega Já** (vagas de emprego com filtro e candidatura com currículo), a **Sala de Reunião**
+(entrevista por vídeo com câmera, microfone, mão levantada e chat) e sites de **golpe** (loja falsa,
 prêmio falso e banco falso), que mostram uma página explicando os sinais de golpe quando o aluno cai na armadilha.
 Os arquivos baixados vão para a pasta **Downloads**.
 
 ### Outros
-- **30 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova.
+- **39 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova.
 - **Painel do Instrutor**: cadastro (com a opção "criança"), aula atual de cada aluno, média, exercício de digitação
   atual, melhor velocidade, provas e medalhas.
 
@@ -115,8 +132,6 @@ Cada computador guarda os próprios dados. Na **Entrega 5** entra o "modo sala d
 o servidor pela rede (cabo) e todos os alunos aparecem no mesmo painel.
 
 ## Próximas fases
-- **Entrega 4:** Nível Avançado: Editor e Planilha avançados (gráficos), Apresentações, Configurações, segurança
-  digital avançada, computador e trabalho, projeto final e prova.
 - **Entrega 5:** Modo sala de aula em rede, painel do instrutor ao vivo, editor de lições sem programar.
 - **Extra:** o aluno falar com o professor pelo microfone (reconhecimento de voz offline com Whisper).
 
