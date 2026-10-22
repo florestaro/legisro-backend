@@ -179,11 +179,17 @@ button.bandeja-item:hover { background: rgba(255,255,255,.15); }
 .menu-contexto .menu-item:hover { background: var(--azul-claro); }
 
 /* ---------- Destaque das lições ---------- */
-.destaque { outline: 3px solid var(--amarelo) !important; outline-offset: 2px; animation: piscar 1.2s ease-in-out infinite; }
-@keyframes piscar {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255,185,0,.9); }
-  50% { box-shadow: 0 0 0 10px rgba(255,185,0,0); }
+.destaque { outline: 4px solid var(--vermelho) !important; outline-offset: 2px; animation: piscar-contorno 0.9s steps(1, end) infinite; }
+@keyframes piscar-contorno {
+  0% { outline-color: #e81123; box-shadow: 0 0 0 6px rgba(232,17,35,.35); }
+  50% { outline-color: transparent; box-shadow: none; }
 }
+/* Seta vermelha que acende e apaga apontando para o lugar do clique. */
+.seta-guia { position: fixed; z-index: 6000; width: 64px; height: 64px; pointer-events: none; animation: piscar-seta 0.9s steps(1, end) infinite; }
+.seta-guia svg { display: block; fill: #e81123; stroke: #fff; stroke-width: 3; stroke-linejoin: round; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
+.seta-guia[data-direcao="cima"] svg { transform: rotate(180deg); }
+.seta-guia[data-direcao="esquerda"] svg { transform: rotate(90deg); }
+@keyframes piscar-seta { 0% { opacity: 1; } 50% { opacity: 0; } }
 
 /* ---------- Professor Virtual ---------- */
 .professor {

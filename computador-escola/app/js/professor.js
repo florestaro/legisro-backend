@@ -85,18 +85,57 @@ window.CE = window.CE || {};
   function limparDestaque() {
     clearInterval(timerDestaque);
     document.querySelectorAll('.destaque').forEach((e) => e.classList.remove('destaque'));
+    const seta = document.getElementById('seta-guia');
+    if (seta) seta.hidden = true;
+  }
+
+  // Seta vermelha que pisca apontando para onde o aluno deve clicar.
+  function seta() {
+    let s = document.getElementById('seta-guia');
+    if (!s) {
+      s = CE.el('div', {
+        id: 'seta-guia', class: 'seta-guia', 'aria-hidden': 'true',
+        html: '<svg viewBox="0 0 64 64" width="64" height="64"><path d="M32 60 L6 30 H22 V4 H42 V30 H58 Z" /></svg>',
+      });
+      document.body.append(s);
+    }
+    return s;
+  }
+
+  // Escolhe o lado: ícones da coluna da esquerda recebem a seta à direita (apontando para a esquerda);
+  // o resto recebe a seta em cima (apontando para baixo) ou, sem espaço em cima, embaixo (apontando para cima).
+  function posicionarSeta(alvo) {
+    const s = seta();
+    const r = alvo && alvo.getBoundingClientRect();
+    if (!r || (!r.width && !r.height)) { s.hidden = true; return; }
+    const TAM = 64, FOLGA = 6;
+    let x, y, direcao;
+    if (r.width <= 140 && r.left < 160) {
+      direcao = 'esquerda'; x = r.right + FOLGA; y = r.top + r.height / 2 - TAM / 2;
+    } else if (r.top > TAM + FOLGA + 10) {
+      direcao = 'baixo'; x = r.left + Math.min(r.width / 2, 120) - TAM / 2; y = r.top - TAM - FOLGA;
+    } else {
+      direcao = 'cima'; x = r.left + Math.min(r.width / 2, 120) - TAM / 2; y = r.bottom + FOLGA;
+    }
+    s.style.left = Math.max(0, Math.min(x, innerWidth - TAM)) + 'px';
+    s.style.top = Math.max(0, Math.min(y, innerHeight - TAM)) + 'px';
+    s.dataset.direcao = direcao;
+    s.hidden = false;
   }
 
   function destacar(seletor) {
     limparDestaque();
     if (!seletor) return;
-    // O elemento pode aparecer depois (ex.: botão dentro de uma janela que ainda vai abrir).
+    // O elemento pode aparecer depois (ex.: botão dentro de uma janela que ainda vai abrir)
+    // ou mudar de lugar (janela arrastada), então a seta é reposicionada a todo momento.
     const aplicar = () => {
       document.querySelectorAll('.destaque').forEach((e) => { if (!e.matches(seletor)) e.classList.remove('destaque'); });
-      document.querySelectorAll(seletor).forEach((e) => e.classList.add('destaque'));
+      const alvos = [...document.querySelectorAll(seletor)];
+      alvos.forEach((e) => e.classList.add('destaque'));
+      posicionarSeta(alvos.find((e) => e.getClientRects().length));
     };
     aplicar();
-    timerDestaque = setInterval(aplicar, 700);
+    timerDestaque = setInterval(aplicar, 150);
   }
 
   // ---------- Lições ----------
