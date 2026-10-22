@@ -13,6 +13,8 @@ const marcacao = corpo.replace(/\s*<script src="[^"]+"><\/script>/g, '');
 const scripts = [...corpo.matchAll(/<script src="([^"]+)"><\/script>/g)]
   .map(([, arquivo]) => `<script>\n${fs.readFileSync(path.join(pastaApp, arquivo), 'utf8')}\n</script>`);
 const estilo = fs.readFileSync(path.join(pastaApp, 'estilo.css'), 'utf8');
+// Publicada no Claude, a demo baixa arquivos (planilha e versão para imprimir) pelo próprio Claude.
+scripts.push(`<script>\n${fs.readFileSync(path.join(__dirname, 'demo-artifact.js'), 'utf8')}\n</script>`);
 
 fs.writeFileSync(saida, [
   '<title>Computador Escola</title>',
