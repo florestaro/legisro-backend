@@ -2,3 +2,4 @@ node_modules/
 dist/
 dados/
 modelos/*.gguf
+demo-web.html
