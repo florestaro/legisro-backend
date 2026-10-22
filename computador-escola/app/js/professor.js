@@ -149,7 +149,9 @@ window.CE = window.CE || {};
       CE.el('div', { class: 'prof-progresso' },
         CE.el('div', { class: 'prof-progresso-cheio', style: `width:${Math.round((indicePasso / licao.passos.length) * 100)}%` })),
       CE.el('div', { class: 'prof-passo-num' }, `Passo ${indicePasso + 1} de ${licao.passos.length}`),
-      CE.el('p', { class: 'prof-texto' }, passo.texto),
+      passo.mouse
+        ? CE.el('div', { class: 'prof-com-mouse' }, CE.figuraMouse(passo.mouse), CE.el('p', { class: 'prof-texto' }, passo.texto))
+        : CE.el('p', { class: 'prof-texto' }, passo.texto),
       CE.el('p', { class: 'prof-dica', hidden: true }),
       CE.el('div', { class: 'prof-botoes' },
         CE.el('button', { class: 'botao secundario pequeno', title: 'Ouvir de novo', onclick: () => CE.voz.falar(passo.texto) }, '🔊 Repetir'),

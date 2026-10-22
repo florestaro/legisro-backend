@@ -223,6 +223,28 @@ button.bandeja-item:hover { background: rgba(255,255,255,.15); }
 .prof-pergunta { display: flex; gap: 6px; padding: 10px; border-top: 1px solid #e5e5e5; }
 .prof-pergunta .campo { padding: 8px 10px; }
 
+/* ---------- Desenho do mouse no cartão do professor ---------- */
+.prof-com-mouse { display: flex; gap: 12px; align-items: flex-start; }
+.prof-com-mouse .prof-texto { flex: 1; min-width: 0; }
+.mouse-figura { flex: none; display: grid; justify-items: center; gap: 2px; width: 104px; }
+.mouse-desenho svg { display: block; }
+.mouse-base { fill: #eef1f5; stroke: #3b4350; stroke-width: 3; }
+.mouse-parte { fill: #ffffff; stroke: #3b4350; stroke-width: 3; }
+.mouse-parte.roda { fill: #c9d0da; }
+.mouse-parte.ativa { animation: mouse-piscar 0.9s steps(1, end) infinite; }
+.mouse-parte.ativa.duplo { animation: mouse-duplo 1.4s steps(1, end) infinite; }
+.mouse-seta { fill: #e81123; stroke: #fff; stroke-width: 2; stroke-linejoin: round; animation: piscar-seta 0.9s steps(1, end) infinite; }
+.mouse-vezes { fill: #e81123; font: 800 22px var(--fonte); }
+.mouse-movimento { stroke: #e81123; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.mouse-arrastar .mouse-movimento { animation: piscar-seta 0.9s steps(1, end) infinite; }
+.mouse-mover .mouse-corpo { animation: mouse-mexer 1.6s ease-in-out infinite; }
+.mouse-rotulo { display: grid; text-align: center; line-height: 1.2; }
+.mouse-rotulo strong { color: #c42b1c; font-size: 14px; }
+.mouse-rotulo span { font-size: 13px; color: var(--texto-suave); }
+@keyframes mouse-piscar { 0% { fill: #e81123; } 50% { fill: #ffffff; } }
+@keyframes mouse-duplo { 0% { fill: #e81123; } 12% { fill: #ffffff; } 24% { fill: #e81123; } 36% { fill: #ffffff; } }
+@keyframes mouse-mexer { 0%, 100% { transform: translate(-10px, 40px); } 50% { transform: translate(10px, 40px); } }
+
 /* ---------- Barra de ferramentas (Editor e Arquivos) ---------- */
 .ferramentas { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 6px 8px; background: var(--fundo-cinza); border-bottom: 1px solid #ddd; }
 .ferramentas-grupo { display: flex; gap: 2px; align-items: center; padding-right: 12px; border-right: 1px solid #ddd; }

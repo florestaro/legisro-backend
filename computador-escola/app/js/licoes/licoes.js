@@ -7,6 +7,7 @@
 //   se       - (opcional) condição extra sobre o evento, ex.: só vale se o programa aberto for a Calculadora
 //   destacar - (opcional) o que piscar na tela para ajudar o aluno
 //   dica     - (opcional) ajuda extra se o aluno demorar
+//   mouse    - (opcional) mostra o desenho do mouse: 'esquerdo', 'duplo', 'direito', 'arrastar', 'roda' ou 'mover'
 //   jaFeito  - (opcional) se já estiver feito ao chegar no passo, pula sozinho
 //   preparar - (opcional) algo para fazer antes do passo começar
 window.CE = window.CE || {};
@@ -14,6 +15,7 @@ window.CE = window.CE || {};
 (function () {
   const passoAbrir = (id, nome) => ({
     texto: `Agora abra o programa "${nome}": coloque a setinha em cima do ícone dele e dê um clique duplo (dois cliques rápidos).`,
+    mouse: 'duplo',
     espera: 'app:aberto',
     se: (d) => d.app === id,
     destacar: `.icone[data-icone="${id}"]`,
@@ -23,6 +25,7 @@ window.CE = window.CE || {};
 
   const passoFechar = (id, nome) => ({
     texto: `Muito bem! Agora feche o programa "${nome}" clicando no X, no canto de cima à direita da janela.`,
+    mouse: 'esquerdo',
     espera: 'janela:fechada',
     se: (d) => d.app === id,
     destacar: `.janela[data-app="${id}"] [data-acao="fechar"]`,
@@ -39,15 +42,17 @@ window.CE = window.CE || {};
       descricao: 'Mover a setinha, clicar e dar clique duplo.',
       passos: [
         { texto: 'Olá! Eu sou o Professor Virtual e vou te ensinar a usar o computador. Este é um computador de treino: aqui você pode errar à vontade, nada vai quebrar! Quando estiver pronto, clique no botão "Continuar".' },
-        { texto: 'Pegue o mouse com a mão e mexa devagar em cima da mesa. Viu a setinha andando na tela? Ela segue o movimento da sua mão. Clique em "Continuar" quando tiver experimentado.' },
+        { texto: 'Pegue o mouse com a mão e mexa devagar em cima da mesa. Viu a setinha andando na tela? Ela segue o movimento da sua mão. Clique em "Continuar" quando tiver experimentado.', mouse: 'mover' },
         {
           texto: 'Agora vamos clicar. Coloque a setinha em cima do ícone "Calculadora" e aperte UMA vez o botão esquerdo do mouse. O ícone vai ficar marcado.',
+          mouse: 'esquerdo',
           espera: 'icone:selecionado', se: (d) => d.app === 'calculadora',
           destacar: '.icone[data-icone="calculadora"]',
           dica: 'O botão esquerdo é o que fica embaixo do seu dedo indicador.',
         },
         {
           texto: 'Isso! Agora, para ABRIR o programa, damos um clique duplo: aperte duas vezes bem rápido no ícone da Calculadora.',
+          mouse: 'duplo',
           espera: 'app:aberto', se: (d) => d.app === 'calculadora',
           destacar: '.icone[data-icone="calculadora"]',
           jaFeito: () => CE.janelas.estaAberta('calculadora'),
@@ -55,6 +60,7 @@ window.CE = window.CE || {};
         },
         {
           texto: 'A Calculadora abriu! Vamos fazer uma conta: clique no 2, depois no +, depois no 3 e por fim no =.',
+          mouse: 'esquerdo',
           espera: 'calculadora:resultado', se: (d) => d.a === 2 && d.b === 3 && d.operacao === '+',
           destacar: '.janela[data-app="calculadora"] .calc-teclas',
           dica: 'Se errar, clique no botão C para começar de novo.',
@@ -74,27 +80,32 @@ window.CE = window.CE || {};
         passoAbrir('arquivos', 'Arquivos'),
         {
           texto: 'Vamos mudar a janela de lugar. Clique na barra azul de cima da janela (onde está escrito "Arquivos"), SEGURE o botão do mouse e arraste. Solte quando quiser.',
+          mouse: 'arrastar',
           espera: 'janela:movida', se: (d) => d.app === 'arquivos',
           destacar: '.janela[data-app="arquivos"] .janela-titulo',
           dica: 'Não solte o botão enquanto estiver arrastando. Só solte no final.',
         },
         {
           texto: 'Ótimo! Agora deixe a janela do tamanho da tela inteira: clique no botão com um quadradinho (□), no canto de cima.',
+          mouse: 'esquerdo',
           espera: 'janela:maximizada', se: (d) => d.app === 'arquivos',
           destacar: '.janela[data-app="arquivos"] [data-acao="maximizar"]',
         },
         {
           texto: 'Viu como ficou grande? Clique no mesmo quadradinho de novo para ela voltar ao tamanho normal.',
+          mouse: 'esquerdo',
           espera: 'janela:normal', se: (d) => d.app === 'arquivos',
           destacar: '.janela[data-app="arquivos"] [data-acao="maximizar"]',
         },
         {
           texto: 'Agora vamos esconder a janela sem fechar. Clique no botão com um tracinho (–). Isso se chama minimizar.',
+          mouse: 'esquerdo',
           espera: 'janela:minimizada', se: (d) => d.app === 'arquivos',
           destacar: '.janela[data-app="arquivos"] [data-acao="minimizar"]',
         },
         {
           texto: 'A janela sumiu, mas não fechou! Ela está guardada lá embaixo, na barra de tarefas. Clique no botão "Arquivos" na barra de baixo para ela voltar.',
+          mouse: 'esquerdo',
           espera: 'janela:restaurada', se: (d) => d.app === 'arquivos',
           destacar: '.tarefa[data-app="arquivos"]',
         },
@@ -111,11 +122,13 @@ window.CE = window.CE || {};
       passos: [
         {
           texto: 'Lá no canto de baixo, à esquerda, tem o botão "Iniciar". Ele mostra todos os programas do computador. Clique nele uma vez.',
+          mouse: 'esquerdo',
           espera: 'menu-iniciar:aberto',
           destacar: '#botao-iniciar',
         },
         {
           texto: 'Abriu o menu! Agora clique em "Editor de Texto" na lista. No menu basta UM clique.',
+          mouse: 'esquerdo',
           espera: 'app:aberto', se: (d) => d.app === 'editor',
           destacar: '#menu-iniciar .menu-item[data-app="editor"]',
           jaFeito: () => CE.janelas.estaAberta('editor'),
@@ -124,11 +137,13 @@ window.CE = window.CE || {};
         passoFechar('editor', 'Editor de Texto'),
         {
           texto: 'O mouse também tem o botão DIREITO. Ele abre um menu com opções extras. Clique com o botão direito num espaço vazio da área de trabalho (no fundo da tela).',
+          mouse: 'direito',
           espera: 'menu-contexto:aberto',
           dica: 'O botão direito fica embaixo do seu dedo médio. Clique num lugar sem ícones e sem janelas.',
         },
         {
           texto: 'Apareceu um menu! Clique em "Mudar o fundo de tela" para trocar a imagem de fundo.',
+          mouse: 'esquerdo',
           espera: 'fundo:trocado',
           destacar: '#menu-contexto',
         },
@@ -149,6 +164,7 @@ window.CE = window.CE || {};
         passoAbrir('digitacao', 'Digitação'),
         {
           texto: 'Clique no primeiro exercício, "Teclas F e J", e digite as letras que aparecem. A tecla que você precisa apertar fica acesa no teclado da tela.',
+          mouse: 'esquerdo',
           espera: 'digitacao:concluida', se: (d) => d.exercicio === 'meio-1',
           destacar: '[data-exercicio="meio-1"]',
           dica: 'Não precisa ter pressa! Olhe para a tela e tente não olhar para o teclado.',
@@ -170,6 +186,7 @@ window.CE = window.CE || {};
         passoAbrir('editor', 'Editor de Texto'),
         {
           texto: 'Clique na folha branca e escreva o seu nome completo. Para letra maiúscula, segure a tecla Shift e aperte a letra.',
+          mouse: 'esquerdo',
           espera: 'editor:texto', se: (d) => d.texto.trim().length >= 3,
           destacar: '.janela[data-app="editor"] .editor-pagina',
         },
@@ -180,27 +197,32 @@ window.CE = window.CE || {};
         },
         {
           texto: 'Vamos destacar o seu nome. Primeiro selecione o nome: coloque a setinha no começo dele, segure o botão do mouse e arraste até o fim. Ele vai ficar marcado em azul.',
+          mouse: 'arrastar',
           espera: 'editor:selecao', se: (d) => d.selecionado.trim().length >= 3,
           dica: 'Outra forma de selecionar: dê um clique duplo em cima de uma palavra.',
         },
         {
           texto: 'Com o nome selecionado, clique no botão "N" lá em cima. Ele deixa a letra em negrito (mais grossa).',
+          mouse: 'esquerdo',
           espera: 'editor:formatado', se: (d) => d.comando === 'bold' && d.ativo,
           destacar: '.janela[data-app="editor"] [data-comando="bold"]',
         },
         {
           texto: 'Agora, com o nome ainda selecionado, aumente a letra: clique na caixinha com o número 12 e escolha um número maior, como 24.',
+          mouse: 'esquerdo',
           espera: 'editor:formatado', se: (d) => d.comando === 'fontSize' && Number(d.valor) > 3,
           destacar: '.janela[data-app="editor"] [data-comando="fontSize"]',
           dica: 'Se a seleção sumiu, selecione o nome de novo antes de mudar o tamanho.',
         },
         {
           texto: 'Para deixar o nome no meio da folha, clique no botão "Centralizar" (≡).',
+          mouse: 'esquerdo',
           espera: 'editor:formatado', se: (d) => d.comando === 'justifyCenter',
           destacar: '.janela[data-app="editor"] [data-comando="justifyCenter"]',
         },
         {
           texto: 'Está ficando lindo! Agora vamos guardar o documento: clique em "Salvar", escreva o nome "Meu primeiro documento" e clique em OK.',
+          mouse: 'esquerdo',
           espera: 'arquivo:salvo', se: (d) => d.tipo === 'documento',
           destacar: '.janela[data-app="editor"] [data-comando="salvar"]',
           dica: 'Sempre salve o que você faz! Se o computador desligar, o que não foi salvo se perde.',
@@ -230,16 +252,19 @@ window.CE = window.CE || {};
         passoAbrir('arquivos', 'Arquivos'),
         {
           texto: 'Esta é a sua pasta "Meus Documentos". Clique UMA vez em "Lista de compras" para selecionar.',
+          mouse: 'esquerdo',
           espera: 'arquivo:selecionado', se: (d) => d.nome === 'Lista de compras',
           destacar: '.janela[data-app="arquivos"] [data-arquivo="Lista de compras"]',
         },
         {
           texto: 'Vamos mudar o nome do arquivo. Clique no botão "Renomear", escreva "Compras do mês" e clique em OK.',
+          mouse: 'esquerdo',
           espera: 'arquivo:renomeado',
           destacar: '.janela[data-app="arquivos"] [data-acao="renomear"]',
         },
         {
           texto: 'O nome mudou! Agora dê um clique duplo no documento para abrir ele no Editor de Texto.',
+          mouse: 'duplo',
           espera: 'arquivo:aberto',
           destacar: '.janela[data-app="arquivos"] .arq-item',
         },

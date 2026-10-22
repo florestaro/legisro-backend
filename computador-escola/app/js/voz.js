@@ -32,7 +32,7 @@ window.CE = window.CE || {};
       sintese.cancel();
       const fala = new SpeechSynthesisUtterance(limpar(texto));
       fala.lang = 'pt-BR';
-      fala.rate = 1.25;
+      fala.rate = 1.4;
       if (vozEscolhida) fala.voice = vozEscolhida;
       sintese.speak(fala);
     },

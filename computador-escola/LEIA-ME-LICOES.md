@@ -22,6 +22,7 @@ texto de cada passo e espera o aluno fazer a ação pedida. Quando o aluno faz, 
       espera: 'app:aberto',
       se: (d) => d.app === 'calculadora',
       destacar: '.icone[data-icone="calculadora"]',
+      mouse: 'duplo',
       dica: 'São dois cliques bem rápidos!',
     },
 
@@ -41,8 +42,9 @@ texto de cada passo e espera o aluno fazer a ação pedida. Quando o aluno faz, 
 | `texto` | O que o professor mostra e fala. |
 | `espera` | O evento que conclui o passo (tabela abaixo). Sem ele, aparece o botão "Continuar". |
 | `se` | Condição extra sobre os dados do evento. |
-| `destacar` | O que vai piscar em amarelo na tela (seletor CSS). |
+| `destacar` | O que vai piscar em vermelho na tela, com a seta vermelha apontando (seletor CSS). |
 | `dica` | Aparece e é falada se o aluno ficar 40 segundos sem conseguir. |
+| `mouse` | Mostra o desenho do mouse com o botão certo piscando: `'esquerdo'`, `'duplo'`, `'direito'`, `'arrastar'`, `'roda'` ou `'mover'`. |
 | `jaFeito` | Função: se der verdadeiro ao chegar no passo, ele é pulado (ex.: o programa já está aberto). |
 | `preparar` | Função que roda antes do passo (ex.: criar um arquivo de exemplo). |
 
