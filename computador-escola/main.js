@@ -135,6 +135,12 @@ function registrarCanais() {
     return ia.perguntar(String(pergunta).slice(0, 500), { ...situacao, nome: usuarioAtual && usuarioAtual.nome }, enviar);
   });
   tratar('app:sair', () => app.quit());
+  // Acessibilidade: aumenta tudo na tela (letras, botões e janelas), como o zoom do Windows.
+  tratar('janela:zoom', (fator) => {
+    const f = Math.min(1.6, Math.max(0.8, Number(fator) || 1));
+    if (janela && !janela.isDestroyed()) janela.webContents.setZoomFactor(f);
+    return f;
+  });
 }
 
 app.whenReady().then(() => {

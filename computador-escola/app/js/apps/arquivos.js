@@ -8,6 +8,7 @@
     planilha: { icone: '📊', app: 'planilha', nome: 'Planilha' },
     pdf: { icone: '📕', app: 'leitor-pdf', nome: 'Documento PDF' },
     apresentacao: { icone: '📽️', app: 'apresentacoes', nome: 'Apresentação' },
+    zip: { icone: '🗜️', nome: 'Arquivo compactado (ZIP)' },
   };
   const NOME_LOCAL = { pc: 'Meus Documentos', pendrive: 'Pen drive (E:)', lixeira: 'Lixeira' };
   const { juntar, dentroDe } = CE.caminhos;
@@ -51,7 +52,40 @@
       function abrirItem(item) {
         if (!item) return;
         if (item.tipo === 'pasta') { irPara({ local: item.local || 'pc', pasta: juntar(item.pasta, item.nome) }); return; }
+        if (item.tipo === 'zip') { verZip(item); return; }
         CE.janelas.abrir(TIPOS[item.tipo].app, { arquivo: item });
+      }
+
+      // ---------- Compactar (ZIP) ----------
+      async function compactar() {
+        if (!selecionado) return;
+        const r = await CE.sessao.compactar(selecionado.id);
+        if (!r) return;
+        CE.avisar(`🗜️ "${r.zip.nome}" criado com ${r.arquivos} arquivo${r.arquivos === 1 ? '' : 's'} dentro. Ficou menor e é um arquivo só: ótimo para mandar por e-mail!`);
+        selecionado = null;
+        desenhar();
+      }
+      async function extrair(zip = selecionado) {
+        if (!zip || zip.tipo !== 'zip') { CE.avisar('Selecione um arquivo compactado (🗜️) para extrair.'); return; }
+        const pasta = await CE.sessao.extrair(zip.id);
+        if (!pasta) return;
+        CE.avisar(`📂 Arquivos extraídos para a pasta "${pasta.nome}".`);
+        selecionado = null;
+        desenhar();
+      }
+      function verZip(zip) {
+        let itens = [];
+        try { itens = JSON.parse(zip.conteudo || '{}').itens || []; } catch { itens = []; }
+        CE.emitir('arquivo:zip-aberto', { nome: zip.nome, itens: itens.length });
+        const fundo = CE.el('div', { class: 'dialogo-fundo' },
+          CE.el('div', { class: 'dialogo' },
+            CE.el('p', {}, `🗜️ ${zip.nome} — o que tem dentro:`),
+            CE.el('div', { class: 'arq-zip-lista' }, ...itens.map((i) => CE.el('div', {}, `${(TIPOS[i.tipo] || TIPOS.documento).icone} ${i.pasta ? i.pasta + '/' : ''}${i.nome}`))),
+            CE.el('p', { class: 'ed-dica' }, 'Para usar os arquivos, primeiro EXTRAIA (tire de dentro do ZIP).'),
+            CE.el('div', { class: 'dialogo-botoes' },
+              CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Fechar'),
+              CE.el('button', { class: 'botao', 'data-acao': 'extrair-tudo', onclick: () => { fundo.remove(); extrair(zip); } }, '📂 Extrair tudo'))));
+        document.body.append(fundo);
       }
 
       async function novaPasta() {
@@ -199,11 +233,15 @@
             botao('copiar', '📋 Copiar', () => guardar('copiar')),
             botao('recortar', '✂️ Recortar', () => guardar('recortar')),
             botao('colar', `📌 Colar${area ? ` "${area.nome}"` : ''}`, colar, true),
-            botao('excluir', '🗑️ Excluir', excluir)];
+            botao('excluir', '🗑️ Excluir', excluir),
+            botao('compactar', '🗜️ Compactar', compactar),
+            botao('extrair', '📂 Extrair', () => extrair())];
         barra.replaceChildren(CE.el('div', { class: 'ferramentas-grupo' }, ...grupo), CE.el('div', { class: 'ferramentas-grupo arq-busca-grupo' }, busca));
         barra.querySelectorAll('[data-precisa-selecao="sim"]').forEach((b) => { b.disabled = !selecionado; });
         const botaoColar = barra.querySelector('[data-acao="colar"]');
         if (botaoColar) botaoColar.disabled = !area;
+        const botaoExtrair = barra.querySelector('[data-acao="extrair"]');
+        if (botaoExtrair) botaoExtrair.disabled = !(selecionado && selecionado.tipo === 'zip');
 
         if (!itens.length) {
           lista.replaceChildren(CE.el('p', { class: 'arq-vazio' }, termo ? 'Nenhum arquivo encontrado com esse nome.' : naLixeira
@@ -227,6 +265,8 @@
             lista.querySelectorAll('.arq-item').forEach((i) => i.classList.remove('selecionado'));
             item.classList.add('selecionado');
             barra.querySelectorAll('[data-precisa-selecao="sim"]').forEach((b) => { b.disabled = false; });
+            const ext = barra.querySelector('[data-acao="extrair"]');
+            if (ext) ext.disabled = a.tipo !== 'zip';
             status.textContent = `"${a.nome}" selecionado`;
             CE.emitir('arquivo:selecionado', { nome: a.nome, tipo: a.tipo, pasta: compat(lugar), local: a.local || 'pc', caminho: a.pasta || '' });
           });

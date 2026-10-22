@@ -6,6 +6,7 @@ window.CE = window.CE || {};
   const sintese = window.speechSynthesis;
   let ligada = true;
   let vozEscolhida = null;
+  let volume = 1; // 0 a 1, ajustado nas Configurações > Som
 
   function escolherVoz() {
     if (!sintese) return;
@@ -34,6 +35,7 @@ window.CE = window.CE || {};
       const fala = new SpeechSynthesisUtterance(limpar(texto));
       fala.lang = 'pt-BR';
       fala.rate = opcoes.velocidade || 1.4;
+      fala.volume = volume;
       if (vozEscolhida) fala.voice = vozEscolhida;
       sintese.speak(fala);
     },
@@ -41,5 +43,7 @@ window.CE = window.CE || {};
     parar() { sintese && sintese.cancel(); },
     get ligada() { return ligada; },
     alternar() { ligada = !ligada; if (!ligada) this.parar(); return ligada; },
+    get volume() { return volume; },
+    definirVolume(v) { volume = Math.min(1, Math.max(0, Number(v) || 0)); },
   };
 })();

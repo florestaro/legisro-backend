@@ -64,6 +64,7 @@ window.CE = window.CE || {};
         'ia:status': () => ({ estado: 'sem-modelo', detalhe: 'Modo de teste no navegador.' }),
         'ia:perguntar': () => CE.responderSemIA(a[1], a[2]),
         'app:sair': () => location.reload(),
+        'janela:zoom': () => { document.documentElement.style.zoom = a[0]; return a[0]; },
       }[canal];
       return { ok: true, valor: await valor() };
     } catch (erro) {

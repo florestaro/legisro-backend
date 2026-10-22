@@ -154,6 +154,61 @@ window.CE = window.CE || {};
     apagarDeVez(id) {
       return CE.sessao.alterarArquivo(id, (a, lista) => lista.filter((x) => x.id !== id && x.grupoLixeira !== id), 'arquivo:apagado');
     },
+    // Compactar: junta um arquivo (ou uma pasta com tudo dentro) num só arquivo .zip, no mesmo lugar.
+    async compactar(id) {
+      const lista = await CE.sessao.arquivos();
+      const a = lista.find((x) => x.id === id);
+      if (!a) return null;
+      const local = a.local || 'pc';
+      let itens = [{ nome: a.nome, tipo: a.tipo, conteudo: a.conteudo, pasta: '' }];
+      if (a.tipo === 'pasta') {
+        const origem = juntar(a.pasta, a.nome);
+        lista.filter((x) => !x.naLixeira && (x.local || 'pc') === local && dentroDe(x.pasta, origem))
+          .forEach((x) => itens.push({ nome: x.nome, tipo: x.tipo, conteudo: x.conteudo, pasta: juntar(a.nome, (x.pasta || '').slice(origem.length + 1)) }));
+      }
+      const tamanho = (i) => JSON.stringify(i).length;
+      const antes = itens.reduce((s, i) => s + tamanho(i), 0);
+      const zip = { id: novoId(), tipo: 'zip', local, pasta: a.pasta || '', criadoEm: Date.now(), alteradoEm: Date.now(), conteudo: JSON.stringify({ itens }) };
+      zip.nome = nomeLivre(lista, { ...a, tipo: 'zip' }, local, a.pasta || '');
+      lista.push(zip);
+      await CE.sessao.gravarArquivos(lista);
+      const arquivos = itens.filter((i) => i.tipo !== 'pasta').length;
+      CE.emitir('arquivo:compactado', { nome: zip.nome, origem: a.nome, arquivos, local, pasta: zip.pasta });
+      return { zip, arquivos, antes, depois: Math.round(antes * 0.45) };
+    },
+    // Extrair: recria o que está dentro do .zip numa pasta com o mesmo nome.
+    async extrair(id) {
+      const lista = await CE.sessao.arquivos();
+      const zip = lista.find((x) => x.id === id && x.tipo === 'zip');
+      if (!zip) return null;
+      const local = zip.local || 'pc';
+      let itens = [];
+      try { itens = JSON.parse(zip.conteudo || '{}').itens || []; } catch { itens = []; }
+      const pastaNova = { id: novoId(), tipo: 'pasta', local, pasta: zip.pasta || '', criadoEm: Date.now(), alteradoEm: Date.now() };
+      pastaNova.nome = nomeLivre(lista, { nome: zip.nome, tipo: 'pasta' }, local, zip.pasta || '');
+      const base = juntar(zip.pasta, pastaNova.nome);
+      lista.push(pastaNova, ...itens.map((i) => ({ id: novoId(), nome: i.nome, tipo: i.tipo, conteudo: i.conteudo, local, pasta: juntar(base, i.pasta), criadoEm: Date.now(), alteradoEm: Date.now() })));
+      await CE.sessao.gravarArquivos(lista);
+      CE.emitir('arquivo:extraido', { nome: zip.nome, pasta: pastaNova.nome, arquivos: itens.filter((i) => i.tipo !== 'pasta').length, local });
+      return pastaNova;
+    },
+    // Cópia de segurança: tudo de "Meus Documentos" vai para uma pasta "Backup <data>" no pen drive.
+    async backupNoPendrive() {
+      if (!CE.pendrive.conectado) throw new Error('Conecte o pen drive primeiro (botão 🔌 na barra de tarefas).');
+      const nome = 'Backup ' + new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+      const pasta = await CE.sessao.garantirPasta(nome, 'pendrive', '');
+      const lista = await CE.sessao.arquivos();
+      const doPc = lista.filter((x) => !x.naLixeira && (x.local || 'pc') === 'pc');
+      const ja = new Set(lista.filter((x) => x.local === 'pendrive' && dentroDe(x.pasta, pasta)).map((x) => `${x.pasta}|${x.nome}|${x.tipo}`));
+      const copias = doPc.map((x) => ({ ...x, id: novoId(), local: 'pendrive', pasta: juntar(pasta, x.pasta || ''), alteradoEm: Date.now() }))
+        .filter((x) => !ja.has(`${x.pasta}|${x.nome}|${x.tipo}`));
+      lista.push(...copias);
+      await CE.sessao.gravarArquivos(lista);
+      const arquivos = doPc.filter((x) => x.tipo !== 'pasta').length;
+      CE.emitir('config:backup', { pasta: nome, arquivos });
+      return { pasta: nome, arquivos };
+    },
+
     // Baixar (da internet ou de um e-mail): o arquivo vai para a pasta Downloads.
     async baixarArquivo({ nome, tipo, conteudo }, origem = 'internet') {
       const pasta = await CE.sessao.garantirPasta('Downloads');

@@ -488,13 +488,16 @@
         removerMarcas(copia);
         previa.append(copia);
         const copias = CE.el('input', { class: 'campo', type: 'number', min: '1', max: '20', value: '1', 'aria-label': 'Número de cópias', 'data-campo': 'copias' });
+        // As impressoras vêm das Configurações; a primeira é a padrão.
+        const impressoras = CE.config ? CE.config.impressoras().map((i) => i.nome) : ['Impressora da sala (treino)'];
+        const seletorImpressora = CE.el('select', { class: 'campo', 'data-campo': 'impressora' }, ...impressoras.map((n) => CE.el('option', { value: n }, n)), CE.el('option', { value: 'pdf' }, 'Salvar como PDF'));
         const fundo = CE.el('div', { class: 'dialogo-fundo' },
           CE.el('div', { class: 'dialogo largo' },
             CE.el('p', {}, '🖨️ Imprimir'),
             CE.el('div', { class: 'ed-imprimir' },
               previa,
               CE.el('div', { class: 'ed-imprimir-opcoes' },
-                CE.el('label', {}, 'Impressora', CE.el('select', { class: 'campo' }, CE.el('option', {}, 'Impressora da sala (treino)'), CE.el('option', {}, 'Salvar como PDF (treino)'))),
+                CE.el('label', {}, 'Impressora', seletorImpressora),
                 CE.el('label', {}, 'Cópias', copias),
                 CE.el('label', {}, 'Páginas', CE.el('select', { class: 'campo' }, CE.el('option', {}, 'Todas'), CE.el('option', {}, 'Só a página atual'))),
                 CE.el('p', { class: 'ed-dica' }, 'Antes de imprimir, confira a prévia ao lado: assim você não gasta papel à toa.'),
@@ -505,8 +508,9 @@
               CE.el('button', { class: 'botao', 'data-acao': 'confirmar-impressao', onclick: () => {
                 const n = Math.max(1, Number(copias.value) || 1);
                 fundo.remove();
-                CE.avisar(`🖨️ Imprimindo ${n} cópia${n > 1 ? 's' : ''} de "${nomeArquivo || 'Documento sem nome'}"...`);
-                CE.emitir('editor:impresso', { copias: n, nome: nomeArquivo });
+                if (seletorImpressora.value === 'pdf') { exportarPdf(); return; }
+                CE.avisar(`🖨️ Imprimindo ${n} cópia${n > 1 ? 's' : ''} de "${nomeArquivo || 'Documento sem nome'}" na ${seletorImpressora.value}...`);
+                CE.emitir('editor:impresso', { copias: n, nome: nomeArquivo, impressora: seletorImpressora.value });
               } }, 'Imprimir'),
             ),
           ));

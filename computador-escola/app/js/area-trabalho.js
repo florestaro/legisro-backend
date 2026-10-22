@@ -2,15 +2,14 @@
 window.CE = window.CE || {};
 
 (function () {
-  const FUNDOS = ['fundo-azul', 'fundo-verde', 'fundo-por-do-sol', 'fundo-noite'];
-  let indiceFundo = 0;
   let relogioTimer = null;
 
   const $ = (id) => document.getElementById(id);
 
   function appsDoUsuario() {
     const instrutor = CE.sessao.usuario.papel === 'instrutor';
-    return CE.listarApps().filter((a) => !a.soInstrutor || instrutor);
+    // Programas "instaláveis" só aparecem depois que o aluno instala pelas Configurações.
+    return CE.listarApps().filter((a) => (!a.soInstrutor || instrutor) && (!a.instalavel || (CE.config && CE.config.instalado(a.id))));
   }
 
   function montarIcones() {
@@ -58,7 +57,7 @@ window.CE = window.CE || {};
   }
 
   function atualizarRelogio() {
-    const agora = new Date();
+    const agora = CE.config ? CE.config.agora() : new Date();
     $('relogio').replaceChildren(
       CE.el('div', {}, agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })),
       CE.el('div', {}, agora.toLocaleDateString('pt-BR')),
@@ -96,12 +95,26 @@ window.CE = window.CE || {};
   }
 
   function trocarFundo() {
-    const area = $('area-de-trabalho');
-    area.classList.remove(FUNDOS[indiceFundo]);
-    indiceFundo = (indiceFundo + 1) % FUNDOS.length;
-    area.classList.add(FUNDOS[indiceFundo]);
-    CE.emitir('fundo:trocado', { fundo: FUNDOS[indiceFundo] });
+    const lista = CE.FUNDOS_TELA.map((f) => f.id);
+    const atual = lista.findIndex((f) => $('area-de-trabalho').classList.contains(f));
+    definirFundo(lista[(atual + 1) % lista.length]);
+    CE.emitir('fundo:trocado', { fundo: lista[(atual + 1) % lista.length] });
   }
+  function definirFundo(fundo) {
+    const area = $('area-de-trabalho');
+    CE.FUNDOS_TELA.forEach((f) => area.classList.remove(f.id));
+    area.classList.add(fundo);
+    if (CE.config) CE.config.guardar({ fundo });
+  }
+
+  CE.FUNDOS_TELA = [
+    { id: 'fundo-azul', nome: 'Azul' }, { id: 'fundo-verde', nome: 'Floresta' }, { id: 'fundo-por-do-sol', nome: 'Pôr do sol' },
+    { id: 'fundo-noite', nome: 'Noite' }, { id: 'fundo-rio', nome: 'Rio Madeira' }, { id: 'fundo-cafe', nome: 'Café' },
+  ];
+  CE.areaTrabalho = {
+    definirFundo,
+    atualizar() { if (CE.sessao.usuario) { montarIcones(); montarMenuIniciar(); atualizarRelogio(); } },
+  };
 
   function ligarEventosFixos() {
     $('botao-iniciar').addEventListener('click', (e) => {
@@ -130,12 +143,14 @@ window.CE = window.CE || {};
     atualizarRelogio();
     clearInterval(relogioTimer);
     relogioTimer = setInterval(atualizarRelogio, 15000);
+    if (CE.config) CE.config.carregar();
     atualizarStatusIA();
     CE.professor.iniciar();
   };
 
   CE.sairDoSistema = async function () {
     CE.janelas.fecharTodas();
+    if (CE.config) CE.config.reiniciar();
     CE.pendrive.reiniciar();
     CE.areaTransferenciaArquivos = null;
     CE.professor.parar();

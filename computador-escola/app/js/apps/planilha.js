@@ -647,22 +647,7 @@
 
       // ---------- Gráficos ----------
       let graficoSelecionado = null;
-      function dadosDoGrafico(g) {
-        const r = lerFaixa(g.intervalo);
-        const comNomes = r.c2 > r.c1;
-        let cab = r.l2 > r.l1;
-        for (let c = comNomes ? r.c1 + 1 : r.c1; c <= r.c2 && cab; c++) { const v = valorDe(F.endereco(c, r.l1)); if (v === '' || typeof v !== 'string') cab = false; }
-        const inicio = r.l1 + (cab ? 1 : 0);
-        const categorias = [], series = [];
-        for (let l = inicio; l <= r.l2; l++) categorias.push(comNomes ? textoCelula(F.endereco(r.c1, l)) : String(l - inicio + 1));
-        for (let c = comNomes ? r.c1 + 1 : r.c1; c <= r.c2; c++) {
-          const valores = [];
-          for (let l = inicio; l <= r.l2; l++) { const v = valorDe(F.endereco(c, l)); valores.push(typeof v === 'number' ? v : ''); }
-          series.push({ nome: cab ? String(valorDe(F.endereco(c, r.l1))) : `Série ${series.length + 1}`, valores });
-        }
-        const formato = formatoDe(F.endereco(comNomes ? r.c1 + 1 : r.c1, inicio)).formato;
-        return { tipo: g.tipo, titulo: g.titulo, categorias, series, formato };
-      }
+      const dadosDoGrafico = (g) => CE.graficos.extrair(g, valorDe, formatoDe);
       function desenharGraficos() {
         camadaGraficos.replaceChildren(...(dados.graficos || []).map((g) => CE.el('div', {
           class: 'pl-grafico' + (graficoSelecionado === g.id ? ' selecionado' : ''), 'data-grafico': g.id, style: `left:${g.x}px;top:${g.y}px`,

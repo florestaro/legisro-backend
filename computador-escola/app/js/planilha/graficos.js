@@ -122,5 +122,36 @@ window.CE = window.CE || {};
     return partes.join('');
   }
 
-  CE.graficos = { desenhar, TIPOS, CORES };
+  // Lê os dados de um gráfico da planilha: a 1ª coluna tem os nomes e as outras, os números.
+  // Se a 1ª linha só tem textos, ela é o título de cada série.
+  function extrair(g, valorDe, formatoDe) {
+    const F = CE.formulas;
+    const [a, b] = String(g.intervalo).split(':').map(F.lerEndereco);
+    const z = b || a;
+    const r = { c1: Math.min(a.col, z.col), c2: Math.max(a.col, z.col), l1: Math.min(a.lin, z.lin), l2: Math.max(a.lin, z.lin) };
+    const textoCelula = (ref) => F.textoDe(valorDe(ref), (formatoDe(ref) || {}).formato);
+    const comNomes = r.c2 > r.c1;
+    let cab = r.l2 > r.l1;
+    for (let c = comNomes ? r.c1 + 1 : r.c1; c <= r.c2 && cab; c++) { const v = valorDe(F.endereco(c, r.l1)); if (v === '' || typeof v !== 'string') cab = false; }
+    const inicio = r.l1 + (cab ? 1 : 0);
+    const categorias = [], series = [];
+    for (let l = inicio; l <= r.l2; l++) categorias.push(comNomes ? textoCelula(F.endereco(r.c1, l)) : String(l - inicio + 1));
+    for (let c = comNomes ? r.c1 + 1 : r.c1; c <= r.c2; c++) {
+      const valores = [];
+      for (let l = inicio; l <= r.l2; l++) { const v = valorDe(F.endereco(c, l)); valores.push(typeof v === 'number' ? v : ''); }
+      series.push({ nome: cab ? String(valorDe(F.endereco(c, r.l1))) : `Série ${series.length + 1}`, valores });
+    }
+    const formato = (formatoDe(F.endereco(comNomes ? r.c1 + 1 : r.c1, inicio)) || {}).formato;
+    return { tipo: g.tipo, titulo: g.titulo, categorias, series, formato };
+  }
+
+  // Os dados de um gráfico de uma planilha salva (usado nas Apresentações).
+  CE.graficoDaPlanilha = function (dados, g) {
+    const entradas = {};
+    Object.entries(dados.celulas || {}).forEach(([ref, c]) => { if (c.v !== '' && c.v != null) entradas[ref] = c.v; });
+    const { valores } = CE.formulas.calcularTudo(entradas);
+    return extrair(g, (ref) => (ref in valores ? valores[ref] : ''), (ref) => (dados.celulas[ref] && dados.celulas[ref].f) || {});
+  };
+
+  CE.graficos = { desenhar, extrair, TIPOS, CORES };
 })();
