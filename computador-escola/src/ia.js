@@ -49,7 +49,9 @@ async function iniciar(pastasModelo) {
   try {
     const llamaCpp = await import('node-llama-cpp');
     LlamaChatSession = llamaCpp.LlamaChatSession;
-    const llama = await llamaCpp.getLlama({ gpu: false });
+    // Só o processador (gpu: false) e só o binário que já vem no instalador (build: 'never'): o programa nunca tenta
+    // baixar ou compilar o llama.cpp pela internet ao abrir. Se o binário não servir neste computador, usa as respostas prontas.
+    const llama = await llamaCpp.getLlama({ gpu: false, build: 'never' });
     modelo = await llama.loadModel({ modelPath: caminhoModelo });
     // Contexto pequeno para caber em computadores com 4 GB de RAM.
     contexto = await modelo.createContext({ contextSize: 2048 });

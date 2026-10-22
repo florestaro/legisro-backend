@@ -119,7 +119,8 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `jogo:memoria` / `cronometro:iniciado` / `notas:texto` | Programas instaláveis | `jogadas` |
 | `janela:ativada` | Trouxe uma janela para a frente | `app` |
 | `peca:clicada` / `computador:ligado` / `computador:desligado` | Conhecendo o Computador | `peca`, `tipo`, `total` |
-| `jogo:iniciado` / `jogo:concluido` / `jogo:perdido` | Jogos do Mouse | `jogo` (`baloes`, `presentes`, `feira`, `caixas`, `tesouro`, `pontaria`, `labirinto`), `nivel` (`facil`, `medio`, `dificil`), `segundos`, `motivo` |
+| `jogo:iniciado` / `jogo:concluido` / `jogo:perdido` | Jogos do Mouse | `jogo` (`baloes`, `presentes`, `feira`, `caixas`, `tesouro`, `pontaria`, `labirinto`), `nivel` (`facil`, `medio`, `dificil`), `segundos`, `motivo`; na Pontaria, `precisao` (média, em %) |
+| `jogo:precisao` | Pontaria: acertou um alvo (100% no miolo, diminuindo até a borda) | `jogo`, `precisao` |
 | `rolagem:fundo` | Chegou ao fundo do mar no jogo do tesouro | |
 | `tecla:apertada` / `teclas:texto` | Treino do Teclado | `tecla` (ex.: `Enter`, `Backspace`, `CapsLock`, `ArrowLeft`, `" "`) / `texto` |
 | `desenho:traco` / `desenho:forma` / `desenho:cor` / `desenho:cor2` / `desenho:ferramenta` / `desenho:balde` / `desenho:desfeito` / `desenho:limpo` | Desenho (como no Paint: botão esquerdo pinta com a Cor 1, botão direito com a Cor 2; botão direito na paleta escolhe a Cor 2) | `ferramenta`, `forma`, `cor` (ex.: `vermelho`), `botao` (`esquerdo` ou `direito`) |

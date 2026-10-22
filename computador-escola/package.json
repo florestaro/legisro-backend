@@ -20,6 +20,9 @@
     "electron-builder": "^26.15.3",
     "playwright-core": "1.56.0"
   },
+  "overrides": {
+    "simple-git": "^4.0.2"
+  },
   "build": {
     "appId": "br.escola.computador",
     "productName": "Computador Escola",

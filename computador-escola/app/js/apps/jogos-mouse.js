@@ -159,11 +159,12 @@
               p.jogosMouse[jogo] = r;
             });
             CE.comemorar(nivel === 'dificil' ? 'grande' : 'pequena');
-            CE.emitir('jogo:concluido', { jogo, nivel, segundos });
+            CE.emitir('jogo:concluido', { jogo, nivel, segundos, ...(ctx.extra || {}) });
             const proximo = NIVEIS[NIVEIS.findIndex((x) => x.id === nivel) + 1];
             quadro.append(CE.el('div', { class: 'jm-vitoria' },
               CE.el('h2', {}, nivel === 'dificil' ? 'Campeão! 🏆' : 'Parabéns! 🎉'),
               CE.el('p', {}, `Você venceu o nível ${n.nome} em ${segundos} segundos.`),
+              ctx.resumo ? CE.el('p', { class: 'jm-resumo' }, ctx.resumo) : null,
               proximo ? CE.el('p', {}, `O nível ${proximo.nome} foi liberado!`) : null,
               CE.el('div', { class: 'dialogo-botoes' },
                 CE.el('button', { class: 'botao secundario', onclick: menu }, 'Outros jogos'),
@@ -174,10 +175,11 @@
             if (ctx.acabou) return;
             ctx.acabou = true;
             desligarTudo();
-            CE.emitir('jogo:perdido', { jogo, nivel, motivo });
+            CE.emitir('jogo:perdido', { jogo, nivel, motivo, ...(ctx.extra || {}) });
             quadro.append(CE.el('div', { class: 'jm-vitoria jm-derrota' },
               CE.el('h2', {}, 'Quase! 😅'),
               CE.el('p', {}, motivo),
+              ctx.resumo ? CE.el('p', { class: 'jm-resumo' }, ctx.resumo) : null,
               CE.el('p', {}, 'Treinar faz o mouse ficar cada vez mais fácil. Tente de novo!'),
               CE.el('div', { class: 'dialogo-botoes' },
                 CE.el('button', { class: 'botao secundario', onclick: menu }, 'Outros jogos'),
@@ -421,8 +423,27 @@
       function pontaria(ctx) {
         const { regra, palco } = ctx;
         let acertos = 0, mostrados = 0;
-        const atualizar = () => ctx.mostrar(`Acertos: ${acertos} · Alvos: ${mostrados} de ${regra.alvos}`);
+        const precisoes = [];
+        const media = () => (precisoes.length ? Math.round(precisoes.reduce((a, b) => a + b, 0) / precisoes.length) : null);
+        const atualizar = () => {
+          ctx.mostrar(`Acertos: ${acertos} · Alvos: ${mostrados} de ${regra.alvos}${media() != null ? ` · Precisão média: ${media()}%` : ''}`);
+          ctx.resumo = media() != null ? `Precisão média: ${media()}% (100% é bem no centro).` : '';
+          ctx.extra = { precisao: media() };
+        };
         atualizar();
+        // Mostra a precisão bem onde o aluno clicou: aparece rápido e some sozinha, sem tapar o próximo alvo.
+        const mostrarPrecisao = (x, y, texto, classe) => {
+          const caixa = palco.getBoundingClientRect();
+          const marca = CE.el('div', { class: `jm-precisao ${classe}`, 'aria-hidden': 'true' }, texto);
+          marca.style.left = x - caixa.left + 'px';
+          marca.style.top = y - caixa.top + 'px';
+          palco.append(marca);
+          setTimeout(() => marca.remove(), 700);
+        };
+        palco.addEventListener('click', (e) => {
+          if (ctx.acabou || e.target.closest('.jm-alvo') || !e.detail) return;
+          mostrarPrecisao(e.clientX, e.clientY, 'Fora · 0%', 'fora');
+        });
         function proximo() {
           if (ctx.acabou) return;
           if (mostrados >= regra.alvos) {
@@ -438,9 +459,19 @@
           alvo.style.left = sortear(10, Math.max(12, caixa.width - regra.tamanho - 10)) + 'px';
           alvo.style.top = sortear(10, Math.max(12, caixa.height - regra.tamanho - 10)) + 'px';
           let foi = false;
-          alvo.addEventListener('click', () => {
+          alvo.addEventListener('click', (e) => {
             if (foi || ctx.acabou) return;
             foi = true; acertos++;
+            // 100% no miolo do alvo, diminuindo até a borda.
+            if (e.detail) {
+              const r = alvo.getBoundingClientRect();
+              const raio = r.width / 2, miolo = raio * 0.15;
+              const distancia = Math.hypot(e.clientX - (r.left + raio), e.clientY - (r.top + raio));
+              const precisao = distancia <= miolo ? 100 : Math.max(1, Math.min(99, Math.round(100 * (1 - (distancia - miolo) / (raio - miolo)))));
+              precisoes.push(precisao);
+              mostrarPrecisao(e.clientX, e.clientY, `${precisao}%`, precisao >= 85 ? 'otima' : precisao >= 55 ? 'boa' : 'fraca');
+              CE.emitir('jogo:precisao', { jogo: 'pontaria', precisao });
+            }
             alvo.classList.add('acertou');
             atualizar();
             setTimeout(() => { alvo.remove(); proximo(); }, 180);
@@ -486,19 +517,35 @@
         aoTrocar(() => observador.disconnect());
         const mostrar = () => ctx.mostrar(andando ? '🐭 Andando… não encoste na parede!' : `Clique no ratinho para começar${batidas ? ` · batidas: ${batidas}` : ''}`);
         mostrar();
-        rato.addEventListener('pointerdown', (e) => { if (ctx.acabou) return; e.preventDefault(); andando = true; mapa.classList.add('andando'); mostrar(); });
+        // Enquanto anda, o ratinho vai junto com a setinha do mouse (o labirinto pode estar encolhido: desfaz a escala).
+        const levarRato = (e) => {
+          const r = mapa.getBoundingClientRect();
+          const escala = r.width / 780;
+          rato.style.left = (e.clientX - r.left) / escala - L / 2 + 'px';
+          rato.style.top = (e.clientY - r.top) / escala - L / 2 + 'px';
+        };
+        rato.addEventListener('pointerdown', (e) => {
+          if (ctx.acabou) return;
+          e.preventDefault();
+          if (rato.hasPointerCapture && rato.hasPointerCapture(e.pointerId)) rato.releasePointerCapture(e.pointerId); // na tela de toque
+          andando = true; mapa.classList.add('andando'); levarRato(e); mostrar();
+        });
         const bateu = () => {
           if (!andando || ctx.acabou) return;
           andando = false; batidas++;
           mapa.classList.remove('andando');
           mapa.classList.remove('bateu'); void mapa.offsetWidth; mapa.classList.add('bateu');
+          posicionar(rato, pts[0]); // volta para o começo
           ctx.aviso('💥 Encostou na parede! Clique no ratinho para começar de novo.');
           mostrar();
         };
         mapa.addEventListener('pointermove', (e) => {
           if (!andando) return;
-          if (e.target === queijo) { andando = false; ctx.vencer(); return; }
-          if (e.target === mapa) bateu();
+          levarRato(e);
+          // O ratinho não "pega" o mouse (pointer-events: none): o que está embaixo dele é o caminho, a parede ou o queijo.
+          const embaixo = document.elementFromPoint(e.clientX, e.clientY);
+          if (embaixo === queijo || (embaixo && queijo.contains(embaixo))) { andando = false; mapa.classList.remove('andando'); posicionar(rato, pts[pts.length - 1]); ctx.vencer(); return; }
+          if (embaixo === mapa || !mapa.contains(embaixo)) bateu();
         });
         mapa.addEventListener('pointerleave', bateu);
       }

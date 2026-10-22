@@ -68,7 +68,7 @@ Digitação, **Arquivos** (pastas e subpastas, copiar/recortar/colar, arrastar, 
 **pen drive** simulado), programas que o aluno instala pelas Configurações (**Bloco de Notas**, **Relógio e
 Cronômetro** e **Jogo da Memória**),
 **Lixeira**, Calculadora, **Conhecendo o Computador** (desenho interativo das
-peças), **Jogos do Mouse** (7 jogos: balões, presentes, feira, caixas secretas, caça ao tesouro, pontaria e labirinto, cada um com os níveis Fácil, Médio e Difícil; o nível seguinte só libera quando o aluno vence o anterior), **Treino do Teclado**,
+peças), **Jogos do Mouse** (7 jogos: balões, presentes, feira, caixas secretas, caça ao tesouro, pontaria e labirinto, cada um com os níveis Fácil, Médio e Difícil; o nível seguinte só libera quando o aluno vence o anterior; na Pontaria, cada clique mostra a precisão — 100% no centro do alvo — e no fim aparece a média; no Labirinto, o ratinho anda junto com o mouse), **Treino do Teclado**,
 **Desenho** (parecido com o Paint), **Navegador** (abas, favoritos, voltar/avançar e barra de endereço com cadeado),
 Aulas e Painel do Instrutor.
 
@@ -118,6 +118,9 @@ Com um modelo, ele conversa de verdade, sempre em linguagem simples.
 3. Abra o programa. O ícone na barra de tarefas mostra 🧠 quando a IA está ligada (💬 = respostas prontas).
 
 > Com 4 GB de RAM, use o modelo de 1,5B ou o de 0,5B. Feche outros programas durante a aula.
+
+A IA roda só no processador e usa só o que já vem no instalador: o programa nunca baixa nem compila nada pela internet
+para ela. Se o computador não conseguir rodar o modelo, o professor continua com as respostas prontas.
 
 **Voz:** o professor fala usando a voz do próprio Windows (no Windows 10 em português, "Microsoft Maria").
 O aluno pode desligar a voz no ícone 🔊 da barra de tarefas.

@@ -183,6 +183,8 @@ window.CE = window.CE || {};
       if (!e.target.closest('#menu-iniciar, #botao-iniciar')) fecharMenu();
       if (!e.target.closest('.icone')) document.querySelectorAll('.icone.selecionado').forEach((i) => i.classList.remove('selecionado'));
     });
+    // Esc fecha o menu Iniciar, como no Windows.
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('menu-iniciar').hidden) { fecharMenu(); $('botao-iniciar').focus(); } });
     $('area-de-trabalho').addEventListener('contextmenu', menuDaAreaDeTrabalho);
     $('barra-tarefas').addEventListener('contextmenu', menuDaBarraDeTarefas);
     $('botao-voz').addEventListener('click', () => {

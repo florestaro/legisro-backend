@@ -603,7 +603,7 @@ button.bandeja-item:hover { background: rgba(255,255,255,.15); }
 .jm-mapa.andando .jm-caminho { background: #fff3d6; box-shadow: inset 0 0 0 2px #f0c674; }
 .jm-rato, .jm-queijo { position: absolute; display: grid; place-items: center; border-radius: 50%; padding: 0; line-height: 1; }
 .jm-rato { border: 3px solid var(--azul); background: #fff; z-index: 1; animation: pulsar 1s infinite; }
-.jm-mapa.andando .jm-rato { animation: none; opacity: .5; }
+.jm-mapa.andando .jm-rato { animation: none; pointer-events: none; transform: scale(1.15); box-shadow: 0 4px 10px rgba(0,0,0,.45); z-index: 2; }
 .jm-queijo { background: #fff8dc; border: 3px dashed #d4a017; }
 .jm-aviso { position: absolute; left: 50%; top: 96px; transform: translateX(-50%); background: var(--vermelho); color: #fff; padding: 8px 16px; border-radius: 6px; font-weight: 600; z-index: 5; pointer-events: none; text-align: center; max-width: 90%; }
 .jm-derrota h2 { color: var(--vermelho); }
@@ -1412,3 +1412,15 @@ body.alto-contraste .mc-item:hover:not([disabled]), body.alto-contraste .mc-item
 .ds-cores-atuais { display: flex; gap: 6px; align-items: center; }
 .ds-cores-atuais label { display: grid; justify-items: center; font-size: 11px; color: var(--texto-suave); gap: 2px; }
 .ds-amostra { width: 26px; height: 26px; border-radius: 4px; border: 2px solid #9a9a9a; display: block; }
+
+/* Pontaria: precisão no ponto do clique (aparece rápido e some, sem pegar o clique) */
+.jm-precisao { position: absolute; transform: translate(-50%, -120%); pointer-events: none; z-index: 4; font-weight: 800; font-size: 22px;
+  padding: 2px 8px; border-radius: 10px; background: rgba(255,255,255,.9); box-shadow: 0 2px 6px rgba(0,0,0,.2); white-space: nowrap;
+  animation: precisao .7s ease-out forwards; }
+.jm-precisao.otima { color: #0b7a0b; }
+.jm-precisao.boa { color: #b36b00; }
+.jm-precisao.fraca { color: #c2410c; }
+.jm-precisao.fora { color: #c62828; font-size: 17px; }
+@keyframes precisao { 0% { opacity: 0; transform: translate(-50%, -80%) scale(.7); } 15% { opacity: 1; transform: translate(-50%, -120%) scale(1.1); }
+  70% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -190%) scale(1); } }
+.jm-resumo { font-weight: 700; color: var(--azul-escuro); }
