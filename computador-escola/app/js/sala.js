@@ -37,18 +37,23 @@ window.CE = window.CE || {};
     }
   }
 
-  function mostrarMensagem(m) {
+  // Mensagens novas do instrutor: as que chegam juntas aparecem numa caixa só (e são lidas numa fala só).
+  function mostrarMensagens(lista) {
     const quem = CE.sessao.usuario && CE.sessao.usuario.id;
-    if (!m || !quem || (mensagensVistas.get(quem) || 0) >= m.id) return false;
-    mensagensVistas.set(quem, m.id);
+    if (!quem) return;
+    const novas = lista.filter((m) => m && m.id > (mensagensVistas.get(quem) || 0));
+    if (!novas.length) return;
+    mensagensVistas.set(quem, Math.max(...novas.map((m) => m.id)));
+    const de = novas[novas.length - 1].de || 'Instrutor';
     const fundo = CE.el('div', { class: 'dialogo-fundo sala-mensagem' },
       CE.el('div', { class: 'dialogo' },
-        CE.el('p', {}, `📢 Mensagem de ${m.de || 'Instrutor'}:`),
-        CE.el('div', { class: 'sala-mensagem-texto', 'data-mensagem-sala': '' }, m.texto),
+        CE.el('p', {}, novas.length > 1 ? `📢 Mensagens de ${de}:` : `📢 Mensagem de ${de}:`),
+        ...novas.map((m) => CE.el('div', { class: 'sala-mensagem-texto', 'data-mensagem-sala': '' }, m.texto)),
         CE.el('div', { class: 'dialogo-botoes' }, CE.el('button', { class: 'botao', onclick: () => fundo.remove() }, 'OK, entendi'))));
     document.body.append(fundo);
-    CE.emitir('sala:mensagem', { texto: m.texto });
-    return true;
+    novas.forEach((m) => CE.emitir('sala:mensagem', { texto: m.texto }));
+    // Uma fala só (uma fala nova cortaria a anterior); a mensagem do instrutor fala mesmo com a tela pausada.
+    CE.voz.falar(`Mensagem do professor: ${novas.map((m) => m.texto).join('. ')}`, { mesmoPausado: true });
   }
 
   // Sem resposta do instrutor por uns 20 s (3 tentativas), a pausa sai sozinha: o aluno não fica com a tela travada.
@@ -60,9 +65,7 @@ window.CE = window.CE || {};
       falhasSeguidas = 0;
       marcarRede(true);
       pausar(!!r.pausada);
-      const novas = (r.mensagens || (r.mensagem ? [r.mensagem] : [])).filter(mostrarMensagem);
-      // Uma fala só com todas as mensagens novas (uma fala nova cortaria a anterior).
-      if (novas.length) CE.voz.falar(`Mensagem do professor: ${novas.map((m) => m.texto).join('. ')}`, { mesmoPausado: true });
+      mostrarMensagens(r.mensagens || (r.mensagem ? [r.mensagem] : []));
     } catch (e) {
       marcarRede(false, e.message);
       if (++falhasSeguidas >= 3) pausar(false);
