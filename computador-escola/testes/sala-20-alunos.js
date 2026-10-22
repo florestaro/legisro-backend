@@ -278,6 +278,49 @@ function portaLivre(porta) {
   ok(receberam.every(Boolean), `duas mensagens seguidas da instrutora chegaram as duas em ${receberam.filter(Boolean).length}/${N} computadores`);
   await pcs[0].p.screenshot({ path: foto('carga-04-mensagem.png') });
 
+  // ---------------- 4b) "Não entendi", onde a turma trava, relatório e liberar aulas com a turma inteira ----------------
+  const metade = Math.ceil(N / 2);
+  const idPrimeira = await A.evaluate(() => CE.LICOES[0].id);
+  const pedidos = await Promise.all(pcs.map(async ({ p, i }) => {
+    try {
+      for (let k = 0; k < 3 && await p.$('.sala-mensagem .botao'); k++) await p.click('.sala-mensagem >> nth=-1 >> .botao', { timeout: 3000 }).catch(() => {});
+      await p.evaluate((id) => { CE.janelas.fecharTodas(); return CE.professor.comecarLicao(id); }, idPrimeira);
+      await p.waitForSelector('#prof-licao [data-acao="nao-entendi"]', { timeout: 30000 });
+      if (i % 2 === 0) { // metade da turma não entendeu o primeiro passo
+        await p.click('#prof-licao [data-acao="nao-entendi"]');
+        await p.waitForSelector('#prof-licao .prof-dica:not([hidden])', { timeout: 10000 });
+      }
+      return true;
+    } catch (e) { return e.message.split('\n')[0]; }
+  }));
+  let pedindo = 0;
+  for (let k = 0; k < 20 && pedindo !== metade; k++) { await A.waitForTimeout(1000); pedindo = Number(await A.getAttribute(J('[data-pedindo-ajuda]'), 'data-pedindo-ajuda').catch(() => 0)); }
+  const ordem = await A.$$eval(J('[data-aluno-online]'), (els) => els.map((e) => e.classList.contains('pediu-ajuda')));
+  ok(pedidos.every((x) => x === true) && pedindo === metade && ordem.slice(0, metade).every(Boolean) && !ordem.slice(metade).some(Boolean),
+    `${metade} alunos apertaram "🙋 Não entendi": a Sala ao vivo mostra "${pedindo} pedindo ajuda", com eles primeiro e em destaque${pedidos.some((x) => x !== true) ? ' — ' + pedidos.filter((x) => x !== true).join(' | ') : ''}`);
+  await A.screenshot({ path: foto('carga-05-nao-entendi.png') });
+  await A.click(J('[data-aba="trava"]'));
+  const trava = await A.waitForSelector(J(`[data-trava="${idPrimeira}|0"]`), { timeout: 30000 }).then((e) => e.$$eval('td', (tds) => tds.map((td) => td.textContent))).catch(() => null);
+  ok(trava && trava[2].startsWith(String(metade)) && trava[3] === String(metade), `Onde a turma trava: o passo 1 da primeira aula com ${trava ? trava[2].match(/^\d+/)[0] : '?'} alunos e ${trava ? trava[3] : '?'} pedidos de ajuda`);
+  await A.screenshot({ path: foto('carga-06-onde-trava.png') });
+  await A.click(J('[data-aba="certificados"]'));
+  await A.click(J('[data-acao="ver-relatorio"]'), { timeout: 30000 });
+  await A.waitForSelector('#area-impressao .pagina.relatorio', { timeout: 30000 });
+  const linhasRel = await A.$$eval('#area-impressao .pagina.relatorio:first-child tbody tr', (l) => l.map((tr) => [...tr.children].map((td) => td.textContent)));
+  ok(linhasRel.length === N && linhasRel.every((c) => Number(c[2]) === 1) && linhasRel.filter((c) => c[c.length - 1] === '1').length === metade,
+    `relatório da turma: ${linhasRel.length} alunos, todos com presença hoje, e os ${metade} pedidos de ajuda`);
+  await A.screenshot({ path: foto('carga-07-relatorio.png') });
+  await A.click('#area-impressao [data-acao="fechar-impressao"]');
+  // Liberar o Nível 2 para a turma da manhã pelo Painel (o resto continua em sequência)
+  await A.click(J('[data-aba="alunos"]'));
+  await A.click(J(`tr:has(td:text-is("${NOMES[0]}")) [data-acao="liberar-aulas"]`), { timeout: 30000 });
+  await A.check('.painel-liberar [data-liberar="nivel:n2"]'); await A.check('.painel-liberar [data-campo="liberar-turma"]');
+  await A.click('.painel-liberar [data-acao="salvar-liberacao"]');
+  await A.waitForSelector('.painel-liberar', { state: 'detached', timeout: 30000 });
+  const manha = NOMES.map((_, i) => i < N / 2);
+  const veem = await Promise.all(pcs.map(({ p }) => p.evaluate(async () => CE.curso.liberada(CE.LICOES.find((l) => l.nivel === 'n2'), await CE.sessao.progresso())).catch((e) => e.message)));
+  ok(veem.every((v, i) => v === manha[i]), `instrutora liberou o Nível 2 para a turma da manhã: ${veem.filter((v) => v === true).length} alunos da manhã veem, os da tarde não`);
+
   // ---------------- 5) Sair e entrar de novo: os dados continuam lá ----------------
   const voltas = await Promise.all(pcs.map(async ({ p, i, nome }) => {
     try {
@@ -321,6 +364,15 @@ function portaLivre(porta) {
     if (lista.some((a) => NOMES.some((n) => n !== u.nome && (a.nome + a.conteudo).includes(n)))) vazamento.push(u.nome);
   }
   ok(!semProgresso.length, `progresso dos ${N} alunos guardado no instrutor (aula do professor + nivelamento)${semProgresso.length ? ' — faltou: ' + semProgresso.join(', ') : ''}`);
+  const hoje = new Date(); const dia = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+  const semFrequencia = [], liberacaoErrada = [];
+  alunos.forEach((u) => {
+    const pr = ler(`progresso-${u.id}`) || {};
+    if (!(pr.frequencia && pr.frequencia[dia] && pr.frequencia[dia].entradas === 2)) semFrequencia.push(`${u.nome} ${JSON.stringify(pr.frequencia)}`);
+    if (!!(pr.liberadas && pr.liberadas['nivel:n2']) !== (u.turma === 'Manhã')) liberacaoErrada.push(u.nome);
+  });
+  ok(!semFrequencia.length, `frequência: as 2 entradas de hoje de cada aluno foram guardadas${semFrequencia.length ? ' — ' + semFrequencia.join(', ').slice(0, 300) : ''}`);
+  ok(!liberacaoErrada.length, `o Nível 2 liberado continua só para a manhã depois de todos saírem, entrarem e gravarem${liberacaoErrada.length ? ' — errado: ' + liberacaoErrada.join(', ') : ''}`);
   ok(!semDigitacao.length, `5 gravações seguidas de digitação de cada aluno: nenhuma perdida${semDigitacao.length ? ' — faltou: ' + semDigitacao.join(', ') : ''}`);
   ok(!semArquivo.length, `trabalho de cada aluno guardado no instrutor${semArquivo.length ? ' — faltou: ' + semArquivo.join(', ') : ''}`);
   ok(!vazamento.length, `nenhum arquivo de um aluno foi parar na pasta de outro${vazamento.length ? ' — ' + vazamento.join(', ') : ''}`);

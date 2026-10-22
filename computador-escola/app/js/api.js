@@ -95,7 +95,53 @@ window.CE = window.CE || {};
           salaTeste.presencas[atual.id] = { usuario: atual, pc: 'Este computador', atividade: a[0] || {}, em: Date.now() };
           return { pausada: salaTeste.pausada && atual.papel !== 'instrutor', mensagem: atual.papel !== 'instrutor' ? salaTeste.mensagem : null };
         },
-        'sala:turma': () => ({ pausada: salaTeste.pausada, mensagem: salaTeste.mensagem, alunos: Object.values(salaTeste.presencas).filter((x) => Date.now() - x.em < 45000).map((x) => ({ ...x, ha: Math.round((Date.now() - x.em) / 1000) })) }),
+        'sala:turma': () => ({ pausada: salaTeste.pausada, mensagem: salaTeste.mensagem, alunos: Object.values(salaTeste.presencas).filter((x) => Date.now() - x.em < 45000).map((x) => ({ ...x, ha: Math.round((Date.now() - x.em) / 1000), ajudaHa: x.atividade.ajuda ? Math.round((Date.now() - x.atividade.ajuda) / 1000) : null })) }),
+        'escola:ler': () => {
+          const e = ler('escola', {});
+          return { nome: e.nome || '', cidade: e.cidade || '', responsavel: e.responsavel || '', cargo: e.cargo || 'Instrutor(a)', cargas: { n1: 40, n2: 40, n3: 40, digitacao1: 20, digitacao2: 20, digitacao3: 20, ...(e.cargas || {}) } };
+        },
+        'escola:salvar': () => {
+          if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.');
+          const info = a[0] || {}; const texto = (v, n) => String(v || '').trim().slice(0, n);
+          const cargas = {};
+          Object.entries(info.cargas || {}).forEach(([k, v]) => { const h = Math.round(Number(v)); if (h >= 1 && h <= 2000) cargas[k] = h; });
+          gravar('escola', { ...ler('escola', {}), nome: texto(info.nome, 120), cidade: texto(info.cidade, 80), responsavel: texto(info.responsavel, 80), cargo: texto(info.cargo, 60), cargas });
+          return simulado('escola:ler').then((r) => r.valor);
+        },
+        'escola:certificado': () => {
+          if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.');
+          const e = ler('escola', {}); e.certificados = e.certificados || {};
+          const k = `${a[0]}:${a[1]}`;
+          if (!e.certificados[k]) { e.ultimoCertificado = (e.ultimoCertificado || 0) + 1; e.certificados[k] = { numero: e.ultimoCertificado, emitidoEm: Date.now() }; gravar('escola', e); }
+          return e.certificados[k];
+        },
+        'escola:certificados': () => ler('escola', {}).certificados || {},
+        'progresso:liberar': () => {
+          if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.');
+          (a[0] || []).forEach((id) => {
+            const p = ler('progresso:' + id, { licoes: {}, digitacao: {} });
+            if (Object.keys(a[1] || {}).length) p.liberadas = a[1]; else delete p.liberadas;
+            gravar('progresso:' + id, p);
+          });
+          return true;
+        },
+        'progresso:zerar-dificuldades': () => {
+          if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.');
+          (a[0] || []).forEach((id) => { const p = ler('progresso:' + id, null); if (p) { delete p.dificuldades; gravar('progresso:' + id, p); } });
+          return true;
+        },
+        // Imprimir ou salvar em PDF: no navegador, a janela de impressão do próprio navegador (lá dá para escolher "Salvar como PDF").
+        'janela:pdf': () => { window.print(); return null; },
+        'arquivo:salvar-texto': () => {
+          const { nome, conteudo, tipo } = a[0] || {};
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(new Blob([conteudo], { type: tipo || 'text/plain;charset=utf-8' }));
+          // Sem acentos no nome: alguns navegadores trocam um nome com acento por "download".
+          link.download = String(nome || 'arquivo.txt').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w .,()-]/g, '_');
+          document.body.append(link); link.click(); link.remove();
+          setTimeout(() => URL.revokeObjectURL(link.href), 60000);
+          return link.download;
+        },
         'sala:pausar': () => (salaTeste.pausada = !!a[0]),
         'sala:mensagem': () => (salaTeste.mensagem = String(a[0] || '').trim() ? { id: Date.now(), texto: String(a[0]).trim().slice(0, 300), de: atual.nome } : null),
       }[canal];

@@ -376,7 +376,7 @@ button.bandeja-item:hover { background: rgba(255,255,255,.15); }
 
 /* ---------- Painel do Instrutor ---------- */
 .janela-corpo.painel { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
-.painel-abas { display: flex; gap: 8px; }
+.painel-abas { display: flex; gap: 8px; flex-wrap: wrap; }
 .painel-duas-colunas { display: grid; grid-template-columns: 300px 1fr; gap: 20px; min-height: 0; flex: 1; }
 .painel-form { display: grid; gap: 8px; align-content: start; overflow: auto; }
 .painel-form h3 { margin: 0; }
@@ -1290,7 +1290,7 @@ body.cursor-grande, body.cursor-grande * { cursor: url("data:image/svg+xml,%3Csv
 .painel-cartao small { color: var(--texto-suave); }
 .painel-cartao-topo { display: flex; gap: 10px; align-items: center; }
 .painel-cartao-topo > div { display: grid; }
-.painel-legenda.aviso { background: #fff4d6; padding: 10px 12px; border-radius: 8px; }
+.painel-legenda.painel-alerta { background: #fff4d6; padding: 10px 12px; border-radius: 8px; }
 /* Criar aulas (Painel do Instrutor) */
 .painel-criar { display: grid; gap: 12px; padding: 0 6px 20px 0; overflow: auto; flex: 1; min-height: 0; align-content: start; }
 .painel-campo { display: grid; gap: 4px; font-size: 14px; font-weight: 600; }
@@ -1308,3 +1308,74 @@ body.cursor-grande, body.cursor-grande * { cursor: url("data:image/svg+xml,%3Csv
 .painel-aula { display: flex; gap: 10px; align-items: center; padding: 10px 12px; background: #fff; border: 1px solid #dfe5ec; border-radius: 8px; }
 .painel-aula > div { flex: 1; display: grid; }
 .painel-aula small { color: var(--texto-suave); }
+
+/* ---------- "Não entendi", onde a turma trava e liberar aulas ---------- */
+.prof-botoes .nao-entendi { margin-right: auto; border-color: #f0a500; background: #fff8e1; }
+.prof-botoes .nao-entendi:hover { background: #ffefc2; }
+.painel-sala-total.ajuda { margin-left: 0; color: #8a5a00; background: #fff4d6; padding: 4px 10px; border-radius: 12px; }
+.painel-cartao.pediu-ajuda { border-left-color: #e8590c; background: #fff7ef; box-shadow: 0 0 0 2px #ffc98f; }
+.painel-cartao p.painel-cartao-ajuda { color: #b3470a; font-weight: 700; }
+.painel-rolagem.extras { display: grid; gap: 12px; align-content: start; }
+.painel-trava-passo { max-width: 360px; font-size: 14px; }
+.painel-tabela td .botao.pequeno { white-space: nowrap; }
+.painel-secao { border: 1px solid #e3e8ee; border-radius: 8px; padding: 12px 14px; display: grid; gap: 10px; }
+.painel-secao h3 { margin: 0; }
+.painel-secao p { margin: 0; }
+.painel-escola { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+.painel-cargas { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 14px; }
+.painel-campo { display: grid; gap: 4px; font-size: 13px; color: var(--texto-suave); }
+.painel-campo .campo { color: var(--texto); }
+.painel-secao > .botao { justify-self: start; }
+.painel-certificados { display: flex; gap: 6px; flex-wrap: wrap; }
+.painel-liberar { max-height: 88vh; grid-template-rows: auto auto minmax(0, 1fr) auto auto; }
+.liberar-lista { overflow: auto; display: grid; gap: 10px; padding-right: 4px; }
+.liberar-nivel { border: 1px solid #e3e8ee; border-radius: 8px; padding: 8px 12px; display: grid; gap: 4px; }
+.liberar-nivel h4 { margin: 0 0 4px; }
+.liberar-modulo { padding-left: 6px; }
+.liberar-modulo summary { cursor: pointer; padding: 3px 0; font-size: 15px; }
+.liberar-modulo .painel-check { padding-left: 18px; }
+.painel-check.forte { font-weight: 700; }
+
+/* ---------- Impressão: certificado e relatório ---------- */
+#area-impressao { position: fixed; inset: 0; z-index: 20000; background: #525659; overflow: auto; user-select: text; }
+.impressao-barra { position: sticky; top: 0; z-index: 1; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 16px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+.impressao-barra strong { font-size: 17px; }
+.impressao-total { color: var(--texto-suave); margin-right: auto; }
+.impressao-paginas { display: grid; gap: 18px; justify-content: center; padding: 18px; }
+.pagina { background: #fff; color: #1b1b1b; box-shadow: 0 2px 10px rgba(0,0,0,.35); overflow: hidden; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+#area-impressao.paisagem .pagina { width: 297mm; min-height: 210mm; }
+#area-impressao.retrato .pagina { width: 210mm; min-height: 297mm; }
+.pagina.certificado { height: 210mm; padding: 12mm; }
+.cert-moldura { height: 100%; border: 3mm double var(--azul-escuro); outline: 1px solid #c9a227; outline-offset: -5mm; padding: 14mm 22mm 10mm; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6mm; position: relative; background: linear-gradient(180deg, #f7fbff, #fff 40%); }
+.cert-escola { font-size: 20px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--azul-escuro); }
+.cert-titulo { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 54px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8a6d1a; }
+.cert-texto { margin: 0; font-size: 21px; line-height: 1.6; max-width: 220mm; }
+.cert-nome { display: block; font-family: Georgia, "Times New Roman", serif; font-size: 36px; color: var(--azul-escuro); margin: 2mm 0; }
+.cert-conteudo { margin: 0; font-size: 14px; color: #444; max-width: 230mm; }
+.cert-data { margin: 0; font-size: 16px; }
+.cert-assinaturas { margin-top: auto; display: flex; gap: 40mm; justify-content: center; width: 100%; }
+.cert-assinatura { display: grid; gap: 2px; min-width: 75mm; border-top: 1px solid #333; padding-top: 6px; font-size: 15px; }
+.cert-assinatura small { color: #555; }
+.cert-numero { position: absolute; right: 10mm; bottom: 6mm; font-size: 12px; color: #666; }
+.pagina.relatorio { padding: 12mm 12mm 10mm; display: grid; gap: 5mm; align-content: start; }
+.rel-cabecalho h1 { margin: 0; font-size: 22px; color: var(--azul-escuro); }
+.rel-cabecalho p { margin: 2px 0 0; font-size: 13px; color: #444; }
+.rel-tabela { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.rel-tabela th { background: #e5f1fb; text-align: left; padding: 4px 5px; border: 1px solid #b9c7d6; }
+.rel-tabela td { padding: 3px 5px; border: 1px solid #d0d7de; vertical-align: top; }
+.rel-tabela tr { break-inside: avoid; }
+.rel-tabela.rel-presenca th, .rel-tabela.rel-presenca td { text-align: center; padding: 3px 2px; }
+.rel-tabela.rel-presenca td:first-child, .rel-tabela.rel-presenca th:first-child { text-align: left; white-space: nowrap; padding: 3px 5px; }
+.rel-legenda { margin: 0; font-size: 11px; color: #555; }
+
+@media print {
+  html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+  body > *:not(#area-impressao) { display: none !important; }
+  #area-impressao { position: static; overflow: visible; background: #fff; }
+  .impressao-barra { display: none !important; }
+  .impressao-paginas { display: block; padding: 0; }
+  .pagina { box-shadow: none; margin: 0; break-after: page; }
+  .pagina:last-child { break-after: auto; }
+  #area-impressao.paisagem .pagina.certificado { height: 209.5mm; }
+}
+.painel-seletor { width: auto; min-width: 200px; max-width: 320px; }

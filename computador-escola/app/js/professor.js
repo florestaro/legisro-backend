@@ -171,6 +171,7 @@ window.CE = window.CE || {};
 
   function botoesFixos(passo, ...extras) {
     return CE.el('div', { class: 'prof-botoes' },
+      CE.el('button', { class: 'botao secundario pequeno nao-entendi', 'data-acao': 'nao-entendi', title: 'Peça ajuda: o professor explica de novo e o instrutor fica sabendo', onclick: naoEntendi }, '🙋 Não entendi'),
       CE.el('button', { class: 'botao secundario pequeno', title: 'Ouvir de novo', onclick: () => CE.voz.falar(textoFalado(passo)) }, '🔊 Repetir'),
       CE.el('button', { class: 'botao secundario pequeno', onclick: sairDaLicao }, 'Sair da aula'),
       ...extras,
@@ -225,6 +226,7 @@ window.CE = window.CE || {};
           retorno.textContent = '❌ Ainda não. Leia de novo e tente outra opção.';
           retorno.className = 'prof-retorno errado';
           CE.voz.falar('Ainda não. Tente outra opção.');
+          if (!licao.especial) CE.dificuldades.registrar(licao.id, indicePasso, 'erro');
           CE.emitir('quiz:respondido', { certo: false });
         }
         retorno.hidden = false;
@@ -235,6 +237,7 @@ window.CE = window.CE || {};
       CE.el('p', { class: 'prof-texto' }, '❓ ' + pergunta),
       CE.el('div', { class: 'prof-opcoes' }, ...botoes),
       retorno,
+      CE.el('p', { class: 'prof-dica', hidden: true }),
       botoesFixos(passo, continuar),
     ));
   }
@@ -248,12 +251,42 @@ window.CE = window.CE || {};
     elemento.textContent = '💡 ' + texto;
     elemento.hidden = false;
     CE.voz.falar(texto);
+    if (!licao.especial) CE.dificuldades.registrar(licao.id, indicePasso, 'dica');
+  }
+
+  // "🙋 Não entendi": o professor explica de novo, mais devagar, com a dica e a seta; o pedido fica guardado
+  // (para o instrutor ver onde a turma trava) e aparece na Sala ao vivo.
+  function naoEntendi() {
+    const passo = passoAtual();
+    if (!licao || !passo) return;
+    if (!licao.especial) CE.dificuldades.registrar(licao.id, indicePasso, 'naoEntendi');
+    CE.emitir('licao:nao-entendi', { licao: licao.id, passo: indicePasso + 1 });
+    if (CE.sala) CE.sala.pedirAjuda();
+    const elemento = document.querySelector('#prof-licao .prof-dica');
+    if (licao.desafio || licao.prova) {
+      const texto = licao.prova
+        ? 'Na prova o Professor Virtual não pode ajudar. Leia com calma; se precisar, levante a mão: o instrutor já foi avisado.'
+        : 'Este é um desafio para fazer sozinho, mas o instrutor já foi avisado e pode te ajudar.';
+      if (elemento) { elemento.textContent = '🙋 ' + texto; elemento.hidden = false; }
+      CE.voz.falar(texto, { velocidade: 1.1 });
+      return;
+    }
+    const ajuda = passo.dica || (passo.quiz
+      ? 'Leia a pergunta e todas as respostas com calma. Pense no que você viu nesta aula.'
+      : passo.espera
+        ? 'Faça o que está escrito acima, um pedacinho de cada vez. A seta vermelha piscando mostra onde clicar.'
+        : 'Leia o texto com calma. Quando terminar, clique em Continuar.');
+    clearTimeout(timerDica); // a dica já apareceu: o relógio da dica não conta outra vez
+    if (elemento) { elemento.textContent = `💡 ${ajuda} Se ainda não der, o instrutor já foi avisado 🙋.`; elemento.hidden = false; }
+    CE.voz.falar(`${textoFalado(passo)} ${ajuda}`, { velocidade: 1.1 });
+    if (passo.destacar) destacar(passo.destacar);
   }
 
   async function iniciarPasso() {
     if (pararDeOuvir) { pararDeOuvir(); pararDeOuvir = null; }
     clearTimeout(timerDica);
     const passo = passoAtual();
+    if (CE.sala) CE.sala.ajudaResolvida(); // passo novo: o pedido de ajuda do passo anterior sai da Sala ao vivo
     if (!passo) { concluirLicao(); return; }
     // Tira o foco do botão "Continuar", para as teclas apertadas a seguir não "clicarem" nele de novo.
     if (document.activeElement && $('professor').contains(document.activeElement)) document.activeElement.blur();
@@ -321,6 +354,8 @@ window.CE = window.CE || {};
         nota: jaAprovada && antes.nota != null && (nota == null || antes.nota > nota) ? antes.nota : nota,
         vezes: antes.vezes + 1,
         em: Date.now(),
+        // Data da primeira aprovação (a do certificado): refazer a aula depois não muda.
+        aprovadaEm: antes.aprovadaEm || (jaAprovada ? antes.em : aprovada ? Date.now() : undefined),
       };
     }));
     if (!salvou || licao) return; // o aluno começou outra aula nesse meio-tempo
@@ -408,6 +443,7 @@ window.CE = window.CE || {};
   }
 
   async function sairDaLicao() {
+    if (licao && !licao.especial && passoAtual()) CE.dificuldades.registrar(licao.id, indicePasso, 'desistiu');
     encerrar();
     CE.voz.parar();
     await boasVindas(false);
@@ -417,16 +453,17 @@ window.CE = window.CE || {};
     return CE.curso.proxima(await CE.sessao.progresso());
   }
 
-  async function comecarLicao(id) {
+  async function comecarLicao(id, opcoes = {}) {
     const encontrada = CE.curso.licao(id);
     if (!encontrada) return;
+    const instrutor = CE.sessao.usuario && CE.sessao.usuario.papel === 'instrutor';
     if (!CE.curso.liberada(encontrada, await CE.sessao.progresso())) {
       CE.avisar('🔒 Esta aula ainda está bloqueada. Termine a aula anterior primeiro!');
       return;
     }
     encerrar();
     licao = encontrada;
-    indicePasso = 0;
+    indicePasso = instrutor && opcoes.passo > 0 ? Math.min(opcoes.passo, encontrada.passos.length - 1) : 0;
     quizPontos = 0;
     quizTotal = 0;
     pulados = 0;

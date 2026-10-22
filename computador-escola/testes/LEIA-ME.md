@@ -9,12 +9,14 @@ Dois testes automáticos do modo sala de aula em rede. Antes da primeira vez, ro
 npm run teste:servidor
 ```
 
-Liga o servidor da sala sozinho (sem abrir o programa) e confere, pedido por pedido, cerca de 37 situações:
+Liga o servidor da sala sozinho (sem abrir o programa) e confere, pedido por pedido, cerca de 48 situações:
 - o instrutor fecha e abre o programa, e os alunos continuam dentro;
 - um aluno entra em outro computador, é removido pelo instrutor ou tem a senha trocada;
 - 20 alunos entram ao mesmo tempo, e senhas erradas em série esbarram no limite;
 - mensagens são entregues enquanto a caixa é gravada, uma caixa fica cheia ou alguém apaga de vez;
 - dois instrutores criam aulas ao mesmo tempo;
+- dados da escola, número dos certificados (reimprimir mantém o número), liberar aulas fora da sequência (o aluno não
+  consegue mudar o que o instrutor liberou), zerar "onde a turma trava" e o "🙋 Não entendi" na Sala ao vivo;
 - um arquivo de dados está estragado.
 
 Leva menos de 1 minuto. Usa uma pasta temporária e a porta 47199 (para usar outra, veja "Outra porta" abaixo).
@@ -34,13 +36,15 @@ e 20 computadores de aluno ligados a ele. Eles usam o sistema ao mesmo tempo:
   salvam um documento e gravam digitação.
 - **E-mail:** todos criam conta no Correio e mandam e-mails uns aos outros.
 - **Sala ao vivo:** a instrutora acompanha, pausa as telas e manda mensagens.
+- **Ajuda e papelada:** metade da turma aperta "🙋 Não entendi" (a Sala ao vivo e "Onde a turma trava" mostram), a
+  instrutora abre o relatório da turma e libera o Nível 2 para a turma da manhã.
 - **Situações de problema:**
   - todos saem e entram de novo;
   - a instrutora fecha e reabre o programa;
   - um aluno entra em outro computador;
   - um aluno é removido pelo Painel.
-- **Conferência final:** o teste confere no disco do instrutor se nada se perdeu e se nenhum aluno vê os dados de
-  outro.
+- **Conferência final:** o teste confere no disco do instrutor se nada se perdeu (inclusive a frequência e as aulas
+  liberadas) e se nenhum aluno vê os dados de outro.
 
 Cada linha do resultado começa com ✔ (passou) ou ✘ (falhou); no fim aparecem `FALHAS 0` e onde ficaram as capturas
 de tela (cada rodada tem a sua pasta, dentro da pasta temporária do sistema). Leva uns 2 minutos. O número de alunos vai

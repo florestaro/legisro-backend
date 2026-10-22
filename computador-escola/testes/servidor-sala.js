@@ -180,6 +180,47 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   const grandeCaixa = { conta: { endereco: 'grande@correio.escola', nome: 'T6' }, mensagens: [{ id: 'g1', pasta: 'enviados', anexos: [{ conteudo: 'q'.repeat(21 * 1024 * 1024) }] }] };
   const recusada = await pedir('dados:salvar', ['email:' + turma[6].id, grandeCaixa], tT6);
   ok(!recusada.ok && /caixa de e-mail está cheia/.test(recusada.erro), 'gravar uma caixa acima de 20 MB é recusado com explicação');
+  // 19) Dados da escola e número do certificado
+  const tT7 = (await pedir('sessao:entrar', [turma[7].id, '1111'])).token;
+  const tT8 = (await pedir('sessao:entrar', [turma[8].id, '1111'])).token;
+  const escolaPadrao = (await pedir('escola:ler', [], tT7)).valor;
+  ok(escolaPadrao && escolaPadrao.nome === '' && escolaPadrao.cargas.n1 === 40 && escolaPadrao.cargas.digitacao3 === 20, 'dados da escola começam com a carga horária padrão');
+  ok(!(await pedir('escola:salvar', [{ nome: 'Aluno mexendo' }], tT7)).ok, 'aluno não muda os dados da escola');
+  const salvaEscola = (await pedir('escola:salvar', [{ nome: '  Escola Esperança  ', cidade: 'Porto Velho', cargas: { n1: 60, n2: 5000, digitacao1: 'x' } }], tp)).valor;
+  ok(salvaEscola.nome === 'Escola Esperança' && salvaEscola.cargas.n1 === 60 && salvaEscola.cargas.n2 === 40 && salvaEscola.cargas.digitacao1 === 20, 'instrutor salva os dados da escola (carga horária fora do limite volta ao padrão)');
+  const c1 = (await pedir('escola:certificado', [turma[7].id, 'n1'], tp)).valor;
+  const c1b = (await pedir('escola:certificado', [turma[7].id, 'n1'], tp)).valor;
+  const c2 = (await pedir('escola:certificado', [turma[8].id, 'n1'], tp)).valor;
+  ok(c1.numero === 1 && c1b.numero === 1 && c2.numero === 2, `número do certificado: reimprimir mantém o número (${c1.numero}, ${c1b.numero}) e o próximo aluno ganha outro (${c2.numero})`);
+  ok(!(await pedir('escola:certificado', [turma[7].id, 'n2'], tT7)).ok && !(await pedir('escola:certificado', ['nao-existe', 'n1'], tp)).ok, 'aluno não emite certificado, e aluno que não existe é recusado');
+  // 20) Liberar aulas fora da sequência: só o instrutor muda, e a gravação do aluno não desfaz
+  ok(!(await pedir('progresso:liberar', [[turma[7].id], { 'nivel:n3': true }], tT7)).ok, 'aluno não libera aulas para si mesmo pelo canal do instrutor');
+  await pedir('dados:salvar', ['progresso:' + turma[7].id, { licoes: { x: { concluida: true } }, digitacao: {} }], tT7);
+  const liberou = await pedir('progresso:liberar', [[turma[7].id, turma[8].id], { 'nivel:n2': true, 'modulo:abc': 1, 'licao-y': 0 }], tp);
+  const lib7 = (await pedir('dados:ler', ['progresso:' + turma[7].id, {}], tT7)).valor;
+  const lib8 = (await pedir('dados:ler', ['progresso:' + turma[8].id, {}], tT8)).valor;
+  ok(liberou.ok && JSON.stringify(lib7.liberadas) === '{"nivel:n2":true,"modulo:abc":true}' && lib7.licoes.x.concluida && lib8.liberadas['nivel:n2'], 'instrutor libera um nível e um módulo para dois alunos (o progresso deles continua)');
+  await pedir('dados:salvar', ['progresso:' + turma[7].id, { licoes: { x: { concluida: true }, z: { concluida: true } }, digitacao: {} }], tT7);
+  await pedir('dados:salvar', ['progresso:' + turma[8].id, { licoes: {}, digitacao: {}, liberadas: { 'nivel:n3': true } }], tT8);
+  const g7 = (await pedir('dados:ler', ['progresso:' + turma[7].id, {}], tT7)).valor;
+  const g8 = (await pedir('dados:ler', ['progresso:' + turma[8].id, {}], tT8)).valor;
+  ok(g7.licoes.z && g7.liberadas && g7.liberadas['nivel:n2'] && g8.liberadas['nivel:n2'] && !g8.liberadas['nivel:n3'], 'a gravação do aluno mantém o que o instrutor liberou e não consegue liberar mais nada');
+  await pedir('progresso:liberar', [[turma[8].id], {}], tp);
+  ok(!('liberadas' in (await pedir('dados:ler', ['progresso:' + turma[8].id, {}], tT8)).valor), 'liberar "nada" devolve o aluno à sequência normal');
+  // 21) Onde a turma trava: o instrutor zera a contagem sem mexer no resto
+  await pedir('dados:salvar', ['progresso:' + turma[7].id, { ...g7, dificuldades: { 'aula-1': { 0: { naoEntendi: 2 } } } }], tT7);
+  await pedir('progresso:zerar-dificuldades', [[turma[7].id]], tp);
+  const z7 = (await pedir('dados:ler', ['progresso:' + turma[7].id, {}], tT7)).valor;
+  ok(!z7.dificuldades && z7.licoes.z && z7.liberadas['nivel:n2'], 'zerar "onde trava" apaga só a contagem de dificuldades');
+  // 22) "Não entendi" na Sala ao vivo: a hora do pedido é a do instrutor e não muda a cada aviso
+  await pedir('sala:presenca', [{ app: 'Aulas', ajuda: 111 }], tT7);
+  const sa1 = (await pedir('sala:turma', [], tp)).valor.alunos.find((a) => a.usuario.id === turma[7].id);
+  await espera(1100);
+  await pedir('sala:presenca', [{ app: 'Aulas', ajuda: 111 }], tT7);
+  const sa2 = (await pedir('sala:turma', [], tp)).valor.alunos.find((a) => a.usuario.id === turma[7].id);
+  await pedir('sala:presenca', [{ app: 'Aulas', ajuda: 0 }], tT7);
+  const sa3 = (await pedir('sala:turma', [], tp)).valor.alunos.find((a) => a.usuario.id === turma[7].id);
+  ok(sa1.ajudaHa === 0 && sa2.ajudaHa >= 1 && sa3.ajudaHa === null, `pedido de ajuda aparece na Sala ao vivo, conta o tempo (${sa1.ajudaHa} s → ${sa2.ajudaHa} s) e some quando o aluno segue (${sa3.ajudaHa})`);
   // 9) Arquivo de usuários estragado: usa a cópia de reserva
   const antes = dados.listarUsuarios().length;
   fs.writeFileSync(path.join(PASTA, 'usuarios.json'), '{ estragado');

@@ -1,5 +1,6 @@
 // Processo principal do Electron: abre a janela em tela cheia, guarda os dados e roda a IA local.
-const { app, BrowserWindow, ipcMain, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const dados = require('./src/armazenamento');
@@ -78,12 +79,34 @@ function registrarCanais() {
     return ia.perguntar(String(pergunta).slice(0, 500), { ...situacao, nome: sessaoLocal.usuario && sessaoLocal.usuario.nome }, enviar);
   });
   tratar('app:sair', () => app.quit());
+  // Certificados e relatórios: salvar em PDF ou planilha (CSV) num lugar que a pessoa escolhe (começa em Documentos).
+  tratar('janela:pdf', async ({ nome, paisagem } = {}) => {
+    const destino = await escolherOndeSalvar(nome || 'documento.pdf', 'Documento PDF', 'pdf');
+    if (!destino) return null;
+    const pdf = await janela.webContents.printToPDF({ landscape: !!paisagem, pageSize: 'A4', printBackground: true, preferCSSPageSize: true });
+    fs.writeFileSync(destino, pdf);
+    return destino;
+  });
+  tratar('arquivo:salvar-texto', async ({ nome, conteudo } = {}) => {
+    const destino = await escolherOndeSalvar(nome || 'arquivo.csv', 'Planilha (CSV)', 'csv');
+    if (!destino) return null;
+    fs.writeFileSync(destino, String(conteudo || ''), 'utf8');
+    return destino;
+  });
   // Acessibilidade: aumenta tudo na tela (letras, botões e janelas), como o zoom do Windows.
   tratar('janela:zoom', (fator) => {
     const f = Math.min(1.6, Math.max(0.8, Number(fator) || 1));
     if (janela && !janela.isDestroyed()) janela.webContents.setZoomFactor(f);
     return f;
   });
+}
+
+async function escolherOndeSalvar(nome, rotulo, extensao) {
+  const limpo = path.basename(String(nome)).replace(/[\\/:*?"<>|]/g, '-').slice(0, 120);
+  // Nos testes automáticos não dá para clicar na janela de salvar: CE_PASTA_SALVAR diz onde guardar direto.
+  if (process.env.CE_PASTA_SALVAR) return path.join(process.env.CE_PASTA_SALVAR, limpo);
+  const r = await dialog.showSaveDialog(janela, { defaultPath: path.join(app.getPath('documents'), limpo), filters: [{ name: rotulo, extensions: [extensao] }] });
+  return r.canceled || !r.filePath ? null : r.filePath;
 }
 
 app.whenReady().then(() => {

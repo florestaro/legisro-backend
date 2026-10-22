@@ -7,11 +7,13 @@ window.CE = window.CE || {};
   const mensagensVistas = new Map(); // id do aluno -> última mensagem do instrutor que ele já viu neste computador
   const $ = (id) => document.getElementById(id);
 
-  // O que o aluno está fazendo agora (vai para o painel do instrutor).
+  // O que o aluno está fazendo agora (vai para o painel do instrutor). "ajuda": quando apertou "Não entendi"
+  // (o pedido some quando ele passa para o próximo passo).
+  let ajudaEm = 0;
   function atividade() {
     const app = CE.janelas.ativa();
     const s = CE.professor.situacao ? CE.professor.situacao() : null;
-    return { app: app ? `${app.icone} ${app.nome}` : '🖥️ Área de trabalho', licao: s ? s.titulo : '', passo: s ? s.passo : '' };
+    return { app: app ? `${app.icone} ${app.nome}` : '🖥️ Área de trabalho', licao: s ? s.titulo : '', passo: s ? s.passo : '', ajuda: ajudaEm };
   }
 
   function marcarRede(ok, erro) {
@@ -91,8 +93,11 @@ window.CE = window.CE || {};
       timer = setInterval(avisar, 8000);
     },
     // Ao sair: a pausa e a mensagem do instrutor não ficam na frente da tela de entrada.
-    parar() { clearInterval(timer); geracao++; pausar(false); document.querySelectorAll('.sala-mensagem').forEach((d) => d.remove()); },
+    parar() { clearInterval(timer); geracao++; ajudaEm = 0; pausar(false); document.querySelectorAll('.sala-mensagem').forEach((d) => d.remove()); },
     avisarAgora: avisar,
+    // "Não entendi": avisa o instrutor na hora (sem esperar a próxima presença).
+    pedirAjuda() { ajudaEm = Date.now(); avisar(); },
+    ajudaResolvida() { if (!ajudaEm) return; ajudaEm = 0; avisar(); }, // o pedido sai da Sala ao vivo na hora
   };
 
   // ---------- Janela "Rede da sala" (na tela de entrada) ----------

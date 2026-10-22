@@ -61,6 +61,12 @@ function criarCanais(dados) {
     return d && dados.listarUsuarios().some((u) => u.id === d.id) ? d : null;
   };
   const LIMITE_ANEXOS = 10 * 1024 * 1024;
+  // Dados da escola para os certificados (carga horária de cada curso, em horas).
+  const ESCOLA_PADRAO = { nome: '', cidade: '', responsavel: '', cargo: 'Instrutor(a)', cargas: { n1: 40, n2: 40, n3: 40, digitacao1: 20, digitacao2: 20, digitacao3: 20 } };
+  const dadosDaEscola = () => {
+    const e = dados.ler('escola', {});
+    return { nome: e.nome || '', cidade: e.cidade || '', responsavel: e.responsavel || '', cargo: e.cargo || ESCOLA_PADRAO.cargo, cargas: { ...ESCOLA_PADRAO.cargas, ...(e.cargas || {}) } };
+  };
   // A caixa inteira vai pela rede a cada gravação (limite de 25 MB): uma caixa quase cheia não recebe mais nada.
   const LIMITE_CAIXA = 20 * 1024 * 1024;
   const CAIXA_CHEIA = 'Sua caixa de e-mail está cheia (mais de 20 MB). Apague de vez as mensagens com anexos que não usa mais (mova para a Lixeira e clique em Esvaziar a Lixeira).';
@@ -139,7 +145,36 @@ function criarCanais(dados) {
         anotarEndereco(dono, valor.conta);
         return true;
       }
+      // O que o instrutor liberou fora da sequência ("liberadas") só o instrutor muda: a gravação do próprio aluno
+      // mantém o que está guardado (e uma gravação dele feita ao mesmo tempo não desfaz a liberação).
+      if (arquivo.startsWith('progresso-') && s.usuario.papel !== 'instrutor' && valor && typeof valor === 'object') {
+        const guardada = dados.ler(arquivo, null);
+        valor = { ...valor };
+        if (guardada && guardada.liberadas) valor.liberadas = guardada.liberadas; else delete valor.liberadas;
+      }
       return dados.salvar(arquivo, valor);
+    },
+    // Instrutor libera aulas fora da sequência para alunos (troca as liberações deles por estas).
+    'progresso:liberar': (s, ids, liberadas) => {
+      exigirInstrutor(s);
+      const existem = new Set(dados.listarUsuarios().map((u) => u.id));
+      const limpas = {};
+      Object.entries(liberadas || {}).slice(0, 500).forEach(([k, v]) => { if (v) limpas[String(k).slice(0, 80)] = true; });
+      (Array.isArray(ids) ? ids : []).filter((id) => existem.has(id)).forEach((id) => {
+        const p = dados.ler(`progresso-${id}`, { licoes: {}, digitacao: {} });
+        if (Object.keys(limpas).length) p.liberadas = limpas; else delete p.liberadas;
+        dados.salvar(`progresso-${id}`, p);
+      });
+      return true;
+    },
+    // Instrutor zera a contagem de "onde a turma trava" (depois de reescrever uma aula, por exemplo).
+    'progresso:zerar-dificuldades': (s, ids) => {
+      exigirInstrutor(s);
+      (Array.isArray(ids) ? ids : []).forEach((id) => {
+        const p = dados.ler(`progresso-${id}`, null);
+        if (p && p.dificuldades) { delete p.dificuldades; dados.salvar(`progresso-${id}`, p); }
+      });
+      return true;
     },
 
     // E-mail entre alunos: o remetente só escreve na caixa do destinatário por aqui,
@@ -187,6 +222,36 @@ function criarCanais(dados) {
     },
 
     // ---------- Aulas criadas pelo instrutor (valem para todos os alunos) ----------
+    // ---------- Dados da escola (certificados e relatórios) ----------
+    'escola:ler': (s) => { exigirSessao(s); return dadosDaEscola(); },
+    'escola:salvar': (s, info = {}) => {
+      exigirInstrutor(s);
+      const guardada = dados.ler('escola', {});
+      const texto = (v, n) => String(v || '').trim().slice(0, n);
+      const cargas = {};
+      Object.keys(ESCOLA_PADRAO.cargas).forEach((k) => {
+        const h = Math.round(Number(info.cargas && info.cargas[k]));
+        cargas[k] = h >= 1 && h <= 2000 ? h : ESCOLA_PADRAO.cargas[k];
+      });
+      dados.salvar('escola', { ...guardada, nome: texto(info.nome, 120), cidade: texto(info.cidade, 80), responsavel: texto(info.responsavel, 80), cargo: texto(info.cargo, 60), cargas });
+      return dadosDaEscola();
+    },
+    // Número do certificado: o mesmo aluno e o mesmo curso ficam sempre com o mesmo número (reimprimir não gasta outro).
+    'escola:certificado': (s, idAluno, idCurso) => {
+      exigirInstrutor(s);
+      if (!dados.listarUsuarios().some((u) => u.id === idAluno)) throw new Error('Aluno não encontrado.');
+      const escola = dados.ler('escola', {});
+      escola.certificados = escola.certificados || {};
+      const chave = `${idAluno}:${String(idCurso).slice(0, 40)}`;
+      if (!escola.certificados[chave]) {
+        escola.ultimoCertificado = (escola.ultimoCertificado || 0) + 1;
+        escola.certificados[chave] = { numero: escola.ultimoCertificado, emitidoEm: Date.now() };
+        dados.salvar('escola', escola);
+      }
+      return escola.certificados[chave];
+    },
+    'escola:certificados': (s) => { exigirInstrutor(s); return dados.ler('escola', {}).certificados || {}; },
+
     'aulas:listar': (s) => { exigirSessao(s); return dados.ler('aulas-professor', []); },
     'aulas:salvar': (s, lista) => { exigirInstrutor(s); return salvarAulas(lista); },
     // Uma aula de cada vez, a partir da lista guardada: dois instrutores mexendo ao mesmo tempo não apagam a aula do outro.
@@ -203,6 +268,10 @@ function criarCanais(dados) {
     // ficar pausada e se tem mensagem do instrutor.
     'sala:presenca': (s, atividade = {}) => {
       exigirSessao(s);
+      // "ajuda": o aluno apertou "Não entendi". A hora é a deste computador (o relógio de cada PC pode estar diferente).
+      const anterior = presencas.get(s.usuario.id);
+      const pedido = Number(atividade.ajuda) || 0;
+      const ajudaEm = !pedido ? 0 : anterior && anterior.pedidoAjuda === pedido ? anterior.ajudaEm : Date.now();
       presencas.set(s.usuario.id, {
         usuario: { id: s.usuario.id, nome: s.usuario.nome, avatar: s.usuario.avatar, papel: s.usuario.papel, turma: s.usuario.turma || '' },
         pc: String(atividade.pc || s.pc || os.hostname()).slice(0, 60),
@@ -210,6 +279,7 @@ function criarCanais(dados) {
           app: String(atividade.app || '').slice(0, 60), licao: String(atividade.licao || '').slice(0, 120),
           passo: String(atividade.passo || '').slice(0, 30), detalhe: String(atividade.detalhe || '').slice(0, 120),
         },
+        pedidoAjuda: pedido, ajudaEm,
         em: Date.now(),
       });
       const aluno = s.usuario.papel !== 'instrutor';
@@ -222,7 +292,11 @@ function criarCanais(dados) {
       return {
         pausada: sala.pausada,
         mensagem: mensagemAtual(),
-        alunos: [...presencas.values()].filter((p) => agora - p.em < 45000).map((p) => ({ ...p, ha: Math.round((agora - p.em) / 1000) })),
+        alunos: [...presencas.values()].filter((p) => agora - p.em < 45000).map((p) => ({
+          usuario: p.usuario, pc: p.pc, atividade: p.atividade, em: p.em,
+          ha: Math.round((agora - p.em) / 1000),
+          ajudaHa: p.ajudaEm ? Math.round((agora - p.ajudaEm) / 1000) : null, // segundos desde o "Não entendi"
+        })),
       };
     },
     'sala:pausar': (s, pausar) => { exigirInstrutor(s); sala.pausada = !!pausar; return sala.pausada; },

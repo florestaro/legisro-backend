@@ -8,8 +8,8 @@ window.CE = window.CE || {};
 
   function appsDoUsuario() {
     const instrutor = CE.sessao.usuario.papel === 'instrutor';
-    // Programas "instaláveis" só aparecem depois que o aluno instala pelas Configurações.
-    return CE.listarApps().filter((a) => (!a.soInstrutor || instrutor) && (!a.instalavel || (CE.config && CE.config.instalado(a.id))));
+    // Programas "instaláveis" só aparecem depois que o aluno instala pelas Configurações (o instrutor vê todos).
+    return CE.listarApps().filter((a) => (!a.soInstrutor || instrutor) && (!a.instalavel || instrutor || (CE.config && CE.config.instalado(a.id))));
   }
 
   function montarIcones() {
@@ -146,6 +146,7 @@ window.CE = window.CE || {};
     relogioTimer = setInterval(atualizarRelogio, 15000);
     if (CE.config) CE.config.carregar();
     if (CE.sala) CE.sala.iniciar();
+    if (CE.frequencia) CE.frequencia.iniciar();
     if (CE.aulasProfessor) CE.aulasProfessor.carregar();
     atualizarStatusIA();
     CE.professor.iniciar();
@@ -165,11 +166,12 @@ window.CE = window.CE || {};
   // Caixas abertas pelos programas (Localizar, Anexar, perguntas...) não ficam na tela de entrada.
   function fecharDialogos() {
     CE.fecharDialogos();
-    document.querySelectorAll('.dialogo-fundo:not([data-sessao-perdida]), .tela-reiniciando').forEach((d) => d.remove());
+    document.querySelectorAll('.dialogo-fundo:not([data-sessao-perdida]), .tela-reiniciando, #area-impressao').forEach((d) => d.remove());
   }
   async function sair() {
     CE.janelas.fecharTodas();
     fecharDialogos();
+    if (CE.frequencia) CE.frequencia.parar(); // os minutos que faltam entram na fila de gravação
     await CE.sessao.aguardarGravacoes();
     CE.janelas.fecharTodas();
     fecharDialogos();

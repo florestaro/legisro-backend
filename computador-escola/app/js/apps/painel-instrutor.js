@@ -12,6 +12,7 @@
     abrir(corpo) {
       corpo.classList.add('painel');
       let aba = 'progresso';
+      const estadoExtras = { turma: '', periodo: 'mes', curso: '' }; // turma/período/curso escolhidos nas abas novas
 
       async function formularioNovo(aoSalvar) {
         let avatar = AVATARES[0];
@@ -59,6 +60,8 @@
                 if (!nova) return;
                 try { await CE.api.chamar('usuarios:trocar-senha', u.id, nova); CE.avisar('Senha trocada!'); } catch (e) { CE.avisar(e.message); }
               } }, '🔑 Trocar senha'),
+              u.papel === 'aluno' ? CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'liberar-aulas', title: 'Liberar aulas fora da ordem do curso',
+                onclick: () => CE.painelExtras.liberarAulas(u, desenhar) }, '🔓 Liberar aulas') : null,
               u.id !== CE.sessao.usuario.id ? CE.el('button', { class: 'botao secundario pequeno', onclick: async () => {
                 if (!await CE.confirmar(`Remover ${u.nome}? O progresso dele não será mais mostrado.`)) return;
                 await CE.api.chamar('usuarios:remover', u.id);
@@ -104,13 +107,17 @@
       // ---------- Sala ao vivo ----------
       let timerSala = null;
       const tempo = (s) => (s < 15 ? 'agora' : `há ${s} s`);
+      const tempoLongo = (s) => (s < 60 ? `${s} s` : `${Math.floor(s / 60)} min`);
       async function salaAoVivo() {
         const [st, rede] = await Promise.all([CE.api.chamar('sala:turma'), CE.api.chamar('sala:ler')]);
-        const alunos = st.alunos.filter((a) => a.usuario.papel !== 'instrutor').sort((a, b) => a.usuario.nome.localeCompare(b.usuario.nome));
+        // Quem apertou "🙋 Não entendi" aparece primeiro (quem pediu há mais tempo, antes).
+        const alunos = st.alunos.filter((a) => a.usuario.papel !== 'instrutor')
+          .sort((a, b) => (b.ajudaHa != null) - (a.ajudaHa != null) || (b.ajudaHa || 0) - (a.ajudaHa || 0) || a.usuario.nome.localeCompare(b.usuario.nome));
+        const pedindo = alunos.filter((a) => a.ajudaHa != null).length;
         const aviso = rede.modo === 'servidor'
           ? CE.el('p', { class: 'painel-legenda' }, `🧑‍🏫 Este é o computador do instrutor. Nos computadores dos alunos, em "🖧 Rede da sala", use o endereço `, CE.el('b', {}, rede.ips.join(' ou ') || '—'), ' e o código ', CE.el('b', { 'data-codigo-sala': '' }, rede.codigo), '.')
           : rede.modo === 'aluno' ? CE.el('p', { class: 'painel-legenda' }, `Ligado ao computador do instrutor (${rede.servidor}).`)
-            : CE.el('p', { class: 'painel-legenda aviso' }, '🖥️ Este computador está sozinho: aqui aparece só quem está nele. Para ver a sala inteira ao vivo, deixe este computador como "Computador do INSTRUTOR" e os outros como "Computador de ALUNO" (botão "🖧 Rede da sala" na tela de entrada).');
+            : CE.el('p', { class: 'painel-legenda painel-alerta' }, '🖥️ Este computador está sozinho: aqui aparece só quem está nele. Para ver a sala inteira ao vivo, deixe este computador como "Computador do INSTRUTOR" e os outros como "Computador de ALUNO" (botão "🖧 Rede da sala" na tela de entrada).');
         return CE.el('div', { class: 'painel-sala' },
           CE.el('div', { class: 'painel-sala-acoes' },
             CE.el('button', { class: 'botao' + (st.pausada ? '' : ' secundario'), 'data-acao': 'pausar-sala', onclick: async () => { await CE.api.chamar('sala:pausar', !st.pausada); CE.emitir('instrutor:pausou', { pausada: !st.pausada }); atualizarSala(); } },
@@ -123,10 +130,12 @@
               CE.emitir('instrutor:mensagem', { texto });
               atualizarSala();
             } }, '📢 Mandar mensagem'),
-            CE.el('span', { class: 'painel-sala-total', 'data-online': alunos.length }, `🟢 ${alunos.length} aluno${alunos.length === 1 ? '' : 's'} agora`)),
+            CE.el('span', { class: 'painel-sala-total', 'data-online': alunos.length }, `🟢 ${alunos.length} aluno${alunos.length === 1 ? '' : 's'} agora`),
+            pedindo ? CE.el('span', { class: 'painel-sala-total ajuda', 'data-pedindo-ajuda': pedindo }, `🙋 ${pedindo} pedindo ajuda`) : null),
           st.mensagem ? CE.el('p', { class: 'painel-legenda' }, `Última mensagem: "${st.mensagem.texto}"`) : null,
-          alunos.length ? CE.el('div', { class: 'painel-cartoes' }, ...alunos.map((a) => CE.el('div', { class: 'painel-cartao' + (a.ha > 25 ? ' parado' : ''), 'data-aluno-online': a.usuario.nome },
+          alunos.length ? CE.el('div', { class: 'painel-cartoes' }, ...alunos.map((a) => CE.el('div', { class: 'painel-cartao' + (a.ajudaHa != null ? ' pediu-ajuda' : a.ha > 25 ? ' parado' : ''), 'data-aluno-online': a.usuario.nome },
             CE.el('div', { class: 'painel-cartao-topo' }, CE.el('span', { class: 'login-avatar' }, a.usuario.avatar), CE.el('div', {}, CE.el('b', {}, a.usuario.nome), CE.el('small', {}, `💻 ${a.pc}${a.usuario.turma ? ' · ' + a.usuario.turma : ''}`))),
+            a.ajudaHa != null ? CE.el('p', { class: 'painel-cartao-ajuda' }, `🙋 Não entendeu — pediu ajuda ${a.ajudaHa < 15 ? 'agora' : `há ${tempoLongo(a.ajudaHa)}`}`) : null,
             CE.el('p', {}, a.atividade.licao ? `📘 ${a.atividade.licao} — passo ${a.atividade.passo}` : '📘 Fora de aula'),
             CE.el('p', {}, a.atividade.app),
             CE.el('small', {}, `Atualizado ${tempo(a.ha)}`))))
@@ -251,7 +260,7 @@
       async function desenhar() {
         clearInterval(timerSala);
         const abas = CE.el('div', { class: 'painel-abas' },
-          ...[['progresso', '📊 Progresso da turma'], ['sala', '🖥️ Sala ao vivo'], ['criar', '📝 Criar aulas'], ['alunos', '👥 Alunos']].map(([id, rotulo]) =>
+          ...[['progresso', '📊 Progresso da turma'], ['sala', '🖥️ Sala ao vivo'], ['trava', '🧩 Onde a turma trava'], ['certificados', '📜 Certificados e relatório'], ['criar', '📝 Criar aulas'], ['alunos', '👥 Alunos']].map(([id, rotulo]) =>
             CE.el('button', { class: 'chip' + (aba === id ? ' ativo' : ''), 'data-aba': id, onclick: () => { aba = id; desenhar(); } }, rotulo)));
         if (aba === 'sala') {
           corpo.replaceChildren(abas, await salaAoVivo());
@@ -263,6 +272,15 @@
           const antes = corpo.querySelector('.painel-criar');
           const rolagem = antes ? antes.scrollTop : 0;
           const area = await criarAulas();
+          corpo.replaceChildren(abas, area);
+          area.scrollTop = rolagem;
+          return;
+        }
+        if (aba === 'trava' || aba === 'certificados') {
+          const antes = corpo.querySelector('.painel-rolagem.extras');
+          const rolagem = antes ? antes.scrollTop : 0;
+          const tela = aba === 'trava' ? await CE.painelExtras.ondeTrava(estadoExtras, desenhar) : await CE.painelExtras.certificadosERelatorio(estadoExtras, desenhar);
+          const area = CE.el('div', { class: 'painel-rolagem extras' }, tela);
           corpo.replaceChildren(abas, area);
           area.scrollTop = rolagem;
           return;

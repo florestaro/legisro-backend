@@ -80,9 +80,11 @@
 
   const ehInstrutor = () => CE.sessao.usuario.papel === 'instrutor';
 
-  // Um exercício está liberado quando o anterior (na ordem do curso) foi aprovado.
-  CE.digitacaoLiberado = function (exercicio, resultados) {
+  // Um exercício está liberado quando o anterior (na ordem do curso) foi aprovado, ou quando o instrutor liberou
+  // o nível inteiro para o aluno ("liberadas" do progresso: "digitacao:<nível>").
+  CE.digitacaoLiberado = function (exercicio, resultados, liberadas = {}) {
     if (ehInstrutor()) return true;
+    if (liberadas && liberadas[`digitacao:${exercicio.nivel}`]) return true;
     const i = CE.DIGITACAO.lista.indexOf(exercicio);
     if (i <= 0) return true;
     const anterior = CE.DIGITACAO.lista[i - 1];
@@ -99,6 +101,8 @@
       const melhor = !anterior || (resultado.aprovado && !anterior.aprovado) || resultado.estrelas > (anterior.estrelas || 0) ||
         (resultado.estrelas === anterior.estrelas && resultado.ppm > anterior.ppm);
       d[exercicio.id] = melhor ? { ...resultado, tentativas, em: Date.now() } : { ...anterior, tentativas };
+      // Data da primeira aprovação (a do certificado): não muda quando o aluno melhora o resultado depois.
+      if (d[exercicio.id].aprovado) d[exercicio.id].aprovadoEm = (anterior && (anterior.aprovadoEm || (anterior.aprovado && anterior.em))) || Date.now();
       d._historico = (d._historico || []).concat({ id: exercicio.id, ppm: resultado.ppm, precisao: resultado.precisao, em: Date.now() }).slice(-200);
       d._teclas = d._teclas || {};
       Object.entries(errosPorTecla || {}).forEach(([c, n]) => { d._teclas[c] = (d._teclas[c] || 0) + n; });
@@ -129,10 +133,11 @@
 
       async function mostrarLista(aba = abaAtual) {
         abaAtual = aba;
-        const resultados = (await CE.sessao.progresso()).digitacao || {};
+        const prog = await CE.sessao.progresso();
+        const resultados = prog.digitacao || {};
         const abas = CE.el('div', { class: 'dig-abas' },
           ...CE.DIGITACAO.niveis.map((n) => {
-            const liberado = CE.digitacaoLiberado(n.modulos[0].exercicios[0], resultados);
+            const liberado = CE.digitacaoLiberado(n.modulos[0].exercicios[0], resultados, prog.liberadas);
             const feitos = n.modulos.flatMap((m) => m.exercicios).filter((e) => resultados[e.id] && resultados[e.id].aprovado).length;
             const total = n.modulos.reduce((s, m) => s + m.exercicios.length, 0);
             return CE.el('button', { class: 'chip' + (aba === n.id ? ' ativo' : ''), 'data-nivel': n.id, onclick: () => mostrarLista(n.id) },
@@ -145,7 +150,7 @@
         const nivel = CE.DIGITACAO.niveis.find((n) => n.id === aba);
         const itens = (exercicios) => exercicios.map((ex) => {
           const r = resultados[ex.id];
-          const liberado = CE.digitacaoLiberado(ex, resultados);
+          const liberado = CE.digitacaoLiberado(ex, resultados, prog.liberadas);
           const meta = CE.metaDigitacao(ex, CE.sessao.usuario);
           const textoMeta = ex.tipo === 'ditado' ? `Meta: ${meta.precisao}% de acertos` : `Meta: ${meta.ppm} ppm · ${meta.precisao}%${ex.duracao ? ` · ${ex.duracao / 60} min` : ''}`;
           return CE.el('button', {
@@ -402,8 +407,9 @@
       async function mostrarResultado(ex, resultado, meta, erros, detalhes) {
         const lista = CE.DIGITACAO.lista;
         const proximo = lista[lista.indexOf(ex) + 1];
-        const resultados = (await CE.sessao.progresso()).digitacao || {};
-        const podeSeguir = proximo && CE.digitacaoLiberado(proximo, resultados);
+        const prog = await CE.sessao.progresso();
+        const resultados = prog.digitacao || {};
+        const podeSeguir = proximo && CE.digitacaoLiberado(proximo, resultados, prog.liberadas);
         const faltou = [];
         if (ex.tipo !== 'ditado' && resultado.ppm < meta.ppm) faltou.push(`velocidade (você fez ${resultado.ppm} ppm, a meta é ${meta.ppm})`);
         if (resultado.precisao < meta.precisao) faltou.push(`acertos (você fez ${resultado.precisao}%, a meta é ${meta.precisao}%)`);
@@ -569,9 +575,10 @@
       async function abrirExercicio(id) {
         const ex = CE.DIGITACAO.lista.find((e) => e.id === id);
         if (!ex) { mostrarLista(); return; }
-        const resultados = (await CE.sessao.progresso()).digitacao || {};
+        const prog = await CE.sessao.progresso();
+        const resultados = prog.digitacao || {};
         abaAtual = ex.nivel;
-        if (CE.digitacaoLiberado(ex, resultados)) praticar(ex); else mostrarLista(ex.nivel);
+        if (CE.digitacaoLiberado(ex, resultados, prog.liberadas)) praticar(ex); else mostrarLista(ex.nivel);
       }
 
       if (argumento && argumento.nivelamento) praticar(CE.DIGITACAO.nivelamento);

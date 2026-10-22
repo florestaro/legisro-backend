@@ -26,7 +26,11 @@ conversa e tira dúvidas. **Funciona sem internet.**
   **Segurança digital avançada** (senha forte, duas etapas, golpes, backup, privacidade e fake news),
   **Computador e trabalho** (currículo em PDF, e-mail profissional, vagas e entrevista por vídeo),
   **Projeto final** (organizar um evento com planilha, convite, apresentação e e-mail) e a Prova do nível.
-- **O aluno só avança quando é aprovado** (70% nas perguntas). O instrutor tem tudo liberado.
+- **O aluno só avança quando é aprovado** (70% nas perguntas). O instrutor tem tudo liberado (aulas, níveis de
+  digitação, jogos e os programas instaláveis) e pode **liberar aulas fora da sequência** para um aluno ou para a turma
+  (veja "Painel do Instrutor" abaixo).
+- **🙋 Não entendi**: em todo passo de aula. O Professor Virtual explica de novo, mais devagar, com a dica e a seta, e
+  o instrutor vê o pedido na hora, na Sala ao vivo.
 
 ### Curso de Digitação: 108 exercícios em 3 níveis
 - **Iniciante** (39): fileiras do meio, de cima e de baixo, Shift, acentos e cedilha, palavras e frases.
@@ -73,7 +77,21 @@ Os arquivos baixados vão para a pasta **Downloads**.
 ### Outros
 - **39 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova.
 - **Painel do Instrutor**: cadastro (com a opção "criança"), aula atual de cada aluno, média, exercício de digitação
-  atual, melhor velocidade, provas e medalhas.
+  atual, melhor velocidade, provas e medalhas. Também:
+  - **🧩 Onde a turma trava**: os passos de aula em que mais alunos apertaram "Não entendi", precisaram da dica, erraram
+    a pergunta ou saíram da aula no meio (por turma). **▶ Ver** abre a aula naquele passo; **🧹 Zerar contagem** recomeça
+    a conta (bom depois de mudar uma aula).
+  - **📜 Certificados e relatório**: dados da escola (nome, cidade, quem assina e a carga horária de cada curso);
+    **certificado** de cada nível de Informática (todas as aulas do nível aprovadas) e de Digitação (prova do nível),
+    com número que não muda ao reimprimir, um por um ou todos da turma; **relatório da turma** (frequência em dias e
+    horas, aulas aprovadas, digitação, certificados, lista de presença e onde a turma travou) do mês, do mês passado ou
+    do curso todo. Tudo dá para imprimir ou **salvar em PDF**, e o relatório também sai em **planilha (CSV)** para o
+    Excel ou o LibreOffice.
+  - **🔓 Liberar aulas** (aba Alunos): marque um nível inteiro, um módulo, aulas avulsas ou um nível de digitação para o
+    aluno fazer fora da ordem; dá para aplicar para a turma toda. Desmarcar tudo devolve o aluno à sequência normal.
+- **Frequência automática**: o dia em que o aluno entra conta presença, e os minutos com uso do mouse ou do teclado
+  somam as horas (o relógio de treino das Configurações não muda a data da presença).
+- O aluno vê os certificados que já ganhou em **Aulas → 🎓 Certificados**.
 
 Para criar novas lições, veja [LEIA-ME-LICOES.md](LEIA-ME-LICOES.md).
 
@@ -157,7 +175,8 @@ sentar em **qualquer computador** e continuar de onde parou, e o instrutor acomp
    computador do instrutor.
 
 **Painel do Instrutor → 🖥️ Sala ao vivo**: mostra quem está em cada computador, a aula e o passo em que está e o
-programa aberto. Botões: **⏸️ Pausar todas as telas** (os alunos veem "O professor pausou as telas" e o teclado para)
+programa aberto. Quem apertou **🙋 Não entendi** aparece primeiro, em destaque laranja, com há quanto tempo pediu ajuda
+(o pedido sai quando o aluno passa para o próximo passo). Botões: **⏸️ Pausar todas as telas** (os alunos veem "O professor pausou as telas" e o teclado para)
 e **📢 Mandar mensagem** (aparece na tela de todos, com a voz do professor).
 
 **Segurança**: só fala com o computador do instrutor quem tem o código da sala; cada aluno só lê e grava os próprios
@@ -199,14 +218,15 @@ O botão **▶ Testar** abre a aula para conferir antes.
 
 ## Próximas ideias
 - O aluno falar com o professor pelo microfone (reconhecimento de voz offline com Whisper).
-- Relatório da turma para imprimir ou salvar em PDF.
+- Celular simulado (WhatsApp, Pix, gov.br, golpes por mensagem), numa aula própria mais adiante no curso.
 
 ## Organização do código
 ```
 main.js                  programa principal (janela, dados, IA)
 preload.js               ponte segura entre a tela e o programa principal
 src/armazenamento.js     usuários (senhas com hash) e dados em JSON
-src/canais.js            os pedidos de dados (usuários, progresso, arquivos, e-mail, sala ao vivo, aulas do professor)
+src/canais.js            os pedidos de dados (usuários, progresso, arquivos, e-mail, sala ao vivo, aulas do professor,
+                         dados da escola, número dos certificados e liberação de aulas)
 src/sala.js              modo sala de aula: servidor do instrutor, computador de aluno e busca na rede
 src/ia.js                IA local (node-llama-cpp)
 app/index.html           a tela
@@ -215,10 +235,14 @@ app/js/janelas.js        gerenciador de janelas
 app/js/area-trabalho.js  ícones, menu Iniciar, barra de tarefas
 app/js/professor.js      motor das lições e conversa
 app/js/respostas-prontas.js  respostas do professor sem IA
-app/js/curso.js          níveis, módulos e regra de liberação das aulas
+app/js/curso.js          níveis, módulos e regra de liberação das aulas (inclui as liberadas pelo instrutor)
+app/js/dificuldades.js   "Não entendi", dicas, erros e saídas de cada passo (para "Onde a turma trava")
+app/js/frequencia.js     frequência automática (dias e minutos de uso)
+app/js/certificados.js   certificados, relatório da turma (páginas e CSV) e a tela de impressão/PDF
 app/js/licoes/           as aulas (n1-*, n2-*, n3-*), os atalhos para escrever aulas (ajudantes.js) e as aulas do professor
 app/js/sala.js           a sala ao vivo do lado do aluno (presença, pausa, mensagens) e a janela "Rede da sala"
-app/js/apps/             os programas (editor, planilha, e-mail, digitação, arquivos...)
+app/js/apps/             os programas (editor, planilha, e-mail, digitação, arquivos...) e o Painel do Instrutor
+                         (painel-instrutor.js; as abas novas ficam em painel-extras.js)
 app/js/planilha/         as fórmulas da planilha
 app/js/navegador/        os sites de treino
 testes/                  testes automáticos do modo sala de aula (servidor e turma de 20 alunos)

@@ -1,6 +1,7 @@
 // Estrutura do curso de informática: níveis -> módulos -> aulas.
 // As aulas ficam liberadas em sequência: o aluno só abre a próxima quando foi aprovado na anterior
-// (aulas com perguntas exigem 70% de acertos). O instrutor tem tudo liberado.
+// (aulas com perguntas exigem 70% de acertos). O instrutor tem tudo liberado e pode liberar aulas fora da
+// sequência para os alunos (veja liberadaPeloInstrutor).
 window.CE = window.CE || {};
 
 (function () {
@@ -34,8 +35,15 @@ window.CE = window.CE || {};
     },
     liberada(licao, progresso) {
       if (ehInstrutor() || licao.especial || licao.extra) return true;
+      if (CE.curso.liberadaPeloInstrutor(licao, progresso)) return true;
       const i = CE.LICOES.indexOf(licao);
       return i <= 0 || CE.curso.aprovada(CE.LICOES[i - 1], progresso);
+    },
+    // O instrutor pode liberar aulas fora da sequência para um aluno: um nível inteiro ("nivel:n2"), um módulo
+    // ("modulo:<id>") ou aulas avulsas (o id da aula). Fica no progresso do aluno, em "liberadas".
+    liberadaPeloInstrutor(licao, progresso) {
+      const lib = (progresso && progresso.liberadas) || {};
+      return !!(lib[licao.id] || lib[`modulo:${licao.modulo}`] || lib[`nivel:${licao.nivel}`]);
     },
     proxima(progresso) {
       return CE.LICOES.find((l) => !CE.curso.aprovada(l, progresso));

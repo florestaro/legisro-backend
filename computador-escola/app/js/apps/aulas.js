@@ -27,7 +27,24 @@
             `📌 Do professor · ${CE.LICOES_EXTRAS.filter((l) => CE.curso.aprovada(l, p)).length}/${CE.LICOES_EXTRAS.length}`) : null,
           CE.el('button', { class: 'chip' + (aba === 'medalhas' ? ' ativo' : ''), 'data-nivel': 'medalhas', onclick: () => { aba = 'medalhas'; desenhar(); } },
             `🏅 Medalhas · ${Object.keys(p.medalhas || {}).length}/${CE.MEDALHAS.length}`),
+          CE.el('button', { class: 'chip' + (aba === 'certificados' ? ' ativo' : ''), 'data-nivel': 'certificados', onclick: () => { aba = 'certificados'; desenhar(); } },
+            `🎓 Certificados · ${CE.certificados.conquistados(p).length}/${CE.certificados.cursos().length}`),
         );
+
+        if (aba === 'certificados') {
+          corpo.replaceChildren(abas,
+            CE.el('div', { class: 'aulas-topo' }, CE.el('h2', {}, '🎓 Meus certificados'),
+              CE.el('p', {}, instrutor ? 'Os certificados dos alunos são impressos no Painel do Instrutor › 📜 Certificados e relatório.' : 'Quando você termina um nível, ganha o certificado. Peça ao instrutor para imprimir!')),
+            CE.el('div', { class: 'medalhas' }, ...CE.certificados.cursos().map((c) => {
+              const sit = c.situacao(p);
+              return CE.el('div', { class: 'medalha' + (sit.conquistado ? ' ganha' : ''), 'data-curso': c.id },
+                CE.el('span', { class: 'medalha-icone' }, sit.conquistado ? '🎓' : '🔒'),
+                CE.el('strong', {}, `${c.curso} · ${c.nivel}`),
+                CE.el('span', {}, sit.conquistado ? `Conquistado em ${new Date(sit.em).toLocaleDateString('pt-BR')}`
+                  : sit.faltam ? `Faltam ${sit.faltam} aula${sit.faltam === 1 ? '' : 's'}` : 'Passe na prova de digitação deste nível'));
+            })));
+          return;
+        }
 
         if (aba === 'medalhas') {
           corpo.replaceChildren(abas, CE.el('div', { class: 'medalhas' },
@@ -73,6 +90,7 @@
               CE.el('strong', {}, l.titulo, tipo ? CE.el('span', { class: 'aula-tipo' }, tipo) : null),
               CE.el('span', {}, l.descricao),
               r && r.dispensada ? CE.el('small', { class: 'ok' }, 'Dispensada pelo teste de nivelamento') : null,
+              !instrutor && !feita && CE.curso.liberadaPeloInstrutor(l, p) ? CE.el('small', { class: 'ok', 'data-liberada-instrutor': '' }, '🔓 Liberada pelo instrutor') : null,
               r && r.nota != null ? CE.el('small', { class: r.concluida ? 'ok' : 'abaixo' }, `Nota: ${r.nota}%${r.concluida ? '' : ` (precisa de ${CE.curso.NOTA_MINIMA}%)`}`) : null),
             liberada
               ? CE.el('button', { class: 'botao' + (feita ? ' secundario' : ''), onclick: () => CE.professor.comecarLicao(l.id) },

@@ -51,7 +51,7 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `espera` | O evento que conclui o passo (tabela abaixo). Sem ele, aparece o botão "Continuar". |
 | `se` | Condição extra sobre os dados do evento. |
 | `destacar` | O que vai piscar em vermelho na tela, com a seta vermelha apontando (seletor CSS). |
-| `dica` | Aparece e é falada se o aluno ficar 40 segundos sem conseguir. |
+| `dica` | Aparece e é falada se o aluno ficar 40 segundos sem conseguir. O botão "🙋 Não entendi" mostra a dica na hora (sem `dica`, aparece uma ajuda geral). |
 | `mouse` | Mostra o desenho do mouse com o botão certo piscando: `'esquerdo'`, `'duplo'`, `'direito'`, `'arrastar'`, `'roda'` ou `'mover'`. |
 | `jaFeito` | Função: se der verdadeiro ao chegar no passo, ele é pulado (ex.: o programa já está aberto). |
 | `preparar` | Função que roda antes do passo (ex.: criar um arquivo de exemplo). |
@@ -118,6 +118,9 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `tecla:apertada` / `teclas:texto` | Treino do Teclado | `tecla` (ex.: `Enter`, `Backspace`, `CapsLock`, `ArrowLeft`, `" "`) / `texto` |
 | `desenho:traco` / `desenho:forma` / `desenho:cor` / `desenho:ferramenta` / `desenho:balde` / `desenho:desfeito` / `desenho:limpo` | Desenho | `ferramenta`, `forma`, `cor` (ex.: `vermelho`) |
 | `licao:concluida` / `licao:reprovada` / `medalha:ganha` | Curso | `licao`, `nota` / `medalha` |
+| `licao:nao-entendi` | Apertou "🙋 Não entendi" num passo | `licao`, `passo` (começa em 1) |
+| `impressao:aberta` | Abriu a prévia de impressão (certificado ou relatório) | `titulo`, `paginas` |
+| `instrutor:liberou` / `instrutor:relatorio` / `instrutor:certificados` | Painel do Instrutor | `alunos`, `itens` / `turma`, `periodo` / `quantos` |
 | `calculadora:resultado` | Apertou "=" na Calculadora | `a`, `b`, `operacao` (`+ − × ÷`), `resultado` |
 | `digitacao:iniciada` / `digitacao:concluida` | Exercício de digitação | `exercicio`, `ppm`, `precisao`, `estrelas`, `aprovado` |
 | `professor:respondeu` | O professor respondeu uma pergunta | `pergunta` |
