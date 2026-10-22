@@ -421,7 +421,9 @@
       }
 
       async function inserirImagem() {
+        const vale = CE.sessao.marca();
         const desenhos = (await CE.sessao.arquivos()).filter((a) => a.tipo === 'imagem' && !a.naLixeira);
+        if (!vale()) return;
         const escolher = (src, origem) => {
           fundo.remove();
           recuperarSelecao();

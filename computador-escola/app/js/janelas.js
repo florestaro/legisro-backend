@@ -95,6 +95,8 @@ window.CE = window.CE || {};
     abrir(id, argumento) {
       const app = apps[id];
       if (!app) return;
+      // Durante a saída (ou sem ninguém dentro), nada abre: uma resposta atrasada não mostra os arquivos de quem saiu.
+      if (CE.sessao && (CE.sessao.saindo || !CE.sessao.usuario)) return;
       if (abertas[id]) {
         restaurar(id);
         if (argumento !== undefined && abertas[id].instancia && abertas[id].instancia.receber) {

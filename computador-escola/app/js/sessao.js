@@ -36,6 +36,10 @@ window.CE = window.CE || {};
 
   CE.sessao = {
     usuario: null,
+    // Muda a cada entrada e saída. Quem lê algo e depois mostra na tela confere com marca() se ainda é a mesma sessão.
+    geracao: 0,
+    saindo: false,
+    marca() { const g = CE.sessao.geracao; return () => g === CE.sessao.geracao && !CE.sessao.saindo && !!CE.sessao.usuario; },
 
     async progresso(idUsuario = CE.sessao.usuario.id) {
       return CE.api.chamar('dados:ler', `progresso:${idUsuario}`, { licoes: {}, digitacao: {} });

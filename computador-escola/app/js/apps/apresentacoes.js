@@ -141,7 +141,9 @@
         CE.emitir('apresentacao:slide-movido', { de: de + 1, para: para + 1, titulo: textoPuro(s.titulo) });
       }
       async function escolherImagem() {
+        const vale = CE.sessao.marca();
         const desenhos = (await CE.sessao.arquivos()).filter((a) => a.tipo === 'imagem' && !a.naLixeira);
+        if (!vale()) return;
         const usar = (src, origem) => {
           fundo.remove();
           const s = slideAtual();
@@ -163,7 +165,9 @@
       }
       // Gráfico: copia um gráfico de uma planilha salva (os números do momento).
       async function escolherGrafico() {
+        const vale = CE.sessao.marca();
         const planilhas = (await CE.sessao.arquivos()).filter((a) => a.tipo === 'planilha' && !a.naLixeira);
+        if (!vale()) return;
         const opcoes = [];
         planilhas.forEach((a) => {
           let dados = {};
@@ -191,7 +195,9 @@
       }
 
       // ---------- Apresentar (tela cheia) ----------
+      let sairApresentacao = null; // fecha a tela cheia aberta (o programa fechando, ou o aluno saindo do sistema)
       function apresentar(inicio = 0) {
+        if (sairApresentacao) sairApresentacao({ calado: true });
         let i = inicio, fim = false;
         const vistos = new Set([i]);
         const tela = CE.el('div', { class: 'ap-apresentacao', tabindex: '0', 'data-transicao': doc.transicao });
@@ -209,11 +215,13 @@
           contador.textContent = `${i + 1} / ${doc.slides.length}`;
           CE.emitir('apresentacao:slide', { numero: i + 1, total: doc.slides.length });
         };
-        const sair = () => {
+        const sair = (opcoes = {}) => {
           tela.remove();
           document.removeEventListener('keydown', teclas, true);
-          CE.emitir('apresentacao:fim', { vistos: vistos.size, total: doc.slides.length, completa: vistos.size === doc.slides.length });
+          sairApresentacao = null;
+          if (!opcoes.calado) CE.emitir('apresentacao:fim', { vistos: vistos.size, total: doc.slides.length, completa: vistos.size === doc.slides.length });
         };
+        sairApresentacao = sair;
         const avancar = () => {
           if (fim) { sair(); return; }
           if (i < doc.slides.length - 1) { i++; vistos.add(i); } else fim = true;
@@ -324,6 +332,7 @@
             });
             return false;
           }
+          if (sairApresentacao) sairApresentacao({ calado: !!opcoes.forcado });
           observador.disconnect();
           pararAtivar();
           if (CE.apresentacaoAtiva === api) CE.apresentacaoAtiva = null;

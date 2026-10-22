@@ -63,7 +63,9 @@ window.CE = window.CE || {};
 
     // Garante que exista um arquivo de exemplo na pasta do aluno (na raiz de Meus Documentos, se não existir em lugar nenhum).
     garantirArquivo: async (nome, conteudo, tipo = 'documento') => {
+      const vale = CE.sessao.marca();
       const lista = await CE.sessao.arquivos();
+      if (!vale()) return null; // o aluno saiu enquanto a lista era lida
       const existente = lista.find((a) => a.nome === nome && a.tipo === tipo && !a.naLixeira);
       return existente || CE.sessao.salvarArquivo({ nome, tipo, conteudo });
     },
@@ -72,7 +74,9 @@ window.CE = window.CE || {};
     // Com recriar = true, o arquivo volta ao conteúdo original (para o exercício começar sempre do mesmo jeito).
     abrirExemplo: async (nome, tipo, conteudo, recriar = false) => {
       const texto = typeof conteudo === 'function' ? conteudo() : conteudo;
+      const vale = CE.sessao.marca();
       const arquivo = recriar ? await CE.sessao.salvarArquivo({ nome, tipo, conteudo: texto }) : await CE.L.garantirArquivo(nome, texto, tipo);
+      if (!vale() || !arquivo) return; // o aluno saiu enquanto o arquivo era preparado
       CE.janelas.abrir(CE.TIPOS_ARQUIVO[tipo].app, { arquivo });
     },
 

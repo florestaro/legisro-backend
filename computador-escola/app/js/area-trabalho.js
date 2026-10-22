@@ -41,7 +41,7 @@ window.CE = window.CE || {};
       }, CE.el('span', {}, app.icone), app.nome))),
       CE.el('div', { class: 'menu-rodape' },
         CE.el('button', { class: 'menu-item', 'data-acao': 'sair', onclick: () => { fecharMenu(); CE.sairDoSistema(); } }, CE.el('span', {}, '🚪'), 'Sair (trocar de usuário)'),
-        CE.el('button', { class: 'menu-item', 'data-acao': 'desligar', onclick: () => CE.api.chamar('app:sair') }, CE.el('span', {}, '⏻'), 'Desligar'),
+        CE.el('button', { class: 'menu-item', 'data-acao': 'desligar', onclick: async () => { fecharMenu(); await CE.sairDoSistema(); CE.api.chamar('app:sair'); } }, CE.el('span', {}, '⏻'), 'Desligar'),
       ),
     );
   }
@@ -136,6 +136,7 @@ window.CE = window.CE || {};
 
   CE.entrarNoSistema = function (usuario) {
     CE.sessao.usuario = usuario;
+    CE.sessao.geracao++;
     $('tela-login').hidden = true;
     $('area-de-trabalho').hidden = false;
     montarIcones();
@@ -157,13 +158,14 @@ window.CE = window.CE || {};
     // Enquanto as últimas gravações terminam, nada mais pode ser aberto na conta de quem está saindo.
     const tela = CE.el('div', { class: 'tela-saindo', 'data-saindo': '' }, CE.el('p', {}, '💾 Salvando e saindo…'));
     document.body.append(tela);
-    saida = sair().finally(() => { tela.remove(); saida = null; });
+    CE.sessao.saindo = true; // nenhuma janela nova abre durante a saída
+    saida = sair().finally(() => { tela.remove(); CE.sessao.saindo = false; saida = null; });
     return saida;
   };
   // Caixas abertas pelos programas (Localizar, Anexar, perguntas...) não ficam na tela de entrada.
   function fecharDialogos() {
     CE.fecharDialogos();
-    document.querySelectorAll('.dialogo-fundo:not([data-sessao-perdida])').forEach((d) => d.remove());
+    document.querySelectorAll('.dialogo-fundo:not([data-sessao-perdida]), .tela-reiniciando').forEach((d) => d.remove());
   }
   async function sair() {
     CE.janelas.fecharTodas();
@@ -171,6 +173,7 @@ window.CE = window.CE || {};
     await CE.sessao.aguardarGravacoes();
     CE.janelas.fecharTodas();
     fecharDialogos();
+    CE.sessao.geracao++;
     if (CE.config) CE.config.reiniciar();
     if (CE.sala) CE.sala.parar();
     CE.pendrive.reiniciar();

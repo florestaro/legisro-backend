@@ -268,7 +268,9 @@
         desenharAnexos();
 
         async function anexar() {
+          const vale = CE.sessao.marca();
           const arquivos = (await CE.sessao.arquivos()).filter((a) => !a.naLixeira && a.tipo !== 'pasta');
+          if (!vale()) return;
           const fundo = CE.el('div', { class: 'dialogo-fundo' }, CE.el('div', { class: 'dialogo largo' },
             CE.el('p', {}, '📎 Escolha o arquivo para anexar:'),
             arquivos.length ? CE.el('div', { class: 'em-escolher' }, ...arquivos.map((a) => CE.el('button', {

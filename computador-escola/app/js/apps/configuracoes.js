@@ -425,12 +425,17 @@
         const tela = CE.el('div', { class: 'tela-reiniciando' }, CE.el('div', { class: 'carregando' }), CE.el('p', {}, 'Reiniciando… não desligue o computador.'));
         document.body.append(tela);
         CE.emitir('config:reiniciando');
-        setTimeout(async () => {
-          await CE.config.guardar({ atualizacoesFeitas: true });
-          CE.janelas.fecharTodas();
-          tela.remove();
-          CE.avisar('✅ Computador reiniciado e atualizado!');
-          CE.emitir('config:reiniciado');
+        depois(async () => {
+          try {
+            await CE.config.guardar({ atualizacoesFeitas: true });
+            CE.janelas.fecharTodas();
+            CE.avisar('✅ Computador reiniciado e atualizado!');
+            CE.emitir('config:reiniciado');
+          } catch (e) {
+            CE.avisar(`⚠️ Não consegui terminar a atualização: ${e.message}`);
+          } finally {
+            tela.remove();
+          }
         }, 1800);
       }
 
@@ -445,7 +450,7 @@
       CE.emitir('config:secao', { secao });
       return {
         receber(arg) { if (arg && arg.secao) ir(arg.secao); },
-        aoFechar() { temporizadores.forEach(clearTimeout); clearInterval(relogioTic); return true; },
+        aoFechar() { temporizadores.forEach(clearTimeout); clearInterval(relogioTic); document.querySelectorAll('.tela-reiniciando').forEach((t) => t.remove()); return true; },
       };
     },
   });
