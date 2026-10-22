@@ -31,7 +31,12 @@
       "preload.js",
       "src/**",
       "app/**",
-      "package.json"
+      "package.json",
+      "!node_modules/@node-llama-cpp/*-cuda/**",
+      "!node_modules/@node-llama-cpp/*-cuda-ext/**",
+      "!node_modules/@node-llama-cpp/*-vulkan/**",
+      "!node_modules/@node-llama-cpp/*-arm64/**",
+      "!node_modules/@node-llama-cpp/*-armv7l/**"
     ],
     "asarUnpack": [
       "node_modules/node-llama-cpp/**",
