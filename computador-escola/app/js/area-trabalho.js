@@ -150,9 +150,26 @@ window.CE = window.CE || {};
     CE.professor.iniciar();
   };
 
+  let saindo = false;
   CE.sairDoSistema = async function () {
+    if (saindo) return;
+    saindo = true;
+    // Enquanto as últimas gravações terminam, nada mais pode ser aberto na conta de quem está saindo.
+    const tela = CE.el('div', { class: 'tela-saindo', 'data-saindo': '' }, CE.el('p', {}, '💾 Salvando e saindo…'));
+    document.body.append(tela);
+    try {
+      await sair();
+    } finally {
+      tela.remove();
+      saindo = false;
+    }
+  };
+  async function sair() {
     CE.janelas.fecharTodas();
+    CE.fecharDialogos();
     await CE.sessao.aguardarGravacoes();
+    CE.janelas.fecharTodas();
+    CE.fecharDialogos();
     if (CE.config) CE.config.reiniciar();
     if (CE.sala) CE.sala.parar();
     CE.pendrive.reiniciar();
@@ -162,7 +179,7 @@ window.CE = window.CE || {};
     await CE.api.chamar('sessao:sair').catch(() => {});
     CE.sessao.usuario = null;
     CE.mostrarLogin();
-  };
+  }
 
   // A conta foi aberta em outro computador (ou removida pelo instrutor): este computador sai dela e explica o porquê.
   let saindoPorPerda = false;

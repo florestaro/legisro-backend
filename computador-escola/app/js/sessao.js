@@ -6,6 +6,7 @@ window.CE = window.CE || {};
   // As mudanças nos arquivos também entram numa fila: cada uma lê a lista, altera e grava antes da próxima começar
   // (no modo sala de aula a gravação vai pela rede e demora mais; sem a fila, uma mudança apagaria a outra).
   let filaArquivos = Promise.resolve();
+  const pendentes = new Set();
   // Cada mudança grava nos arquivos de quem a pediu (mesmo que alguém saia e outro entre antes de ela rodar).
   function naFilaDosArquivos(tarefa) {
     const dono = CE.sessao.usuario.id;
@@ -62,9 +63,24 @@ window.CE = window.CE || {};
       await CE.api.chamar('dados:salvar', `arquivos:${id}`, lista);
     },
 
+    // Gravações de fora das filas (a caixa do Correio, por exemplo) avisam aqui, para a saída esperar por elas.
+    registrarGravacao(promessa) {
+      pendentes.add(promessa);
+      const tirar = () => pendentes.delete(promessa);
+      promessa.then(tirar, tirar);
+      return promessa;
+    },
+
     // Antes de sair: espera as gravações que ainda estão na fila (no máximo alguns segundos, se a rede caiu).
-    aguardarGravacoes(limite = 5000) {
-      return Promise.race([Promise.all([filaProgresso, filaArquivos]), new Promise((r) => setTimeout(r, limite))]);
+    // Confere de novo depois de cada espera: uma gravação pode puxar outra (gravar a caixa e depois entregar o e-mail).
+    async aguardarGravacoes(limite = 12000) {
+      const ate = Date.now() + limite;
+      for (let volta = 0; volta < 5 && Date.now() < ate; volta++) {
+        const tudo = Promise.all([filaProgresso, filaArquivos, ...[...pendentes].map((p) => p.catch(() => {}))]);
+        await Promise.race([tudo, new Promise((r) => setTimeout(r, ate - Date.now()))]);
+        await new Promise((r) => setTimeout(r, 0));
+        if (!pendentes.size) return;
+      }
     },
 
     // Cada item tem "local" ('pc' ou 'pendrive') e "pasta" (o caminho dentro do local, '' = raiz).
@@ -268,10 +284,16 @@ window.CE = window.CE || {};
   };
 
   // Caixas de diálogo próprias (as do navegador são feias e assustam iniciantes).
+  // Perguntas abertas na tela: ao sair do sistema, todas fecham (como se a pessoa tivesse clicado em Cancelar/Não).
+  const dialogos = new Set();
+  CE.fecharDialogos = () => [...dialogos].forEach((cancelar) => cancelar());
+
   CE.perguntar = function (mensagem, valorInicial = '') {
     return new Promise((resolver) => {
       const campo = CE.el('input', { class: 'campo', value: valorInicial });
-      const fechar = (valor) => { fundo.remove(); resolver(valor); };
+      const cancelar = () => fechar(null);
+      const fechar = (valor) => { dialogos.delete(cancelar); fundo.remove(); resolver(valor); };
+      dialogos.add(cancelar);
       const fundo = CE.el('div', { class: 'dialogo-fundo' },
         CE.el('div', { class: 'dialogo' },
           CE.el('p', {}, mensagem),
@@ -294,7 +316,9 @@ window.CE = window.CE || {};
 
   CE.confirmar = function (mensagem) {
     return new Promise((resolver) => {
-      const fechar = (valor) => { fundo.remove(); resolver(valor); };
+      const cancelar = () => fechar(false);
+      const fechar = (valor) => { dialogos.delete(cancelar); fundo.remove(); resolver(valor); };
+      dialogos.add(cancelar);
       const fundo = CE.el('div', { class: 'dialogo-fundo' },
         CE.el('div', { class: 'dialogo' },
           CE.el('p', {}, mensagem),

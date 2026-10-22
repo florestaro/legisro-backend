@@ -312,28 +312,18 @@ window.CE = window.CE || {};
     const aprovada = nota == null || nota >= CE.curso.NOTA_MINIMA;
     encerrar();
     if (terminada.especial) { await concluirEspecial(terminada, nota); return; }
-    // Se a gravação falhar (sem conexão com o instrutor, por exemplo), a aula não se perde: o aluno tenta de novo.
-    for (;;) {
-      try {
-        await CE.sessao.atualizarProgresso((p) => {
-          p.licoes = p.licoes || {};
-          const antes = p.licoes[terminada.id] || { vezes: 0 };
-          const jaAprovada = antes.concluida;
-          p.licoes[terminada.id] = {
-            concluida: jaAprovada || aprovada,
-            nota: jaAprovada && antes.nota != null && (nota == null || antes.nota > nota) ? antes.nota : nota,
-            vezes: antes.vezes + 1,
-            em: Date.now(),
-          };
-        });
-        break;
-      } catch (erro) {
-        await new Promise((tentar) => $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao reprovada' },
-          CE.el('div', { class: 'prof-titulo' }, `${terminada.icone} ${terminada.titulo}`),
-          CE.el('p', { class: 'prof-texto' }, `Você terminou a aula, mas não consegui salvar: ${erro.message}`),
-          CE.el('div', { class: 'prof-botoes' }, CE.el('button', { class: 'botao', 'data-acao': 'tentar-salvar-aula', onclick: tentar }, 'Tentar de novo')))));
-      }
-    }
+    const salvou = await gravarComNovaTentativa(terminada, () => CE.sessao.atualizarProgresso((p) => {
+      p.licoes = p.licoes || {};
+      const antes = p.licoes[terminada.id] || { vezes: 0 };
+      const jaAprovada = antes.concluida;
+      p.licoes[terminada.id] = {
+        concluida: jaAprovada || aprovada,
+        nota: jaAprovada && antes.nota != null && (nota == null || antes.nota > nota) ? antes.nota : nota,
+        vezes: antes.vezes + 1,
+        em: Date.now(),
+      };
+    }));
+    if (!salvou || licao) return; // o aluno começou outra aula nesse meio-tempo
     if (!aprovada) {
       const texto = `Sua nota foi ${nota}%. Para passar, precisa de pelo menos ${CE.curso.NOTA_MINIMA}%. Vamos refazer a aula com calma? Você consegue!`;
       $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao reprovada' },
@@ -351,7 +341,8 @@ window.CE = window.CE || {};
     }
     CE.emitir('licao:concluida', { licao: terminada.id, nota });
     CE.comemorar(terminada.prova ? 'grande' : 'pequena');
-    const proxima = await proximaLicao();
+    const proxima = await proximaLicao().catch(() => null);
+    if (licao) return;
     $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao concluida' },
       CE.el('div', { class: 'prof-titulo' }, terminada.prova ? '🏆 Prova aprovada!' : '🎉 Aula concluída!'),
       nota != null ? CE.el('div', { class: 'prof-nota' }, `${nota}%`) : null,
@@ -364,11 +355,35 @@ window.CE = window.CE || {};
     CE.voz.falar(terminada.conclusao);
   }
 
+  // Grava o resultado da aula. Se falhar (sem conexão com o instrutor, por exemplo), a aula não se perde: aparece
+  // "Tentar de novo" até conseguir. Devolve false se o aluno começou outra aula nesse meio-tempo.
+  async function gravarComNovaTentativa(terminada, gravar) {
+    for (;;) {
+      try {
+        await gravar();
+        return true;
+      } catch (erro) {
+        if (licao) { CE.avisar(`⚠️ Não consegui salvar a aula "${terminada.titulo}": ${erro.message}`); return false; }
+        await new Promise((tentar) => {
+          const botao = CE.el('button', { class: 'botao', 'data-acao': 'tentar-salvar-aula', onclick: () => { botao.disabled = true; botao.textContent = 'Salvando…'; tentar(); } }, 'Tentar de novo');
+          $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao reprovada' },
+            CE.el('div', { class: 'prof-titulo' }, `${terminada.icone} ${terminada.titulo}`),
+            CE.el('p', { class: 'prof-texto' }, `Você terminou a aula, mas não consegui salvar: ${erro.message}`),
+            CE.el('div', { class: 'prof-botoes' }, botao)));
+        });
+        if (licao) return false;
+      }
+    }
+  }
+
   // Lições especiais (como o teste de nivelamento) decidem sozinhas o que fazer com o resultado.
   async function concluirEspecial(terminada, nota) {
-    const r = await terminada.aoConcluir({ nota: nota || 0, pulados });
+    let r = null;
+    const salvou = await gravarComNovaTentativa(terminada, async () => { r = await terminada.aoConcluir({ nota: nota || 0, pulados }); });
+    if (!salvou || licao) return;
     if (r.comemorar) CE.comemorar('grande');
-    const proxima = await proximaLicao();
+    const proxima = await proximaLicao().catch(() => null);
+    if (licao) return;
     $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao concluida' },
       CE.el('div', { class: 'prof-titulo' }, r.titulo),
       CE.el('p', { class: 'prof-texto' }, r.texto),

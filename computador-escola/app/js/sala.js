@@ -39,7 +39,7 @@ window.CE = window.CE || {};
 
   function mostrarMensagem(m) {
     const quem = CE.sessao.usuario && CE.sessao.usuario.id;
-    if (!m || !quem || (mensagensVistas.get(quem) || 0) >= m.id) return;
+    if (!m || !quem || (mensagensVistas.get(quem) || 0) >= m.id) return false;
     mensagensVistas.set(quem, m.id);
     const fundo = CE.el('div', { class: 'dialogo-fundo sala-mensagem' },
       CE.el('div', { class: 'dialogo' },
@@ -47,8 +47,8 @@ window.CE = window.CE || {};
         CE.el('div', { class: 'sala-mensagem-texto', 'data-mensagem-sala': '' }, m.texto),
         CE.el('div', { class: 'dialogo-botoes' }, CE.el('button', { class: 'botao', onclick: () => fundo.remove() }, 'OK, entendi'))));
     document.body.append(fundo);
-    CE.voz.falar(`Mensagem do professor: ${m.texto}`);
     CE.emitir('sala:mensagem', { texto: m.texto });
+    return true;
   }
 
   // Sem resposta do instrutor por uns 20 s (3 tentativas), a pausa sai sozinha: o aluno não fica com a tela travada.
@@ -60,7 +60,9 @@ window.CE = window.CE || {};
       falhasSeguidas = 0;
       marcarRede(true);
       pausar(!!r.pausada);
-      (r.mensagens || (r.mensagem ? [r.mensagem] : [])).forEach(mostrarMensagem);
+      const novas = (r.mensagens || (r.mensagem ? [r.mensagem] : [])).filter(mostrarMensagem);
+      // Uma fala só com todas as mensagens novas (uma fala nova cortaria a anterior).
+      if (novas.length) CE.voz.falar(`Mensagem do professor: ${novas.map((m) => m.texto).join('. ')}`, { mesmoPausado: true });
     } catch (e) {
       marcarRede(false, e.message);
       if (++falhasSeguidas >= 3) pausar(false);

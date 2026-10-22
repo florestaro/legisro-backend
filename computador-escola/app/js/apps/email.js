@@ -40,7 +40,9 @@
 
   function mensagensIniciais(conta) {
     const agora = Date.now();
-    const m = (minutos, dados) => ({ id: `${agora - minutos}${Math.random().toString(16).slice(2, 6)}`, pasta: 'entrada', lida: false, em: agora - minutos * 60000, para: conta.endereco, anexos: [], ...dados });
+    // Ids fixos: se a criação da conta for repetida (rede lenta), as mensagens de boas-vindas não duplicam.
+    let n = 0;
+    const m = (minutos, dados) => ({ id: `inicial-${++n}`, pasta: 'entrada', lida: false, em: agora - minutos * 60000, para: conta.endereco, anexos: [], ...dados });
     return [
       m(300, { de: `equipe@${DOMINIO}`, deNome: 'Equipe Correio', assunto: 'Bem-vindo ao seu e-mail!', lida: false,
         texto: `Olá, ${conta.nome.split(' ')[0]}!\n\nSua conta ${conta.endereco} está pronta. As mensagens que chegam ficam na Caixa de entrada. As que você manda ficam em Enviados. Propagandas e golpes vão para o Spam.\n\nBom uso!\nEquipe Correio` }),
@@ -82,13 +84,16 @@
 
       const ler = () => CE.api.chamar('dados:ler', chave, { conta: null, mensagens: [] });
       // Só o que chegou e a tela ainda não tem (sem baixar a caixa inteira, com os anexos, de novo).
-      const buscarNovas = () => CE.api.chamar('email:novas', caixa.mensagens.map((m) => m.id));
+      let apagadas = []; // apagadas de vez na Lixeira, ainda não gravadas
+      const buscarNovas = () => CE.api.chamar('email:novas', [...caixa.mensagens.map((m) => m.id), ...apagadas]);
       // Antes de gravar, junta as mensagens que colegas mandaram nesse meio-tempo (o computador do instrutor
-      // também guarda as que chegarem durante a gravação, para nenhuma se perder).
-      const gravar = async () => {
+      // também guarda as que chegarem durante a gravação, para nenhuma se perder). Sair do sistema espera a gravação.
+      const gravar = () => CE.sessao.registrarGravacao((async () => {
         if (caixa.conta) (await buscarNovas()).forEach((m) => { if (!caixa.mensagens.some((x) => x.id === m.id)) caixa.mensagens.push(m); });
-        await CE.api.chamar('dados:salvar', chave, caixa);
-      };
+        const enviando = apagadas;
+        await CE.api.chamar('dados:salvar', chave, { ...caixa, apagadas: enviando });
+        apagadas = apagadas.filter((id) => !enviando.includes(id));
+      })());
 
       async function iniciar() {
         caixa = await ler();
@@ -162,7 +167,9 @@
           }, rotulo, naoLidas(id) ? CE.el('b', { class: 'em-contador' }, String(naoLidas(id))) : null)),
           CE.el('div', { class: 'em-conta' }, CE.el('small', {}, 'Sua conta:'), CE.el('span', {}, caixa.conta.endereco)),
         );
-        const lista = CE.el('div', { class: 'em-lista' }, ...(daPasta.length ? daPasta.map((m) => CE.el('button', {
+        const esvaziar = pasta === 'lixeira' && daPasta.length
+          ? CE.el('button', { class: 'botao secundario pequeno em-esvaziar', 'data-acao': 'esvaziar-lixeira', onclick: () => apagarDeVez(daPasta) }, '🗑️ Esvaziar a Lixeira') : null;
+        const lista = CE.el('div', { class: 'em-lista' }, esvaziar, ...(daPasta.length ? daPasta.map((m) => CE.el('button', {
           class: 'em-item' + (m.lida ? '' : ' nao-lida') + (aberta && aberta.id === m.id ? ' aberta' : ''), 'data-mensagem': m.assunto,
           onclick: () => abrirMensagem(m),
         },
@@ -177,16 +184,34 @@
 
       async function abrirMensagem(m) {
         aberta = m;
-        if (!m.lida) { m.lida = true; await gravar(); }
+        if (!m.lida) { m.lida = true; await gravar().catch((e) => CE.avisar(`⚠️ ${e.message}`)); }
         desenhar();
         CE.emitir('email:aberto', { assunto: m.assunto, de: m.de, golpe: !!m.golpe, anexos: (m.anexos || []).length, pasta: m.pasta });
       }
 
       async function moverPara(m, destino, evento) {
+        const antes = m.pasta;
         m.pasta = destino;
-        await gravar();
+        try { await gravar(); } catch (e) { m.pasta = antes; CE.avisar(`⚠️ ${e.message}`); return; }
         aberta = null;
         CE.emitir(evento, { assunto: m.assunto, de: m.de, golpe: !!m.golpe });
+        desenhar();
+      }
+
+      // Apagar de vez (só na Lixeira): libera espaço na caixa.
+      async function apagarDeVez(lista) {
+        if (!lista.length) return;
+        if (!await CE.confirmar(lista.length > 1 ? `Apagar de vez as ${lista.length} mensagens da Lixeira? Não dá para desfazer.` : 'Apagar de vez esta mensagem? Não dá para desfazer.')) return;
+        const ids = new Set(lista.map((m) => m.id));
+        const antes = caixa.mensagens;
+        caixa.mensagens = caixa.mensagens.filter((m) => !ids.has(m.id));
+        apagadas.push(...ids);
+        try { await gravar(); } catch (e) {
+          caixa.mensagens = antes; apagadas = apagadas.filter((id) => !ids.has(id));
+          CE.avisar(`⚠️ ${e.message}`); return;
+        }
+        aberta = null;
+        CE.emitir('email:apagado', { quantas: ids.size });
         desenhar();
       }
 
@@ -196,7 +221,10 @@
         acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'encaminhar', onclick: () => escrever({ para: '', assunto: `Enc: ${m.assunto}`, texto: `\n\n--- Mensagem encaminhada ---\nDe: ${m.deNome || ''} <${m.de}>\nAssunto: ${m.assunto}\n\n${m.texto}`, anexos: [...(m.anexos || [])], encaminhamento: true }) }, '➡️ Encaminhar'));
         if (m.pasta === 'spam') acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'nao-spam', onclick: () => moverPara(m, 'entrada', 'email:nao-spam') }, '✅ Não é spam'));
         else if (m.pasta !== 'enviados' && m.pasta !== 'lixeira') acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'spam', onclick: () => moverPara(m, 'spam', 'email:spam') }, '🚫 É spam / golpe'));
-        if (m.pasta === 'lixeira') acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'restaurar', onclick: () => moverPara(m, 'entrada', 'email:restaurado') }, '↩️ Voltar para a entrada'));
+        if (m.pasta === 'lixeira') {
+          acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'restaurar', onclick: () => moverPara(m, 'entrada', 'email:restaurado') }, '↩️ Voltar para a entrada'));
+          acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'apagar-de-vez', onclick: () => apagarDeVez([m]) }, '❌ Apagar de vez'));
+        }
         else acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'excluir', onclick: () => moverPara(m, 'lixeira', 'email:excluido') }, '🗑️ Excluir'));
         return CE.el('article', { class: 'em-mensagem' + (m.golpe ? ' golpe' : '') },
           CE.el('div', { class: 'ferramentas' }, CE.el('div', { class: 'ferramentas-grupo' }, ...acoes)),
@@ -258,13 +286,14 @@
           if (!destino) { erro.textContent = 'Escreva o endereço de quem vai receber, no campo "Para".'; return; }
           if (!validoEmail(destino)) { erro.textContent = 'Esse endereço não parece um e-mail. Ele precisa ter @ e um ponto, como maria@correio.escola.'; return; }
           if (!assunto.value.trim() && !await CE.confirmar('A mensagem está sem assunto. Enviar mesmo assim?')) return;
+          if (JSON.stringify(rascunho.anexos).length > 10 * 1024 * 1024) { erro.textContent = 'Os anexos ficaram grandes demais (o máximo é 10 MB). Tire algum anexo ou mande arquivos menores.'; return; }
           const mensagem = {
             id: `${Date.now()}${Math.random().toString(16).slice(2, 6)}`, pasta: 'enviados', lida: true, em: Date.now(),
             de: caixa.conta.endereco, deNome: caixa.conta.nome, para: destino,
             assunto: assunto.value.trim(), texto: texto.value, anexos: rascunho.anexos,
           };
           caixa.mensagens.push(mensagem);
-          await gravar();
+          try { await gravar(); } catch (e) { caixa.mensagens = caixa.mensagens.filter((x) => x !== mensagem); erro.textContent = e.message; return; }
           const info = { para: destino, assunto: mensagem.assunto, texto: mensagem.texto, anexos: mensagem.anexos.length, nomesAnexos: mensagem.anexos.map((a) => a.nome), tiposAnexos: mensagem.anexos.map((a) => a.tipo), resposta: !!rascunho.resposta, encaminhamento: !!rascunho.encaminhamento };
           CE.avisar('📤 Mensagem enviada!');
           CE.emitir('email:enviado', info);
@@ -272,7 +301,7 @@
           if (rascunho.encaminhamento) CE.emitir('email:encaminhado', info);
           pasta = 'enviados'; aberta = null;
           desenhar();
-          entregar(mensagem);
+          CE.sessao.registrarGravacao(entregar(mensagem));
         }
 
         corpo.replaceChildren(CE.el('div', { class: 'em-principal' },
@@ -314,9 +343,11 @@
       }
 
       async function receber(dados) {
-        caixa = await ler();
-        caixa.mensagens.push({ id: `${Date.now()}${Math.random().toString(16).slice(2, 6)}`, pasta: 'entrada', lida: false, em: Date.now(), para: caixa.conta.endereco, anexos: [], ...dados });
-        await gravar();
+        try {
+          caixa = await ler();
+          caixa.mensagens.push({ id: `${Date.now()}${Math.random().toString(16).slice(2, 6)}`, pasta: 'entrada', lida: false, em: Date.now(), para: caixa.conta.endereco, anexos: [], ...dados });
+          await gravar();
+        } catch (e) { CE.avisar(`⚠️ ${e.message}`); return; }
         CE.avisar(`📧 Nova mensagem de ${dados.deNome}: "${dados.assunto}"`);
         CE.emitir('email:recebido', { de: dados.de, assunto: dados.assunto, devolvida: !!dados.devolvida });
         if (!rascunho && corpo.isConnected) desenhar();

@@ -102,6 +102,12 @@ function trocarSenha(id, segredo) {
   return true;
 }
 
+// Um pedaço do código da senha: muda quando a senha é trocada (as sessões abertas com a senha antiga acabam).
+function versaoSenha(id) {
+  const usuario = ler('usuarios', []).find((u) => u.id === id);
+  return usuario ? usuario.hash.slice(0, 16) : null;
+}
+
 function removerUsuario(id) {
   salvar('usuarios', ler('usuarios', []).filter((u) => u.id !== id));
   return true;
@@ -109,5 +115,5 @@ function removerUsuario(id) {
 
 module.exports = {
   iniciar, ler, salvar,
-  listarUsuarios, existeInstrutor, criarUsuario, entrar, trocarSenha, removerUsuario,
+  listarUsuarios, existeInstrutor, criarUsuario, entrar, trocarSenha, removerUsuario, versaoSenha,
 };

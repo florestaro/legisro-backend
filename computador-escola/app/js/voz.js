@@ -31,7 +31,8 @@ window.CE = window.CE || {};
     // opcoes.velocidade: 1 = normal; opcoes.forcar: fala mesmo com a voz desligada (usado no ditado).
     falar(texto, opcoes = {}) {
       if ((!ligada && !opcoes.forcar) || !sintese) return;
-      if (document.getElementById('tela-pausa')) return; // tela pausada pelo instrutor: o professor virtual fica quieto
+      // Tela pausada pelo instrutor: o professor virtual fica quieto (a mensagem do próprio instrutor fala).
+      if (document.getElementById('tela-pausa') && !opcoes.mesmoPausado) return;
       sintese.cancel();
       const fala = new SpeechSynthesisUtterance(limpar(texto));
       fala.lang = 'pt-BR';

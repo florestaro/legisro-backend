@@ -44,7 +44,7 @@ window.CE = window.CE || {};
       });
       CE.emitir('nivelamento:concluido', { nota, pulados, dispensa });
       return dispensa
-        ? { titulo: '🌟 Você já sabe o básico!', texto: `Sua nota foi ${nota}%. As aulas do nível Iniciante foram dispensadas: elas continuam abertas para você revisar quando quiser. O nível Intermediário chega em breve. Agora faça o teste de nivelamento de DIGITAÇÃO para saber em que nível começar!`, digitacao: true, comemorar: true }
+        ? { titulo: '🌟 Você já sabe o básico!', texto: `Sua nota foi ${nota}%. As aulas do nível Iniciante foram dispensadas: elas continuam abertas para você revisar quando quiser. Sua próxima aula já é do nível Intermediário. Agora faça o teste de nivelamento de DIGITAÇÃO para saber em que nível começar!`, digitacao: true, comemorar: true }
         : { titulo: '🧭 Vamos começar do começo', texto: `Sua nota foi ${nota}%${pulados ? ` e você pulou ${pulados} tarefa${pulados > 1 ? 's' : ''}` : ''}. Para dispensar o nível Iniciante era preciso ${NOTA_PARA_DISPENSAR}% sem pular tarefas. Não tem problema: vamos aprender juntos, passo a passo!` };
     },
   };

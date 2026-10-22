@@ -32,7 +32,8 @@ function criarSala({ pastaDados, canais }) {
   const sessoes = new Map();   // token -> { usuario, pc, ip, usadoEm }
   // Limite de senhas erradas: 8 por minuto para cada conta (em cada computador) e 40 por minuto por computador.
   const tentativas = new Map(); // "ip|conta" e "ip" -> horários das senhas erradas
-  const conferindo = new Map(); // "ip|conta" -> senhas sendo conferidas agora
+  const conferindo = new Map(); // "ip|conta" e "ip" -> senhas sendo conferidas agora
+  const somar = (k, n) => { const v = (conferindo.get(k) || 0) + n; if (v > 0) conferindo.set(k, v); else conferindo.delete(k); };
   const recentes = (chave) => (tentativas.get(chave) || []).filter((t) => Date.now() - t < 60000);
 
   function lerConfig() {
@@ -59,7 +60,7 @@ function criarSala({ pastaDados, canais }) {
 
   function guardarSessoes() {
     try {
-      const lista = [...sessoes].filter(([, s]) => s.usuario).map(([t, s]) => [t, { usuario: s.usuario, pc: s.pc, ip: s.ip, usadoEm: s.usadoEm }]);
+      const lista = [...sessoes].filter(([, s]) => s.usuario).map(([t, s]) => [t, { usuario: s.usuario, versaoSenha: s.versaoSenha, pc: s.pc, ip: s.ip, usadoEm: s.usadoEm }]);
       fs.writeFileSync(arquivoSessoes + '.tmp', JSON.stringify(lista), 'utf8');
       fs.renameSync(arquivoSessoes + '.tmp', arquivoSessoes);
     } catch { /* sem disco: as sessões ficam só na memória */ }
@@ -116,10 +117,10 @@ function criarSala({ pastaDados, canais }) {
         const daConta = `${ip}|${String(args[0] || '').slice(0, 60)}`;
         if (canal === 'sessao:entrar') {
           // Conta também as senhas que ainda estão sendo conferidas (vários pedidos ao mesmo tempo não furam o limite).
-          if (recentes(daConta).length + (conferindo.get(daConta) || 0) >= 8 || recentes(ip).length >= 40) {
+          if (recentes(daConta).length + (conferindo.get(daConta) || 0) >= 8 || recentes(ip).length + (conferindo.get(ip) || 0) >= 40) {
             return responder(200, { ok: false, erro: 'Muitas tentativas de senha. Espere um minuto e tente de novo.', token: chave });
           }
-          conferindo.set(daConta, (conferindo.get(daConta) || 0) + 1);
+          somar(daConta, 1); somar(ip, 1);
         }
         const antes = s.usuario;
         try {
@@ -135,7 +136,7 @@ function criarSala({ pastaDados, canais }) {
           if (canal === 'sessao:entrar' && !e.semSessao) for (const k of [daConta, ip]) tentativas.set(k, [...recentes(k), Date.now()]);
           responder(200, { ok: false, erro: e.message, semSessao: !!e.semSessao, token: chave });
         } finally {
-          if (canal === 'sessao:entrar') { const n = (conferindo.get(daConta) || 1) - 1; if (n > 0) conferindo.set(daConta, n); else conferindo.delete(daConta); }
+          if (canal === 'sessao:entrar') { somar(daConta, -1); somar(ip, -1); }
         }
         if (s.usuario !== antes) guardarSessoes();
       });

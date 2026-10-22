@@ -165,10 +165,14 @@ alunos continuam dentro, sem precisar entrar outra vez (uma pausa que estava lig
 **Outras regras da sala**
 - Cada aluno fica dentro em **um computador só**: se ele entrar em outro, o primeiro sai da conta e mostra o porquê.
   (O instrutor pode estar em vários.)
-- Aluno **removido** no Painel sai da conta na hora.
+- Aluno **removido** no Painel sai da conta na hora. Ao **trocar a senha** de alguém, essa conta sai dos outros
+  computadores (quem pegou a senha antiga perde o acesso).
 - A mensagem do instrutor vale por 15 minutos e aparece uma vez para cada aluno (quem entrar depois também vê).
 - Durante a **pausa**, o relógio da prova de digitação para e o Professor Virtual fica quieto.
-- Limites: cada gravação até 25 MB e anexos de e-mail até 10 MB (o aviso explica o que fazer).
+- Limites: cada gravação até 25 MB, anexos de e-mail até 10 MB e caixa de e-mail até 20 MB (o aviso explica o que
+  fazer). No Correio, **❌ Apagar de vez** e **🗑️ Esvaziar a Lixeira** liberam espaço na caixa.
+- Ao **sair**, o programa espera as últimas gravações (aparece "💾 Salvando e saindo…"): um e-mail mandado logo antes
+  de sair não se perde.
 - Cada arquivo de dados tem uma cópia de reserva (`.bak`) ao lado: se um arquivo estragar, o programa usa a cópia.
 
 **Testado com 20 alunos ao mesmo tempo**: 20 cadastros pela tela do Painel e 20 computadores de aluno entrando, fazendo

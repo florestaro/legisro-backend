@@ -12,10 +12,13 @@ function criarCanais(dados) {
   const erroSemSessao = (texto) => Object.assign(new Error(texto), { semSessao: true });
   function exigirSessao(s) {
     if (!s.usuario) throw erroSemSessao(s.motivo || 'Ninguém entrou no sistema.');
-    if (!dados.listarUsuarios().some((u) => u.id === s.usuario.id)) {
+    const versao = dados.versaoSenha(s.usuario.id);
+    const motivo = !versao ? 'Esta conta foi removida pelo instrutor.'
+      : s.versaoSenha && s.versaoSenha !== versao ? 'A senha desta conta foi trocada. Entre de novo com a senha nova.' : null;
+    if (motivo) {
       presencas.delete(s.usuario.id);
       s.usuario = null;
-      throw erroSemSessao('Esta conta foi removida pelo instrutor.');
+      throw erroSemSessao(motivo);
     }
   }
   const exigirInstrutor = (s) => { exigirSessao(s); if (s.usuario.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); };
@@ -29,12 +32,16 @@ function criarCanais(dados) {
   // Índice dos endereços de e-mail (endereço -> dono): as caixas podem ter anexos grandes, então elas não são
   // abertas todas a cada pedido. É montado uma vez e atualizado sempre que uma caixa é gravada.
   let indice = null; // Map endereço -> { id, nome }
+  const contas = new Map(); // id do dono -> { endereco, nome }
   function enderecos() {
     if (!indice) {
       indice = new Map();
       for (const u of dados.listarUsuarios()) {
         const caixa = dados.ler(`email-${u.id}`, null);
-        if (caixa && caixa.conta && caixa.conta.endereco) indice.set(caixa.conta.endereco, { id: u.id, nome: caixa.conta.nome || u.nome });
+        if (caixa && caixa.conta && caixa.conta.endereco) {
+          indice.set(caixa.conta.endereco, { id: u.id, nome: caixa.conta.nome || u.nome });
+          contas.set(u.id, { endereco: caixa.conta.endereco, nome: caixa.conta.nome || u.nome });
+        }
       }
     }
     return indice;
@@ -42,13 +49,19 @@ function criarCanais(dados) {
   function anotarEndereco(id, conta) {
     const mapa = enderecos();
     for (const [e, d] of mapa) if (d.id === id) mapa.delete(e);
-    if (conta && conta.endereco) mapa.set(conta.endereco, { id, nome: conta.nome || '' });
+    contas.delete(id);
+    if (conta && conta.endereco) {
+      mapa.set(conta.endereco, { id, nome: conta.nome || '' });
+      contas.set(id, { endereco: conta.endereco, nome: conta.nome || '' });
+    }
   }
   const donoDoEndereco = (endereco) => {
     const d = enderecos().get(String(endereco || '').toLowerCase());
     return d && dados.listarUsuarios().some((u) => u.id === d.id) ? d : null;
   };
   const LIMITE_ANEXOS = 10 * 1024 * 1024;
+  // A caixa inteira vai pela rede a cada gravação (limite de 25 MB): uma caixa quase cheia não recebe mais nada.
+  const LIMITE_CAIXA = 20 * 1024 * 1024;
   function salvarAulas(lista) {
     if (!Array.isArray(lista) || lista.length > 300) throw new Error('Lista de aulas inválida.');
     if (JSON.stringify(lista).length > 2 * 1024 * 1024) throw new Error('As aulas ficaram grandes demais.');
@@ -69,26 +82,38 @@ function criarCanais(dados) {
     'usuarios:primeiro-instrutor': (s, info) => {
       if (dados.existeInstrutor()) throw new Error('O instrutor já foi cadastrado.');
       s.usuario = dados.criarUsuario({ ...info, papel: 'instrutor', avatar: '🧑‍🏫' });
+      s.versaoSenha = dados.versaoSenha(s.usuario.id);
       return s.usuario;
     },
     'usuarios:criar': (s, info) => {
       exigirInstrutor(s);
       return dados.criarUsuario({ ...info, papel: info.papel === 'instrutor' ? 'instrutor' : 'aluno' });
     },
-    'usuarios:trocar-senha': (s, id, segredo) => { exigirInstrutor(s); return dados.trocarSenha(id, segredo); },
+    'usuarios:trocar-senha': (s, id, segredo) => {
+      exigirInstrutor(s);
+      dados.trocarSenha(id, segredo);
+      // Quem trocou a própria senha continua dentro; nos outros computadores, essa conta sai.
+      if (id === s.usuario.id) s.versaoSenha = dados.versaoSenha(id);
+      return true;
+    },
     'usuarios:remover': (s, id) => {
       exigirInstrutor(s);
       if (id === s.usuario.id) throw new Error('Você não pode remover a si mesmo.');
       return dados.removerUsuario(id);
     },
-    'sessao:entrar': async (s, id, segredo) => { s.usuario = await dados.entrar(id, segredo); s.motivo = null; return s.usuario; },
+    'sessao:entrar': async (s, id, segredo) => {
+      s.usuario = await dados.entrar(id, segredo);
+      s.versaoSenha = dados.versaoSenha(id);
+      s.motivo = null;
+      return s.usuario;
+    },
     'sessao:sair': (s) => { if (s.usuario) presencas.delete(s.usuario.id); s.usuario = null; s.motivo = null; return true; },
     'dados:ler': (s, chave, padrao) => dados.ler(conferirChave(s, chave), padrao),
     'dados:salvar': (s, chave, valor) => {
       const arquivo = conferirChave(s, chave);
       // Um colega pode entregar um e-mail (email:entregar) entre a hora em que a tela leu a caixa e a hora em que
       // ela grava: as mensagens que estão guardadas e que a tela ainda não conhece continuam na caixa.
-      // (O Correio não apaga mensagens de vez, só muda de pasta, então juntar nunca traz de volta algo apagado.)
+      // As que o aluno apagou de vez (Lixeira) vêm em "apagadas" e não voltam.
       if (arquivo.startsWith('email-') && valor && Array.isArray(valor.mensagens)) {
         const guardada = dados.ler(arquivo, null);
         // O endereço é conferido aqui também: duas pessoas criando a conta ao mesmo tempo não ficam com o mesmo endereço.
@@ -99,8 +124,10 @@ function criarCanais(dados) {
           if (ocupado && ocupado.id !== dono) throw new Error('Esse endereço já está em uso. Escolha outro nome de usuário.');
         }
         const conhecidas = new Set();
+        const apagadas = new Set(Array.isArray(valor.apagadas) ? valor.apagadas : []);
         valor = { ...valor, mensagens: valor.mensagens.filter((m) => m && !conhecidas.has(m.id) && conhecidas.add(m.id)) };
-        const chegaram = (guardada && Array.isArray(guardada.mensagens) ? guardada.mensagens : []).filter((m) => m && !conhecidas.has(m.id));
+        delete valor.apagadas;
+        const chegaram = (guardada && Array.isArray(guardada.mensagens) ? guardada.mensagens : []).filter((m) => m && !conhecidas.has(m.id) && !apagadas.has(m.id));
         if (chegaram.length) valor = { ...valor, mensagens: valor.mensagens.concat(chegaram) };
         dados.salvar(arquivo, valor);
         anotarEndereco(dono, valor.conta);
@@ -124,7 +151,8 @@ function criarCanais(dados) {
     'email:entregar': (s, mensagem) => {
       exigirSessao(s);
       // O remetente é sempre o dono da sessão: ninguém consegue mandar e-mail fingindo ser outra pessoa.
-      const minha = [...enderecos()].find(([, d]) => d.id === s.usuario.id);
+      enderecos();
+      const minha = contas.get(s.usuario.id);
       if (!minha) throw new Error('Crie a sua conta de e-mail primeiro.');
       const para = String(mensagem.para || '').toLowerCase();
       const dono = donoDoEndereco(para);
@@ -134,9 +162,12 @@ function criarCanais(dados) {
       if (JSON.stringify(anexos).length > LIMITE_ANEXOS) throw new Error('Os anexos ficaram grandes demais (o máximo é 10 MB). Mande menos arquivos ou arquivos menores.');
       const recebida = {
         id: `${Date.now()}${Math.random().toString(16).slice(2, 8)}`, pasta: 'entrada', lida: false, em: Date.now(),
-        de: minha[0], deNome: minha[1].nome, para,
+        de: minha.endereco, deNome: minha.nome, para,
         assunto: String(mensagem.assunto || '').slice(0, 200), texto: String(mensagem.texto || '').slice(0, 20000), anexos,
       };
+      if (JSON.stringify(caixa).length + JSON.stringify(recebida).length > LIMITE_CAIXA) {
+        throw new Error(`A caixa de e-mail de ${caixa.conta.nome} está cheia. Peça para apagar de vez as mensagens antigas da Lixeira.`);
+      }
       caixa.mensagens = (caixa.mensagens || []).concat(recebida);
       dados.salvar(`email-${dono.id}`, caixa);
       return { entregue: true, nome: caixa.conta.nome };
@@ -175,7 +206,9 @@ function criarCanais(dados) {
         },
         em: Date.now(),
       });
-      return { pausada: sala.pausada && s.usuario.papel !== 'instrutor', mensagens: s.usuario.papel !== 'instrutor' ? mensagensAtuais() : [] };
+      const aluno = s.usuario.papel !== 'instrutor';
+      // "mensagem" (só a última) continua para os computadores de aluno com a versão anterior do programa.
+      return { pausada: sala.pausada && aluno, mensagens: aluno ? mensagensAtuais() : [], mensagem: aluno ? mensagemAtual() : null };
     },
     'sala:turma': (s) => {
       exigirInstrutor(s);

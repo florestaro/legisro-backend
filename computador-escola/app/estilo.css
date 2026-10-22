@@ -860,6 +860,7 @@ button.bandeja-item:hover { background: rgba(255,255,255,.15); }
 .em-contador { background: var(--azul); color: #fff; border-radius: 10px; padding: 0 7px; font-size: 12px; }
 .em-conta { margin-top: auto; display: grid; font-size: 12px; color: var(--texto-suave); word-break: break-all; padding: 8px 4px; }
 .em-lista { overflow: auto; border-right: 1px solid #dde3ea; }
+.em-esvaziar { margin: 8px; justify-self: start; }
 .em-item { display: grid; gap: 2px; width: 100%; text-align: left; border: none; border-bottom: 1px solid #eef0f3; background: #fff; padding: 10px 12px; }
 .em-item:hover { background: #f5f8fc; }
 .em-item.aberta { background: #e8f0fe; }
@@ -1259,6 +1260,7 @@ body.cursor-grande, body.cursor-grande * { cursor: url("data:image/svg+xml,%3Csv
 
 /* ---------- Sala de aula em rede ---------- */
 .bandeja-item.erro { color: #ff6b6b; }
+.tela-saindo { position: fixed; inset: 0; z-index: 19500; background: rgba(11, 61, 110, .55); color: #fff; display: grid; place-content: center; font-size: 22px; font-weight: 700; cursor: progress; }
 .tela-pausa { position: fixed; inset: 0; z-index: 19000; background: rgba(11, 61, 110, .96); color: #fff; display: grid; place-content: center; justify-items: center; gap: 10px; text-align: center; }
 .tela-pausa h1 { margin: 0; font-size: 40px; }
 .tela-pausa p { margin: 0; font-size: 22px; }
