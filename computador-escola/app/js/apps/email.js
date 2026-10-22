@@ -264,7 +264,7 @@
           };
           caixa.mensagens.push(mensagem);
           await gravar();
-          const info = { para: destino, assunto: mensagem.assunto, texto: mensagem.texto, anexos: mensagem.anexos.length, nomesAnexos: mensagem.anexos.map((a) => a.nome), resposta: !!rascunho.resposta, encaminhamento: !!rascunho.encaminhamento };
+          const info = { para: destino, assunto: mensagem.assunto, texto: mensagem.texto, anexos: mensagem.anexos.length, nomesAnexos: mensagem.anexos.map((a) => a.nome), tiposAnexos: mensagem.anexos.map((a) => a.tipo), resposta: !!rascunho.resposta, encaminhamento: !!rascunho.encaminhamento };
           CE.avisar('📤 Mensagem enviada!');
           CE.emitir('email:enviado', info);
           if (rascunho.resposta) CE.emitir('email:respondido', info);

@@ -61,7 +61,7 @@
       if (!CE.sessao.usuario) return Promise.resolve();
       return CE.sessao.atualizarProgresso((p) => { p.config = { ...(p.config || {}), ...mudancas }; });
     },
-    reiniciar() { atual = { ...PADRAO }; clearInterval(propaganda); document.querySelectorAll('.propaganda-falsa').forEach((x) => x.remove()); aplicar(); },
+    reiniciar() { atual = { ...PADRAO }; clearInterval(propaganda); document.querySelectorAll('.propaganda-falsa, .celular-falso').forEach((x) => x.remove()); aplicar(); },
     instalado: (id) => (atual.instalados || []).includes(id),
     impressoras: () => [...atual.impressoras].sort((a, b) => (b.padrao ? 1 : 0) - (a.padrao ? 1 : 0)),
     fuso: () => (atual.fuso == null ? fusoLocal : atual.fuso),
