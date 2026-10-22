@@ -712,8 +712,8 @@
             CE.confirmar('O documento atual não foi salvo. Abrir outro mesmo assim?').then((sim) => sim && carregar(arg.arquivo));
           } else carregar(arg.arquivo);
         },
-        aoFechar() {
-          if (!modificado || podeFechar) return true;
+        aoFechar(opcoes = {}) {
+          if (!modificado || podeFechar || opcoes.forcado) return true;
           if (aviso) return false;
           aviso = CE.confirmar('Você não salvou o documento. Quer salvar antes de fechar?').then(async (sim) => {
             aviso = null;

@@ -243,6 +243,7 @@
             inicio = Date.now();
             if (ex.duracao) {
               relogio = setInterval(() => {
+                if (pausadoEm) return;
                 const resta = ex.duracao - Math.floor((Date.now() - inicio) / 1000);
                 cronometro.textContent = formatarTempo(Math.max(0, resta));
                 cronometro.classList.toggle('acabando', resta <= 10);
@@ -280,7 +281,13 @@
           areaTexto, dica, placar, teclado,
           CE.el('p', { class: 'dig-rodape' }, ex.dica || 'Clique no texto acima e comece a digitar. Olhe para a tela, não para o teclado.'),
         ));
-        encerrarAtual = () => clearInterval(relogio);
+        // Tela pausada pelo instrutor: o tempo parado não conta (nem no relógio da prova, nem na velocidade).
+        let pausadoEm = null;
+        const pararDeOuvirPausa = CE.ouvir('sala:pausada', ({ pausada }) => {
+          if (pausada) pausadoEm = pausadoEm || Date.now();
+          else if (pausadoEm) { if (inicio) inicio += Date.now() - pausadoEm; pausadoEm = null; }
+        });
+        encerrarAtual = () => { clearInterval(relogio); pararDeOuvirPausa(); };
         atualizar();
         captura.focus();
         CE.emitir('digitacao:iniciada', { exercicio: ex.id });

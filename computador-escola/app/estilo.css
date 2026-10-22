@@ -1278,7 +1278,7 @@ body.cursor-grande, body.cursor-grande * { cursor: url("data:image/svg+xml,%3Csv
 .sala-achados { display: flex; flex-wrap: wrap; gap: 8px; }
 .sala-achados p { margin: 0; font-size: 14px; }
 .login-rodape { display: flex; gap: 10px; }
-.painel-sala { display: grid; gap: 12px; padding: 4px 0; }
+.painel-sala { display: grid; gap: 12px; padding: 4px 6px 12px 0; overflow: auto; flex: 1; min-height: 0; align-content: start; }
 .painel-sala-acoes { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .painel-sala-total { margin-left: auto; font-weight: 700; }
 .painel-cartoes { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }

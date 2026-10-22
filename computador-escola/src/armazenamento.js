@@ -17,18 +17,29 @@ function caminho(chave) {
   return path.join(pastaDados, seguro + '.json');
 }
 
+// Se o arquivo estiver estragado (problema no disco, por exemplo), usa a cópia de reserva:
+// assim um cadastro novo nunca grava por cima da lista inteira de alunos.
 function ler(chave, padrao = null) {
-  try {
-    return JSON.parse(fs.readFileSync(caminho(chave), 'utf8'));
-  } catch {
-    return padrao;
+  const arquivo = caminho(chave);
+  for (const c of [arquivo, arquivo + '.bak']) {
+    try {
+      return JSON.parse(fs.readFileSync(c, 'utf8'));
+    } catch { /* tenta a cópia */ }
   }
+  return padrao;
 }
 
 function salvar(chave, valor) {
   const destino = caminho(chave);
   const temporario = destino + '.tmp';
-  fs.writeFileSync(temporario, JSON.stringify(valor, null, 2), 'utf8');
+  const fd = fs.openSync(temporario, 'w');
+  try {
+    fs.writeFileSync(fd, JSON.stringify(valor, null, 2), 'utf8');
+    fs.fsyncSync(fd); // garante que está no disco antes de trocar
+  } finally {
+    fs.closeSync(fd);
+  }
+  fs.copyFileSync(temporario, destino + '.bak'); // cópia de reserva com o mesmo conteúdo
   fs.renameSync(temporario, destino);
   return true;
 }

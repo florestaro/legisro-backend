@@ -135,8 +135,10 @@
       }
       async function atualizarSala() {
         if (aba !== 'sala' || !corpo.isConnected) { clearInterval(timerSala); return; }
+        const nova = await salaAoVivo();
         const area = corpo.querySelector('.painel-sala');
-        if (area) area.replaceWith(await salaAoVivo());
+        // Com a turma inteira, a lista rola: a atualização mantém a rolagem onde o instrutor deixou.
+        if (area) { const rolagem = area.scrollTop; area.replaceWith(nova); nova.scrollTop = rolagem; }
       }
 
       // ---------- Criar aulas (sem programar) ----------
@@ -214,7 +216,7 @@
               CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'editar-aula', onclick: () => { rascunho = JSON.parse(JSON.stringify(a)); desenhar(); } }, '✏️ Editar'),
               CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'apagar-aula', onclick: async () => {
                 if (!await CE.confirmar(`Apagar a aula "${a.titulo}"?`)) return;
-                await CE.aulasProfessor.salvar(lista.filter((x) => x.id !== a.id));
+                await CE.aulasProfessor.apagar(a.id);
                 desenhar();
               } }, '🗑️')))) : CE.el('p', {}, 'Nenhuma aula criada ainda.'));
         }
@@ -238,8 +240,7 @@
               const problema = validar(r);
               if (problema) { erro.textContent = problema; return; }
               r.autor = CE.sessao.usuario.nome;
-              const nova = lista.some((x) => x.id === r.id) ? lista.map((x) => (x.id === r.id ? r : x)) : [...lista, r];
-              try { await CE.aulasProfessor.salvar(nova); } catch (e) { erro.textContent = e.message; return; }
+              try { await CE.aulasProfessor.gravar(r); } catch (e) { erro.textContent = e.message; return; }
               CE.avisar(`✅ Aula "${r.titulo}" salva! Ela já aparece para os alunos em Aulas › Do professor.`);
               CE.emitir('instrutor:aula-salva', { titulo: r.titulo, passos: r.passos.length });
               rascunho = null;

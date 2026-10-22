@@ -149,7 +149,16 @@ window.CE = window.CE || {};
       CE.emitir('app:aberto', { app: id });
     },
     fechar,
-    fecharTodas() { Object.keys(abertas).forEach((id) => { abertas[id].instancia = null; fechar(id); }); },
+    // Fecha tudo sem perguntar nada (ao sair do sistema, por exemplo), mas cada programa desliga os relógios dele:
+    // nada do aluno que saiu continua rodando e gravando no progresso de quem entrar depois.
+    fecharTodas() {
+      Object.keys(abertas).forEach((id) => {
+        const instancia = abertas[id].instancia;
+        if (instancia && instancia.aoFechar) { try { instancia.aoFechar({ forcado: true }); } catch { /* fecha mesmo assim */ } }
+        abertas[id].instancia = null;
+        fechar(id);
+      });
+    },
     estaAberta: (id) => !!abertas[id],
     // Programa em primeiro plano (para o professor saber onde o aluno está).
     ativa() {

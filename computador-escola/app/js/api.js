@@ -20,6 +20,8 @@ window.CE = window.CE || {};
         ultimoAvisoRede = Date.now();
         if (CE.avisar) CE.avisar('⚠️ Sem conexão com o computador do instrutor: o que você fez agora pode não ter sido salvo. Chame o instrutor.');
       }
+      // A conta foi aberta em outro computador, foi removida pelo instrutor, ou a sessão acabou: volta para a entrada.
+      if (resultado.semSessao && CE.sessao && CE.sessao.usuario && CE.emitir) CE.emitir('sessao:perdida', { motivo: resultado.erro });
       throw new Error(resultado.erro);
     }
     return resultado.valor;
@@ -69,6 +71,7 @@ window.CE = window.CE || {};
           gravar('email:' + u.id, caixa);
           return { entregue: true, nome: caixa.conta.nome };
         },
+        'email:novas': () => ((atual && ler('email:' + atual.id, {}).mensagens) || []).filter((m) => !(a[0] || []).includes(m.id)),
         'dados:ler': () => ler(a[0], a[1]),
         'dados:salvar': () => gravar(a[0], a[1]),
         'ia:status': () => ({ estado: 'sem-modelo', detalhe: 'Modo de teste no navegador.' }),
@@ -77,6 +80,12 @@ window.CE = window.CE || {};
         'janela:zoom': () => { document.documentElement.style.zoom = a[0]; return a[0]; },
         'aulas:listar': () => ler('aulas-professor', []),
         'aulas:salvar': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); return gravar('aulas-professor', a[0]); },
+        'aulas:gravar': () => {
+          if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.');
+          const lista = ler('aulas-professor', []);
+          return gravar('aulas-professor', lista.some((x) => x.id === a[0].id) ? lista.map((x) => (x.id === a[0].id ? a[0] : x)) : [...lista, a[0]]);
+        },
+        'aulas:apagar': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); return gravar('aulas-professor', ler('aulas-professor', []).filter((x) => x.id !== a[0])); },
         'sala:ler': () => ({ modo: 'local', navegador: true, servidor: '', codigo: '', protegido: false, nomePc: 'Navegador de teste', ips: [] }),
         'sala:status': () => ({ modo: 'local', conectado: null, erro: '' }),
         'sala:procurar': () => [],

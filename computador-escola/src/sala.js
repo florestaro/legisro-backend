@@ -16,17 +16,24 @@ const PORTA = 47123;        // pedidos dos alunos (HTTP)
 const PORTA_BUSCA = 47124;  // "tem algum computador de instrutor aí?" (UDP)
 const LIMITE = 25 * 1024 * 1024; // e-mail com anexos de imagem pode ser grande
 const TEMPO_SESSAO = 12 * 60 * 60 * 1000;
+const MUITO_GRANDE = 'Ficou grande demais para salvar (mais de 25 MB). Apague desenhos, imagens ou anexos que não usa mais e esvazie a Lixeira.';
 
 class ErroDoServidor extends Error {}
 
 function criarSala({ pastaDados, canais }) {
   const arquivo = path.join(pastaDados, 'sala.json');
+  // As sessões dos alunos ficam guardadas: se o programa do instrutor fechar e abrir de novo no meio da aula,
+  // os alunos continuam dentro e nada se perde.
+  const arquivoSessoes = path.join(pastaDados, 'sala-sessoes.json');
   let config = lerConfig();
   let estado = { conectado: null, erro: '' };
   let servidorHttp = null, socketBusca = null, limpeza = null;
   let tokenCliente = null;
   const sessoes = new Map();   // token -> { usuario, pc, ip, usadoEm }
-  const tentativas = new Map(); // ip -> horários das senhas erradas
+  // Limite de senhas erradas: 8 por minuto para cada conta (em cada computador) e 40 por minuto por computador.
+  const tentativas = new Map(); // "ip|conta" e "ip" -> horários das senhas erradas
+  const conferindo = new Map(); // "ip|conta" -> senhas sendo conferidas agora
+  const recentes = (chave) => (tentativas.get(chave) || []).filter((t) => Date.now() - t < 60000);
 
   function lerConfig() {
     try { return { modo: 'local', ...JSON.parse(fs.readFileSync(arquivo, 'utf8')) }; } catch { return { modo: 'local' }; }
@@ -50,9 +57,26 @@ function criarSala({ pastaDados, canais }) {
     return 'http://' + t;
   };
 
+  function guardarSessoes() {
+    try {
+      const lista = [...sessoes].filter(([, s]) => s.usuario).map(([t, s]) => [t, { usuario: s.usuario, pc: s.pc, ip: s.ip, usadoEm: s.usadoEm }]);
+      fs.writeFileSync(arquivoSessoes + '.tmp', JSON.stringify(lista), 'utf8');
+      fs.renameSync(arquivoSessoes + '.tmp', arquivoSessoes);
+    } catch { /* sem disco: as sessões ficam só na memória */ }
+  }
+  function carregarSessoes() {
+    try {
+      const usuarios = new Map(canais['usuarios:listar']({}).map((u) => [u.id, u]));
+      for (const [t, s] of JSON.parse(fs.readFileSync(arquivoSessoes, 'utf8'))) {
+        if (s && s.usuario && usuarios.has(s.usuario.id) && Date.now() - s.usadoEm < TEMPO_SESSAO) sessoes.set(t, { ...s, usuario: usuarios.get(s.usuario.id) });
+      }
+    } catch { /* primeira vez */ }
+  }
+
   // ---------- Servidor (computador do instrutor) ----------
   function iniciarServidor() {
     pararServidor();
+    if (!sessoes.size) carregarSessoes();
     servidorHttp = http.createServer((req, res) => {
       const responder = (codigo, corpo) => {
         if (res.writableEnded) return;
@@ -66,13 +90,15 @@ function criarSala({ pastaDados, canais }) {
         return responder(403, { ok: false, erro: 'Código da sala errado.', codigoErrado: true });
       }
       let tamanho = 0;
-      const partes = [];
+      let partes = [];
+      // Grande demais: o resto do pedido é descartado e a resposta explica o que fazer.
       req.on('data', (p) => {
         tamanho += p.length;
-        if (tamanho > LIMITE) { responder(413, { ok: false, erro: 'O pedido ficou grande demais.' }); req.destroy(); } else partes.push(p);
+        if (tamanho > LIMITE) partes = null; else if (partes) partes.push(p);
       });
       req.on('end', async () => {
         if (res.writableEnded) return;
+        if (!partes) return responder(413, { ok: false, erro: MUITO_GRANDE });
         let pedido;
         try { pedido = JSON.parse(Buffer.concat(partes).toString('utf8')); } catch { return responder(400, { ok: false, erro: 'Pedido inválido.' }); }
         const { canal, args = [], token, pc } = pedido || {};
@@ -87,16 +113,31 @@ function criarSala({ pastaDados, canais }) {
         const s = sessoes.get(chave);
         s.usadoEm = Date.now();
         if (pc) s.pc = String(pc).slice(0, 60);
+        const daConta = `${ip}|${String(args[0] || '').slice(0, 60)}`;
         if (canal === 'sessao:entrar') {
-          const recentes = (tentativas.get(ip) || []).filter((t) => Date.now() - t < 60000);
-          if (recentes.length >= 8) return responder(200, { ok: false, erro: 'Muitas tentativas de senha. Espere um minuto e tente de novo.', token: chave });
+          // Conta também as senhas que ainda estão sendo conferidas (vários pedidos ao mesmo tempo não furam o limite).
+          if (recentes(daConta).length + (conferindo.get(daConta) || 0) >= 8 || recentes(ip).length >= 40) {
+            return responder(200, { ok: false, erro: 'Muitas tentativas de senha. Espere um minuto e tente de novo.', token: chave });
+          }
+          conferindo.set(daConta, (conferindo.get(daConta) || 0) + 1);
         }
+        const antes = s.usuario;
         try {
-          responder(200, { ok: true, valor: await tratador(s, ...args), token: chave });
+          const valor = await tratador(s, ...args);
+          // Um aluno só fica dentro em um computador: entrar em outro encerra a sessão do anterior.
+          if (canal === 'sessao:entrar' && valor && valor.papel !== 'instrutor') {
+            for (const [t, outra] of sessoes) {
+              if (t !== chave && outra.usuario && outra.usuario.id === valor.id) { outra.usuario = null; outra.motivo = 'Sua conta foi aberta em outro computador. Por segurança, este computador saiu da sua conta.'; }
+            }
+          }
+          responder(200, { ok: true, valor, token: chave });
         } catch (e) {
-          if (canal === 'sessao:entrar') tentativas.set(ip, [...(tentativas.get(ip) || []).filter((t) => Date.now() - t < 60000), Date.now()]);
-          responder(200, { ok: false, erro: e.message, token: chave });
+          if (canal === 'sessao:entrar' && !e.semSessao) for (const k of [daConta, ip]) tentativas.set(k, [...recentes(k), Date.now()]);
+          responder(200, { ok: false, erro: e.message, semSessao: !!e.semSessao, token: chave });
+        } finally {
+          if (canal === 'sessao:entrar') { const n = (conferindo.get(daConta) || 1) - 1; if (n > 0) conferindo.set(daConta, n); else conferindo.delete(daConta); }
         }
+        if (s.usuario !== antes) guardarSessoes();
       });
     });
     servidorHttp.on('error', (e) => { estado = { conectado: false, erro: e.code === 'EADDRINUSE' ? 'A porta da sala já está sendo usada neste computador.' : e.message }; });
@@ -111,7 +152,9 @@ function criarSala({ pastaDados, canais }) {
     socketBusca.bind(PORTA_BUSCA);
     limpeza = setInterval(() => {
       const agora = Date.now();
-      for (const [t, s] of sessoes) if (agora - s.usadoEm > TEMPO_SESSAO) sessoes.delete(t);
+      for (const [t, s] of sessoes) if (agora - s.usadoEm > TEMPO_SESSAO || (!s.usuario && agora - s.usadoEm > 60 * 60 * 1000)) sessoes.delete(t);
+      for (const k of tentativas.keys()) if (!recentes(k).length) tentativas.delete(k);
+      guardarSessoes();
     }, 10 * 60 * 1000);
   }
   function pararServidor() {
@@ -141,7 +184,7 @@ function criarSala({ pastaDados, canais }) {
     }
     estado = { conectado: true, erro: '' };
     if (corpo.token) tokenCliente = corpo.token;
-    if (!corpo.ok) throw new ErroDoServidor(corpo.erro);
+    if (!corpo.ok) throw Object.assign(new ErroDoServidor(corpo.erro), { semSessao: !!corpo.semSessao });
     return corpo.valor;
   }
 

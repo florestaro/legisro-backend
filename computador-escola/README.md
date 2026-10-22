@@ -159,7 +159,21 @@ configurado, só muda o modo de um computador quem souber o código da sala. A r
 escola (não use pela internet).
 
 **Se o computador do instrutor estiver desligado**, os computadores dos alunos mostram "Sem conexão com o computador do
-instrutor" e um botão **Tentar de novo**.
+instrutor" e um botão **Tentar de novo**. Se o programa do instrutor fechar no meio da aula, é só abrir de novo: os
+alunos continuam dentro, sem precisar entrar outra vez (uma pausa que estava ligada sai sozinha em uns 20 segundos).
+
+**Outras regras da sala**
+- Cada aluno fica dentro em **um computador só**: se ele entrar em outro, o primeiro sai da conta e mostra o porquê.
+  (O instrutor pode estar em vários.)
+- Aluno **removido** no Painel sai da conta na hora.
+- A mensagem do instrutor vale por 15 minutos e aparece uma vez para cada aluno (quem entrar depois também vê).
+- Durante a **pausa**, o relógio da prova de digitação para e o Professor Virtual fica quieto.
+- Limites: cada gravação até 25 MB e anexos de e-mail até 10 MB (o aviso explica o que fazer).
+- Cada arquivo de dados tem uma cópia de reserva (`.bak`) ao lado: se um arquivo estragar, o programa usa a cópia.
+
+**Testado com 20 alunos ao mesmo tempo**: 20 cadastros pela tela do Painel e 20 computadores de aluno entrando, fazendo
+aula, salvando documentos e mandando e-mails uns aos outros juntos, com a Sala ao vivo, a pausa e as mensagens chegando
+aos 20 — sem perder nenhuma gravação nem e-mail.
 
 ## Criar aulas sem programar
 No **Painel do Instrutor → 📝 Criar aulas**, o instrutor monta aulas novas com três tipos de passo:

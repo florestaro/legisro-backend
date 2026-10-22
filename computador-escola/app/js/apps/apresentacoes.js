@@ -314,8 +314,8 @@
           if (modificado) CE.confirmar('A apresentação atual não foi salva. Abrir outra mesmo assim?').then((sim) => sim && carregar(arg.arquivo));
           else carregar(arg.arquivo);
         },
-        aoFechar() {
-          if (modificado && !podeFechar) {
+        aoFechar(opcoes = {}) {
+          if (modificado && !podeFechar && !opcoes.forcado) {
             if (!aviso) aviso = CE.confirmar('Você não salvou a apresentação. Quer salvar antes de fechar?').then(async (sim) => {
               aviso = null;
               if (sim && !await salvar()) return;

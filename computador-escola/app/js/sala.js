@@ -4,7 +4,7 @@ window.CE = window.CE || {};
 
 (function () {
   let timer = null;
-  let ultimaMensagem = null;
+  const mensagensVistas = new Map(); // id do aluno -> última mensagem do instrutor que ele já viu neste computador
   const $ = (id) => document.getElementById(id);
 
   // O que o aluno está fazendo agora (vai para o painel do instrutor).
@@ -38,8 +38,9 @@ window.CE = window.CE || {};
   }
 
   function mostrarMensagem(m) {
-    if (!m || m.id === ultimaMensagem) return;
-    ultimaMensagem = m.id;
+    const quem = CE.sessao.usuario && CE.sessao.usuario.id;
+    if (!m || !quem || (mensagensVistas.get(quem) || 0) >= m.id) return;
+    mensagensVistas.set(quem, m.id);
     const fundo = CE.el('div', { class: 'dialogo-fundo sala-mensagem' },
       CE.el('div', { class: 'dialogo' },
         CE.el('p', {}, `📢 Mensagem de ${m.de || 'Instrutor'}:`),
@@ -50,20 +51,25 @@ window.CE = window.CE || {};
     CE.emitir('sala:mensagem', { texto: m.texto });
   }
 
+  // Sem resposta do instrutor por uns 20 s (3 tentativas), a pausa sai sozinha: o aluno não fica com a tela travada.
+  let falhasSeguidas = 0;
   async function avisar() {
     if (!CE.sessao.usuario) return;
     try {
       const r = await CE.api.chamar('sala:presenca', atividade());
+      falhasSeguidas = 0;
       marcarRede(true);
       pausar(!!r.pausada);
-      if (r.mensagem) mostrarMensagem(r.mensagem);
-    } catch (e) { marcarRede(false, e.message); }
+      (r.mensagens || (r.mensagem ? [r.mensagem] : [])).forEach(mostrarMensagem);
+    } catch (e) {
+      marcarRede(false, e.message);
+      if (++falhasSeguidas >= 3) pausar(false);
+    }
   }
 
   CE.sala = {
     async iniciar() {
       clearInterval(timer);
-      ultimaMensagem = null;
       const st = await CE.api.chamar('sala:status').catch(() => ({ modo: 'local' }));
       const icone = $('status-rede');
       if (icone) {
@@ -74,7 +80,8 @@ window.CE = window.CE || {};
       await avisar();
       timer = setInterval(avisar, 8000);
     },
-    parar() { clearInterval(timer); pausar(false); },
+    // Ao sair: a pausa e a mensagem do instrutor não ficam na frente da tela de entrada.
+    parar() { clearInterval(timer); pausar(false); document.querySelectorAll('.sala-mensagem').forEach((d) => d.remove()); },
     avisarAgora: avisar,
   };
 

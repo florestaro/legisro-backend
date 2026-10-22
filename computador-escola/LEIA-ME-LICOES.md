@@ -153,8 +153,11 @@ guardadas no computador do instrutor (`aulas-professor.json`) e aparecem em **Au
 disponíveis estão em `app/js/licoes/aulas-professor.js` (`TAREFAS`): para acrescentar uma tarefa nova, basta incluir
 um item com `nome`, `campo` (o que o instrutor preenche) e `montar` (que devolve um passo, como nos exemplos acima).
 
-Eventos da sala de aula: `sala:pausada` (`pausada`), `sala:mensagem` (`texto`), `instrutor:pausou`, `instrutor:mensagem`
-e `instrutor:aula-salva`.
+Eventos da sala de aula: `sala:pausada` (`pausada`), `sala:mensagem` (`texto`), `instrutor:pausou`, `instrutor:mensagem`,
+`instrutor:aula-salva` e `sessao:perdida` (`motivo`: a conta foi aberta em outro computador ou removida).
+
+Programas com relógios ou ouvintes devem desligá-los em `aoFechar(opcoes)`: ao sair do sistema, todas as janelas
+fecham com `opcoes.forcado = true` (sem perguntar "Quer salvar?"), e nada deve continuar rodando para o próximo aluno.
 
 ## Ideias de lição para depois
 Me mande as suas ideias de lição em texto simples, como "o aluno abre o editor, escreve uma carta para um amigo, coloca o

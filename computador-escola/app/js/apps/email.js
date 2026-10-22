@@ -81,10 +81,12 @@
       let timer = null;
 
       const ler = () => CE.api.chamar('dados:ler', chave, { conta: null, mensagens: [] });
-      // Antes de gravar, junta as mensagens que colegas mandaram nesse meio-tempo (para nenhuma se perder).
+      // Só o que chegou e a tela ainda não tem (sem baixar a caixa inteira, com os anexos, de novo).
+      const buscarNovas = () => CE.api.chamar('email:novas', caixa.mensagens.map((m) => m.id));
+      // Antes de gravar, junta as mensagens que colegas mandaram nesse meio-tempo (o computador do instrutor
+      // também guarda as que chegarem durante a gravação, para nenhuma se perder).
       const gravar = async () => {
-        const atual = await ler();
-        (atual.mensagens || []).forEach((m) => { if (!caixa.mensagens.some((x) => x.id === m.id)) caixa.mensagens.push(m); });
+        if (caixa.conta) (await buscarNovas()).forEach((m) => { if (!caixa.mensagens.some((x) => x.id === m.id)) caixa.mensagens.push(m); });
         await CE.api.chamar('dados:salvar', chave, caixa);
       };
 
@@ -97,8 +99,7 @@
       // Mensagens de colegas chegam direto no arquivo da caixa; aqui só conferimos de tempos em tempos.
       async function verificarNovas() {
         if (!caixa || !caixa.conta || !corpo.isConnected) return;
-        const atual = await ler();
-        const novas = atual.mensagens.filter((m) => !caixa.mensagens.some((x) => x.id === m.id));
+        const novas = (await buscarNovas().catch(() => [])).filter((m) => !caixa.mensagens.some((x) => x.id === m.id));
         if (!novas.length) return;
         caixa.mensagens.push(...novas);
         novas.forEach((m) => { CE.avisar(`📧 Nova mensagem de ${m.deNome || m.de}: "${m.assunto}"`); CE.emitir('email:recebido', { de: m.de, assunto: m.assunto, colega: true }); });
@@ -128,7 +129,7 @@
           if (CONTATOS_TREINO[endereco] || !await CE.api.chamar('email:endereco-livre', endereco)) { erro.textContent = 'Esse endereço já está em uso. Escolha outro nome de usuário.'; return; }
           caixa.conta = { endereco, nome: nome.value.trim() || u.nome, criadaEm: Date.now() };
           caixa.mensagens = mensagensIniciais(caixa.conta);
-          await gravar();
+          try { await gravar(); } catch (e) { caixa.conta = null; caixa.mensagens = []; erro.textContent = e.message; return; }
           CE.comemorar('pequena');
           CE.emitir('email:conta-criada', { endereco });
           desenhar();
@@ -302,8 +303,10 @@
           }, 2500);
           return;
         }
-        const resultado = await CE.api.chamar('email:entregar', { para: m.para, assunto: m.assunto, texto: m.texto, anexos: m.anexos }).catch(() => ({ entregue: false }));
+        const resultado = await CE.api.chamar('email:entregar', { para: m.para, assunto: m.assunto, texto: m.texto, anexos: m.anexos }).catch((e) => ({ erro: e.message }));
         if (resultado.entregue) { CE.emitir('email:entregue-colega', { para: m.para, nome: resultado.nome }); return; }
+        // Falha na rede (ou anexo grande demais): não dá para saber se chegou, então não diz que o endereço não existe.
+        if (resultado.erro) { CE.avisar(`⚠️ A mensagem para ${m.para} pode não ter sido entregue: ${resultado.erro}`); return; }
         setTimeout(() => receber({
           de: `sistema@${DOMINIO}`, deNome: 'Sistema de Correio', assunto: `Mensagem não entregue: ${m.assunto || '(sem assunto)'}`, devolvida: true,
           texto: `Não foi possível entregar a sua mensagem para ${m.para}, porque esse endereço não existe.\n\nConfira se o endereço foi digitado certinho, letra por letra, com o @ e os pontos no lugar certo.`,

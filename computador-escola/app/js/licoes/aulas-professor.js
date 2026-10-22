@@ -56,5 +56,13 @@ window.CE = window.CE || {};
       await CE.api.chamar('aulas:salvar', nova);
       return CE.aulasProfessor.carregar();
     },
+    async gravar(aula) {
+      await CE.api.chamar('aulas:gravar', aula);
+      return CE.aulasProfessor.carregar();
+    },
+    async apagar(id) {
+      await CE.api.chamar('aulas:apagar', id);
+      return CE.aulasProfessor.carregar();
+    },
   };
 })();

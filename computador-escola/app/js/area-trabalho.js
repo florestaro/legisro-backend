@@ -152,6 +152,7 @@ window.CE = window.CE || {};
 
   CE.sairDoSistema = async function () {
     CE.janelas.fecharTodas();
+    await CE.sessao.aguardarGravacoes();
     if (CE.config) CE.config.reiniciar();
     if (CE.sala) CE.sala.parar();
     CE.pendrive.reiniciar();
@@ -162,6 +163,22 @@ window.CE = window.CE || {};
     CE.sessao.usuario = null;
     CE.mostrarLogin();
   };
+
+  // A conta foi aberta em outro computador (ou removida pelo instrutor): este computador sai dela e explica o porquê.
+  let saindoPorPerda = false;
+  CE.ouvir('sessao:perdida', async ({ motivo }) => {
+    if (saindoPorPerda || !CE.sessao.usuario) return;
+    saindoPorPerda = true;
+    try {
+      await CE.sairDoSistema();
+      const fundo = CE.el('div', { class: 'dialogo-fundo', 'data-sessao-perdida': '' },
+        CE.el('div', { class: 'dialogo' },
+          CE.el('p', {}, `🔒 ${motivo}`),
+          CE.el('p', {}, 'Para continuar, é só entrar de novo.'),
+          CE.el('div', { class: 'dialogo-botoes' }, CE.el('button', { class: 'botao', onclick: () => fundo.remove() }, 'OK'))));
+      document.body.append(fundo);
+    } finally { saindoPorPerda = false; }
+  });
 
   document.addEventListener('DOMContentLoaded', ligarEventosFixos);
 })();

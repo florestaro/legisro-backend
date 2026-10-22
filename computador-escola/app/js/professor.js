@@ -312,17 +312,28 @@ window.CE = window.CE || {};
     const aprovada = nota == null || nota >= CE.curso.NOTA_MINIMA;
     encerrar();
     if (terminada.especial) { await concluirEspecial(terminada, nota); return; }
-    await CE.sessao.atualizarProgresso((p) => {
-      p.licoes = p.licoes || {};
-      const antes = p.licoes[terminada.id] || { vezes: 0 };
-      const jaAprovada = antes.concluida;
-      p.licoes[terminada.id] = {
-        concluida: jaAprovada || aprovada,
-        nota: jaAprovada && antes.nota != null && (nota == null || antes.nota > nota) ? antes.nota : nota,
-        vezes: antes.vezes + 1,
-        em: Date.now(),
-      };
-    });
+    // Se a gravação falhar (sem conexão com o instrutor, por exemplo), a aula não se perde: o aluno tenta de novo.
+    for (;;) {
+      try {
+        await CE.sessao.atualizarProgresso((p) => {
+          p.licoes = p.licoes || {};
+          const antes = p.licoes[terminada.id] || { vezes: 0 };
+          const jaAprovada = antes.concluida;
+          p.licoes[terminada.id] = {
+            concluida: jaAprovada || aprovada,
+            nota: jaAprovada && antes.nota != null && (nota == null || antes.nota > nota) ? antes.nota : nota,
+            vezes: antes.vezes + 1,
+            em: Date.now(),
+          };
+        });
+        break;
+      } catch (erro) {
+        await new Promise((tentar) => $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao reprovada' },
+          CE.el('div', { class: 'prof-titulo' }, `${terminada.icone} ${terminada.titulo}`),
+          CE.el('p', { class: 'prof-texto' }, `Você terminou a aula, mas não consegui salvar: ${erro.message}`),
+          CE.el('div', { class: 'prof-botoes' }, CE.el('button', { class: 'botao', 'data-acao': 'tentar-salvar-aula', onclick: tentar }, 'Tentar de novo')))));
+      }
+    }
     if (!aprovada) {
       const texto = `Sua nota foi ${nota}%. Para passar, precisa de pelo menos ${CE.curso.NOTA_MINIMA}%. Vamos refazer a aula com calma? Você consegue!`;
       $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao reprovada' },

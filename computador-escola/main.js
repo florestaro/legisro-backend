@@ -45,7 +45,7 @@ function tratar(canal, funcao) {
     try {
       return { ok: true, valor: await funcao(...args) };
     } catch (erro) {
-      return { ok: false, erro: erro.message };
+      return { ok: false, erro: erro.message, semSessao: !!erro.semSessao };
     }
   });
 }
