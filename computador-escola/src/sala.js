@@ -122,7 +122,7 @@ function criarSala({ pastaDados, canais }) {
           }
           somar(daConta, 1); somar(ip, 1);
         }
-        const antes = s.usuario;
+        const antes = s.usuario, versaoAntes = s.versaoSenha;
         try {
           const valor = await tratador(s, ...args);
           // Um aluno só fica dentro em um computador: entrar em outro encerra a sessão do anterior.
@@ -138,7 +138,7 @@ function criarSala({ pastaDados, canais }) {
         } finally {
           if (canal === 'sessao:entrar') { somar(daConta, -1); somar(ip, -1); }
         }
-        if (s.usuario !== antes) guardarSessoes();
+        if (s.usuario !== antes || s.versaoSenha !== versaoAntes) guardarSessoes();
       });
     });
     servidorHttp.on('error', (e) => { estado = { conectado: false, erro: e.code === 'EADDRINUSE' ? 'A porta da sala já está sendo usada neste computador.' : e.message }; });

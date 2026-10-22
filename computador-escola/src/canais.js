@@ -13,6 +13,7 @@ function criarCanais(dados) {
   function exigirSessao(s) {
     if (!s.usuario) throw erroSemSessao(s.motivo || 'Ninguém entrou no sistema.');
     const versao = dados.versaoSenha(s.usuario.id);
+    if (versao && !s.versaoSenha) s.versaoSenha = versao; // sessão guardada por uma versão anterior do programa
     const motivo = !versao ? 'Esta conta foi removida pelo instrutor.'
       : s.versaoSenha && s.versaoSenha !== versao ? 'A senha desta conta foi trocada. Entre de novo com a senha nova.' : null;
     if (motivo) {
@@ -62,6 +63,7 @@ function criarCanais(dados) {
   const LIMITE_ANEXOS = 10 * 1024 * 1024;
   // A caixa inteira vai pela rede a cada gravação (limite de 25 MB): uma caixa quase cheia não recebe mais nada.
   const LIMITE_CAIXA = 20 * 1024 * 1024;
+  const CAIXA_CHEIA = 'Sua caixa de e-mail está cheia (mais de 20 MB). Apague de vez as mensagens com anexos que não usa mais (mova para a Lixeira e clique em Esvaziar a Lixeira).';
   function salvarAulas(lista) {
     if (!Array.isArray(lista) || lista.length > 300) throw new Error('Lista de aulas inválida.');
     if (JSON.stringify(lista).length > 2 * 1024 * 1024) throw new Error('As aulas ficaram grandes demais.');
@@ -129,6 +131,10 @@ function criarCanais(dados) {
         delete valor.apagadas;
         const chegaram = (guardada && Array.isArray(guardada.mensagens) ? guardada.mensagens : []).filter((m) => m && !conhecidas.has(m.id) && !apagadas.has(m.id));
         if (chegaram.length) valor = { ...valor, mensagens: valor.mensagens.concat(chegaram) };
+        // A caixa não passa do limite por nenhum caminho (também pelo próprio computador do instrutor):
+        // uma gravação que faria a caixa crescer além dele é recusada (as que diminuem a caixa sempre passam).
+        const tamanho = JSON.stringify(valor).length;
+        if (tamanho > LIMITE_CAIXA && tamanho > (guardada ? JSON.stringify(guardada).length : 0) + 4096) throw new Error(CAIXA_CHEIA);
         dados.salvar(arquivo, valor);
         anotarEndereco(dono, valor.conta);
         return true;
@@ -166,7 +172,7 @@ function criarCanais(dados) {
         assunto: String(mensagem.assunto || '').slice(0, 200), texto: String(mensagem.texto || '').slice(0, 20000), anexos,
       };
       if (JSON.stringify(caixa).length + JSON.stringify(recebida).length > LIMITE_CAIXA) {
-        throw new Error(`A caixa de e-mail de ${caixa.conta.nome} está cheia. Peça para apagar de vez as mensagens antigas da Lixeira.`);
+        throw new Error(`A caixa de e-mail de ${caixa.conta.nome} está cheia. Peça para apagar de vez as mensagens antigas com anexos.`);
       }
       caixa.mensagens = (caixa.mensagens || []).concat(recebida);
       dados.salvar(`email-${dono.id}`, caixa);

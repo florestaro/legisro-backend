@@ -358,11 +358,14 @@ window.CE = window.CE || {};
   // Grava o resultado da aula. Se falhar (sem conexão com o instrutor, por exemplo), a aula não se perde: aparece
   // "Tentar de novo" até conseguir. Devolve false se o aluno começou outra aula nesse meio-tempo.
   async function gravarComNovaTentativa(terminada, gravar) {
+    const dono = CE.sessao.usuario && CE.sessao.usuario.id;
+    const outroAluno = () => !CE.sessao.usuario || CE.sessao.usuario.id !== dono;
     for (;;) {
       try {
         await gravar();
-        return true;
+        return !outroAluno();
       } catch (erro) {
+        if (outroAluno()) return false; // quem fez a aula já saiu: nada aparece (nem grava) para o próximo aluno
         if (licao) { CE.avisar(`⚠️ Não consegui salvar a aula "${terminada.titulo}": ${erro.message}`); return false; }
         await new Promise((tentar) => {
           const botao = CE.el('button', { class: 'botao', 'data-acao': 'tentar-salvar-aula', onclick: () => { botao.disabled = true; botao.textContent = 'Salvando…'; tentar(); } }, 'Tentar de novo');
@@ -371,7 +374,7 @@ window.CE = window.CE || {};
             CE.el('p', { class: 'prof-texto' }, `Você terminou a aula, mas não consegui salvar: ${erro.message}`),
             CE.el('div', { class: 'prof-botoes' }, botao)));
         });
-        if (licao) return false;
+        if (licao || outroAluno()) return false;
       }
     }
   }

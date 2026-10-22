@@ -75,7 +75,10 @@
     largura: 1000,
     altura: 620,
     abrir(corpo, janela) {
-      const chave = `email:${CE.sessao.usuario.id}`;
+      const dono = CE.sessao.usuario.id;
+      const chave = `email:${dono}`;
+      // Se quem abriu o Correio já saiu (e outra pessoa entrou), nada mais é lido ou gravado nesta caixa.
+      const doDono = () => { if (!CE.sessao.usuario || CE.sessao.usuario.id !== dono) throw new Error('Quem abriu o Correio já saiu.'); };
       let caixa = null;
       let pasta = 'entrada';
       let aberta = null;
@@ -89,6 +92,7 @@
       // Antes de gravar, junta as mensagens que colegas mandaram nesse meio-tempo (o computador do instrutor
       // também guarda as que chegarem durante a gravação, para nenhuma se perder). Sair do sistema espera a gravação.
       const gravar = () => CE.sessao.registrarGravacao((async () => {
+        doDono();
         if (caixa.conta) (await buscarNovas()).forEach((m) => { if (!caixa.mensagens.some((x) => x.id === m.id)) caixa.mensagens.push(m); });
         const enviando = apagadas;
         await CE.api.chamar('dados:salvar', chave, { ...caixa, apagadas: enviando });
@@ -325,24 +329,24 @@
       // Entrega: colegas recebem de verdade; contatos de treino respondem; endereço inexistente volta com aviso.
       async function entregar(m) {
         const bot = CONTATOS_TREINO[m.para];
+        // As respostas de treino chegam depois de alguns segundos; sair do sistema espera por elas.
+        const depois = (ms, f) => new Promise((r) => setTimeout(r, ms)).then(f);
         if (bot) {
-          setTimeout(async () => {
-            const r = bot.responder(m);
-            await receber({ de: m.para, deNome: bot.nome, assunto: r.assunto, texto: r.texto });
-          }, 2500);
+          await depois(2500, () => { const r = bot.responder(m); return receber({ de: m.para, deNome: bot.nome, assunto: r.assunto, texto: r.texto }); });
           return;
         }
         const resultado = await CE.api.chamar('email:entregar', { para: m.para, assunto: m.assunto, texto: m.texto, anexos: m.anexos }).catch((e) => ({ erro: e.message }));
         if (resultado.entregue) { CE.emitir('email:entregue-colega', { para: m.para, nome: resultado.nome }); return; }
         // Falha na rede (ou anexo grande demais): não dá para saber se chegou, então não diz que o endereço não existe.
         if (resultado.erro) { CE.avisar(`⚠️ A mensagem para ${m.para} pode não ter sido entregue: ${resultado.erro}`); return; }
-        setTimeout(() => receber({
+        await depois(1500, () => receber({
           de: `sistema@${DOMINIO}`, deNome: 'Sistema de Correio', assunto: `Mensagem não entregue: ${m.assunto || '(sem assunto)'}`, devolvida: true,
           texto: `Não foi possível entregar a sua mensagem para ${m.para}, porque esse endereço não existe.\n\nConfira se o endereço foi digitado certinho, letra por letra, com o @ e os pontos no lugar certo.`,
-        }), 1500);
+        }));
       }
 
       async function receber(dados) {
+        if (!CE.sessao.usuario || CE.sessao.usuario.id !== dono) return;
         try {
           caixa = await ler();
           caixa.mensagens.push({ id: `${Date.now()}${Math.random().toString(16).slice(2, 6)}`, pasta: 'entrada', lida: false, em: Date.now(), para: caixa.conta.endereco, anexos: [], ...dados });

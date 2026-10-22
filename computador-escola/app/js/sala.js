@@ -58,15 +58,19 @@ window.CE = window.CE || {};
 
   // Sem resposta do instrutor por uns 20 s (3 tentativas), a pausa sai sozinha: o aluno não fica com a tela travada.
   let falhasSeguidas = 0;
+  let geracao = 0; // muda ao entrar e ao sair: resposta de uma presença antiga é ignorada
   async function avisar() {
     if (!CE.sessao.usuario) return;
+    const minha = geracao;
     try {
       const r = await CE.api.chamar('sala:presenca', atividade());
+      if (minha !== geracao || !CE.sessao.usuario) return;
       falhasSeguidas = 0;
       marcarRede(true);
       pausar(!!r.pausada);
       mostrarMensagens(r.mensagens || (r.mensagem ? [r.mensagem] : []));
     } catch (e) {
+      if (minha !== geracao) return;
       marcarRede(false, e.message);
       if (++falhasSeguidas >= 3) pausar(false);
     }
@@ -75,6 +79,7 @@ window.CE = window.CE || {};
   CE.sala = {
     async iniciar() {
       clearInterval(timer);
+      geracao++;
       const st = await CE.api.chamar('sala:status').catch(() => ({ modo: 'local' }));
       const icone = $('status-rede');
       if (icone) {
@@ -86,7 +91,7 @@ window.CE = window.CE || {};
       timer = setInterval(avisar, 8000);
     },
     // Ao sair: a pausa e a mensagem do instrutor não ficam na frente da tela de entrada.
-    parar() { clearInterval(timer); pausar(false); document.querySelectorAll('.sala-mensagem').forEach((d) => d.remove()); },
+    parar() { clearInterval(timer); geracao++; pausar(false); document.querySelectorAll('.sala-mensagem').forEach((d) => d.remove()); },
     avisarAgora: avisar,
   };
 

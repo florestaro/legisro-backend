@@ -150,26 +150,27 @@ window.CE = window.CE || {};
     CE.professor.iniciar();
   };
 
-  let saindo = false;
-  CE.sairDoSistema = async function () {
-    if (saindo) return;
-    saindo = true;
+  // Uma saída de cada vez: quem chamar durante a saída espera a mesma.
+  let saida = null;
+  CE.sairDoSistema = function () {
+    if (saida) return saida;
     // Enquanto as últimas gravações terminam, nada mais pode ser aberto na conta de quem está saindo.
     const tela = CE.el('div', { class: 'tela-saindo', 'data-saindo': '' }, CE.el('p', {}, '💾 Salvando e saindo…'));
     document.body.append(tela);
-    try {
-      await sair();
-    } finally {
-      tela.remove();
-      saindo = false;
-    }
+    saida = sair().finally(() => { tela.remove(); saida = null; });
+    return saida;
   };
+  // Caixas abertas pelos programas (Localizar, Anexar, perguntas...) não ficam na tela de entrada.
+  function fecharDialogos() {
+    CE.fecharDialogos();
+    document.querySelectorAll('.dialogo-fundo:not([data-sessao-perdida])').forEach((d) => d.remove());
+  }
   async function sair() {
     CE.janelas.fecharTodas();
-    CE.fecharDialogos();
+    fecharDialogos();
     await CE.sessao.aguardarGravacoes();
     CE.janelas.fecharTodas();
-    CE.fecharDialogos();
+    fecharDialogos();
     if (CE.config) CE.config.reiniciar();
     if (CE.sala) CE.sala.parar();
     CE.pendrive.reiniciar();
@@ -188,6 +189,7 @@ window.CE = window.CE || {};
     saindoPorPerda = true;
     try {
       await CE.sairDoSistema();
+      if (document.querySelector('[data-sessao-perdida]')) return;
       const fundo = CE.el('div', { class: 'dialogo-fundo', 'data-sessao-perdida': '' },
         CE.el('div', { class: 'dialogo' },
           CE.el('p', {}, `🔒 ${motivo}`),

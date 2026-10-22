@@ -75,11 +75,12 @@ window.CE = window.CE || {};
     // Confere de novo depois de cada espera: uma gravação pode puxar outra (gravar a caixa e depois entregar o e-mail).
     async aguardarGravacoes(limite = 12000) {
       const ate = Date.now() + limite;
-      for (let volta = 0; volta < 5 && Date.now() < ate; volta++) {
-        const tudo = Promise.all([filaProgresso, filaArquivos, ...[...pendentes].map((p) => p.catch(() => {}))]);
+      for (let volta = 0; volta < 8 && Date.now() < ate; volta++) {
+        const progresso = filaProgresso, arquivos = filaArquivos;
+        const tudo = Promise.all([progresso, arquivos, ...[...pendentes].map((p) => p.catch(() => {}))]);
         await Promise.race([tudo, new Promise((r) => setTimeout(r, ate - Date.now()))]);
         await new Promise((r) => setTimeout(r, 0));
-        if (!pendentes.size) return;
+        if (!pendentes.size && progresso === filaProgresso && arquivos === filaArquivos) return;
       }
     },
 

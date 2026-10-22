@@ -87,8 +87,10 @@ function criarUsuario({ nome, segredo, papel = 'aluno', turma = '', avatar = '�
 async function entrar(id, segredo) {
   const usuario = ler('usuarios', []).find((u) => u.id === id);
   if (!usuario || !(await confere(segredo, usuario))) throw new Error('Senha incorreta. Tente de novo.');
-  // O instrutor pode ter removido a conta enquanto a senha era conferida.
-  if (!ler('usuarios', []).some((u) => u.id === id)) throw new Error('Usuário não encontrado.');
+  // O instrutor pode ter removido a conta (ou trocado a senha) enquanto a senha era conferida.
+  const agora = ler('usuarios', []).find((u) => u.id === id);
+  if (!agora) throw new Error('Usuário não encontrado.');
+  if (agora.hash !== usuario.hash) throw new Error('Senha incorreta. Tente de novo.');
   return publico(usuario);
 }
 
