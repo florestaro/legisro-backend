@@ -131,9 +131,15 @@ window.CE = window.CE || {};
     // "seletor" também pode ser uma lista em ordem de preferência: vale o primeiro que estiver visível na tela
     // (ex.: primeiro o item do menu, se o menu já abriu; senão, o botão que abre o menu).
     const opcoes = [].concat(seletor);
+    // Na lista, prefere o que está na tela e não está escondido atrás de uma janela.
+    const descoberto = (e) => {
+      const r = e.getBoundingClientRect();
+      const topo = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return !!topo && (topo === e || e.contains(topo));
+    };
     const aplicar = () => {
       const visiveis = (s) => [...document.querySelectorAll(s)].filter((e) => e.getClientRects().length);
-      const escolhido = opcoes.find((s) => visiveis(s).length) || opcoes[opcoes.length - 1];
+      const escolhido = (opcoes.length > 1 && opcoes.find((s) => visiveis(s).some(descoberto))) || opcoes.find((s) => visiveis(s).length) || opcoes[opcoes.length - 1];
       document.querySelectorAll('.destaque').forEach((e) => { if (!e.matches(escolhido)) e.classList.remove('destaque'); });
       const alvos = [...document.querySelectorAll(escolhido)];
       alvos.forEach((e) => e.classList.add('destaque'));
@@ -262,10 +268,12 @@ window.CE = window.CE || {};
       const estaLicao = licao, esteIndice = indicePasso;
       const eventos = [].concat(passo.espera);
       let cumprido = false;
-      const cumprir = (dados, evento) => {
+      // "quando" é a hora em que o aluno fez a ação (no caso das ações guardadas, é a hora delas, não a de agora:
+      // assim uma segunda ação rápida, feita logo depois, ainda vale para o passo seguinte).
+      const cumprir = (dados, evento, quando = performance.now()) => {
         if (cumprido || (passo.se && !passo.se(dados, evento))) return;
         cumprido = true;
-        desde = performance.now();
+        desde = quando;
         if (pararDeOuvir) { pararDeOuvir(); pararDeOuvir = null; }
         if (passo.aoCumprir) passo.aoCumprir(dados, evento);
         // Um pequeno intervalo deixa o aluno ver o resultado do que fez antes do próximo passo.
@@ -275,7 +283,7 @@ window.CE = window.CE || {};
       const desligar = eventos.map((evento) => CE.ouvir(evento, (dados) => cumprir(dados, evento)));
       pararDeOuvir = () => desligar.forEach((f) => f());
       // O aluno pode ter feito a tarefa antes de o passo aparecer (durante a troca de passo): vale também.
-      recentes.filter((r) => r.t > desde && eventos.includes(r.nome)).forEach((r) => cumprir(r.dados, r.nome));
+      recentes.filter((r) => r.t > desde && eventos.includes(r.nome)).forEach((r) => cumprir(r.dados, r.nome, r.t));
       timerDica = setTimeout(mostrarDica, TEMPO_PARA_DICA);
     }
   }

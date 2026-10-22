@@ -304,6 +304,13 @@
           const caixa = CE.el('div', { class: 'colunas', style: `column-count: ${n}` });
           grupo[0].before(caixa);
           caixa.append(...grupo);
+          // Mudar os parágrafos de lugar apaga a seleção: seleciona de novo o texto das colunas.
+          const faixa = document.createRange();
+          faixa.selectNodeContents(caixa);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(faixa);
+          ultimaFaixa = faixa.cloneRange();
         }
         avisarFormatacao('colunas', n);
         seletorColunas.value = '';

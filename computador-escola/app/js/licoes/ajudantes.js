@@ -21,9 +21,10 @@ window.CE = window.CE || {};
       mouse: 'duplo',
       espera: 'app:aberto',
       se: (d) => d.app === id,
-      destacar: `.icone[data-icone="${id}"]`,
+      // Se o ícone estiver escondido atrás de uma janela, a seta vai para o botão Iniciar e depois para o programa no menu.
+      destacar: [`#menu-iniciar:not([hidden]) .menu-item[data-app="${id}"]`, `.icone[data-icone="${id}"]`, '#botao-iniciar'],
       jaFeito: () => CE.janelas.estaAberta(id),
-      dica: 'O clique duplo precisa ser rápido: clique-clique! Se não abrir, tente de novo um pouco mais rápido.',
+      dica: 'O clique duplo precisa ser rápido: clique-clique! Se o ícone estiver escondido atrás de uma janela, clique em "Iniciar" (lá embaixo, à esquerda) e escolha o programa na lista.',
       ...extra,
     }),
 
