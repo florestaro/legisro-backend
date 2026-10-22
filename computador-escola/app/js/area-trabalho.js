@@ -136,6 +136,8 @@ window.CE = window.CE || {};
 
   CE.sairDoSistema = async function () {
     CE.janelas.fecharTodas();
+    CE.pendrive.reiniciar();
+    CE.areaTransferenciaArquivos = null;
     CE.professor.parar();
     await CE.api.chamar('sessao:sair');
     CE.sessao.usuario = null;

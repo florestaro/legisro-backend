@@ -45,10 +45,11 @@ window.CE = window.CE || {};
       ...extra,
     }),
 
-    // Começar um documento novo no Editor (clicando em "Novo").
-    editorNovo: () => ({
-      texto: 'Clique no botão "Novo", lá em cima no Editor, para começar uma folha em branco. Se ele perguntar se quer salvar o documento anterior, clique em "Não".',
-      mouse: 'esquerdo', espera: 'editor:novo', destacar: naJanela('editor', '[data-comando="novo"]'),
+    // Começar um documento novo no Editor: em branco ou a partir de um modelo (carta, curriculo, requerimento, recibo).
+    editorNovo: (modelo = 'branco', nomeModelo = 'Documento em branco') => ({
+      texto: `Clique no botão "Novo", lá em cima no Editor, e depois em "${nomeModelo}". Se ele perguntar se quer salvar o documento anterior, clique em "Não".`,
+      mouse: 'esquerdo', espera: 'editor:novo', se: (d) => d.modelo === modelo,
+      destacar: [naJanela('editor', `[data-modelo="${modelo}"]`), naJanela('editor', '[data-comando="novo"]')],
     }),
 
     editorSalvar: (nome, se) => ({

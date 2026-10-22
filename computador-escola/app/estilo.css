@@ -737,3 +737,66 @@ button.bandeja-item:hover { background: rgba(255,255,255,.15); }
 .dig-nivelamento { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #eef6ff; border: 2px dashed #7fb2e5; border-radius: 8px; text-align: left; }
 .dig-nivelamento:hover { background: var(--azul-claro); border-color: var(--azul); }
 .dig-nivelamento small { color: var(--texto-suave); font-size: 13px; }
+
+/* ---------- Arquivos: pastas, pen drive, arrastar ---------- */
+.arq-lateral { overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.arq-pasta.sub { font-size: 14px; }
+.arq-pasta.soltar-aqui, .arq-item.soltar-aqui { background: #cce4f7 !important; outline: 2px dashed var(--azul); }
+.arq-ejetar { margin: 2px 0 8px 22px; border: 1px solid #c8c8c8; background: #fff; border-radius: 6px; font-size: 13px; padding: 4px 8px; text-align: left; }
+.arq-ejetar:hover { background: #fff3cd; }
+.arq-caminho { display: flex; align-items: center; gap: 8px; }
+.arq-subir { border: 1px solid #ddd; background: #fff; border-radius: 4px; padding: 2px 8px; }
+.arq-busca-grupo { margin-left: auto; }
+.arq-busca { width: 220px; padding: 6px 10px; border: 1px solid #c8c8c8; border-radius: 16px; font-size: 14px; }
+.arq-item.recortado { opacity: .5; }
+.arq-nome small { color: var(--texto-suave); font-size: 12px; }
+#status-pendrive.conectado { background: rgba(255,255,255,.18); }
+
+/* ---------- Editor: tabelas, imagens, modelos, ortografia, impressão ---------- */
+.editor-pagina table { border-collapse: collapse; margin: 8px 0; min-width: 50%; }
+.editor-pagina td, .ed-previa td { border: 1px solid #777; padding: 4px 10px; min-width: 60px; vertical-align: top; }
+.editor-pagina img, .ed-previa img { max-width: 320px; height: auto; }
+.editor-pagina hr { border: none; border-top: 2px solid #999; margin: 10px 0; }
+.campo-modelo { background: #fff3b0; border-radius: 2px; }
+.erro-ortografia { text-decoration: underline wavy #e81123; text-decoration-skip-ink: none; cursor: pointer; }
+.ed-novo { position: relative; }
+.ed-menu { position: absolute; top: 100%; left: 0; z-index: 20; background: #fff; border: 1px solid var(--borda); box-shadow: var(--sombra); min-width: 230px; padding: 4px 0; }
+.ed-menu .menu-item { font-size: 15px; padding: 8px 14px; }
+.ed-menu .menu-item:hover { background: var(--azul-claro); }
+.dialogo.largo { width: min(760px, 94vw); }
+.ed-galeria { display: flex; flex-wrap: wrap; gap: 8px; max-height: 220px; overflow: auto; }
+.ed-galeria-item { width: 96px; display: grid; gap: 2px; justify-items: center; padding: 6px; border: 2px solid #dde3ea; border-radius: 8px; background: #fff; }
+.ed-galeria-item:hover { border-color: var(--azul); }
+.ed-galeria-item img { width: 80px; height: 60px; object-fit: contain; }
+.ed-galeria-item small { font-size: 11px; max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ed-galeria-item.figura { font-size: 40px; width: 64px; }
+.ed-imprimir { display: grid; grid-template-columns: 1fr 220px; gap: 16px; }
+.ed-previa { height: 340px; overflow: hidden; background: #e6e6e6; padding: 12px; border-radius: 6px; }
+.ed-previa .editor-pagina { transform: scale(.42); transform-origin: top left; width: 238%; min-height: 0; pointer-events: none; }
+.ed-imprimir-opcoes { display: grid; gap: 10px; align-content: start; }
+.ed-imprimir-opcoes label { display: grid; gap: 4px; font-size: 14px; }
+.ed-dica { font-size: 13px; color: var(--texto-suave); margin: 0 !important; }
+/* ---------- Planilha ---------- */
+.janela-corpo.planilha { display: flex; flex-direction: column; overflow: hidden; }
+.pl-barra { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-bottom: 1px solid #ddd; background: #fff; flex: none; }
+.pl-nome { width: 90px; padding: 4px 6px; border: 1px solid #c8c8c8; font: 14px var(--fonte); text-align: center; }
+.pl-fx-rotulo { font-style: italic; color: var(--texto-suave); font-weight: 700; padding: 0 4px; }
+.pl-formula { flex: 1; padding: 4px 8px; border: 1px solid #c8c8c8; font: 15px Consolas, "Courier New", monospace; user-select: text; }
+.pl-formula:focus, .pl-nome:focus { outline: 2px solid var(--azul); }
+.pl-grade { position: relative; flex: 1; overflow: auto; outline: none; background: #fff; }
+.pl-tabela { border-collapse: collapse; table-layout: fixed; font-size: 14px; user-select: none; }
+.pl-tabela th { background: #f3f3f3; color: #444; font-weight: 500; border: 1px solid #d4d4d4; font-size: 13px; position: relative; }
+.pl-tabela thead th { position: sticky; top: 0; z-index: 3; height: 24px; }
+.pl-cab-lin { position: sticky; left: 0; z-index: 2; text-align: center; }
+.pl-canto { position: sticky; left: 0; z-index: 4 !important; }
+.pl-tabela th.marcada { background: #d3e3fd; color: #0b57d0; font-weight: 700; }
+.pl-tabela td { border: 1px solid #e2e2e2; height: 25px; padding: 0 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: cell; }
+.pl-tabela td.numero { text-align: right; }
+.pl-tabela td.erro { color: var(--vermelho); text-align: center; }
+.pl-tabela td.selecionada { background-color: #e8f0fe !important; }
+.pl-tabela td.ativa { outline: 2px solid #0b57d0; outline-offset: -2px; background-color: #fff !important; }
+.pl-tabela td.preencher { outline: 1px dashed #0b57d0; outline-offset: -2px; }
+.pl-redim { position: absolute; right: -3px; top: 0; bottom: 0; width: 7px; cursor: col-resize; z-index: 5; }
+.pl-alca { position: absolute; width: 9px; height: 9px; background: #0b57d0; border: 1px solid #fff; cursor: crosshair; z-index: 4; }
+.pl-edicao { position: absolute; z-index: 6; border: 2px solid #0b57d0; padding: 0 4px; font: 14px var(--fonte); box-shadow: 0 2px 6px rgba(0,0,0,.2); outline: none; user-select: text; }
+.pl-fx .ed-menu { min-width: 340px; }

@@ -4,6 +4,25 @@ window.CE = window.CE || {};
 (function () {
   let filaProgresso = Promise.resolve();
 
+  const novoId = () => String(Date.now()) + Math.random().toString(16).slice(2, 8);
+  const juntar = (pasta, nome) => (pasta ? pasta + '/' : '') + nome;
+  const dentroDe = (pasta, caminho) => (pasta || '') === caminho || (pasta || '').startsWith(caminho + '/');
+  const mesmoLugar = (a, local, pasta) => (a.local || 'pc') === local && (a.pasta || '') === pasta;
+  // Se já existe um item com o mesmo nome no destino, usa "nome (2)", "nome (3)"...
+  function nomeLivre(lista, item, local, pasta) {
+    const ocupado = (n) => lista.some((x) => x !== item && !x.naLixeira && x.tipo === item.tipo && mesmoLugar(x, local, pasta) && x.nome.toLowerCase() === n.toLowerCase());
+    if (!ocupado(item.nome)) return item.nome;
+    for (let i = 2; ; i++) if (!ocupado(`${item.nome} (${i})`)) return `${item.nome} (${i})`;
+  }
+  // Ao renomear ou mover uma pasta, tudo o que está dentro dela muda de caminho junto.
+  function trocarCaminho(lista, localAntigo, antigo, localNovo, novo) {
+    lista.filter((x) => (x.local || 'pc') === localAntigo && dentroDe(x.pasta, antigo)).forEach((x) => {
+      x.local = localNovo;
+      x.pasta = novo + (x.pasta || '').slice(antigo.length);
+    });
+  }
+  CE.caminhos = { juntar, dentroDe };
+
   CE.sessao = {
     usuario: null,
 
@@ -32,39 +51,108 @@ window.CE = window.CE || {};
       await CE.api.chamar('dados:salvar', `arquivos:${CE.sessao.usuario.id}`, lista);
     },
 
-    // Salva (ou substitui, se o nome já existir) um arquivo do aluno.
-    async salvarArquivo({ nome, tipo, conteudo }) {
+    // Cada item tem "local" ('pc' ou 'pendrive') e "pasta" (o caminho dentro do local, '' = raiz).
+    // Pastas também são itens, com tipo 'pasta'. O caminho de uma pasta é pasta + '/' + nome.
+    async salvarArquivo({ nome, tipo, conteudo, local = 'pc', pasta = '' }) {
       const lista = await CE.sessao.arquivos();
-      const existente = lista.find((a) => !a.naLixeira && a.nome.toLowerCase() === nome.toLowerCase() && a.tipo === tipo);
-      const arquivo = existente || { id: String(Date.now()) + Math.random().toString(16).slice(2, 6), nome, tipo, criadoEm: Date.now() };
+      const existente = lista.find((a) => !a.naLixeira && mesmoLugar(a, local, pasta) && a.nome.toLowerCase() === nome.toLowerCase() && a.tipo === tipo);
+      const arquivo = existente || { id: novoId(), nome, tipo, local, pasta, criadoEm: Date.now() };
       Object.assign(arquivo, { nome, conteudo, alteradoEm: Date.now() });
       if (!existente) lista.push(arquivo);
       await CE.sessao.gravarArquivos(lista);
-      CE.emitir('arquivo:salvo', { nome, tipo, novo: !existente, conteudo });
+      CE.emitir('arquivo:salvo', { nome, tipo, novo: !existente, conteudo, local, pasta });
       return arquivo;
     },
 
-    async alterarArquivo(id, alterar, evento) {
+    async criarPasta(nome, local = 'pc', pasta = '') {
+      nome = String(nome || '').trim().replace(/[\\/]/g, '-');
+      if (!nome) throw new Error('Escreva um nome para a pasta.');
+      const lista = await CE.sessao.arquivos();
+      if (lista.some((a) => !a.naLixeira && a.tipo === 'pasta' && mesmoLugar(a, local, pasta) && a.nome.toLowerCase() === nome.toLowerCase())) {
+        throw new Error('Já existe uma pasta com esse nome aqui.');
+      }
+      const item = { id: novoId(), nome, tipo: 'pasta', local, pasta, criadoEm: Date.now(), alteradoEm: Date.now() };
+      lista.push(item);
+      await CE.sessao.gravarArquivos(lista);
+      CE.emitir('pasta:criada', { nome, local, pasta, caminho: juntar(pasta, nome) });
+      return item;
+    },
+
+    // Garante que exista uma pasta (usado pelos Downloads). Devolve o caminho dela.
+    async garantirPasta(nome, local = 'pc', pasta = '') {
+      const lista = await CE.sessao.arquivos();
+      if (!lista.some((a) => !a.naLixeira && a.tipo === 'pasta' && mesmoLugar(a, local, pasta) && a.nome === nome)) {
+        await CE.sessao.criarPasta(nome, local, pasta);
+      }
+      return juntar(pasta, nome);
+    },
+
+    async alterarArquivo(id, alterar, evento, dadosExtras = {}) {
       const lista = await CE.sessao.arquivos();
       const arquivo = lista.find((a) => a.id === id);
       if (!arquivo) return;
       const resultado = alterar(arquivo, lista);
       await CE.sessao.gravarArquivos(Array.isArray(resultado) ? resultado : lista);
-      CE.emitir(evento, { nome: arquivo.nome, tipo: arquivo.tipo });
+      CE.emitir(evento, { nome: arquivo.nome, tipo: arquivo.tipo, local: arquivo.local || 'pc', pasta: arquivo.pasta || '', ...dadosExtras });
     },
 
     renomearArquivo(id, novoNome) {
-      return CE.sessao.alterarArquivo(id, (a) => { a.nome = novoNome; a.alteradoEm = Date.now(); }, 'arquivo:renomeado');
+      return CE.sessao.alterarArquivo(id, (a, lista) => {
+        if (a.tipo === 'pasta') trocarCaminho(lista, a.local || 'pc', juntar(a.pasta, a.nome), a.local || 'pc', juntar(a.pasta, novoNome));
+        a.nome = novoNome;
+        a.alteradoEm = Date.now();
+      }, 'arquivo:renomeado');
     },
-    // "Excluir" manda para a lixeira; de lá dá para restaurar ou apagar de vez.
+
+    // Mover: o arquivo (ou a pasta, com tudo dentro) vai para outro lugar.
+    moverArquivo(id, local, pasta) {
+      return CE.sessao.alterarArquivo(id, (a, lista) => {
+        const origem = juntar(a.pasta, a.nome);
+        if (a.tipo === 'pasta' && (a.local || 'pc') === local && (pasta === origem || pasta.startsWith(origem + '/'))) {
+          throw new Error('Não dá para colocar uma pasta dentro dela mesma.');
+        }
+        a.nome = nomeLivre(lista, a, local, pasta);
+        if (a.tipo === 'pasta') trocarCaminho(lista, a.local || 'pc', origem, local, juntar(pasta, a.nome));
+        a.local = local;
+        a.pasta = pasta;
+      }, 'arquivo:movido', { destinoLocal: local, destino: pasta });
+    },
+
+    // Copiar: cria uma cópia no destino (pastas são copiadas com tudo dentro).
+    copiarArquivo(id, local, pasta) {
+      return CE.sessao.alterarArquivo(id, (a, lista) => {
+        const copia = { ...a, id: novoId(), local, pasta, criadoEm: Date.now(), alteradoEm: Date.now() };
+        copia.nome = nomeLivre(lista, a, local, pasta);
+        const novos = [copia];
+        if (a.tipo === 'pasta') {
+          const origem = juntar(a.pasta, a.nome), destino = juntar(pasta, copia.nome);
+          lista.filter((x) => !x.naLixeira && (x.local || 'pc') === (a.local || 'pc') && dentroDe(x.pasta, origem)).forEach((x) => {
+            novos.push({ ...x, id: novoId(), local, pasta: destino + (x.pasta || '').slice(origem.length) });
+          });
+        }
+        lista.push(...novos);
+      }, 'arquivo:copiado', { destinoLocal: local, destino: pasta });
+    },
+
+    // "Excluir" manda para a lixeira (uma pasta vai junto com tudo o que tem dentro).
     removerArquivo(id) {
-      return CE.sessao.alterarArquivo(id, (a) => { a.naLixeira = true; a.excluidoEm = Date.now(); }, 'arquivo:removido');
+      return CE.sessao.alterarArquivo(id, (a, lista) => {
+        const agora = Date.now();
+        a.naLixeira = true; a.excluidoEm = agora; a.grupoLixeira = a.id;
+        if (a.tipo === 'pasta') {
+          const caminho = juntar(a.pasta, a.nome);
+          lista.filter((x) => !x.naLixeira && (x.local || 'pc') === (a.local || 'pc') && dentroDe(x.pasta, caminho))
+            .forEach((x) => { x.naLixeira = true; x.excluidoEm = agora; x.grupoLixeira = a.id; });
+        }
+      }, 'arquivo:removido');
     },
     restaurarArquivo(id) {
-      return CE.sessao.alterarArquivo(id, (a) => { delete a.naLixeira; delete a.excluidoEm; }, 'arquivo:restaurado');
+      return CE.sessao.alterarArquivo(id, (a, lista) => {
+        lista.filter((x) => x.grupoLixeira === a.id || x.id === a.id).forEach((x) => { delete x.naLixeira; delete x.excluidoEm; delete x.grupoLixeira; });
+      }, 'arquivo:restaurado');
     },
     apagarDeVez(id) {
-      return CE.sessao.alterarArquivo(id, (a, lista) => lista.filter((x) => x.id !== id), 'arquivo:apagado');
+      return CE.sessao.alterarArquivo(id, (a, lista) => lista.filter((x) => x.id !== id && x.grupoLixeira !== id), 'arquivo:apagado');
     },
     async esvaziarLixeira() {
       await CE.sessao.gravarArquivos((await CE.sessao.arquivos()).filter((a) => !a.naLixeira));

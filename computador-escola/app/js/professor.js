@@ -128,9 +128,14 @@ window.CE = window.CE || {};
     if (!seletor) return;
     // O elemento pode aparecer depois (ex.: botão dentro de uma janela que ainda vai abrir)
     // ou mudar de lugar (janela arrastada), então a seta é reposicionada a todo momento.
+    // "seletor" também pode ser uma lista em ordem de preferência: vale o primeiro que estiver visível na tela
+    // (ex.: primeiro o item do menu, se o menu já abriu; senão, o botão que abre o menu).
+    const opcoes = [].concat(seletor);
     const aplicar = () => {
-      document.querySelectorAll('.destaque').forEach((e) => { if (!e.matches(seletor)) e.classList.remove('destaque'); });
-      const alvos = [...document.querySelectorAll(seletor)];
+      const visiveis = (s) => [...document.querySelectorAll(s)].filter((e) => e.getClientRects().length);
+      const escolhido = opcoes.find((s) => visiveis(s).length) || opcoes[opcoes.length - 1];
+      document.querySelectorAll('.destaque').forEach((e) => { if (!e.matches(escolhido)) e.classList.remove('destaque'); });
+      const alvos = [...document.querySelectorAll(escolhido)];
       alvos.forEach((e) => e.classList.add('destaque'));
       posicionarSeta(alvos.find((e) => e.getClientRects().length));
     };
