@@ -62,10 +62,19 @@
       ]
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "perMachine": true
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Computador Escola",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "Instalar-Computador-Escola.${ext}"
     },
-    "publish": null
+    "publish": null,
+    "portable": {
+      "artifactName": "Computador-Escola-Portatil.${ext}"
+    }
   }
 }

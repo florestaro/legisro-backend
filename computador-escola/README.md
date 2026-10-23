@@ -114,7 +114,8 @@ Com um modelo, ele conversa de verdade, sempre em linguagem simples.
      https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF
    - Qwen2.5-0.5B-Instruct (arquivo `q4_k_m`, ~400 MB): mais leve, para PCs mais fracos
      https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF
-2. Copie o arquivo para a pasta **`modelos`**, ao lado do programa instalado (ou do `.exe` portátil no pen drive).
+2. Deixe o arquivo em **Downloads** ou em **Documentos** (ou na pasta **`modelos`** ao lado do `.exe` portátil, no pen
+   drive). O programa acha sozinho.
 3. Abra o programa. O ícone na barra de tarefas mostra 🧠 quando a IA está ligada (💬 = respostas prontas).
 
 > Com 4 GB de RAM, use o modelo de 1,5B ou o de 0,5B. Feche outros programas durante a aula.
@@ -124,6 +125,21 @@ para ela. Se o computador não conseguir rodar o modelo, o professor continua co
 
 **Voz:** o professor fala usando a voz do próprio Windows (no Windows 10 em português, "Microsoft Maria").
 O aluno pode desligar a voz no ícone 🔊 da barra de tarefas.
+
+## Instalar (o jeito simples)
+
+1. Baixe **Instalar-Computador-Escola.exe** na página de downloads (não precisa de conta no GitHub):
+   https://github.com/florestaro/legisro-backend/releases/tag/computador-escola
+2. Dê dois cliques no arquivo. Se aparecer "O Windows protegeu o computador", clique em **Mais informações** e depois em
+   **Executar assim mesmo** (o aviso aparece porque o programa não tem assinatura digital paga).
+3. Pronto: ele instala sozinho, sem perguntar nada e **sem precisar de senha de administrador**, cria o ícone
+   "Computador Escola" na área de trabalho e abre.
+
+Sem instalar: baixe **Computador-Escola-Portatil.exe** e abra direto (também do pen drive). Na primeira vez ele demora
+uns 30 segundos para abrir.
+
+Precisa de **Windows 10 ou 11 de 64 bits**. Para a IA, baixe o arquivo `.gguf` (veja acima) e deixe em **Downloads** ou em
+**Documentos**: o programa acha sozinho na próxima vez que abrir.
 
 ## Como gerar o instalador para Windows
 
@@ -162,7 +178,7 @@ npm run teste:sala -- 5       # o mesmo com 5 alunos
 3. Os alunos entram clicando no próprio nome.
 
 ## Onde ficam os dados
-- Versão instalada: `%APPDATA%\Computador Escola\dados`
+- Versão instalada: `%APPDATA%\Computador Escola\dados` (o programa fica em `%LOCALAPPDATA%\Programs`)
 - Versão portátil: pasta `dados` ao lado do `.exe`
 
 No modo **sozinho** (o padrão), cada computador guarda os próprios dados. No **modo sala de aula** (abaixo), tudo fica

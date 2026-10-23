@@ -117,7 +117,10 @@ app.whenReady().then(() => {
   sala.iniciar();
   criarJanela();
   // A IA carrega em segundo plano para a tela abrir rápido (CE_SEM_IA desliga, como nos testes com 21 programas abertos).
-  ia.iniciar(process.env.CE_SEM_IA ? [] : [path.join(pastaBase, 'modelos'), path.join(__dirname, 'modelos'), path.join(app.getPath('userData'), 'modelos')]);
+  // O modelo também é achado em Documentos\Computador Escola, em Documentos e em Downloads: é só baixar o arquivo .gguf.
+  const documentos = app.getPath('documents');
+  ia.iniciar(process.env.CE_SEM_IA ? [] : [path.join(pastaBase, 'modelos'), path.join(__dirname, 'modelos'), path.join(app.getPath('userData'), 'modelos'),
+    path.join(documentos, 'Computador Escola'), documentos, app.getPath('downloads')]);
 });
 
 app.on('window-all-closed', () => app.quit());
