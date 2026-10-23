@@ -65,7 +65,7 @@ function criarCanais(dados) {
   const ESCOLA_PADRAO = { nome: '', cidade: '', responsavel: '', cargo: 'Instrutor(a)', cargas: { n1: 40, n2: 40, n3: 40, digitacao1: 20, digitacao2: 20, digitacao3: 20 } };
   const dadosDaEscola = () => {
     const e = dados.ler('escola', {});
-    return { nome: e.nome || '', cidade: e.cidade || '', responsavel: e.responsavel || '', cargo: e.cargo || ESCOLA_PADRAO.cargo, cargas: { ...ESCOLA_PADRAO.cargas, ...(e.cargas || {}) } };
+    return { nome: e.nome || '', cidade: e.cidade || '', responsavel: e.responsavel || '', cargo: e.cargo || ESCOLA_PADRAO.cargo, cargas: { ...ESCOLA_PADRAO.cargas, ...(e.cargas || {}) }, trilha: e.trilha === 'completa' ? 'completa' : 'essencial' };
   };
   // A caixa inteira vai pela rede a cada gravação (limite de 25 MB): uma caixa quase cheia não recebe mais nada.
   const LIMITE_CAIXA = 20 * 1024 * 1024;
@@ -145,17 +145,18 @@ function criarCanais(dados) {
         anotarEndereco(dono, valor.conta);
         return true;
       }
-      // O que o instrutor liberou fora da sequência ("liberadas") só o instrutor muda: a gravação do próprio aluno
-      // mantém o que está guardado (e uma gravação dele feita ao mesmo tempo não desfaz a liberação).
+      // O que o instrutor liberou fora da sequência ("liberadas") e a trilha do aluno só o instrutor muda: a gravação
+      // do próprio aluno mantém o que está guardado (e uma gravação dele feita ao mesmo tempo não desfaz a mudança).
       if (arquivo.startsWith('progresso-') && s.usuario.papel !== 'instrutor' && valor && typeof valor === 'object') {
         const guardada = dados.ler(arquivo, null);
         valor = { ...valor };
-        if (guardada && guardada.liberadas) valor.liberadas = guardada.liberadas; else delete valor.liberadas;
+        ['liberadas', 'trilha'].forEach((k) => { if (guardada && guardada[k]) valor[k] = guardada[k]; else delete valor[k]; });
       }
       return dados.salvar(arquivo, valor);
     },
-    // Instrutor libera aulas fora da sequência para alunos (troca as liberações deles por estas).
-    'progresso:liberar': (s, ids, liberadas) => {
+    // Instrutor libera aulas fora da sequência para alunos (troca as liberações deles por estas). Com "trilha"
+    // ("essencial" ou "completa"; vazio = a da escola), troca também a trilha deles.
+    'progresso:liberar': (s, ids, liberadas, trilha) => {
       exigirInstrutor(s);
       const existem = new Set(dados.listarUsuarios().map((u) => u.id));
       const limpas = {};
@@ -163,6 +164,7 @@ function criarCanais(dados) {
       (Array.isArray(ids) ? ids : []).filter((id) => existem.has(id)).forEach((id) => {
         const p = dados.ler(`progresso-${id}`, { licoes: {}, digitacao: {} });
         if (Object.keys(limpas).length) p.liberadas = limpas; else delete p.liberadas;
+        if (trilha !== undefined) { if (trilha === 'essencial' || trilha === 'completa') p.trilha = trilha; else delete p.trilha; }
         dados.salvar(`progresso-${id}`, p);
       });
       return true;
@@ -234,6 +236,13 @@ function criarCanais(dados) {
         cargas[k] = h >= 1 && h <= 2000 ? h : ESCOLA_PADRAO.cargas[k];
       });
       dados.salvar('escola', { ...guardada, nome: texto(info.nome, 120), cidade: texto(info.cidade, 80), responsavel: texto(info.responsavel, 80), cargo: texto(info.cargo, 60), cargas });
+      return dadosDaEscola();
+    },
+    // Trilha do curso para a escola toda: "essencial" (o padrão) ou "completa".
+    'escola:trilha': (s, trilha) => {
+      exigirInstrutor(s);
+      if (trilha !== 'essencial' && trilha !== 'completa') throw new Error('Trilha inválida.');
+      dados.salvar('escola', { ...dados.ler('escola', {}), trilha });
       return dadosDaEscola();
     },
     // Número do certificado: o mesmo aluno e o mesmo curso ficam sempre com o mesmo número (reimprimir não gasta outro).

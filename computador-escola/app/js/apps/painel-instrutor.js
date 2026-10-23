@@ -89,8 +89,10 @@
             CE.el('td', {}, `${u.avatar} ${u.nome}`),
             CE.el('td', {}, u.turma || '—'),
             CE.el('td', {}, r.proxima ? `${r.nivelAtual.icone} ${r.proxima.titulo}` : '✅ Tudo concluído'),
-            CE.el('td', {}, CE.el('div', { class: 'painel-barra', title: `${r.aprovadas} de ${r.total}` },
-              CE.el('div', { style: `width:${Math.round((r.aprovadas / r.total) * 100)}%` })), ` ${r.aprovadas}/${r.total}`),
+            CE.el('td', { 'data-trilha-aluno': r.trilha }, CE.el('div', { class: 'painel-barra', title: `${r.aprovadas} de ${r.total}` },
+              CE.el('div', { style: `width:${Math.round((r.aprovadas / r.total) * 100)}%` })), ` ${r.aprovadas}/${r.total}`,
+              r.trilha !== CE.curso.trilhaDaEscola() ? CE.el('small', { class: 'painel-trilha-aluno' }, ` · ${CE.curso.TRILHAS[r.trilha]}`) : null,
+              r.reforcos ? CE.el('small', {}, CE.el('br'), `+${r.reforcos} de reforço`) : null),
             CE.el('td', {}, r.media != null ? `${r.media}%` : '—'),
             CE.el('td', {}, proximoDig ? proximoDig.titulo : '✅ Tudo concluído', CE.el('br'), CE.el('small', {}, `${aprovadosDig.length}/${totalDig} aprovados`)),
             CE.el('td', {}, melhorPpm ? `${melhorPpm} ppm` : '—'),
@@ -101,7 +103,7 @@
         return CE.el('div', { class: 'painel-rolagem' }, CE.el('table', { class: 'painel-tabela' },
           CE.el('thead', {}, CE.el('tr', {}, ...['Aluno', 'Turma', 'Aula atual', 'Informática', 'Média', 'Digitação (exercício atual)', 'Melhor velocidade', 'Provas de digitação', 'Medalhas'].map((t) => CE.el('th', {}, t)))),
           CE.el('tbody', {}, ...linhas),
-        ), CE.el('p', { class: 'painel-legenda' }, 'Média = acertos nas perguntas das aulas. ppm = palavras por minuto. Provas de digitação: Iniciante, Intermediário e Avançado.'));
+        ), CE.el('p', { class: 'painel-legenda' }, 'Informática = aulas da trilha do aluno. Média = acertos nas perguntas das aulas. ppm = palavras por minuto. Provas de digitação: Iniciante, Intermediário e Avançado.'));
       }
 
       // ---------- Sala ao vivo ----------
@@ -286,7 +288,7 @@
           return;
         }
         const conteudo = aba === 'progresso'
-          ? [await tabelaProgresso()]
+          ? [await CE.painelExtras.escolhaDaTrilha(desenhar), await tabelaProgresso()]
           : await (async () => {
             const lista = CE.el('div', { class: 'painel-rolagem' }, await tabelaAlunos());
             const atualizarLista = async () => lista.replaceChildren(await tabelaAlunos());

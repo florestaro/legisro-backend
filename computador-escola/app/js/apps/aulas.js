@@ -11,6 +11,7 @@
       let aba = null;
 
       async function desenhar() {
+        await CE.curso.trilhaPronta();
         const p = await CE.sessao.progresso();
         const proxima = CE.curso.proxima(p);
         aba = aba || (proxima ? proxima.nivel : 'n1');
@@ -18,7 +19,7 @@
 
         const abas = CE.el('div', { class: 'aulas-abas' },
           ...CE.NIVEIS_CURSO.map((n) => {
-            const aulas = CE.LICOES.filter((l) => l.nivel === n.id);
+            const aulas = CE.curso.aulasDaTrilha(p, { nivel: n.id });
             const feitas = aulas.filter((l) => CE.curso.aprovada(l, p)).length;
             return CE.el('button', { class: 'chip' + (aba === n.id ? ' ativo' : ''), 'data-nivel': n.id, onclick: () => { aba = n.id; desenhar(); } },
               `${n.icone} ${n.nome}${aulas.length ? ` · ${feitas}/${aulas.length}` : ''}`);
@@ -76,18 +77,23 @@
 
         const nivel = CE.NIVEIS_CURSO.find((n) => n.id === aba);
         const modulos = CE.MODULOS.filter((m) => m.nivel === nivel.id);
-        const aulasNivel = CE.LICOES.filter((l) => l.nivel === nivel.id);
+        const aulasNivel = CE.curso.aulasDaTrilha(p, { nivel: nivel.id });
+        const essencial = CE.curso.trilha(p) === 'essencial';
         const feitasNivel = aulasNivel.filter((l) => CE.curso.aprovada(l, p)).length;
 
         const cartaoAula = (l) => {
           const r = p.licoes && p.licoes[l.id];
           const feita = CE.curso.aprovada(l, p);
           const liberada = CE.curso.liberada(l, p);
+          const reforco = !CE.curso.obrigatoria(l, p);
           const tipo = l.prova ? 'Prova' : l.desafio ? 'Desafio' : null;
-          return CE.el('div', { class: 'aula' + (feita ? ' feita' : '') + (l === proxima ? ' proxima' : '') + (!liberada ? ' bloqueada' : '') + (l.prova ? ' prova' : ''), 'data-licao': l.id },
+          const anterior = !liberada && CE.curso.anteriorNaTrilha(l, p);
+          return CE.el('div', { class: 'aula' + (feita ? ' feita' : '') + (l === proxima ? ' proxima' : '') + (!liberada ? ' bloqueada' : '') + (l.prova ? ' prova' : '') + (reforco ? ' reforco' : ''), 'data-licao': l.id, 'data-reforco': reforco ? '' : null },
             CE.el('span', { class: 'aula-icone' }, !liberada ? '🔒' : feita ? '✅' : l.icone),
             CE.el('div', { class: 'aula-info' },
-              CE.el('strong', {}, l.titulo, tipo ? CE.el('span', { class: 'aula-tipo' }, tipo) : null),
+              CE.el('strong', {}, l.titulo, tipo ? CE.el('span', { class: 'aula-tipo' }, tipo) : null,
+                reforco ? CE.el('span', { class: 'aula-tipo reforco', title: 'Aula a mais, para treinar. Não é obrigatória para passar de nível nem para o certificado.' }, 'Reforço (opcional)') : null,
+                l === proxima ? CE.el('span', { class: 'aula-tipo hoje' }, '👉 Sua próxima aula') : null),
               CE.el('span', {}, l.descricao),
               r && r.dispensada ? CE.el('small', { class: 'ok' }, 'Dispensada pelo teste de nivelamento') : null,
               !instrutor && !feita && CE.curso.liberadaPeloInstrutor(l, p) ? CE.el('small', { class: 'ok', 'data-liberada-instrutor': '' }, '🔓 Liberada pelo instrutor') : null,
@@ -95,25 +101,33 @@
             liberada
               ? CE.el('button', { class: 'botao' + (feita ? ' secundario' : ''), onclick: () => CE.professor.comecarLicao(l.id) },
                   feita ? 'Fazer de novo' : r ? 'Tentar de novo' : l === proxima ? 'Começar ▶' : 'Começar')
-              : CE.el('span', { class: 'aula-bloqueio' }, 'Termine a aula anterior'),
+              : CE.el('span', { class: 'aula-bloqueio' }, anterior ? `Antes, faça: ${anterior.titulo}` : 'Termine a aula anterior'),
           );
         };
 
+        // A próxima aula fica sempre no topo, com um botão grande: o aluno não precisa procurar.
+        const destaque = !instrutor && proxima ? CE.el('div', { class: 'aulas-proxima', 'data-proxima': proxima.id },
+          CE.el('span', { class: 'aulas-proxima-icone' }, proxima.icone),
+          CE.el('div', {}, CE.el('small', {}, '👉 Sua próxima aula'), CE.el('strong', {}, proxima.titulo), CE.el('span', {}, proxima.descricao || '')),
+          CE.el('button', { class: 'botao conduzir', 'data-acao': 'comecar-proxima', onclick: () => CE.professor.comecarLicao(proxima.id) }, 'Começar ▶')) : null;
+
         corpo.replaceChildren(
           abas,
+          destaque,
           CE.el('div', { class: 'aulas-topo' },
             CE.el('h2', {}, `${nivel.icone} Nível ${nivel.nome}: ${nivel.descricao}`),
             aulasNivel.length ? CE.el('div', { class: 'aulas-barra', title: `${feitasNivel} de ${aulasNivel.length} aulas` },
               CE.el('div', { class: 'aulas-barra-cheia', style: `width:${Math.round((feitasNivel / aulasNivel.length) * 100)}%` })) : null,
             CE.el('p', {}, aulasNivel.length
-              ? `${feitasNivel} de ${aulasNivel.length} aulas concluídas${instrutor ? ' · Instrutor: todas as aulas liberadas' : ''}`
+              ? `${feitasNivel} de ${aulasNivel.length} aulas concluídas${essencial ? ' (trilha essencial: as aulas de reforço são opcionais)' : ''}${instrutor ? ' · Instrutor: todas as aulas liberadas' : ''}`
               : 'Este nível está sendo preparado. Veja abaixo o que vem por aí!'),
           ),
           ...modulos.map((m) => {
             const aulas = CE.LICOES.filter((l) => l.modulo === m.id);
-            const feitas = aulas.filter((l) => CE.curso.aprovada(l, p)).length;
+            const contam = aulas.filter((l) => CE.curso.obrigatoria(l, p));
+            const feitas = contam.filter((l) => CE.curso.aprovada(l, p)).length;
             return CE.el('section', { class: 'aulas-modulo' },
-              CE.el('h3', {}, `${m.icone} ${m.titulo}`, CE.el('span', { class: 'aulas-contagem' }, `${feitas}/${aulas.length}`)),
+              CE.el('h3', {}, `${m.icone} ${m.titulo}`, CE.el('span', { class: 'aulas-contagem' }, `${feitas}/${contam.length}`)),
               ...aulas.map(cartaoAula));
           }),
           nivel.emBreve ? CE.el('section', { class: 'aulas-modulo em-breve' },

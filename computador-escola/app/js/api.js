@@ -98,7 +98,13 @@ window.CE = window.CE || {};
         'sala:turma': () => ({ pausada: salaTeste.pausada, mensagem: salaTeste.mensagem, alunos: Object.values(salaTeste.presencas).filter((x) => Date.now() - x.em < 45000).map((x) => ({ ...x, ha: Math.round((Date.now() - x.em) / 1000), ajudaHa: x.atividade.ajuda ? Math.round((Date.now() - x.atividade.ajuda) / 1000) : null })) }),
         'escola:ler': () => {
           const e = ler('escola', {});
-          return { nome: e.nome || '', cidade: e.cidade || '', responsavel: e.responsavel || '', cargo: e.cargo || 'Instrutor(a)', cargas: { n1: 40, n2: 40, n3: 40, digitacao1: 20, digitacao2: 20, digitacao3: 20, ...(e.cargas || {}) } };
+          return { nome: e.nome || '', cidade: e.cidade || '', responsavel: e.responsavel || '', cargo: e.cargo || 'Instrutor(a)', cargas: { n1: 40, n2: 40, n3: 40, digitacao1: 20, digitacao2: 20, digitacao3: 20, ...(e.cargas || {}) }, trilha: e.trilha === 'completa' ? 'completa' : 'essencial' };
+        },
+        'escola:trilha': () => {
+          if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.');
+          if (a[0] !== 'essencial' && a[0] !== 'completa') throw new Error('Trilha inválida.');
+          gravar('escola', { ...ler('escola', {}), trilha: a[0] });
+          return simulado('escola:ler').then((r) => r.valor);
         },
         'escola:salvar': () => {
           if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.');
@@ -121,6 +127,7 @@ window.CE = window.CE || {};
           (a[0] || []).forEach((id) => {
             const p = ler('progresso:' + id, { licoes: {}, digitacao: {} });
             if (Object.keys(a[1] || {}).length) p.liberadas = a[1]; else delete p.liberadas;
+            if (a[2] !== undefined) { if (a[2] === 'essencial' || a[2] === 'completa') p.trilha = a[2]; else delete p.trilha; }
             gravar('progresso:' + id, p);
           });
           return true;

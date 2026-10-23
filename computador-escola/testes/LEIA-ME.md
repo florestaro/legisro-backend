@@ -9,14 +9,15 @@ Dois testes automáticos do modo sala de aula em rede. Antes da primeira vez, ro
 npm run teste:servidor
 ```
 
-Liga o servidor da sala sozinho (sem abrir o programa) e confere, pedido por pedido, cerca de 48 situações:
+Liga o servidor da sala sozinho (sem abrir o programa) e confere, pedido por pedido, cerca de 53 situações:
 - o instrutor fecha e abre o programa, e os alunos continuam dentro;
 - um aluno entra em outro computador, é removido pelo instrutor ou tem a senha trocada;
 - 20 alunos entram ao mesmo tempo, e senhas erradas em série esbarram no limite;
 - mensagens são entregues enquanto a caixa é gravada, uma caixa fica cheia ou alguém apaga de vez;
 - dois instrutores criam aulas ao mesmo tempo;
 - dados da escola, número dos certificados (reimprimir mantém o número), liberar aulas fora da sequência (o aluno não
-  consegue mudar o que o instrutor liberou), zerar "onde a turma trava" e o "🙋 Não entendi" na Sala ao vivo;
+  consegue mudar o que o instrutor liberou), a trilha do curso (só o instrutor troca a da escola e a de cada aluno),
+  zerar "onde a turma trava" e o "🙋 Não entendi" na Sala ao vivo;
 - um arquivo de dados está estragado.
 
 Leva menos de 1 minuto. Usa uma pasta temporária e a porta 47199 (para usar outra, veja "Outra porta" abaixo).

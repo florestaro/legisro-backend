@@ -154,15 +154,21 @@ window.CE = window.CE || {};
         return CE.el('details', { class: 'liberar-modulo', open: aberto || null },
           CE.el('summary', {}, `${m.icone} ${m.titulo}`),
           caixa(`modulo:${m.id}`, 'Módulo inteiro', 'forte'),
-          ...aulas.map((l) => caixa(l.id, `${l.icone} ${l.titulo}`)));
+          ...aulas.map((l) => caixa(l.id, `${l.icone} ${l.titulo}${l.reforco ? ' · reforço' : ''}`)));
       })));
     const digitacao = CE.el('section', { class: 'liberar-nivel' }, CE.el('h4', {}, '⌨️ Digitação'),
       ...CE.DIGITACAO.niveis.map((n) => caixa(`digitacao:${n.id}`, `${n.icone} Nível ${n.nome} inteiro`)));
     const colegas = usuario.turma ? alunosDe(usuarios, usuario.turma) : [usuario];
+    await CE.curso.carregarTrilha();
+    const trilha = CE.el('select', { 'data-campo': 'trilha-aluno' },
+      CE.el('option', { value: '' }, `Igual à da escola (${CE.curso.TRILHAS[CE.curso.trilhaDaEscola()]})`),
+      ...Object.entries(CE.curso.TRILHAS).map(([id, nome]) => CE.el('option', { value: id }, nome)));
+    trilha.value = progresso.trilha || '';
     const paraTurma = CE.el('input', { type: 'checkbox', 'data-campo': 'liberar-turma' });
     const fundo = CE.el('div', { class: 'dialogo-fundo' }, CE.el('div', { class: 'dialogo largo painel-liberar' },
       CE.el('h3', {}, `🔓 Liberar aulas para ${usuario.nome}`),
       CE.el('p', { class: 'painel-legenda' }, 'Marque o que pode ser feito fora da ordem do curso. O resto continua liberando em sequência (e depois de uma aula liberada, a seguinte abre quando o aluno passar nela).'),
+      CE.el('label', { class: 'painel-check' }, '🧭 Trilha deste aluno: ', trilha),
       CE.el('div', { class: 'liberar-lista' }, ...niveis, digitacao),
       usuario.turma && colegas.length > 1 ? CE.el('label', { class: 'painel-check' }, paraTurma, ` Fazer o mesmo para toda a turma ${usuario.turma} (${colegas.length} alunos)`) : null,
       CE.el('div', { class: 'dialogo-botoes' },
@@ -170,9 +176,10 @@ window.CE = window.CE || {};
         CE.el('button', { class: 'botao', 'data-acao': 'salvar-liberacao', onclick: async () => {
           const ids = paraTurma.checked ? colegas.map((u) => u.id) : [usuario.id];
           try {
-            await CE.api.chamar('progresso:liberar', ids, marcadas);
+            await CE.api.chamar('progresso:liberar', ids, marcadas, trilha.value);
             const n = Object.keys(marcadas).length;
-            CE.avisar(n ? `🔓 Liberado para ${ids.length > 1 ? `${ids.length} alunos` : usuario.nome}.` : `As aulas de ${ids.length > 1 ? 'toda a turma' : usuario.nome} voltaram à sequência normal.`);
+            const novaTrilha = trilha.value !== (progresso.trilha || '') ? ` Trilha: ${trilha.value ? CE.curso.TRILHAS[trilha.value] : 'a da escola'}.` : '';
+            CE.avisar((n ? `🔓 Liberado para ${ids.length > 1 ? `${ids.length} alunos` : usuario.nome}.` : `As aulas de ${ids.length > 1 ? 'toda a turma' : usuario.nome} seguem a sequência normal.`) + novaTrilha);
             CE.emitir('instrutor:liberou', { alunos: ids.length, itens: Object.keys(marcadas) });
             fundo.remove();
             if (aoMudar) aoMudar();
@@ -181,5 +188,33 @@ window.CE = window.CE || {};
     document.body.append(fundo);
   }
 
-  CE.painelExtras = { ondeTrava, certificadosERelatorio, liberarAulas };
+  // ---------- Trilha do curso (para a escola toda) ----------
+  async function escolhaDaTrilha(redesenhar) {
+    await CE.curso.carregarTrilha();
+    const atual = CE.curso.trilhaDaEscola();
+    const contar = (trilha) => CE.NIVEIS_CURSO.map((n) => `${n.nome} ${CE.LICOES.filter((l) => l.nivel === n.id && (trilha === 'completa' || !l.reforco)).length}`).join(' · ');
+    const opcao = (id, rotulo, detalhe) => {
+      const r = CE.el('input', { type: 'radio', name: 'trilha-escola', value: id, 'data-trilha': id });
+      r.checked = atual === id;
+      r.addEventListener('change', async () => {
+        try {
+          await CE.api.chamar('escola:trilha', id);
+          await CE.curso.carregarTrilha();
+          CE.avisar(`${CE.curso.TRILHAS[id]} escolhida para a escola. Os alunos veem a mudança na próxima vez que entrarem.`);
+          CE.emitir('instrutor:trilha', { trilha: id });
+          redesenhar();
+        } catch (e) { CE.avisar(e.message); r.checked = false; }
+      });
+      return CE.el('label', { class: 'painel-check' + (atual === id ? ' forte' : '') }, r, ' ', CE.el('b', {}, rotulo), ` (${detalhe})`);
+    };
+    return CE.el('div', { class: 'painel-trilha', 'data-trilha-escola': atual },
+      CE.el('strong', {}, '🧭 Trilha do curso:'),
+      opcao('essencial', 'Essencial', contar('essencial')),
+      opcao('completa', 'Completa', contar('completa')),
+      CE.el('p', { class: 'painel-legenda' }, atual === 'essencial'
+        ? 'Essencial: para turmas com pouco tempo (1 hora por semana). Os alunos seguem só as aulas essenciais; as outras viram "Reforço (opcional)" e não travam o curso nem o certificado. Para um aluno diferente da turma, use "🔓 Liberar aulas" na aba Alunos.'
+        : 'Completa: todas as aulas são obrigatórias, na ordem. Para um aluno diferente da turma, use "🔓 Liberar aulas" na aba Alunos.'));
+  }
+
+  CE.painelExtras = { ondeTrava, certificadosERelatorio, liberarAulas, escolhaDaTrilha };
 })();

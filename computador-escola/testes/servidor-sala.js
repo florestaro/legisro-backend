@@ -212,6 +212,21 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   await pedir('progresso:zerar-dificuldades', [[turma[7].id]], tp);
   const z7 = (await pedir('dados:ler', ['progresso:' + turma[7].id, {}], tT7)).valor;
   ok(!z7.dificuldades && z7.licoes.z && z7.liberadas['nivel:n2'], 'zerar "onde trava" apaga só a contagem de dificuldades');
+  // 21b) Trilha do curso: a escola começa na essencial; só o instrutor troca (a da escola e a de cada aluno)
+  ok(escolaPadrao.trilha === 'essencial', 'a escola começa na trilha essencial');
+  ok(!(await pedir('escola:trilha', ['completa'], tT7)).ok && !(await pedir('escola:trilha', ['qualquer'], tp)).ok, 'aluno não troca a trilha da escola, e trilha que não existe é recusada');
+  const trilhaEscola = (await pedir('escola:trilha', ['completa'], tp)).valor;
+  const lidaAluno = (await pedir('escola:ler', [], tT7)).valor;
+  ok(trilhaEscola.trilha === 'completa' && lidaAluno.trilha === 'completa' && lidaAluno.nome === 'Escola Esperança', 'instrutor troca a escola para a trilha completa (os outros dados da escola continuam)');
+  await pedir('progresso:liberar', [[turma[7].id], { 'nivel:n2': true }, 'essencial'], tp);
+  await pedir('dados:salvar', ['progresso:' + turma[7].id, { ...z7, liberadas: undefined, trilha: 'completa' }], tT7);
+  await pedir('dados:salvar', ['progresso:' + turma[8].id, { licoes: {}, digitacao: {}, trilha: 'essencial' }], tT8);
+  const tr7 = (await pedir('dados:ler', ['progresso:' + turma[7].id, {}], tT7)).valor;
+  const tr8 = (await pedir('dados:ler', ['progresso:' + turma[8].id, {}], tT8)).valor;
+  ok(tr7.trilha === 'essencial' && tr7.liberadas['nivel:n2'] && !('trilha' in tr8), 'trilha do aluno: só o instrutor escolhe (a gravação do aluno não troca nem cria)');
+  await pedir('progresso:liberar', [[turma[7].id], { 'nivel:n2': true }, ''], tp);
+  ok(!('trilha' in (await pedir('dados:ler', ['progresso:' + turma[7].id, {}], tT7)).valor), 'trilha vazia: o aluno volta a seguir a trilha da escola');
+  await pedir('escola:trilha', ['essencial'], tp);
   // 22) "Não entendi" na Sala ao vivo: a hora do pedido é a do instrutor e não muda a cada aviso
   await pedir('sala:presenca', [{ app: 'Aulas', ajuda: 111 }], tT7);
   const sa1 = (await pedir('sala:turma', [], tp)).valor.alunos.find((a) => a.usuario.id === turma[7].id);

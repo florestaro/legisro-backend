@@ -11,6 +11,11 @@ O aluno só abre uma aula quando foi **aprovado** na anterior. Aulas com pergunt
 acertar de primeira vale 1 ponto, na segunda tentativa vale meio ponto (na prova, só vale de primeira).
 O instrutor tem todas as aulas liberadas.
 
+**Trilha essencial.** A lista `REFORCO`, em `app/js/curso.js`, diz quais aulas são de reforço (opcionais na trilha
+essencial, que é o padrão). Aula nova entra como essencial; para virar reforço, ponha o id dela nessa lista. Não ponha
+lá a prova, nem aula que ensina algo que a prova cobra, nem a única aula essencial de um módulo. Na trilha essencial,
+uma aula só espera a aula **essencial** anterior, e as aulas de reforço abrem junto com a essencial seguinte.
+
 ## Exemplo
 
 ```js
@@ -128,6 +133,7 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `licao:nao-entendi` | Apertou "🙋 Não entendi" num passo | `licao`, `passo` (começa em 1) |
 | `impressao:aberta` | Abriu a prévia de impressão (certificado ou relatório) | `titulo`, `paginas` |
 | `instrutor:liberou` / `instrutor:relatorio` / `instrutor:certificados` | Painel do Instrutor | `alunos`, `itens` / `turma`, `periodo` / `quantos` |
+| `instrutor:trilha` | Painel do Instrutor (trilha da escola) | `trilha` (`essencial` ou `completa`) |
 | `calculadora:resultado` | Apertou "=" na Calculadora | `a`, `b`, `operacao` (`+ − × ÷`), `resultado` |
 | `digitacao:iniciada` / `digitacao:concluida` | Exercício de digitação | `exercicio`, `ppm`, `precisao`, `estrelas`, `aprovado` |
 | `professor:respondeu` | O professor respondeu uma pergunta | `pergunta` |

@@ -10,6 +10,8 @@ window.CE = window.CE || {};
   let timerDica = null;
   let timerDestaque = null;
   let pensando = false;
+  let posicao = null;    // "aula 5 de 29 do nível Iniciante" (na trilha do aluno), para o cabeçalho
+  let emReforco = false; // a aula em andamento é de reforço (opcional) para este aluno
 
   const $ = (id) => document.getElementById(id);
   const passoAtual = () => (licao ? licao.passos[indicePasso] : null);
@@ -161,7 +163,10 @@ window.CE = window.CE || {};
     return [
       CE.el('div', { class: 'prof-titulo' }, `${licao.icone} ${licao.titulo}`,
         licao.desafio ? CE.el('span', { class: 'prof-selo desafio' }, 'Desafio: sem ajuda') : null,
-        licao.prova ? CE.el('span', { class: 'prof-selo prova' }, 'Prova') : null),
+        licao.prova ? CE.el('span', { class: 'prof-selo prova' }, 'Prova') : null,
+        emReforco ? CE.el('span', { class: 'prof-selo reforco' }, 'Reforço (opcional)') : null),
+      posicao ? CE.el('div', { class: 'prof-trilha', 'data-posicao-trilha': `${posicao.numero}/${posicao.total}` },
+        `${posicao.nivel.icone} Aula ${posicao.numero} de ${posicao.total} do nível ${posicao.nivel.nome}`) : null,
       CE.el('div', { class: 'prof-progresso' },
         CE.el('div', { class: 'prof-progresso-cheio', style: `width:${Math.round((indicePasso / licao.passos.length) * 100)}%` })),
       CE.el('div', { class: 'prof-passo-num' }, `Passo ${indicePasso + 1} de ${licao.passos.length}`),
@@ -376,18 +381,35 @@ window.CE = window.CE || {};
     }
     CE.emitir('licao:concluida', { licao: terminada.id, nota });
     CE.comemorar(terminada.prova ? 'grande' : 'pequena');
-    const proxima = await proximaLicao().catch(() => null);
+    const progresso = await CE.sessao.progresso().catch(() => null);
     if (licao) return;
+    const proxima = progresso && CE.curso.proxima(progresso);
+    const reforco = progresso && CE.LICOES.includes(terminada) && CE.curso.reforcoPendente(progresso, terminada);
+    // Terminou o nível quando todas as aulas do nível (na trilha do aluno) estão aprovadas e a próxima é de outro nível.
+    const mudouDeNivel = proxima && CE.LICOES.includes(terminada) && proxima.nivel !== terminada.nivel
+      && CE.curso.aulasDaTrilha(progresso, { nivel: terminada.nivel }).every((l) => CE.curso.aprovada(l, progresso));
+    // O professor conduz: diz qual é a próxima aula e onde clicar (o botão verde pisca de leve).
+    const conducao = !proxima
+      ? 'Você terminou todas as aulas do curso. Parabéns! Peça ao instrutor o seu certificado.'
+      : mudouDeNivel
+        ? `Você terminou o nível ${CE.NIVEIS_CURSO.find((n) => n.id === terminada.nivel).nome}! Peça ao instrutor o seu certificado. Quando quiser, clique no botão verde para começar o próximo nível.`
+        : 'Quando estiver pronto, clique no botão verde "Próxima aula".';
     $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao concluida' },
       CE.el('div', { class: 'prof-titulo' }, terminada.prova ? '🏆 Prova aprovada!' : '🎉 Aula concluída!'),
       nota != null ? CE.el('div', { class: 'prof-nota' }, `${nota}%`) : null,
       CE.el('p', { class: 'prof-texto' }, terminada.conclusao),
+      CE.el('p', { class: 'prof-texto prof-conducao', 'data-conducao': '' }, conducao),
+      proxima ? CE.el('div', { class: 'prof-proxima', 'data-proxima': proxima.id },
+        CE.el('small', {}, 'Próxima aula'),
+        CE.el('strong', {}, `${proxima.icone} ${proxima.titulo}`),
+        proxima.descricao ? CE.el('span', {}, proxima.descricao) : null) : null,
       CE.el('div', { class: 'prof-botoes' },
-        proxima ? CE.el('button', { class: 'botao', 'data-acao': 'proxima', onclick: () => comecarLicao(proxima.id) }, `Próxima: ${proxima.titulo} ▶`) : null,
+        reforco ? CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'reforco', title: 'Aula a mais, para treinar (não é obrigatória)', onclick: () => comecarLicao(reforco.id) }, `💪 Treinar mais: ${reforco.titulo}`) : null,
         CE.el('button', { class: 'botao secundario pequeno', onclick: () => CE.janelas.abrir('aulas') }, 'Ver todas as aulas'),
+        proxima ? CE.el('button', { class: 'botao conduzir', 'data-acao': 'proxima', onclick: () => comecarLicao(proxima.id) }, 'Próxima aula ▶') : null,
       ),
     ));
-    CE.voz.falar(terminada.conclusao);
+    CE.voz.falar(`${terminada.conclusao} ${conducao}`);
   }
 
   // Grava o resultado da aula. Se falhar (sem conexão com o instrutor, por exemplo), a aula não se perde: aparece
@@ -457,11 +479,17 @@ window.CE = window.CE || {};
     const encontrada = CE.curso.licao(id);
     if (!encontrada) return;
     const instrutor = CE.sessao.usuario && CE.sessao.usuario.papel === 'instrutor';
-    if (!CE.curso.liberada(encontrada, await CE.sessao.progresso())) {
-      CE.avisar('🔒 Esta aula ainda está bloqueada. Termine a aula anterior primeiro!');
+    await CE.curso.trilhaPronta();
+    const progresso = await CE.sessao.progresso();
+    if (!CE.curso.liberada(encontrada, progresso)) {
+      const anterior = CE.curso.anteriorNaTrilha(encontrada, progresso);
+      CE.avisar(`🔒 Esta aula ainda está bloqueada. Termine primeiro a aula "${anterior ? anterior.titulo : 'anterior'}".`);
       return;
     }
     encerrar();
+    const doCurso = CE.LICOES.includes(encontrada);
+    emReforco = doCurso && !CE.curso.obrigatoria(encontrada, progresso);
+    posicao = doCurso && !emReforco ? CE.curso.posicao(encontrada, progresso) : null;
     licao = encontrada;
     indicePasso = instrutor && opcoes.passo > 0 ? Math.min(opcoes.passo, encontrada.passos.length - 1) : 0;
     quizPontos = 0;
@@ -476,6 +504,7 @@ window.CE = window.CE || {};
   async function boasVindas(falar = true) {
     const u = CE.sessao.usuario;
     const primeiroNome = u.nome.split(' ')[0];
+    await CE.curso.trilhaPronta();
     const progresso = await CE.sessao.progresso();
     const proxima = CE.curso.proxima(progresso);
     const novato = u.papel !== 'instrutor' && !progresso.nivelamento && !Object.keys(progresso.licoes || {}).length;
@@ -497,14 +526,22 @@ window.CE = window.CE || {};
       if (falar) CE.voz.falar(texto);
       return;
     }
+    // Com aula uma vez por semana, ajuda lembrar o que foi feito da última vez.
+    const r = (l) => (progresso.licoes && progresso.licoes[l.id]) || {};
+    const ultima = CE.LICOES.filter((l) => CE.curso.aprovada(l, progresso) && !r(l).dispensada).sort((a, b) => (r(b).em || 0) - (r(a).em || 0))[0];
+    const pos = proxima && CE.curso.posicao(proxima, progresso);
     const texto = proxima
-      ? `Olá, ${primeiroNome}! Que bom te ver. Vamos aprender? Sua próxima aula é "${proxima.titulo}".`
-      : `Olá, ${primeiroNome}! Você já fez todas as aulas disponíveis. Que tal treinar no programa Digitação?`;
+      ? `Olá, ${primeiroNome}! Que bom te ver.${ultima ? ` Da última vez você fez a aula "${ultima.titulo}".` : ''} Hoje a sua aula é "${proxima.titulo}". Clique no botão verde "Começar aula" que eu te ensino passo a passo.`
+      : `Olá, ${primeiroNome}! Você já fez todas as aulas do curso. Que tal treinar no programa Digitação?`;
     $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao' },
       CE.el('p', { class: 'prof-texto' }, texto),
+      proxima ? CE.el('div', { class: 'prof-proxima', 'data-proxima': proxima.id },
+        CE.el('small', {}, pos ? `${pos.nivel.icone} Aula ${pos.numero} de ${pos.total} do nível ${pos.nivel.nome}` : 'Aula de hoje'),
+        CE.el('strong', {}, `${proxima.icone} ${proxima.titulo}`),
+        proxima.descricao ? CE.el('span', {}, proxima.descricao) : null) : null,
       CE.el('div', { class: 'prof-botoes' },
-        proxima ? CE.el('button', { class: 'botao', 'data-acao': 'comecar', onclick: () => comecarLicao(proxima.id) }, 'Começar aula ▶') : null,
         CE.el('button', { class: 'botao secundario pequeno', onclick: () => CE.janelas.abrir('aulas') }, 'Ver todas as aulas'),
+        proxima ? CE.el('button', { class: 'botao conduzir', 'data-acao': 'comecar', onclick: () => comecarLicao(proxima.id) }, 'Começar aula ▶') : null,
       ),
     ));
     if (falar) CE.voz.falar(texto);
@@ -512,6 +549,7 @@ window.CE = window.CE || {};
 
   CE.professor = {
     iniciar() {
+      CE.curso.carregarTrilha();
       montarPainel();
       boasVindas();
     },

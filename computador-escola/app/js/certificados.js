@@ -1,5 +1,6 @@
 // Certificados e relatório da turma (usados no Painel do Instrutor e na tela de Aulas do aluno).
-// Certificado: cada nível de Informática (todas as aulas do nível aprovadas, prova incluída) e cada nível de
+// Certificado: cada nível de Informática (todas as aulas do nível na trilha do aluno aprovadas, prova incluída;
+// na trilha essencial, as aulas de reforço não contam) e cada nível de
 // Digitação (prova do nível aprovada). O número do certificado vem do computador do instrutor e é sempre o mesmo
 // para o mesmo aluno e curso (reimprimir não gasta outro número).
 window.CE = window.CE || {};
@@ -17,12 +18,11 @@ window.CE = window.CE || {};
   // ---------- Cursos que dão certificado ----------
   function cursos() {
     const informatica = CE.NIVEIS_CURSO.map((n, i) => {
-      const aulas = () => CE.LICOES.filter((l) => l.nivel === n.id);
       return {
         id: n.id, curso: 'Informática', nivel: `Nível ${i + 1} — ${n.nome}`, icone: n.icone, carga: n.id,
         conteudo: () => CE.MODULOS.filter((m) => m.nivel === n.id).map((m) => m.titulo),
         situacao(p) {
-          const lista = aulas();
+          const lista = CE.curso.aulasDaTrilha(p, { nivel: n.id });
           const feitas = lista.filter((l) => CE.curso.aprovada(l, p));
           if (!lista.length || feitas.length < lista.length) return { conquistado: false, faltam: lista.length - feitas.length };
           const r = (l) => (p.licoes && p.licoes[l.id]) || {};
@@ -99,7 +99,7 @@ window.CE = window.CE || {};
     const linhas = alunos.map(({ usuario, progresso }) => {
       const freq = CE.frequencia.resumo(progresso, p.de, p.ate);
       const niveis = CE.NIVEIS_CURSO.map((n) => {
-        const aulas = CE.LICOES.filter((l) => l.nivel === n.id);
+        const aulas = CE.curso.aulasDaTrilha(progresso, { nivel: n.id });
         return { nivel: n, feitas: aulas.filter((l) => CE.curso.aprovada(l, progresso)).length, total: aulas.length };
       });
       const resumo = CE.curso.resumo(progresso);

@@ -29,6 +29,15 @@ conversa e tira dúvidas. **Funciona sem internet.**
 - **O aluno só avança quando é aprovado** (70% nas perguntas). O instrutor tem tudo liberado (aulas, níveis de
   digitação, jogos e os programas instaláveis) e pode **liberar aulas fora da sequência** para um aluno ou para a turma
   (veja "Painel do Instrutor" abaixo).
+- **Trilha essencial (o padrão)**, para turmas com pouco tempo (1 hora por semana): o aluno segue só as aulas essenciais
+  (Iniciante 29, Intermediário 29, Avançado 35, em vez de 48, 41 e 48). As outras viram **Reforço (opcional)**: abrem
+  junto com a aula essencial seguinte, não travam o curso, não são pedidas para o certificado nem para as medalhas, e
+  o professor oferece "💪 Treinar mais" no fim da aula. Provas e o que elas cobram são sempre essenciais. Na **trilha
+  completa**, todas as aulas são obrigatórias. O instrutor escolhe em **Painel › Progresso da turma › 🧭 Trilha do
+  curso** (para a escola) ou em **🔓 Liberar aulas** (para um aluno ou a turma dele).
+- **O professor conduz o iniciante**: ao entrar, lembra a aula da semana passada e diz qual é a aula de hoje ("Aula 5 de
+  29 do nível Iniciante"), com um botão verde grande; ao terminar, diz qual é a próxima e onde clicar. Na tela de Aulas,
+  "👉 Sua próxima aula" fica sempre no topo, e aula com cadeado diz qual aula fazer antes.
 - **Botão direito do mouse igual ao do Windows**, em todo o sistema: área de trabalho (Exibir › tamanho dos ícones,
   Atualizar, Personalizar), ícones (Abrir, Propriedades; na Lixeira, Esvaziar Lixeira), botão Iniciar, barra de tarefas
   ("Fechar janela", "Mostrar a área de trabalho"), barra de título (Restaurar, Minimizar, Maximizar, Fechar), Arquivos e
@@ -91,13 +100,14 @@ Os arquivos baixados vão para a pasta **Downloads**.
     a pergunta ou saíram da aula no meio (por turma). **▶ Ver** abre a aula naquele passo; **🧹 Zerar contagem** recomeça
     a conta (bom depois de mudar uma aula).
   - **📜 Certificados e relatório**: dados da escola (nome, cidade, quem assina e a carga horária de cada curso);
-    **certificado** de cada nível de Informática (todas as aulas do nível aprovadas) e de Digitação (prova do nível),
+    **certificado** de cada nível de Informática (todas as aulas do nível na trilha do aluno aprovadas) e de Digitação (prova do nível),
     com número que não muda ao reimprimir, um por um ou todos da turma; **relatório da turma** (frequência em dias e
     horas, aulas aprovadas, digitação, certificados, lista de presença e onde a turma travou) do mês, do mês passado ou
     do curso todo. Tudo dá para imprimir ou **salvar em PDF**, e o relatório também sai em **planilha (CSV)** para o
     Excel ou o LibreOffice.
   - **🔓 Liberar aulas** (aba Alunos): marque um nível inteiro, um módulo, aulas avulsas ou um nível de digitação para o
-    aluno fazer fora da ordem; dá para aplicar para a turma toda. Desmarcar tudo devolve o aluno à sequência normal.
+    aluno fazer fora da ordem, e a **trilha** do aluno (igual à da escola, essencial ou completa); dá para aplicar para a
+    turma toda. Desmarcar tudo devolve o aluno à sequência normal.
 - **Frequência automática**: o dia em que o aluno entra conta presença, e os minutos com uso do mouse ou do teclado
   somam as horas (o relógio de treino das Configurações não muda a data da presença).
 - O aluno vê os certificados que já ganhou em **Aulas → 🎓 Certificados**.

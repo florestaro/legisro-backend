@@ -5,7 +5,7 @@ window.CE = window.CE || {};
   // Medalha é para aula feita de verdade: aulas dispensadas pelo nivelamento não contam.
   const feita = (l, p) => CE.curso.aprovada(l, p) && !p.licoes[l.id].dispensada;
   const moduloAprovado = (p, modulo) => {
-    const aulas = CE.LICOES.filter((l) => l.modulo === modulo);
+    const aulas = CE.curso.aulasDaTrilha(p, { modulo }); // na trilha essencial, o reforço não é preciso para a medalha
     return aulas.length > 0 && aulas.every((l) => feita(l, p));
   };
   const digAprovado = (p, id) => !!(p.digitacao && p.digitacao[id] && p.digitacao[id].aprovado && !p.digitacao[id].dispensado);
@@ -15,7 +15,7 @@ window.CE = window.CE || {};
   CE.MEDALHAS = [
     { id: 'primeira-aula', icone: '🎓', nome: 'Primeira aula', descricao: 'Concluiu a primeira aula.', ganhou: (p) => CE.LICOES.some((l) => feita(l, p)) },
     { id: 'computador', icone: '🖥️', nome: 'Conhece o computador', descricao: 'Terminou o módulo "Conhecendo o computador".', ganhou: (p) => moduloAprovado(p, 'n1-computador') },
-    { id: 'mouse', icone: '🖱️', nome: 'Mestre do mouse', descricao: 'Terminou todas as aulas e jogos do mouse.', ganhou: (p) => moduloAprovado(p, 'n1-mouse') },
+    { id: 'mouse', icone: '🖱️', nome: 'Mestre do mouse', descricao: 'Terminou as aulas e jogos do mouse.', ganhou: (p) => moduloAprovado(p, 'n1-mouse') },
     { id: 'teclado', icone: '⌨️', nome: 'Amigo do teclado', descricao: 'Terminou o módulo do teclado.', ganhou: (p) => moduloAprovado(p, 'n1-teclado') },
     { id: 'janelas', icone: '🪟', nome: 'Domador de janelas', descricao: 'Terminou o módulo de janelas e menu Iniciar.', ganhou: (p) => moduloAprovado(p, 'n1-janelas') },
     { id: 'arquivos', icone: '📁', nome: 'Organizado', descricao: 'Terminou o módulo de arquivos e pastas.', ganhou: (p) => moduloAprovado(p, 'n1-arquivos') },
