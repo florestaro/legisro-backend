@@ -88,7 +88,9 @@
           return CE.el('tr', {},
             CE.el('td', {}, `${u.avatar} ${u.nome}`),
             CE.el('td', {}, u.turma || '—'),
-            CE.el('td', {}, r.proxima ? `${r.nivelAtual.icone} ${r.proxima.titulo}` : '✅ Tudo concluído'),
+            CE.el('td', {}, r.proxima ? `${r.nivelAtual.icone} ${r.proxima.titulo}` : '✅ Tudo concluído',
+              p.revisao && p.revisao.dia === CE.frequencia.hoje()
+                ? CE.el('small', { 'data-revisao-hoje': '' }, CE.el('br'), p.revisao.pulada ? '🔁 Pulou a revisão de hoje' : `🔁 Revisão de hoje: ${p.revisao.nota}%`) : null),
             CE.el('td', { 'data-trilha-aluno': r.trilha }, CE.el('div', { class: 'painel-barra', title: `${r.aprovadas} de ${r.total}` },
               CE.el('div', { style: `width:${Math.round((r.aprovadas / r.total) * 100)}%` })), ` ${r.aprovadas}/${r.total}`,
               r.trilha !== CE.curso.trilhaDaEscola() ? CE.el('small', { class: 'painel-trilha-aluno' }, ` · ${CE.curso.TRILHAS[r.trilha]}`) : null,

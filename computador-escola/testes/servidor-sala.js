@@ -227,6 +227,11 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   await pedir('progresso:liberar', [[turma[7].id], { 'nivel:n2': true }, ''], tp);
   ok(!('trilha' in (await pedir('dados:ler', ['progresso:' + turma[7].id, {}], tT7)).valor), 'trilha vazia: o aluno volta a seguir a trilha da escola');
   await pedir('escola:trilha', ['essencial'], tp);
+  // 21c) Revisão rápida: vem ligada; só o instrutor desliga
+  ok(escolaPadrao.revisao === true && !(await pedir('escola:revisao', [false], tT7)).ok, 'revisão rápida vem ligada, e o aluno não desliga');
+  const semRevisao = (await pedir('escola:revisao', [false], tp)).valor;
+  ok(semRevisao.revisao === false && (await pedir('escola:ler', [], tT7)).valor.revisao === false && semRevisao.trilha === 'essencial', 'instrutor desliga a revisão rápida (a trilha continua)');
+  await pedir('escola:revisao', [true], tp);
   // 22) "Não entendi" na Sala ao vivo: a hora do pedido é a do instrutor e não muda a cada aviso
   await pedir('sala:presenca', [{ app: 'Aulas', ajuda: 111 }], tT7);
   const sa1 = (await pedir('sala:turma', [], tp)).valor.alunos.find((a) => a.usuario.id === turma[7].id);

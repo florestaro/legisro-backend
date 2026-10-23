@@ -58,9 +58,13 @@ window.CE = window.CE || {};
       return !!(r && r.concluida);
     },
     TRILHAS,
-    // Lê de novo a trilha da escola (no login e ao abrir as Aulas). Sem conexão, fica a última conhecida.
+    // Lê de novo a trilha da escola e se a revisão rápida está ligada (no login e ao abrir as Aulas).
+    // Sem conexão, fica a última conhecida.
     carregarTrilha() {
-      carregando = CE.api.chamar('escola:ler').then((e) => { trilhaDaEscola = valida(e && e.trilha) || 'essencial'; }).catch(() => {});
+      carregando = CE.api.chamar('escola:ler').then((e) => {
+        trilhaDaEscola = valida(e && e.trilha) || 'essencial';
+        if (CE.revisao) CE.revisao.configurar(e && e.revisao);
+      }).catch(() => {});
       return carregando;
     },
     trilhaPronta: () => carregando || CE.curso.carregarTrilha(),

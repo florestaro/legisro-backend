@@ -38,6 +38,10 @@ conversa e tira dúvidas. **Funciona sem internet.**
 - **O professor conduz o iniciante**: ao entrar, lembra a aula da semana passada e diz qual é a aula de hoje ("Aula 5 de
   29 do nível Iniciante"), com um botão verde grande; ao terminar, diz qual é a próxima e onde clicar. Na tela de Aulas,
   "👉 Sua próxima aula" fica sempre no topo, e aula com cadeado diz qual aula fazer antes.
+- **🔁 Revisão rápida**: no primeiro login do dia, antes da aula, o professor faz até 3 perguntas das últimas aulas que
+  o aluno fez (uns 2 minutos). Errar não reprova nada: com menos de 70% de primeira, ele sugere "↻ Rever" a aula mais
+  esquecida; depois, o botão verde começa a aula de hoje. Dá para pular. O resultado aparece no Painel (coluna "Aula
+  atual"), e o instrutor liga ou desliga em **Painel › Progresso da turma**.
 - **Botão direito do mouse igual ao do Windows**, em todo o sistema: área de trabalho (Exibir › tamanho dos ícones,
   Atualizar, Personalizar), ícones (Abrir, Propriedades; na Lixeira, Esvaziar Lixeira), botão Iniciar, barra de tarefas
   ("Fechar janela", "Mostrar a área de trabalho"), barra de título (Restaurar, Minimizar, Maximizar, Fechar), Arquivos e
@@ -274,11 +278,13 @@ app/js/menu-contexto.js  o menu do botão direito (igual ao do Windows) e a jane
 app/js/area-trabalho.js  ícones, menu Iniciar, barra de tarefas
 app/js/professor.js      motor das lições e conversa
 app/js/respostas-prontas.js  respostas do professor sem IA
-app/js/curso.js          níveis, módulos e regra de liberação das aulas (inclui as liberadas pelo instrutor)
+app/js/curso.js          níveis, módulos, trilha essencial (lista REFORCO) e regra de liberação das aulas (inclui as
+                         liberadas pelo instrutor)
 app/js/dificuldades.js   "Não entendi", dicas, erros e saídas de cada passo (para "Onde a turma trava")
 app/js/frequencia.js     frequência automática (dias e minutos de uso)
 app/js/certificados.js   certificados, relatório da turma (páginas e CSV) e a tela de impressão/PDF
 app/js/licoes/           as aulas (n1-*, n2-*, n3-*), os atalhos para escrever aulas (ajudantes.js) e as aulas do professor
+                         (também o teste de nivelamento e a revisão rápida do começo do dia, revisao.js)
 app/js/sala.js           a sala ao vivo do lado do aluno (presença, pausa, mensagens) e a janela "Rede da sala"
 app/js/apps/             os programas (editor, planilha, e-mail, digitação, arquivos...) e o Painel do Instrutor
                          (painel-instrutor.js; as abas novas ficam em painel-extras.js)

@@ -207,10 +207,22 @@ window.CE = window.CE || {};
       });
       return CE.el('label', { class: 'painel-check' + (atual === id ? ' forte' : '') }, r, ' ', CE.el('b', {}, rotulo), ` (${detalhe})`);
     };
+    const revisao = CE.el('input', { type: 'checkbox', 'data-campo': 'revisao-escola' });
+    revisao.checked = CE.revisao.ligada();
+    revisao.addEventListener('change', async () => {
+      try {
+        await CE.api.chamar('escola:revisao', revisao.checked);
+        await CE.curso.carregarTrilha();
+        CE.avisar(revisao.checked ? '🔁 Revisão rápida ligada: no primeiro login do dia, o aluno responde até 3 perguntas das últimas aulas.' : '🔁 Revisão rápida desligada.');
+        CE.emitir('instrutor:revisao', { ligada: revisao.checked });
+      } catch (e) { CE.avisar(e.message); revisao.checked = !revisao.checked; }
+    });
     return CE.el('div', { class: 'painel-trilha', 'data-trilha-escola': atual },
       CE.el('strong', {}, '🧭 Trilha do curso:'),
       opcao('essencial', 'Essencial', contar('essencial')),
       opcao('completa', 'Completa', contar('completa')),
+      CE.el('label', { class: 'painel-check', title: 'No primeiro login do dia, antes da aula, até 3 perguntas das últimas aulas que o aluno fez (uns 2 minutos)' },
+        revisao, ' ', CE.el('b', {}, '🔁 Revisão rápida'), ' no começo do dia (2 min)'),
       CE.el('p', { class: 'painel-legenda' }, atual === 'essencial'
         ? 'Essencial: para turmas com pouco tempo (1 hora por semana). Os alunos seguem só as aulas essenciais; as outras viram "Reforço (opcional)" e não travam o curso nem o certificado. Para um aluno diferente da turma, use "🔓 Liberar aulas" na aba Alunos.'
         : 'Completa: todas as aulas são obrigatórias, na ordem. Para um aluno diferente da turma, use "🔓 Liberar aulas" na aba Alunos.'));

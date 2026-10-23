@@ -449,8 +449,9 @@ window.CE = window.CE || {};
       CE.el('p', { class: 'prof-texto' }, r.texto),
       CE.el('div', { class: 'prof-botoes' },
         r.digitacao ? CE.el('button', { class: 'botao', 'data-acao': 'nivelamento-digitacao', onclick: () => CE.janelas.abrir('digitacao', { nivelamento: true }) }, 'Nivelamento de digitação ⌨️') : null,
-        proxima && !r.digitacao ? CE.el('button', { class: 'botao', 'data-acao': 'proxima', onclick: () => comecarLicao(proxima.id) }, `Começar: ${proxima.titulo} ▶`) : null,
+        r.rever ? CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'rever', onclick: () => comecarLicao(r.rever.id) }, `↻ Rever: ${r.rever.titulo}`) : null,
         CE.el('button', { class: 'botao secundario pequeno', onclick: () => CE.janelas.abrir('aulas') }, 'Ver todas as aulas'),
+        proxima && !r.digitacao ? CE.el('button', { class: r.botaoProxima ? 'botao conduzir' : 'botao', 'data-acao': 'proxima', onclick: () => comecarLicao(proxima.id) }, r.botaoProxima || `Começar: ${proxima.titulo} ▶`) : null,
       ),
     ));
     CE.voz.falar(r.texto);
@@ -530,6 +531,22 @@ window.CE = window.CE || {};
     const r = (l) => (progresso.licoes && progresso.licoes[l.id]) || {};
     const ultima = CE.LICOES.filter((l) => CE.curso.aprovada(l, progresso) && !r(l).dispensada).sort((a, b) => (r(b).em || 0) - (r(a).em || 0))[0];
     const pos = proxima && CE.curso.posicao(proxima, progresso);
+    // No primeiro login do dia, antes da aula: revisão rápida das últimas aulas.
+    if (CE.revisao.deveOferecer(progresso) && CE.revisao.montar(progresso)) {
+      const texto = `Olá, ${primeiroNome}! Que bom te ver.${ultima ? ` Da última vez você fez a aula "${ultima.titulo}".` : ''} Antes da aula de hoje, vamos fazer uma revisão rápida: são só ${CE.LICOES_ESPECIAIS.revisao.passos.length - 1} perguntas, uns 2 minutos. Clique no botão verde.`;
+      $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao' },
+        CE.el('p', { class: 'prof-texto' }, texto),
+        CE.el('div', { class: 'prof-botoes' },
+          CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'pular-revisao', title: 'Ir direto para a aula de hoje', onclick: async () => {
+            await CE.revisao.pular().catch((e) => CE.avisar(e.message));
+            boasVindas();
+          } }, 'Pular a revisão'),
+          CE.el('button', { class: 'botao conduzir', 'data-acao': 'revisao', onclick: () => comecarLicao('revisao') }, '🔁 Fazer a revisão ▶'),
+        ),
+      ));
+      if (falar) CE.voz.falar(texto);
+      return;
+    }
     const texto = proxima
       ? `Olá, ${primeiroNome}! Que bom te ver.${ultima ? ` Da última vez você fez a aula "${ultima.titulo}".` : ''} Hoje a sua aula é "${proxima.titulo}". Clique no botão verde "Começar aula" que eu te ensino passo a passo.`
       : `Olá, ${primeiroNome}! Você já fez todas as aulas do curso. Que tal treinar no programa Digitação?`;

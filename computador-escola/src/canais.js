@@ -65,7 +65,7 @@ function criarCanais(dados) {
   const ESCOLA_PADRAO = { nome: '', cidade: '', responsavel: '', cargo: 'Instrutor(a)', cargas: { n1: 40, n2: 40, n3: 40, digitacao1: 20, digitacao2: 20, digitacao3: 20 } };
   const dadosDaEscola = () => {
     const e = dados.ler('escola', {});
-    return { nome: e.nome || '', cidade: e.cidade || '', responsavel: e.responsavel || '', cargo: e.cargo || ESCOLA_PADRAO.cargo, cargas: { ...ESCOLA_PADRAO.cargas, ...(e.cargas || {}) }, trilha: e.trilha === 'completa' ? 'completa' : 'essencial' };
+    return { nome: e.nome || '', cidade: e.cidade || '', responsavel: e.responsavel || '', cargo: e.cargo || ESCOLA_PADRAO.cargo, cargas: { ...ESCOLA_PADRAO.cargas, ...(e.cargas || {}) }, trilha: e.trilha === 'completa' ? 'completa' : 'essencial', revisao: e.revisao !== false };
   };
   // A caixa inteira vai pela rede a cada gravação (limite de 25 MB): uma caixa quase cheia não recebe mais nada.
   const LIMITE_CAIXA = 20 * 1024 * 1024;
@@ -243,6 +243,12 @@ function criarCanais(dados) {
       exigirInstrutor(s);
       if (trilha !== 'essencial' && trilha !== 'completa') throw new Error('Trilha inválida.');
       dados.salvar('escola', { ...dados.ler('escola', {}), trilha });
+      return dadosDaEscola();
+    },
+    // Revisão rápida no primeiro login do dia (ligada por padrão).
+    'escola:revisao': (s, ligada) => {
+      exigirInstrutor(s);
+      dados.salvar('escola', { ...dados.ler('escola', {}), revisao: ligada !== false });
       return dadosDaEscola();
     },
     // Número do certificado: o mesmo aluno e o mesmo curso ficam sempre com o mesmo número (reimprimir não gasta outro).
