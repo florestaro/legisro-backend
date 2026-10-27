@@ -58,6 +58,25 @@ window.CE = window.CE || {};
     CE.voz.falar(`Mensagem do professor: ${novas.map((m) => m.texto).join('. ')}`, { mesmoPausado: true });
   }
 
+  // Corrida de digitação: o convite aparece uma vez por corrida (o aluno pode entrar depois pela Digitação).
+  const corridasVistas = new Map(); // id do aluno -> última corrida que ele já viu
+  function convidarParaCorrida(convite) {
+    const quem = CE.sessao.usuario && CE.sessao.usuario.id;
+    if (!quem || !convite || convite.entrou || corridasVistas.get(quem) === convite.id) return;
+    corridasVistas.set(quem, convite.id);
+    document.querySelectorAll('.corrida-convite').forEach((d) => d.remove());
+    const fundo = CE.el('div', { class: 'dialogo-fundo corrida-convite', 'data-convite-corrida': convite.id },
+      CE.el('div', { class: 'dialogo' },
+        CE.el('h3', {}, '🏁 Corrida de digitação!'),
+        CE.el('p', {}, 'O professor abriu uma corrida. Todo mundo digita o mesmo texto ao mesmo tempo: quem chegar mais longe vence!'),
+        CE.el('div', { class: 'dialogo-botoes' },
+          CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Agora não'),
+          CE.el('button', { class: 'botao', 'data-acao': 'entrar-corrida', onclick: () => { fundo.remove(); CE.janelas.abrir('digitacao', { corrida: true }); } }, 'Entrar na corrida ▶'))));
+    document.body.append(fundo);
+    CE.emitir('sala:corrida', { id: convite.id });
+    CE.voz.falar('O professor abriu uma corrida de digitação! Clique em Entrar na corrida.');
+  }
+
   // Sem resposta do instrutor por uns 20 s (3 tentativas), a pausa sai sozinha: o aluno não fica com a tela travada.
   let falhasSeguidas = 0;
   let geracao = 0; // muda ao entrar e ao sair: resposta de uma presença antiga é ignorada
@@ -71,6 +90,7 @@ window.CE = window.CE || {};
       marcarRede(true);
       pausar(!!r.pausada);
       mostrarMensagens(r.mensagens || (r.mensagem ? [r.mensagem] : []));
+      if (r.corrida && !document.getElementById('tela-pausa')) convidarParaCorrida(r.corrida);
     } catch (e) {
       if (minha !== geracao) return;
       marcarRede(false, e.message);
@@ -93,7 +113,7 @@ window.CE = window.CE || {};
       timer = setInterval(avisar, 8000);
     },
     // Ao sair: a pausa e a mensagem do instrutor não ficam na frente da tela de entrada.
-    parar() { clearInterval(timer); geracao++; ajudaEm = 0; pausar(false); document.querySelectorAll('.sala-mensagem').forEach((d) => d.remove()); },
+    parar() { clearInterval(timer); geracao++; ajudaEm = 0; pausar(false); document.querySelectorAll('.sala-mensagem, .corrida-convite').forEach((d) => d.remove()); },
     avisarAgora: avisar,
     // "Não entendi": avisa o instrutor na hora (sem esperar a próxima presença).
     pedirAjuda() { ajudaEm = Date.now(); avisar(); },

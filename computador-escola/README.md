@@ -14,10 +14,23 @@ conversa e tira dúvidas. **Funciona sem internet.**
   dispensadas (continuam abertas para revisão).
 - Cada aula tem explicação, prática guiada (com a seta vermelha e o desenho do mouse) e perguntas. Cada módulo termina
   num **desafio sem ajuda**, e o nível termina numa **prova**.
-- **Nível Intermediário completo: 41 aulas em 8 módulos.** Os módulos são: Pastas e organização (com pen drive),
+- **Nível Intermediário completo: 50 aulas em 10 módulos.** Os módulos são: Pastas e organização (com pen drive),
   Atalhos de teclado, Editor de Texto (carta, currículo, requerimento, tabela, imagem, corretor, imprimir),
   **Planilha** (fórmulas, SOMA, alça de preenchimento, notas, orçamento da casa), Internet segura e downloads,
-  **E-mail**, **Serviços pela internet** (banco, Pix, boleto, agendamento) e a Prova do nível.
+  **E-mail**, **Serviços pela internet** (banco, Pix, boleto, agendamento), **Serviços públicos (gov.br)**,
+  **Inteligência artificial e golpes com IA** e a Prova do nível.
+- **🪪 Serviços públicos pela internet (o treino da conta gov.br)**: no site de treino Cidadão Digital, o aluno cria a
+  "Conta Cidadão" (CPF de TREINO, código por SMS que aparece num "celular" na tela, senha forte), entende os níveis
+  bronze, prata e ouro, sobe para prata autorizando pelo site do Banco Escola, vê a **Carteira de Trabalho Digital**,
+  o **extrato do INSS** (com simulação), a situação do CPF e os valores a receber, troca a senha esquecida, e aprende o
+  golpe do falso gov.br e dos "valores esquecidos" num site falso de treino. A conta fica no progresso do aluno
+  (a senha não fica guardada, só um resumo dela) e vale de uma aula para a outra.
+- **🤖 Inteligência artificial e golpes com IA**: conversar com uma IA (o próprio Professor Virtual) e perguntar com
+  detalhes, conferir a resposta (a IA erra!), não contar dados pessoais; **golpe da voz clonada** (uma "ligação" toca na
+  tela com a voz de um parente pedindo Pix) e **vídeo falso com famoso** (deepfake) numa rede de vídeos de treino, com
+  denúncia do anúncio e a notícia que desmente.
+- Aulas novas que entram antes da prova de um nível não atrapalham quem já tinha passado nessa prova: para essa pessoa
+  elas ficam opcionais, e o certificado continua valendo.
 - **Nível Avançado completo: 48 aulas em 8 módulos.** Os módulos são: Editor de Texto avançado (estilos, trabalho
   escolar no padrão ABNT, sumário automático, quebra de página, cabeçalho e número de página, colunas, localizar e
   substituir, PDF), **Planilha avançada** (porcentagem, classificar, filtro, SOMASE e CONT.SE, destaque automático,
@@ -30,7 +43,7 @@ conversa e tira dúvidas. **Funciona sem internet.**
   digitação, jogos e os programas instaláveis) e pode **liberar aulas fora da sequência** para um aluno ou para a turma
   (veja "Painel do Instrutor" abaixo).
 - **Trilha essencial (o padrão)**, para turmas com pouco tempo (1 hora por semana): o aluno segue só as aulas essenciais
-  (Iniciante 29, Intermediário 29, Avançado 35, em vez de 48, 41 e 48). As outras viram **Reforço (opcional)**: abrem
+  (Iniciante 29, Intermediário 36, Avançado 35, em vez de 48, 50 e 48). As outras viram **Reforço (opcional)**: abrem
   junto com a aula essencial seguinte, não travam o curso, não são pedidas para o certificado nem para as medalhas, e
   o professor oferece "💪 Treinar mais" no fim da aula. Provas e o que elas cobram são sempre essenciais. Na **trilha
   completa**, todas as aulas são obrigatórias. O instrutor escolhe em **Painel › Progresso da turma › 🧭 Trilha do
@@ -54,18 +67,29 @@ conversa e tira dúvidas. **Funciona sem internet.**
 - **🙋 Não entendi**: em todo passo de aula. O Professor Virtual explica de novo, mais devagar, com a dica e a seta, e
   o instrutor vê o pedido na hora, na Sala ao vivo.
 
-### Curso de Digitação: 108 exercícios em 3 níveis
+### Curso de Digitação: 114 exercícios em 3 níveis
 - **Iniciante** (39): fileiras do meio, de cima e de baixo, Shift, acentos e cedilha, palavras e frases.
 - **Intermediário** (35): números, pontuação, frases, textos curtos, ritmo e trava-línguas.
-- **Avançado** (31): símbolos, dados do dia a dia (e-mail, telefone, CEP), teclado numérico, textos de Machado de Assis,
-  Gonçalves Dias e Olavo Bilac, **ditado** (o professor fala e o aluno digita) e testes de velocidade.
+- **Avançado** (37): símbolos, dados do dia a dia (e-mail, telefone, CEP), **fichas de cadastro**, teclado numérico,
+  textos de Machado de Assis, Gonçalves Dias e Olavo Bilac, **ditado** (o professor fala e o aluno digita) e testes de
+  velocidade.
+- **📋 Fichas de cadastro (entrada de dados)**: a ficha de papel fica à esquerda e o "sistema" à direita; o aluno passa
+  campo por campo (nome, CPF, telefone, CEP, data, valor...) pulando com o **Tab**. São 6 fichas de trabalho de verdade:
+  posto de saúde, loja, matrícula escolar, admissão no RH, pedido de entrega e nota de serviço. Meta de 98% de
+  acertos; o resultado mostra os **toques por hora** (a medida das vagas de digitador), o campo errado e se o aluno
+  usou o Tab ou o mouse.
+- **🏁 Corrida da turma (ao vivo, pela rede da sala)**: o instrutor abre a corrida (ícone "Corrida de Digitação" ou
+  Painel › Sala ao vivo), escolhe o texto (fácil, médio, difícil ou um texto dele), o tempo e a turma; os alunos recebem
+  o convite na tela em poucos segundos e entram; o instrutor dá a largada (3, 2, 1) e todos digitam o mesmo texto. O
+  placar ao vivo aparece na tela de cada aluno e, grande, na tela do instrutor (bom para o projetor), com pódio no fim.
+  Vence quem termina primeiro; se ninguém terminar, quem chegou mais longe. O recorde de cada aluno fica guardado.
 - **Cada exercício tem meta de velocidade (ppm) e de acertos (%)**, e o próximo só libera quando bate as duas.
 - **Provas cronometradas**: Iniciante (3 min, 20 ppm, 92%), Intermediário (5 min, 35 ppm, 95%) e Avançado
   (5 min, 45 ppm, 97%). Crianças têm metas menores.
 - O teclado ABNT2 aparece na tela, com uma cor por dedo e a dica de como fazer acentos e símbolos.
 - **Teste de nivelamento de digitação** (1 minuto): dispensa os níveis em que o aluno já bate a meta da prova.
-- **Jogos e treinos**: Chuva de palavras, Treino das teclas difíceis (feito com as teclas em que o aluno mais erra)
-  e o gráfico de evolução.
+- **Jogos e treinos**: Corrida da turma, Chuva de palavras, Treino das teclas difíceis (feito com as teclas em que o
+  aluno mais erra) e o gráfico de evolução.
 
 ### Programas do computador simulado
 **Editor de Texto** (modelos de carta, currículo, requerimento, recibo e trabalho escolar ABNT; tabela, imagem,
@@ -289,6 +313,7 @@ app/js/sala.js           a sala ao vivo do lado do aluno (presença, pausa, mens
 app/js/apps/             os programas (editor, planilha, e-mail, digitação, arquivos...) e o Painel do Instrutor
                          (painel-instrutor.js; as abas novas ficam em painel-extras.js)
 app/js/planilha/         as fórmulas da planilha
-app/js/navegador/        os sites de treino
+app/js/navegador/        os sites de treino (sites-gov.js: a Conta Cidadão; sites-ia.js: o vídeo falso)
+app/js/corrida-regras.js as regras da corrida de digitação (usadas pelo servidor da sala e pelo modo navegador)
 testes/                  testes automáticos do modo sala de aula (servidor e turma de 20 alunos)
 ```

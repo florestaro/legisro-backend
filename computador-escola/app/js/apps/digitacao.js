@@ -81,10 +81,12 @@
   const ehInstrutor = () => CE.sessao.usuario.papel === 'instrutor';
 
   // Um exercício está liberado quando o anterior (na ordem do curso) foi aprovado, ou quando o instrutor liberou
-  // o nível inteiro para o aluno ("liberadas" do progresso: "digitacao:<nível>").
+  // o nível inteiro para o aluno ("liberadas" do progresso: "digitacao:<nível>"). Exercício já aprovado continua
+  // aberto (mesmo que entrem exercícios novos antes dele no curso).
   CE.digitacaoLiberado = function (exercicio, resultados, liberadas = {}) {
     if (ehInstrutor()) return true;
     if (liberadas && liberadas[`digitacao:${exercicio.nivel}`]) return true;
+    if (resultados[exercicio.id] && resultados[exercicio.id].aprovado) return true;
     const i = CE.DIGITACAO.lista.indexOf(exercicio);
     if (i <= 0) return true;
     const anterior = CE.DIGITACAO.lista[i - 1];
@@ -152,14 +154,15 @@
           const r = resultados[ex.id];
           const liberado = CE.digitacaoLiberado(ex, resultados, prog.liberadas);
           const meta = CE.metaDigitacao(ex, CE.sessao.usuario);
-          const textoMeta = ex.tipo === 'ditado' ? `Meta: ${meta.precisao}% de acertos` : `Meta: ${meta.ppm} ppm · ${meta.precisao}%${ex.duracao ? ` · ${ex.duracao / 60} min` : ''}`;
+          const textoMeta = ex.tipo === 'ditado' ? `Meta: ${meta.precisao}% de acertos`
+            : `Meta: ${meta.ppm} ppm · ${meta.precisao}%${ex.duracao ? ` · ${ex.duracao / 60} min` : ''}${ex.tipo === 'ficha' ? ' · use o Tab' : ''}`;
           return CE.el('button', {
             class: 'dig-exercicio' + (r && r.aprovado ? ' aprovado' : '') + (!liberado ? ' bloqueado' : '') + (ex.prova ? ' prova' : ''),
             'data-exercicio': ex.id, disabled: !liberado,
             title: liberado ? '' : 'Complete o exercício anterior para liberar este.',
             onclick: () => praticar(ex),
           },
-            CE.el('span', { class: 'dig-ex-icone' }, !liberado ? '🔒' : r && r.aprovado ? '✅' : ex.prova ? '🏁' : ex.tipo === 'ditado' ? '🎧' : ex.tipo === 'tempo' ? '⏱️' : '▶'),
+            CE.el('span', { class: 'dig-ex-icone' }, !liberado ? '🔒' : r && r.aprovado ? '✅' : ex.prova ? '🏁' : ex.tipo === 'ditado' ? '🎧' : ex.tipo === 'tempo' ? '⏱️' : ex.tipo === 'ficha' ? '📋' : '▶'),
             CE.el('span', { class: 'dig-ex-nome' }, ex.titulo, CE.el('small', {}, textoMeta)),
             CE.el('span', { class: 'dig-estrelas', title: r ? `Melhor: ${r.ppm} ppm, ${r.precisao}% de acertos` : 'Ainda não feito' },
               r && r.dispensado ? 'dispensado' : r && r.aprovado ? '★'.repeat(r.estrelas) + '☆'.repeat(3 - r.estrelas) : r ? `${r.ppm} ppm · ${r.precisao}%` : ''),
@@ -183,6 +186,7 @@
 
       function praticar(ex) {
         if (ex.tipo === 'ditado') { praticarDitado(ex); return; }
+        if (ex.tipo === 'ficha') { praticarFicha(ex); return; }
         const meta = CE.metaDigitacao(ex, CE.sessao.usuario);
         let posicao = 0, erros = 0, inicio = null, errouAgora = false, terminou = false, relogio = null;
         const errosPorTecla = {};
@@ -402,6 +406,74 @@
         desenhar();
       }
 
+      // ---------- Ficha de cadastro (entrada de dados) ----------
+      // À esquerda, a ficha de papel; à direita, o "sistema". O aluno passa campo por campo, pulando com o Tab.
+      // Conta a velocidade (ppm e toques por hora, a medida das vagas de digitador) e os acertos de cada campo.
+      function praticarFicha(ex) {
+        const meta = CE.metaDigitacao(ex, CE.sessao.usuario);
+        let inicio = null, terminou = false, tabs = 0, cliques = 0, ultimaTecla = '';
+        const entradas = ex.campos.map(([rotulo], i) => CE.el('input', {
+          class: 'campo dig-ficha-campo', 'data-campo-ficha': i, 'aria-label': rotulo, autocomplete: 'off', spellcheck: 'false', autocapitalize: 'off',
+        }));
+        const salvar = CE.el('button', { class: 'botao', type: 'submit', 'data-acao': 'salvar-ficha' }, '💾 Salvar cadastro');
+        const sistema = CE.el('form', { class: 'dig-ficha-sistema', onsubmit: (e) => { e.preventDefault(); terminar(); } },
+          CE.el('div', { class: 'dig-ficha-titulo' }, '💻 Sistema de cadastro'),
+          ...ex.campos.map(([rotulo], i) => CE.el('label', {}, rotulo, entradas[i])),
+          salvar);
+        sistema.addEventListener('keydown', (e) => {
+          ultimaTecla = e.key;
+          if (!inicio && e.key.length === 1) inicio = Date.now();
+        });
+        // Mudou de campo: pelo Tab (o certo) ou clicando com o mouse.
+        sistema.addEventListener('focusin', (e) => {
+          const i = Number(e.target.dataset.campoFicha);
+          if (!(i > 0) || terminou) return;
+          if (ultimaTecla === 'Tab') tabs++; else cliques++;
+          ultimaTecla = '';
+        });
+        sistema.addEventListener('paste', (e) => { e.preventDefault(); CE.avisar('Aqui não vale colar: digite os dados. 🙂'); });
+
+        async function terminar() {
+          if (terminou) return;
+          if (!inicio) { CE.avisar('Digite os dados da ficha primeiro.'); entradas[0].focus(); return; }
+          terminou = true;
+          const minutos = Math.max((Date.now() - inicio) / 60000, 1 / 60);
+          let total = 0, certos = 0, digitados = 0;
+          const linhas = ex.campos.map(([rotulo, valor], i) => {
+            const escrito = entradas[i].value.trim();
+            total += valor.length;
+            digitados += escrito.length;
+            certos += Math.max(0, valor.length - distancia(valor, escrito));
+            const ok = escrito === valor;
+            return CE.el('div', { class: 'dig-ditado-linha' + (ok ? ' certa' : ''), 'data-campo-resultado': ok ? 'certo' : 'errado' },
+              CE.el('div', {}, CE.el('small', {}, `${rotulo}: `), valor),
+              ok ? null : CE.el('div', {}, CE.el('small', {}, 'Você digitou: '), escrito || '(vazio)'));
+          });
+          const precisao = Math.round((certos / total) * 100);
+          const ppm = Math.round((digitados / 5) / minutos);
+          const resultado = { ppm, precisao, toquesPorHora: Math.round((digitados / minutos) * 60), aprovado: ppm >= meta.ppm && precisao >= meta.precisao };
+          resultado.estrelas = estrelasDe(resultado, meta, 'ficha');
+          await guardarResultado(ex, resultado);
+          const usoDoTab = ex.campos.length > 1 ? CE.el('p', { class: 'dig-conselho', 'data-uso-tab': `${tabs}/${ex.campos.length - 1}` },
+            tabs >= ex.campos.length - 1 ? `⌨️ Ótimo: você pulou os campos com o Tab (${tabs} de ${ex.campos.length - 1}).`
+              : `⌨️ Você usou o Tab em ${tabs} de ${ex.campos.length - 1} campos${cliques ? ` e clicou com o mouse em ${cliques}` : ''}. Com o Tab é muito mais rápido!`) : null;
+          mostrarResultado(ex, resultado, meta, null, [usoDoTab, ...linhas]);
+        }
+
+        trocarTela(CE.el('div', { class: 'dig-pratica' },
+          CE.el('div', { class: 'dig-cabecalho' },
+            CE.el('button', { class: 'botao secundario', onclick: () => mostrarLista(ex.nivel) }, '← Exercícios'),
+            CE.el('strong', {}, `${ex.modulo}: ${ex.titulo}`)),
+          CE.el('div', { class: 'dig-ficha' },
+            CE.el('div', { class: 'dig-ficha-papel' }, CE.el('div', { class: 'dig-ficha-titulo' }, `📄 ${ex.titulo}`),
+              ...ex.campos.map(([rotulo, valor]) => CE.el('div', { class: 'dig-ficha-linha' }, CE.el('small', {}, rotulo), CE.el('span', {}, valor)))),
+            sistema),
+          CE.el('p', { class: 'dig-rodape' }, `${ex.dica} No último campo, aperte Enter (ou clique em "Salvar cadastro"). Meta: ${meta.ppm} ppm e ${meta.precisao}% de acertos.`),
+        ));
+        entradas[0].focus();
+        CE.emitir('digitacao:iniciada', { exercicio: ex.id });
+      }
+
       // ---------- Resultado ----------
 
       async function mostrarResultado(ex, resultado, meta, erros, detalhes) {
@@ -419,6 +491,7 @@
           CE.el('h2', {}, resultado.aprovado ? (ex.prova ? `Você passou na ${ex.titulo}! 🏆` : 'Meta batida! 🎉') : 'Quase lá! Vamos tentar de novo?'),
           CE.el('div', { class: 'dig-estrelas grande' }, '★'.repeat(resultado.estrelas) + '☆'.repeat(3 - resultado.estrelas)),
           ex.tipo !== 'ditado' ? CE.el('p', { class: resultado.ppm >= meta.ppm ? 'ok' : 'abaixo' }, `Velocidade: ${resultado.ppm} palavras por minuto (meta ${meta.ppm})`) : null,
+          resultado.toquesPorHora ? CE.el('p', { 'data-toques-hora': resultado.toquesPorHora }, `Toques por hora: ${resultado.toquesPorHora.toLocaleString('pt-BR')} (a medida usada nas vagas de digitador)`) : null,
           CE.el('p', { class: resultado.precisao >= meta.precisao ? 'ok' : 'abaixo' }, `Acertos: ${resultado.precisao}% (meta ${meta.precisao}%)${erros != null ? ` · ${erros} erro${erros === 1 ? '' : 's'}` : ''}`),
           faltou.length ? CE.el('p', { class: 'dig-conselho' }, `Faltou: ${faltou.join(' e ')}. ${resultado.precisao < meta.precisao ? 'Vá mais devagar e com atenção: acertar vem antes de correr.' : 'Você está acertando bem! Agora tente um pouco mais rápido.'}`) : null,
           detalhes ? CE.el('div', { class: 'dig-ditado-comparacao' }, ...detalhes) : null,
@@ -440,6 +513,11 @@
             CE.el('strong', {}, 'Chuva de palavras'),
             CE.el('span', {}, 'Digite as palavras antes que elas caiam no chão!'),
             CE.el('small', {}, `Recorde: ${recordes.chuva || 0} pontos`)),
+          CE.el('button', { class: 'dig-jogo', 'data-jogo': 'corrida', onclick: () => praticarCorrida() },
+            CE.el('span', { class: 'dig-jogo-icone' }, '🏁'),
+            CE.el('strong', {}, 'Corrida da turma'),
+            CE.el('span', {}, 'Todo mundo digita o mesmo texto, ao mesmo tempo. Quem chega mais longe?'),
+            CE.el('small', {}, `Seu recorde: ${recordes.corrida || 0} ppm`)),
           CE.el('button', { class: 'dig-jogo', 'data-jogo': 'teclas', onclick: () => treinoTeclasDificeis(resultados) },
             CE.el('span', { class: 'dig-jogo-icone' }, '🎯'),
             CE.el('strong', {}, 'Treino das teclas difíceis'),
@@ -557,6 +635,138 @@
         quadro = requestAnimationFrame(passo);
       }
 
+      // ---------- Corrida da turma (ao vivo, pela rede da sala) ----------
+      // O instrutor abre a corrida e dá a largada; aqui o aluno entra, espera, digita e vê o placar ao vivo.
+      // O relógio é o do computador do instrutor ("agora" vem em cada resposta): todos largam juntos.
+      function praticarCorrida() {
+        let corrida = null, diferenca = 0, posicao = 0, erros = 0, errouAgora = false, relogio = null, ativo = true, enviando = false, salvo = false;
+        let letras = [];
+        const status = CE.el('div', { class: 'cor-status', 'data-corrida-fase': '' }, 'Entrando na corrida…');
+        const areaTexto = CE.el('div', { class: 'dig-texto longo cor-texto', tabindex: '0', 'aria-label': 'Texto da corrida' });
+        const placar = CE.el('ol', { class: 'cor-placar' });
+        const eu = () => CE.sessao.usuario && CE.sessao.usuario.id;
+        const agoraNoInstrutor = () => Date.now() + diferenca;
+        const fase = () => {
+          if (!corrida) return 'nenhuma';
+          if (corrida.fase === 'fim') return 'fim';
+          if (!corrida.inicio) return 'espera';
+          const t = agoraNoInstrutor();
+          if (t < corrida.inicio) return 'contagem';
+          return t > corrida.inicio + corrida.duracao * 1000 ? 'fim' : 'correndo';
+        };
+        const meu = () => corrida && corrida.participantes.find((p) => p.id === eu());
+        const terminei = () => { const m = meu(); return !!(m && m.terminou) || (letras.length && posicao >= letras.length); };
+
+        function receber(r) {
+          if (!r || !ativo) return;
+          const novaCorrida = !corrida || corrida.id !== r.id;
+          corrida = r;
+          diferenca = r.agora - Date.now();
+          if (novaCorrida) {
+            posicao = 0; erros = 0; salvo = false;
+            letras = [...r.texto].map((c) => CE.el('span', { class: 'dig-letra' + (c === ' ' ? ' espaco' : '') }, c));
+            areaTexto.replaceChildren(...letras, captura);
+          }
+          desenharPlacar();
+        }
+
+        function desenharPlacar() {
+          const lista = corrida ? corrida.participantes : [];
+          placar.replaceChildren(...lista.slice(0, 10).map((p) => CE.el('li', { class: 'cor-linha' + (p.id === eu() ? ' eu' : ''), 'data-lugar': p.lugar },
+            CE.el('span', { class: 'cor-lugar' }, ['🥇', '🥈', '🥉'][p.lugar - 1] || `${p.lugar}º`),
+            CE.el('span', { class: 'cor-nome' }, `${p.avatar || ''} ${p.nome}`),
+            CE.el('span', { class: 'cor-barra' }, CE.el('span', { style: `width:${Math.round((p.pos / p.total) * 100)}%` })),
+            CE.el('span', { class: 'cor-ppm' }, p.terminou ? `🏁 ${p.ppm} ppm` : `${p.ppm} ppm`))));
+          const m = meu();
+          if (m && m.lugar > 10) placar.append(CE.el('li', { class: 'cor-linha eu' }, CE.el('span', { class: 'cor-lugar' }, `${m.lugar}º`), CE.el('span', { class: 'cor-nome' }, 'Você'), CE.el('span', { class: 'cor-barra' }), CE.el('span', { class: 'cor-ppm' }, `${m.ppm} ppm`)));
+        }
+
+        async function sincronizar() {
+          if (enviando || !ativo) return;
+          enviando = true;
+          try {
+            const f = fase();
+            const r = corrida && (f === 'correndo' || (f === 'fim' && !salvo && meu()))
+              ? await CE.api.chamar('corrida:progresso', { id: corrida.id, pos: posicao, erros, terminou: posicao >= letras.length })
+              : await CE.api.chamar('corrida:estado');
+            if (!r) { corrida = null; } else receber(r);
+            // O professor abriu uma corrida nova com esta tela aberta: entra nela.
+            if (r && r.fase !== 'fim' && !meu()) receber(await CE.api.chamar('corrida:entrar'));
+          } catch { /* a rede pode falhar um instante: tenta de novo no próximo segundo */ }
+          enviando = false;
+          if (fase() === 'fim' && !salvo && meu()) await guardarCorrida();
+        }
+
+        async function guardarCorrida() {
+          salvo = true;
+          const m = meu();
+          await CE.sessao.atualizarProgresso((p) => {
+            p.digitacao = p.digitacao || {};
+            p.digitacao._jogos = p.digitacao._jogos || {};
+            p.digitacao._jogos.corrida = Math.max(p.digitacao._jogos.corrida || 0, m.ppm);
+          }).catch(() => {});
+          CE.emitir('digitacao:corrida', { lugar: m.lugar, ppm: m.ppm, participantes: corrida.participantes.length });
+          if (m.lugar <= 3) CE.comemorar(m.lugar === 1 ? 'grande' : 'pequena');
+        }
+
+        function mostrarFase() {
+          const f = fase();
+          areaTexto.classList.toggle('travado', f !== 'correndo' || terminei());
+          const m = meu();
+          if (f === 'nenhuma') status.textContent = '🏁 Não tem corrida agora. Quando o professor abrir uma corrida, ela aparece aqui.';
+          else if (f === 'espera') status.textContent = `⏳ Você está na corrida! Espere o professor dar a largada. (${corrida.participantes.length} na corrida)`;
+          else if (f === 'contagem') status.textContent = `Preparar… ${Math.ceil((corrida.inicio - agoraNoInstrutor()) / 1000)}`;
+          else if (f === 'correndo') status.textContent = terminei() ? `🏁 Você terminou! Esperando os colegas… (${m ? `${m.lugar}º lugar` : ''})` : `⏱️ ${formatarTempo(Math.max(0, Math.ceil((corrida.inicio + corrida.duracao * 1000 - agoraNoInstrutor()) / 1000)))} · VAI! Digite o texto`;
+          else status.textContent = m ? `🏁 Fim da corrida! Você ficou em ${m.lugar}º lugar, com ${m.ppm} ppm e ${m.precisao}% de acertos.` : '🏁 Esta corrida já terminou.';
+          status.dataset.corridaFase = f;
+          if (f === 'correndo' && !terminei() && document.activeElement !== captura) captura.focus();
+        }
+
+        const captura = CE.el('textarea', { class: 'dig-captura', 'aria-label': 'Digite aqui', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
+        areaTexto.addEventListener('mousedown', (e) => { e.preventDefault(); captura.focus(); });
+        captura.addEventListener('beforeinput', (e) => {
+          if (e.inputType === 'insertText' && e.data) { e.preventDefault(); [...e.data].forEach(processar); }
+          else e.preventDefault();
+        });
+        captura.addEventListener('compositionend', (e) => { [...(e.data || '')].forEach(processar); captura.value = ''; });
+        function processar(c) {
+          if (fase() !== 'correndo' || terminei()) return;
+          if (c === corrida.texto[posicao]) {
+            letras[posicao].classList.add(errouAgora ? 'corrigida' : 'certa');
+            letras[posicao].classList.remove('errada', 'atual');
+            errouAgora = false;
+            posicao++;
+            if (letras[posicao]) { letras[posicao].classList.add('atual'); letras[posicao].scrollIntoView({ block: 'nearest' }); }
+            if (posicao >= letras.length) sincronizar();
+          } else {
+            erros++;
+            errouAgora = true;
+            letras[posicao].classList.add('errada');
+          }
+        }
+
+        trocarTela(CE.el('div', { class: 'dig-pratica cor-tela' },
+          CE.el('div', { class: 'dig-cabecalho' },
+            CE.el('button', { class: 'botao secundario', onclick: () => mostrarLista('jogos') }, '← Voltar'),
+            CE.el('strong', {}, '🏁 Corrida da turma')),
+          status, areaTexto, CE.el('div', { class: 'cor-placar-caixa' }, CE.el('strong', {}, 'Placar ao vivo'), placar)));
+        encerrarAtual = () => { ativo = false; clearInterval(relogio); };
+        (async () => {
+          try { receber(await CE.api.chamar('corrida:entrar')); } catch (e) {
+            try { const r = await CE.api.chamar('corrida:estado'); if (r && r.fase !== 'fim') receber(r); } catch { /* sem corrida */ }
+            if (!corrida) { mostrarFase(); status.textContent = `🏁 ${e.message}`; }
+          }
+          if (letras[0]) letras[0].classList.add('atual');
+          mostrarFase();
+          CE.emitir('digitacao:corrida-entrou', { id: corrida && corrida.id });
+        })();
+        let ultimaSinc = 0;
+        relogio = setInterval(() => {
+          mostrarFase();
+          if (Date.now() - ultimaSinc >= 1000) { ultimaSinc = Date.now(); sincronizar(); }
+        }, 200);
+      }
+
       // ---------- Teclado na tela ----------
 
       function desenharTeclado() {
@@ -582,11 +792,13 @@
       }
 
       if (argumento && argumento.nivelamento) praticar(CE.DIGITACAO.nivelamento);
+      else if (argumento && argumento.corrida) praticarCorrida();
       else if (argumento && argumento.exercicio) abrirExercicio(argumento.exercicio);
       else mostrarLista();
       return {
         receber(arg) {
           if (arg && arg.nivelamento) praticar(CE.DIGITACAO.nivelamento);
+          else if (arg && arg.corrida) praticarCorrida();
           else if (arg && arg.exercicio) abrirExercicio(arg.exercicio);
         },
         aoFechar() { encerrarAtual(); return true; },

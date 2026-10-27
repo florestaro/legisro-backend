@@ -151,6 +151,10 @@ window.CE = window.CE || {};
       'O centro comunitário abriu inscrições para o curso gratuito de informática básica, para crianças e adultos.',
       'As aulas ensinam a usar o mouse, o teclado, o Editor de Texto e a internet com segurança.',
       'As inscrições podem ser feitas na secretaria do centro, com documento e comprovante de endereço.']],
+    'video-falso': ['Segurança', 'Apresentador Carlos Mendes avisa: vídeo dele pedindo investimento é falso', '13/05', [
+      'Circula na internet um vídeo em que o apresentador Carlos Mendes oferece um investimento que transformaria R$ 200 em R$ 5.000 em 7 dias.',
+      'O vídeo é falso: foi montado com inteligência artificial, que imita o rosto e a voz das pessoas. O apresentador nunca fez esse anúncio.',
+      'Desconfie de famosos pedindo dinheiro em anúncios, de promessas de lucro rápido e de pressa. Denuncie o anúncio e não clique no link.']],
     'golpe-pix': ['Segurança', 'Polícia alerta para golpe do falso parente pedindo Pix', '08/05', [
       'A polícia alerta moradores para um golpe comum: alguém manda mensagem dizendo que é um parente que trocou de número e pede um Pix urgente.',
       'Antes de qualquer transferência, ligue para o número antigo da pessoa e confirme. Na dúvida, não faça o Pix.']],

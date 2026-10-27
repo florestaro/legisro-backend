@@ -6,6 +6,7 @@
 //   texto  - digitar o texto inteiro (é preciso corrigir cada erro para seguir)
 //   tempo  - digitar o máximo possível até o tempo acabar (provas e treinos de ritmo)
 //   ditado - o professor fala a frase e o aluno digita sem ver
+//   ficha  - passar uma ficha de papel para o "sistema", campo por campo, pulando com o Tab (entrada de dados)
 window.CE = window.CE || {};
 
 (function () {
@@ -148,6 +149,23 @@ window.CE = window.CE || {};
     ['CEP e documentos', 'CEP 76801-000. Protocolo 2025/00123. Pedido nº 45871. Matrícula 2024-0315.'],
   ];
 
+  // Fichas de cadastro (dados inventados): o trabalho de recepção, caixa, RH e escritório.
+  // Cada uma: [título, [rótulo, valor]..., meta de velocidade]. A meta de acertos é alta: dado errado dá problema.
+  const FICHAS = [
+    ['Ficha do posto de saúde', [['Nome completo', 'Maria Aparecida dos Santos'], ['Data de nascimento', '14/03/1958'], ['CPF', '234.567.891-20'],
+      ['Cartão do SUS', '700 1234 5678 9012'], ['Telefone', '(69) 99876-5432'], ['Endereço', 'Rua das Seringueiras, 245'], ['Bairro', 'Nova Porto Velho']], 20],
+    ['Cadastro de cliente da loja', [['Nome completo', 'José Ribamar Ferreira'], ['CPF', '345.678.912-30'], ['Celular', '(69) 98123-4567'],
+      ['E-mail', 'jose.ribamar@correio.escola'], ['Endereço', 'Avenida Brasil, 1020'], ['Cidade', 'Ji-Paraná - RO'], ['CEP', '76900-000']], 22],
+    ['Matrícula na escola', [['Nome do aluno', 'Lucas Gabriel Pereira'], ['Data de nascimento', '22/07/2015'], ['Nome da mãe', 'Francisca Pereira da Silva'],
+      ['Telefone do responsável', '(69) 99234-1100'], ['Ano escolar', '5'], ['Turma', 'B'], ['Turno', 'Manhã']], 24],
+    ['Ficha de admissão (RH)', [['Nome completo', 'Antônia Lima de Souza'], ['CPF', '456.789.123-40'], ['PIS', '123.45678.90-1'],
+      ['Cargo', 'Auxiliar administrativo'], ['Data de admissão', '03/02/2025'], ['Salário', 'R$ 1.850,00']], 26],
+    ['Pedido de entrega', [['Cliente', 'Raimundo Nonato Costa'], ['Telefone', '(69) 99345-6789'], ['Endereço', 'Rua Dom Pedro II, 88 - Centro'],
+      ['Produto', '2 botijões de gás 13 kg'], ['Valor', 'R$ 230,00'], ['Pagamento', 'Pix']], 27],
+    ['Nota de serviço', [['Prestador', 'Oficina do Tião'], ['CNPJ', '12.345.678/0001-90'], ['Cliente', 'Clínica Bem Viver'],
+      ['Serviço', 'Troca de óleo e filtro'], ['Data', '15/04/2025'], ['Valor', 'R$ 185,50']], 28],
+  ];
+
   const NUMEROS_TECLADO = [
     ['Números 4 5 6', '456 654 445 556 664 465 546 645 456 555 444 666'],
     ['Números 1 2 3', '123 321 112 223 331 132 213 231 312 111 222 333'],
@@ -278,6 +296,10 @@ window.CE = window.CE || {};
   function nivelAvancado() {
     const exSimbolos = SIMBOLOS.map(([titulo, texto], i) => ({ id: `a-simb-${i + 1}`, titulo: `Símbolos: ${titulo}`, texto }));
     const exDados = DADOS.map(([titulo, texto], i) => ({ id: `a-dados-${i + 1}`, titulo, texto }));
+    const exFichas = FICHAS.map(([titulo, campos, ppm], i) => ({
+      id: `a-ficha-${i + 1}`, titulo, tipo: 'ficha', campos, metaFixa: { ppm, precisao: 98 },
+      dica: 'Digite cada dado igualzinho ao papel (com pontos, traços e acentos) e aperte Tab para ir ao próximo campo.',
+    }));
     const exNumerico = NUMEROS_TECLADO.map(([titulo, texto], i) => ({
       id: `a-numerico-${i + 1}`, titulo: `Teclado numérico: ${titulo}`, texto,
       dica: 'Use o teclado numérico, à direita do teclado. O dedo médio fica no 5, que tem um risquinho. Ligue o Num Lock.',
@@ -297,6 +319,7 @@ window.CE = window.CE || {};
       modulos: [
         { titulo: 'Símbolos', exercicios: exSimbolos },
         { titulo: 'Dados do dia a dia', exercicios: exDados },
+        { titulo: 'Fichas de cadastro (trabalho)', exercicios: exFichas },
         { titulo: 'Teclado numérico', exercicios: exNumerico },
         { titulo: 'Textos longos', exercicios: exLongos },
         { titulo: 'Ditado (ouvir e digitar)', exercicios: exDitado },
@@ -316,7 +339,7 @@ window.CE = window.CE || {};
       e.nivel = nivel.id;
       e.tipo = e.tipo || 'texto';
       const ppm = Math.round(nivel.metas.ppmInicio + ((nivel.metas.ppmFim - nivel.metas.ppmInicio) * i) / Math.max(1, exercicios.length - 1));
-      e.meta = e.tipo === 'ditado' ? { ppm: 0, precisao: e.metaPrecisao } : { ppm, precisao: nivel.metas.precisao };
+      e.meta = e.tipo === 'ditado' ? { ppm: 0, precisao: e.metaPrecisao } : e.metaFixa ? { ...e.metaFixa } : { ppm, precisao: nivel.metas.precisao };
       LISTA.push(e);
     });
     Object.assign(nivel.prova, { nivel: nivel.id, modulo: 'Prova', prova: true });
@@ -343,5 +366,13 @@ window.CE = window.CE || {};
     dica: 'Digite com calma e atenção, no seu ritmo normal. O resultado mostra em que nível você começa.',
   };
 
-  CE.DIGITACAO = { niveis: NIVEIS, lista: LISTA, nivelamento: NIVELAMENTO };
+  // Textos para a corrida da turma (até ~600 letras, cortados no fim de uma palavra).
+  const cortar = (t, n = 600) => (t.length <= n ? t : t.slice(0, t.lastIndexOf(' ', n)));
+  const TEXTOS_CORRIDA = {
+    facil: ['🌱 Fácil (frases simples)', cortar(FRASES_SIMPLES.join(' '))],
+    medio: ['🌿 Médio (frases do dia a dia)', cortar(FRASES_DIA_A_DIA.join(' '))],
+    dificil: ['🌳 Difícil (texto com pontuação)', cortar(TEXTOS_LONGOS.map((t) => t[1]).join(' '))],
+  };
+
+  CE.DIGITACAO = { niveis: NIVEIS, lista: LISTA, nivelamento: NIVELAMENTO, textosCorrida: TEXTOS_CORRIDA };
 })();

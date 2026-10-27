@@ -16,6 +16,11 @@ essencial, que é o padrão). Aula nova entra como essencial; para virar reforç
 lá a prova, nem aula que ensina algo que a prova cobra, nem a única aula essencial de um módulo. Na trilha essencial,
 uma aula só espera a aula **essencial** anterior, e as aulas de reforço abrem junto com a essencial seguinte.
 
+**Módulo novo no meio do curso.** `CE.adicionarModulo({ ..., antes: 'n2-prova', novoEm: 'AAAA-MM-DD' })` põe o módulo
+antes de outro (por exemplo, antes da prova do nível). Com `novoEm`, quem já tinha passado na prova do nível antes dessa
+data não fica travado: para essa pessoa as aulas novas são opcionais, e o certificado continua valendo
+(veja `app/js/licoes/n2-gov-ia.js`).
+
 **Revisão rápida.** As perguntas (`quiz`) das aulas também servem para a revisão do começo do dia
 (`app/js/licoes/revisao.js`): o professor sorteia até 3 das últimas aulas que o aluno fez. Por isso, escreva perguntas
 que se entendem sozinhas, sem depender da tela da aula (nada de "o botão que você acabou de clicar").
@@ -108,6 +113,10 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `email:conta-criada` / `email:aberto` / `email:enviado` / `email:respondido` / `email:encaminhado` / `email:recebido` / `email:spam` / `email:anexo-baixado` | E-mail | `para`, `assunto`, `anexos`, `nomesAnexos`, `de` |
 | `banco:login` / `banco:saldo` / `banco:pix` / `banco:pix-cancelado` / `banco:boleto` / `banco:sair` | Banco Escola | `valor`, `chave`, `nome` |
 | `servico:agendado` / `servico:segunda-via` | Cidadão Digital | `especialidade`, `matricula` |
+| `gov:cadastro-iniciado` / `gov:codigo-confirmado` / `gov:conta-criada` / `gov:login` / `gov:login-erro` / `gov:sair` | Conta Cidadão (treino da conta gov.br) | `nivel` |
+| `gov:nivel` / `gov:simulou` / `gov:carteira-baixada` / `gov:valores-pedido` / `gov:senha-trocada` | Conta Cidadão: subiu para prata, simulou a aposentadoria, baixou a carteira, pediu valores, trocou a senha | `nivel`, `como` |
+| `ia:ligacao-atendida` / `ia:ligacao` | Ligação de treino com voz clonada (aula de IA) | `escolha` (`pix`, `pergunta` ou `desligar`) |
+| `ia:video-assistido` / `ia:denunciou` | Vídeo falso (deepfake) no site VejaAgora | `motivo` |
 | `navegador:download` | Baixou um arquivo num site | `site`, `nome` |
 | `editor:formatado` (avançado) | Estilo, colunas, quebra de página, sumário | `comando` (`estilo`, `colunas`, `quebraPagina`, `sumario`), `valor` (`h1`, `h2`, `abnt`... / nº de colunas), `antesDe` |
 | `editor:cabecalho` / `editor:sumario` / `editor:pdf` | Cabeçalho e rodapé / sumário / PDF | `cabecalho`, `rodape`, `numerar` / `itens`, `acao` (`inserir` ou `atualizar`) / `nome`, `paginas` |
@@ -141,7 +150,9 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `instrutor:revisao` | Painel do Instrutor (revisão rápida) | `ligada` |
 | `revisao:concluida` | Terminou a revisão rápida do dia | `nota`, `licoes`, `rever` (aula mais esquecida ou `null`) |
 | `calculadora:resultado` | Apertou "=" na Calculadora | `a`, `b`, `operacao` (`+ − × ÷`), `resultado` |
-| `digitacao:iniciada` / `digitacao:concluida` | Exercício de digitação | `exercicio`, `ppm`, `precisao`, `estrelas`, `aprovado` |
+| `digitacao:iniciada` / `digitacao:concluida` | Exercício de digitação (na ficha de cadastro, também `toquesPorHora`) | `exercicio`, `ppm`, `precisao`, `estrelas`, `aprovado` |
+| `digitacao:corrida-entrou` / `digitacao:corrida` | Corrida da turma: entrou / terminou | `id` / `lugar`, `ppm`, `participantes` |
+| `sala:corrida` / `instrutor:corrida` | Convite da corrida no computador do aluno / o instrutor abriu ou deu a largada | `id` / `acao`, `turma`, `alunos` |
 | `professor:respondeu` | O professor respondeu uma pergunta | `pergunta` |
 | `navegador:visitou` | Abriu uma página no Navegador | `url`, `dominio`, `caminho`, `titulo`, `seguro`, `existe` |
 | `navegador:pesquisa` | Pesquisou no Procura ou na barra de endereço | `termo`, `onde` (`procura` ou `barra`) |

@@ -241,6 +241,35 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   await pedir('sala:presenca', [{ app: 'Aulas', ajuda: 0 }], tT7);
   const sa3 = (await pedir('sala:turma', [], tp)).valor.alunos.find((a) => a.usuario.id === turma[7].id);
   ok(sa1.ajudaHa === 0 && sa2.ajudaHa >= 1 && sa3.ajudaHa === null, `pedido de ajuda aparece na Sala ao vivo, conta o tempo (${sa1.ajudaHa} s → ${sa2.ajudaHa} s) e some quando o aluno segue (${sa3.ajudaHa})`);
+  // 23) Corrida de digitação: o instrutor abre, os alunos recebem o convite, largam juntos e o placar segue as regras
+  const tT9 = (await pedir('sessao:entrar', [turma[9].id, '1111'])).token;
+  ok(!(await pedir('corrida:criar', [{ texto: 'Um texto qualquer para a corrida da turma.' }], tT7)).ok, 'aluno não abre corrida');
+  const textoCorrida = 'Bom dia turma, hoje tem corrida de digitação.';
+  const aberta = (await pedir('corrida:criar', [{ texto: textoCorrida, duracao: 60 }], tp)).valor;
+  const convite = (await pedir('sala:presenca', [{ app: 'Digitação' }], tT7)).valor.corrida;
+  ok(aberta.fase === 'espera' && convite && convite.id === aberta.id && !convite.entrou, 'corrida aberta: o convite chega junto com a presença do aluno');
+  await pedir('corrida:entrar', [], tT7); await pedir('corrida:entrar', [], tT8); await pedir('corrida:entrar', [], tT9);
+  ok((await pedir('sala:presenca', [{}], tT7)).valor.corrida.entrou && !(await pedir('corrida:progresso', [{ id: aberta.id, pos: 10, erros: 0 }], tT7)).valor.participantes.find((p) => p.pos > 0),
+    'quem entrou não recebe o convite de novo; antes da largada o progresso não conta');
+  ok(!(await pedir('corrida:largar', [], tT7)).ok, 'aluno não dá a largada');
+  const largada = (await pedir('corrida:largar', [], tp)).valor;
+  ok(largada.inicio > largada.agora && largada.participantes.length === 3, 'largada com contagem (3, 2, 1) e 3 alunos na corrida');
+  await espera(largada.inicio - largada.agora + 300);
+  await pedir('corrida:progresso', [{ id: aberta.id, pos: 20, erros: 1 }], tT8);
+  await pedir('corrida:progresso', [{ id: aberta.id, pos: 12, erros: 0 }], tT9);
+  await pedir('corrida:progresso', [{ id: aberta.id, pos: 5, erros: 0 }], tT9); // não anda para trás
+  const chegou = (await pedir('corrida:progresso', [{ id: aberta.id, pos: textoCorrida.length + 50, erros: 2, terminou: true }], tT7)).valor;
+  const ordem = chegou.participantes.map((p) => `${p.lugar}:${p.nome}:${p.pos}`);
+  ok(chegou.participantes[0].id === turma[7].id && chegou.participantes[0].terminou && chegou.participantes[0].pos === textoCorrida.length
+    && chegou.participantes[1].id === turma[8].id && chegou.participantes[2].pos === 12,
+    'placar: quem terminou vem primeiro, depois quem foi mais longe; o progresso não passa do texto nem volta — ' + ordem.join(' | '));
+  ok(!(await pedir('corrida:progresso', [{ id: aberta.id, pos: 30 }], tOutro)).ok, 'quem não entrou na corrida não manda progresso');
+  const fim = (await pedir('corrida:encerrar', [], tp)).valor;
+  ok(fim.fase === 'fim' && !(await pedir('sala:presenca', [{}], tT8)).valor.corrida, 'instrutor encerra: acabou o convite');
+  // Corrida de uma turma só
+  const daTurma = (await pedir('corrida:criar', [{ texto: textoCorrida, turma: 'Z' }], tp)).valor;
+  ok(daTurma.turma === 'Z' && !(await pedir('sala:presenca', [{}], tT8)).valor.corrida && !(await pedir('corrida:entrar', [], tT8)).ok, 'corrida de uma turma: quem é de outra turma não é convidado nem entra');
+  await pedir('corrida:encerrar', [], tp);
   // 9) Arquivo de usuários estragado: usa a cópia de reserva
   const antes = dados.listarUsuarios().length;
   fs.writeFileSync(path.join(PASTA, 'usuarios.json'), '{ estragado');

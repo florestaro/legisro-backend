@@ -10,6 +10,7 @@ window.CE = window.CE || {};
 
   // Conta de treino (mostrada na tela de login do banco).
   const CONTA = { agencia: '0001', conta: '12345-6', senha: '1234', titular: 'Cliente de Treino' };
+  CE.BANCO_TREINO = CONTA; // o Cidadão Digital usa para subir a conta para o nível prata (autorizar pelo banco)
   // Chaves Pix conhecidas: o banco mostra o NOME de quem vai receber antes de confirmar.
   const CHAVES_PIX = {
     'maria.clara@correio.escola': 'Maria Clara Souza',
@@ -205,10 +206,11 @@ window.CE = window.CE || {};
       }
       return {
         titulo: 'Cidadão Digital – serviços públicos',
-        conteudo: `${CAB_CID}<div class="cd-pagina"><h1>Como podemos ajudar?</h1><div class="cd-servicos">
+        conteudo: `${CAB_CID}<div class="cd-pagina">${CE.contaCidadao ? CE.contaCidadao.faixa() : ''}<h1>Como podemos ajudar?</h1><div class="cd-servicos">
           ${link('cidadaodigital.org.br/agendar', '🩺<b>Agendar consulta</b><span>No posto de saúde</span>', 'class="cd-servico" data-servico="agendar"')}
           ${link('cidadaodigital.org.br/agua', '💧<b>2ª via da conta de água</b><span>Boleto para pagar</span>', 'class="cd-servico" data-servico="agua"')}
-          ${link('jornaldobairro.com.br/noticia/vacinacao', '💉<b>Campanha de vacinação</b><span>Datas e locais</span>', 'class="cd-servico"')}</div>
+          ${link('jornaldobairro.com.br/noticia/vacinacao', '💉<b>Campanha de vacinação</b><span>Datas e locais</span>', 'class="cd-servico"')}
+          ${CE.contaCidadao ? CE.contaCidadao.servicos() : ''}</div>
           <p class="cd-dica">🔒 Sites de serviços públicos verdadeiros terminam com <b>.gov.br</b>. Este é um site de treino.</p></div>`,
       };
     },

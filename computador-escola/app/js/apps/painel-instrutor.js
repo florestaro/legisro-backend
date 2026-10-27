@@ -134,6 +134,7 @@
               CE.emitir('instrutor:mensagem', { texto });
               atualizarSala();
             } }, '📢 Mandar mensagem'),
+            CE.el('button', { class: 'botao secundario', 'data-acao': 'abrir-corrida-painel', title: 'Corrida de digitação ao vivo com a turma', onclick: () => CE.janelas.abrir('corrida') }, '🏁 Corrida de digitação'),
             CE.el('span', { class: 'painel-sala-total', 'data-online': alunos.length }, `🟢 ${alunos.length} aluno${alunos.length === 1 ? '' : 's'} agora`),
             pedindo ? CE.el('span', { class: 'painel-sala-total ajuda', 'data-pedindo-ajuda': pedindo }, `🙋 ${pedindo} pedindo ajuda`) : null),
           st.mensagem ? CE.el('p', { class: 'painel-legenda' }, `Última mensagem: "${st.mensagem.texto}"`) : null,

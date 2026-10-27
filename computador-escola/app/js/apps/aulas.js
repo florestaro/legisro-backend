@@ -92,7 +92,7 @@
             CE.el('span', { class: 'aula-icone' }, !liberada ? '🔒' : feita ? '✅' : l.icone),
             CE.el('div', { class: 'aula-info' },
               CE.el('strong', {}, l.titulo, tipo ? CE.el('span', { class: 'aula-tipo' }, tipo) : null,
-                reforco ? CE.el('span', { class: 'aula-tipo reforco', title: 'Aula a mais, para treinar. Não é obrigatória para passar de nível nem para o certificado.' }, 'Reforço (opcional)') : null,
+                reforco ? CE.el('span', { class: 'aula-tipo reforco', title: 'Aula a mais, para treinar. Não é obrigatória para passar de nível nem para o certificado.' }, l.reforco ? 'Reforço (opcional)' : 'Aula nova (opcional)') : null,
                 l === proxima ? CE.el('span', { class: 'aula-tipo hoje' }, '👉 Sua próxima aula') : null),
               CE.el('span', {}, l.descricao),
               r && r.dispensada ? CE.el('small', { class: 'ok' }, 'Dispensada pelo teste de nivelamento') : null,

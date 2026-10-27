@@ -33,6 +33,8 @@ window.CE = window.CE || {};
   let atual = null;
   // Sala de aula no navegador de teste: só este computador (a rede só funciona no programa instalado).
   const salaTeste = { pausada: false, mensagem: null, presencas: {} };
+  let corridasTeste = null; // a corrida de digitação no navegador de teste (regras em corrida-regras.js)
+  const corridas = () => (corridasTeste = corridasTeste || CE.corridaRegras());
 
   async function simulado(canal, ...a) {
     try {
@@ -93,7 +95,7 @@ window.CE = window.CE || {};
         'sala:presenca': () => {
           if (!atual) throw new Error('Ninguém entrou no sistema.');
           salaTeste.presencas[atual.id] = { usuario: atual, pc: 'Este computador', atividade: a[0] || {}, em: Date.now() };
-          return { pausada: salaTeste.pausada && atual.papel !== 'instrutor', mensagem: atual.papel !== 'instrutor' ? salaTeste.mensagem : null };
+          return { pausada: salaTeste.pausada && atual.papel !== 'instrutor', mensagem: atual.papel !== 'instrutor' ? salaTeste.mensagem : null, corrida: atual.papel !== 'instrutor' ? corridas().convite(atual) : null };
         },
         'sala:turma': () => ({ pausada: salaTeste.pausada, mensagem: salaTeste.mensagem, alunos: Object.values(salaTeste.presencas).filter((x) => Date.now() - x.em < 45000).map((x) => ({ ...x, ha: Math.round((Date.now() - x.em) / 1000), ajudaHa: x.atividade.ajuda ? Math.round((Date.now() - x.atividade.ajuda) / 1000) : null })) }),
         'escola:ler': () => {
@@ -155,6 +157,12 @@ window.CE = window.CE || {};
           return link.download;
         },
         'sala:pausar': () => (salaTeste.pausada = !!a[0]),
+        'corrida:criar': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); return corridas().criar({ ...(a[0] || {}), por: atual.nome }); },
+        'corrida:largar': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); return corridas().largar(); },
+        'corrida:encerrar': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); return corridas().encerrar(); },
+        'corrida:estado': () => corridas().estado(),
+        'corrida:entrar': () => corridas().entrar(atual),
+        'corrida:progresso': () => corridas().progresso(atual, a[0]),
         'sala:mensagem': () => (salaTeste.mensagem = String(a[0] || '').trim() ? { id: Date.now(), texto: String(a[0]).trim().slice(0, 300), de: atual.nome } : null),
       }[canal];
       return { ok: true, valor: await valor() };

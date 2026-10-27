@@ -25,6 +25,7 @@ window.CE = window.CE || {};
     // Intermediário
     'n2-pastas-pesquisar', 'n2-pastas-desafio', 'n2-atalhos-gerais', 'n2-editor-paragrafos', 'n2-editor-requerimento',
     'n2-editor-desafio', 'n2-pl-alca', 'n2-pl-formatar', 'n2-pl-notas', 'n2-pl-desafio', 'n2-email-desafio', 'n2-servicos-desafio',
+    'n2-gov-desafio', 'n2-ia-desafio',
     // Avançado
     'n3-ed-colunas', 'n3-ed-substituir', 'n3-ed-desafio', 'n3-pl-destacar', 'n3-pl-procv', 'n3-pl-desafio', 'n3-ap-desafio',
     'n3-cfg-hora-som', 'n3-cfg-atualizar', 'n3-cfg-impressora', 'n3-cfg-desafio', 'n3-seg-desafio', 'n3-tr-desafio',
@@ -36,9 +37,15 @@ window.CE = window.CE || {};
   CE.LICOES_EXTRAS = []; // aulas criadas pelo instrutor (ficam fora da sequência do curso)
 
   // Usado pelos arquivos de lições: registra um módulo com as suas aulas, na ordem do curso.
-  CE.adicionarModulo = function ({ id, nivel, titulo, icone, licoes }) {
-    CE.MODULOS.push({ id, nivel, titulo, icone });
-    licoes.forEach((l) => CE.LICOES.push({ ...l, modulo: id, nivel, reforco: REFORCO.has(l.id) }));
+  // "antes": o módulo entra antes de outro (ex.: antes da prova do nível). "novoEm": data em que o módulo entrou no
+  // curso; para quem já tinha passado na prova do nível antes dessa data, as aulas dele ficam opcionais.
+  CE.adicionarModulo = function ({ id, nivel, titulo, icone, licoes, antes, novoEm }) {
+    const modulo = { id, nivel, titulo, icone };
+    const novas = licoes.map((l) => ({ ...l, modulo: id, nivel, reforco: REFORCO.has(l.id), novoEm: novoEm || l.novoEm }));
+    const posicao = antes ? CE.MODULOS.findIndex((m) => m.id === antes) : -1;
+    if (posicao < 0) { CE.MODULOS.push(modulo); CE.LICOES.push(...novas); return; }
+    CE.MODULOS.splice(posicao, 0, modulo);
+    CE.LICOES.splice(CE.LICOES.findIndex((l) => l.modulo === antes), 0, ...novas);
   };
 
   const ehInstrutor = () => CE.sessao.usuario && CE.sessao.usuario.papel === 'instrutor';
@@ -71,7 +78,17 @@ window.CE = window.CE || {};
     trilhaDaEscola: () => trilhaDaEscola,
     trilha: (progresso) => valida(progresso && progresso.trilha) || trilhaDaEscola,
     // A aula conta para o curso (e para o certificado) na trilha deste aluno?
-    obrigatoria: (licao, progresso) => !licao.reforco || CE.curso.trilha(progresso) === 'completa',
+    obrigatoria(licao, progresso) {
+      if (licao.reforco && CE.curso.trilha(progresso) !== 'completa') return false;
+      return !(licao.novoEm && CE.curso.provaAntesDe(licao.nivel, progresso, licao.novoEm));
+    },
+    // O aluno passou na prova do nível antes da data? (As aulas que entraram no curso depois não travam quem já
+    // tinha terminado o nível, nem tiram o certificado dele.)
+    provaAntesDe(nivel, progresso, data) {
+      const prova = CE.LICOES.find((l) => l.nivel === nivel && l.prova);
+      const r = prova && progresso && progresso.licoes && progresso.licoes[prova.id];
+      return !!(r && r.concluida && (r.aprovadaEm || r.em || 0) < Date.parse(data));
+    },
     // Só as aulas que contam, de um nível ou módulo (ou do curso todo).
     aulasDaTrilha(progresso, filtro = {}) {
       return CE.LICOES.filter((l) => (!filtro.nivel || l.nivel === filtro.nivel) && (!filtro.modulo || l.modulo === filtro.modulo)

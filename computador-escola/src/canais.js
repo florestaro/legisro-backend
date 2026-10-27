@@ -2,6 +2,7 @@
 // Cada pedido vem com uma "sessão" ({ usuario, pc }): no computador sozinho é a sessão de quem está na frente dele;
 // no modo sala de aula, o computador do instrutor guarda uma sessão para cada computador de aluno.
 const os = require('os');
+const criarCorridas = require('../app/js/corrida-regras');
 
 // Chaves que a tela pode usar: "progresso:<id>", "arquivos:<id>" e "email:<id>" (a caixa de e-mail do aluno).
 // Cada aluno só lê e grava os próprios dados; o instrutor pode ler e gravar os de todos.
@@ -79,6 +80,7 @@ function criarCanais(dados) {
   // A sala de aula ao vivo: quem está em cada computador e o que está fazendo (só na memória).
   const presencas = new Map(); // id do usuário -> { usuario, pc, atividade, em }
   const sala = { pausada: false, mensagens: [] };
+  const corridas = criarCorridas(); // corrida de digitação da turma (só na memória, como a sala ao vivo)
   // Cada mensagem do instrutor vale por 15 minutos (quem entrar bem depois não vê um aviso velho); as últimas
   // ficam guardadas, para duas mensagens mandadas em seguida chegarem as duas.
   const mensagensAtuais = () => sala.mensagens.filter((m) => Date.now() - m.id < 15 * 60 * 1000);
@@ -299,7 +301,10 @@ function criarCanais(dados) {
       });
       const aluno = s.usuario.papel !== 'instrutor';
       // "mensagem" (só a última) continua para os computadores de aluno com a versão anterior do programa.
-      return { pausada: sala.pausada && aluno, mensagens: aluno ? mensagensAtuais() : [], mensagem: aluno ? mensagemAtual() : null };
+      return {
+        pausada: sala.pausada && aluno, mensagens: aluno ? mensagensAtuais() : [], mensagem: aluno ? mensagemAtual() : null,
+        corrida: aluno ? corridas.convite(s.usuario) : null,
+      };
     },
     'sala:turma': (s) => {
       exigirInstrutor(s);
@@ -324,6 +329,14 @@ function criarCanais(dados) {
       sala.mensagens = mensagensAtuais().concat(m).slice(-5);
       return m;
     },
+
+    // ---------- Corrida de digitação (regras em app/js/corrida-regras.js) ----------
+    'corrida:criar': (s, opcoes = {}) => { exigirInstrutor(s); return corridas.criar({ ...opcoes, por: s.usuario.nome }); },
+    'corrida:largar': (s) => { exigirInstrutor(s); return corridas.largar(); },
+    'corrida:encerrar': (s) => { exigirInstrutor(s); return corridas.encerrar(); },
+    'corrida:estado': (s) => { exigirSessao(s); return corridas.estado(); },
+    'corrida:entrar': (s) => { exigirSessao(s); return corridas.entrar(s.usuario); },
+    'corrida:progresso': (s, dados) => { exigirSessao(s); return corridas.progresso(s.usuario, dados); },
   };
 }
 
