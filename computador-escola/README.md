@@ -67,9 +67,16 @@ conversa e tira dúvidas. **Funciona sem internet.**
 - **🙋 Não entendi**: em todo passo de aula. O Professor Virtual explica de novo, mais devagar, com a dica e a seta, e
   o instrutor vê o pedido na hora, na Sala ao vivo.
 
-### Curso de Digitação: 114 exercícios em 3 níveis
+### Curso de Digitação: 122 exercícios em 3 níveis
 - **Iniciante** (39): fileiras do meio, de cima e de baixo, Shift, acentos e cedilha, palavras e frases.
-- **Intermediário** (35): números, pontuação, frases, textos curtos, ritmo e trava-línguas.
+- **Intermediário** (43): números, pontuação, frases, textos curtos, ritmo, trava-línguas e **digitação narrada**.
+- **🗣️ Digitação narrada (o professor fala)**: 8 exercícios em que o Professor Virtual narra e o aluno digita sem ver o
+  texto. Começa **pausado e com repetições** (palavra por palavra, bem devagar, cada uma falada 2 vezes, com a
+  pontuação falada — "vírgula", "ponto" — e o professor espera o aluno apertar Espaço para falar a próxima), passa por
+  pedaços de frase e frases inteiras, depois frases faladas uma vez só, e termina com **fala contínua e rápida, sem
+  repetição**: o professor segue sozinho, no ritmo de 18 e depois 25 palavras por minuto, sem esperar. No resultado
+  aparecem as palavras certas e erradas. Sem voz instalada no computador, cada pedaço aparece escrito por alguns
+  segundos.
 - **Avançado** (37): símbolos, dados do dia a dia (e-mail, telefone, CEP), **fichas de cadastro**, teclado numérico,
   textos de Machado de Assis, Gonçalves Dias e Olavo Bilac, **ditado** (o professor fala e o aluno digita) e testes de
   velocidade.

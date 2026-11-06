@@ -7,6 +7,8 @@
 //   tempo  - digitar o máximo possível até o tempo acabar (provas e treinos de ritmo)
 //   ditado - o professor fala a frase e o aluno digita sem ver
 //   ficha  - passar uma ficha de papel para o "sistema", campo por campo, pulando com o Tab (entrada de dados)
+//   narrada - o professor narra pedaço por pedaço e o aluno digita sem ver o texto; vai de uma fala pausada e
+//            repetida (esperando o aluno) até uma fala contínua e rápida, sem repetição e sem esperar
 window.CE = window.CE || {};
 
 (function () {
@@ -181,6 +183,30 @@ window.CE = window.CE || {};
     ['Frases longas', ['O curso de informática acontece duas vezes por semana.', 'Antes de desligar o computador, salve os seus documentos.']],
   ];
 
+  // Digitação narrada: do mais fácil ao mais difícil. O "|" separa os pedaços que o professor fala de cada vez.
+  //   velocidade: da fala (1 = normal) · vezes: quantas vezes cada pedaço é falado · repetir: quantas vezes o aluno
+  //   pode pedir "Repetir" em cada pedaço (null = à vontade) · espera: "aluno" (o próximo pedaço só vem quando o
+  //   aluno terminou de digitar o atual) ou "ritmo" (o professor segue sozinho, no ritmo de alvoPpm palavras por
+  //   minuto) · pontuacao: o professor fala a pontuação ("vírgula", "ponto") · precisao: meta de acertos (%).
+  const NARRADAS = [
+    { titulo: 'Palavra por palavra, bem devagar', unidade: 'palavra', velocidade: 0.7, vezes: 2, repetir: null, espera: 'aluno', pontuacao: true, precisao: 85,
+      texto: 'casa|bola|mesa|pato|dado|fita|sapo|vela' },
+    { titulo: 'Palavras com acento, devagar', unidade: 'palavra', velocidade: 0.75, vezes: 2, repetir: null, espera: 'aluno', pontuacao: true, precisao: 85,
+      texto: 'mãe|café|avó|pão|você|maçã|ônibus|lição' },
+    { titulo: 'Pedaços de frase, com pausas', unidade: 'pedaço', velocidade: 0.8, vezes: 2, repetir: null, espera: 'aluno', pontuacao: true, precisao: 88,
+      texto: 'O sol|nasceu cedo.|A feira|abre às sete.|Eu levo|a sacola.' },
+    { titulo: 'Frases inteiras, devagar', unidade: 'frase', velocidade: 0.9, vezes: 2, repetir: null, espera: 'aluno', pontuacao: true, precisao: 88,
+      texto: 'Hoje é dia de aula.|Eu gosto de aprender.|O computador ajuda muito.|Vamos digitar com calma.' },
+    { titulo: 'Frases faladas uma vez (pode repetir uma)', unidade: 'frase', velocidade: 1, vezes: 1, repetir: 1, espera: 'aluno', pontuacao: true, precisao: 90,
+      texto: 'Bom dia, tudo bem com você?|A reunião começa às nove horas.|Traga o documento e a carteira.|Obrigado pela atenção!' },
+    { titulo: 'Fala normal, sem repetição', unidade: 'frase', velocidade: 1.1, vezes: 1, repetir: 0, espera: 'aluno', pontuacao: false, precisao: 90,
+      texto: 'O posto de saúde abre às sete horas.|Leve o cartão do SUS e um documento com foto.|A vacina é gratuita para toda a família.|Chegue cedo para pegar a senha.' },
+    { titulo: 'Fala contínua: o professor não espera', unidade: 'frase', velocidade: 1.2, vezes: 1, repetir: 0, espera: 'ritmo', alvoPpm: 18, pontuacao: false, precisao: 85,
+      texto: 'Porto Velho fica às margens do rio Madeira.|A cidade nasceu com a Estrada de Ferro Madeira-Mamoré.|Hoje ela é a capital de Rondônia.|Muita gente visita o Mercado Cultural.' },
+    { titulo: 'Fala contínua e rápida', unidade: 'frase', velocidade: 1.35, vezes: 1, repetir: 0, espera: 'ritmo', alvoPpm: 25, pontuacao: false, precisao: 85,
+      texto: 'Prezados clientes, a loja vai funcionar em horário especial.|No sábado, abriremos às oito horas e fecharemos ao meio-dia.|Na segunda-feira, o atendimento volta ao normal.|Agradecemos a compreensão e desejamos uma ótima semana.' },
+  ];
+
   // ---------------- Montagem dos níveis ----------------
 
   function nivelIniciante() {
@@ -277,6 +303,15 @@ window.CE = window.CE || {};
       dica: 'Mantenha um ritmo constante, como uma música.',
     }));
     const exTrava = TRAVA_LINGUAS.map((texto, i) => ({ id: `m-trava-${i + 1}`, titulo: `Trava-língua ${i + 1}`, texto }));
+    const exNarrada = NARRADAS.map((n, i) => {
+      const pedacos = n.texto.split('|');
+      return {
+        ...n, id: `m-narr-${i + 1}`, tipo: 'narrada', pedacos, texto: pedacos.join(' '), metaPrecisao: n.precisao,
+        dica: n.espera === 'ritmo'
+          ? `O professor fala sem parar, no ritmo de ${n.alvoPpm} palavras por minuto, e não repete. Digite enquanto escuta!`
+          : 'Escute e digite o que o professor falar. Quando terminar um pedaço, aperte Espaço: aí ele fala o próximo.',
+      };
+    });
 
     return {
       id: 'intermediario', nome: 'Intermediário', icone: '🌿',
@@ -288,6 +323,7 @@ window.CE = window.CE || {};
         { titulo: 'Textos curtos', exercicios: exTextos },
         { titulo: 'Ritmo', exercicios: exRitmo },
         { titulo: 'Trava-línguas', exercicios: exTrava },
+        { titulo: 'Digitação narrada (o professor fala)', exercicios: exNarrada },
       ],
       prova: { id: 'prova-intermediario', titulo: 'Prova do nível Intermediário', tipo: 'tempo', duracao: 300, meta: { ppm: 35, precisao: 95 }, texto: TEXTOS_CURTOS.map((t) => t[1]).join(' ') },
     };
@@ -339,7 +375,7 @@ window.CE = window.CE || {};
       e.nivel = nivel.id;
       e.tipo = e.tipo || 'texto';
       const ppm = Math.round(nivel.metas.ppmInicio + ((nivel.metas.ppmFim - nivel.metas.ppmInicio) * i) / Math.max(1, exercicios.length - 1));
-      e.meta = e.tipo === 'ditado' ? { ppm: 0, precisao: e.metaPrecisao } : e.metaFixa ? { ...e.metaFixa } : { ppm, precisao: nivel.metas.precisao };
+      e.meta = e.tipo === 'ditado' || e.tipo === 'narrada' ? { ppm: 0, precisao: e.metaPrecisao } : e.metaFixa ? { ...e.metaFixa } : { ppm, precisao: nivel.metas.precisao };
       LISTA.push(e);
     });
     Object.assign(nivel.prova, { nivel: nivel.id, modulo: 'Prova', prova: true });

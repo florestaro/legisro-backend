@@ -155,6 +155,7 @@
           const liberado = CE.digitacaoLiberado(ex, resultados, prog.liberadas);
           const meta = CE.metaDigitacao(ex, CE.sessao.usuario);
           const textoMeta = ex.tipo === 'ditado' ? `Meta: ${meta.precisao}% de acertos`
+            : ex.tipo === 'narrada' ? `Meta: ${meta.precisao}% de acertos · ${descricaoNarrada(ex)}`
             : `Meta: ${meta.ppm} ppm · ${meta.precisao}%${ex.duracao ? ` · ${ex.duracao / 60} min` : ''}${ex.tipo === 'ficha' ? ' · use o Tab' : ''}`;
           return CE.el('button', {
             class: 'dig-exercicio' + (r && r.aprovado ? ' aprovado' : '') + (!liberado ? ' bloqueado' : '') + (ex.prova ? ' prova' : ''),
@@ -162,7 +163,7 @@
             title: liberado ? '' : 'Complete o exercício anterior para liberar este.',
             onclick: () => praticar(ex),
           },
-            CE.el('span', { class: 'dig-ex-icone' }, !liberado ? '🔒' : r && r.aprovado ? '✅' : ex.prova ? '🏁' : ex.tipo === 'ditado' ? '🎧' : ex.tipo === 'tempo' ? '⏱️' : ex.tipo === 'ficha' ? '📋' : '▶'),
+            CE.el('span', { class: 'dig-ex-icone' }, !liberado ? '🔒' : r && r.aprovado ? '✅' : ex.prova ? '🏁' : ex.tipo === 'ditado' ? '🎧' : ex.tipo === 'narrada' ? '🗣️' : ex.tipo === 'tempo' ? '⏱️' : ex.tipo === 'ficha' ? '📋' : '▶'),
             CE.el('span', { class: 'dig-ex-nome' }, ex.titulo, CE.el('small', {}, textoMeta)),
             CE.el('span', { class: 'dig-estrelas', title: r ? `Melhor: ${r.ppm} ppm, ${r.precisao}% de acertos` : 'Ainda não feito' },
               r && r.dispensado ? 'dispensado' : r && r.aprovado ? '★'.repeat(r.estrelas) + '☆'.repeat(3 - r.estrelas) : r ? `${r.ppm} ppm · ${r.precisao}%` : ''),
@@ -187,6 +188,7 @@
       function praticar(ex) {
         if (ex.tipo === 'ditado') { praticarDitado(ex); return; }
         if (ex.tipo === 'ficha') { praticarFicha(ex); return; }
+        if (ex.tipo === 'narrada') { praticarNarrada(ex); return; }
         const meta = CE.metaDigitacao(ex, CE.sessao.usuario);
         let posicao = 0, erros = 0, inicio = null, errouAgora = false, terminou = false, relogio = null;
         const errosPorTecla = {};
@@ -474,6 +476,177 @@
         CE.emitir('digitacao:iniciada', { exercicio: ex.id });
       }
 
+      // ---------- Digitação narrada ----------
+      // O professor fala um pedaço de cada vez e o aluno digita sem ver o texto. Nos primeiros exercícios a fala é
+      // devagar, repetida e com a pontuação falada, e o próximo pedaço só vem quando o aluno terminou o atual (Espaço).
+      // Nos últimos, a fala é contínua e rápida: o professor segue sozinho no ritmo combinado, sem repetir nem esperar.
+      // Sem voz instalada no computador, cada pedaço aparece escrito por alguns segundos (como no ditado).
+      function praticarNarrada(ex) {
+        const meta = CE.metaDigitacao(ex, CE.sessao.usuario);
+        const pedacos = ex.pedacos;
+        const ultimo = pedacos.length - 1;
+        // Quantas palavras o aluno precisa ter terminado (com espaço depois) para cada pedaço contar como digitado.
+        const ate = [];
+        pedacos.reduce((soma, p, i) => (ate[i] = soma + p.split(/\s+/).length), 0);
+        const comVoz = CE.voz.disponivel();
+        let atual = -1, falando = false, repetidas = 0, inicio = null, terminou = false, ativo = true, timerRitmo = null, timerFim = null;
+        const PONTUACAO = { ',': ' vírgula,', '.': ' ponto.', '?': ' ponto de interrogação.', '!': ' ponto de exclamação.', ':': ' dois pontos,', ';': ' ponto e vírgula,' };
+        const paraFalar = (t) => (ex.pontuacao ? t.replace(/[,.?!:;]/g, (m) => PONTUACAO[m]) : t);
+        const duracaoFala = (t) => Math.max(900, (t.length * 80) / ex.velocidade);
+        // No ritmo combinado: tempo para digitar o pedaço a alvoPpm palavras (5 letras) por minuto.
+        const tempoParaDigitar = (t) => (t.length * 12000) / ex.alvoPpm;
+
+        const legenda = CE.el('div', { class: 'dig-narrada-legenda', hidden: true, 'data-legenda': '' });
+        const status = CE.el('div', { class: 'dig-narrada-status', 'data-narrada-status': '' });
+        const campo = CE.el('textarea', { class: 'campo dig-narrada-texto', rows: '5', 'aria-label': 'Digite aqui o que o professor falar', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', disabled: true });
+        const repetir = CE.el('button', { class: 'botao secundario', 'data-acao': 'repetir-narracao', hidden: ex.repetir === 0, onclick: () => {
+          if (falando || atual < 0 || atual > ultimo || (ex.repetir != null && repetidas >= ex.repetir)) return;
+          repetidas++;
+          narrar(atual, 1);
+          campo.focus();
+        } }, '🔊 Repetir');
+        const pronto = CE.el('button', { class: 'botao', 'data-acao': 'terminei-narrada', disabled: true, onclick: () => terminar() }, '✔ Terminei');
+
+        function falarUmaVez(t) {
+          return new Promise((seguir) => {
+            let feito = false;
+            const fim = () => { if (!feito) { feito = true; legenda.hidden = true; seguir(); } };
+            if (comVoz) {
+              CE.voz.falar(paraFalar(t), { velocidade: ex.velocidade, forcar: true, aoTerminar: fim });
+              setTimeout(fim, duracaoFala(t) * 2.5 + 1500); // se a voz não avisar o fim
+            } else {
+              legenda.textContent = t;
+              legenda.hidden = false;
+              setTimeout(fim, duracaoFala(t) + 1200);
+            }
+          });
+        }
+
+        async function narrar(i, vezes) {
+          falando = true;
+          atualizar();
+          for (let k = 0; k < vezes && ativo && !terminou; k++) {
+            if (k) await new Promise((r) => setTimeout(r, Math.round(900 / ex.velocidade)));
+            if (ativo && !terminou) await falarUmaVez(pedacos[i]);
+          }
+          falando = false;
+          if (!ativo || terminou) return;
+          atualizar();
+          verificar();
+        }
+
+        function proximo() {
+          if (!ativo || terminou) return;
+          atual++;
+          repetidas = 0;
+          if (atual > ultimo) {
+            atualizar();
+            // No ritmo combinado, o exercício acaba sozinho pouco depois do último pedaço.
+            if (ex.espera === 'ritmo') timerFim = setTimeout(terminar, 4000);
+            return;
+          }
+          if (ex.espera === 'ritmo') timerRitmo = setTimeout(proximo, Math.max(duracaoFala(pedacos[atual]) + 600, tempoParaDigitar(pedacos[atual])));
+          narrar(atual, ex.vezes);
+        }
+
+        const palavrasTerminadas = () => campo.value.replace(/\S+$/, '').trim().split(/\s+/).filter(Boolean).length;
+        // Esperando o aluno: terminou de digitar o pedaço (com espaço depois)? Então vem o próximo.
+        function verificar() {
+          if (ex.espera !== 'aluno' || falando || terminou || atual < 0 || atual >= ultimo) return;
+          if (palavrasTerminadas() >= ate[atual]) proximo();
+        }
+
+        function atualizar() {
+          const n = Math.min(atual + 1, pedacos.length);
+          const nome = ex.unidade === 'palavra' ? 'palavra' : ex.unidade === 'pedaço' ? 'pedaço' : 'frase';
+          if (atual < 0) status.textContent = 'Clique em "▶ Começar" quando estiver pronto.';
+          else if (falando) status.textContent = `🔊 Escute… (${nome} ${n} de ${pedacos.length})`;
+          else if (atual > ultimo || (atual === ultimo && ex.espera === 'aluno')) status.textContent = '✔ Acabou a narração. Confira o que digitou e clique em "Terminei" (ou aperte Enter).';
+          else if (ex.espera === 'ritmo') status.textContent = `⏱️ O professor segue sozinho: digite enquanto escuta (${nome} ${n} de ${pedacos.length}).`;
+          else status.textContent = `⌨️ Digite a ${nome} ${n} de ${pedacos.length} e aperte Espaço para ouvir a próxima.`;
+          status.dataset.narradaStatus = atual < 0 ? 'inicio' : falando ? 'falando' : atual >= ultimo ? 'fim' : 'digitando';
+          repetir.disabled = falando || atual < 0 || atual > ultimo || (ex.repetir != null && repetidas >= ex.repetir);
+          if (ex.repetir) repetir.textContent = `🔊 Repetir (${Math.max(0, ex.repetir - repetidas)})`;
+          pronto.disabled = atual < ultimo || (atual === ultimo && falando);
+        }
+
+        campo.addEventListener('input', () => { if (!inicio && campo.value.trim()) inicio = Date.now(); verificar(); });
+        campo.addEventListener('paste', (e) => e.preventDefault());
+        campo.addEventListener('keydown', (e) => {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          if (!pronto.disabled) terminar();
+          else if (!/\s$/.test(campo.value)) { campo.value += ' '; campo.dispatchEvent(new Event('input')); }
+        });
+
+        // Quais palavras do texto o aluno acertou (na ordem): a maior sequência em comum entre as duas listas.
+        function palavrasCertas(esperadas, digitadas) {
+          const m = esperadas.length, n = digitadas.length;
+          const t = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+          for (let i = m - 1; i >= 0; i--) for (let j = n - 1; j >= 0; j--) t[i][j] = esperadas[i] === digitadas[j] ? t[i + 1][j + 1] + 1 : Math.max(t[i + 1][j], t[i][j + 1]);
+          const certas = new Set();
+          for (let i = 0, j = 0; i < m && j < n;) {
+            if (esperadas[i] === digitadas[j]) { certas.add(i); i++; j++; } else if (t[i + 1][j] >= t[i][j + 1]) i++; else j++;
+          }
+          return certas;
+        }
+
+        async function terminar() {
+          if (terminou) return;
+          terminou = true;
+          clearTimeout(timerRitmo); clearTimeout(timerFim);
+          CE.voz.parar();
+          campo.disabled = true;
+          const esperado = ex.texto;
+          const digitado = campo.value.trim().replace(/\s+/g, ' ');
+          const dist = distancia(esperado, digitado);
+          const precisao = Math.max(0, Math.round(((esperado.length - Math.min(dist, esperado.length)) / esperado.length) * 100));
+          const minutos = inicio ? Math.max((Date.now() - inicio) / 60000, 1 / 60) : 1;
+          const resultado = { ppm: Math.round((digitado.length / 5) / minutos), precisao, aprovado: precisao >= meta.precisao };
+          resultado.estrelas = estrelasDe(resultado, meta, 'ditado');
+          await guardarResultado(ex, resultado);
+          const esperadas = esperado.split(' ');
+          const certas = palavrasCertas(esperadas, digitado ? digitado.split(' ') : []);
+          const comparacao = CE.el('div', { class: 'dig-ditado-linha' + (dist === 0 ? ' certa' : '') },
+            CE.el('div', {}, CE.el('small', {}, 'O professor falou: '), ...esperadas.flatMap((p, i) => [CE.el('span', { class: certas.has(i) ? 'palavra-certa' : 'palavra-errada' }, p), ' '])),
+            CE.el('div', {}, CE.el('small', {}, 'Você digitou: '), digitado || '(nada)'),
+            CE.el('small', { 'data-palavras-certas': `${certas.size}/${esperadas.length}` }, `Você acertou ${certas.size} de ${esperadas.length} palavras.`));
+          mostrarResultado(ex, resultado, meta, null, [comparacao]);
+        }
+
+        const velocidadeTexto = ex.velocidade < 0.85 ? '🐢 Fala devagar' : ex.velocidade < 1.15 ? '🚶 Fala normal' : '🏃 Fala rápida';
+        trocarTela(CE.el('div', { class: 'dig-pratica dig-narrada' },
+          CE.el('div', { class: 'dig-cabecalho' },
+            CE.el('button', { class: 'botao secundario', onclick: () => mostrarLista(ex.nivel) }, '← Exercícios'),
+            CE.el('strong', {}, `${ex.modulo}: ${ex.titulo}`)),
+          CE.el('div', { class: 'dig-narrada-chips' },
+            CE.el('span', {}, velocidadeTexto),
+            CE.el('span', {}, ex.vezes > 1 ? `🔁 Cada ${ex.unidade} ${ex.vezes} vezes` : '1️⃣ Fala uma vez só'),
+            CE.el('span', {}, ex.espera === 'aluno' ? '⏸️ Espera você' : `⏱️ Não espera (${ex.alvoPpm} palavras por minuto)`),
+            CE.el('span', {}, ex.repetir === 0 ? '🚫 Sem repetir' : ex.repetir ? `🔊 Pode repetir ${ex.repetir}x` : '🔊 Pode repetir'),
+            CE.el('span', {}, ex.pontuacao ? '🗣️ Fala a pontuação ("vírgula", "ponto")' : '🎵 Pontuação pela entonação'),
+          ),
+          CE.el('p', { class: 'dig-rodape' }, `${ex.dica} Comece cada frase com letra maiúscula. Meta: ${meta.precisao}% de acertos.`),
+          !comVoz ? CE.el('p', { class: 'dig-aviso-prova' }, 'Este computador está sem voz instalada: cada pedaço aparece escrito por alguns segundos. Leia, guarde e digite.') : null,
+          status, legenda, campo,
+          CE.el('div', { class: 'dialogo-botoes' }, repetir, pronto,
+            CE.el('button', { class: 'botao grande', 'data-acao': 'comecar-narrada', onclick: (e) => {
+              e.currentTarget.remove();
+              campo.disabled = false;
+              campo.focus();
+              proximo();
+            } }, '▶ Começar')),
+        ));
+        encerrarAtual = () => { ativo = false; clearTimeout(timerRitmo); clearTimeout(timerFim); CE.voz.parar(); };
+        atualizar();
+        CE.emitir('digitacao:iniciada', { exercicio: ex.id });
+      }
+
+      function descricaoNarrada(ex) {
+        return [ex.velocidade < 0.85 ? 'devagar' : ex.velocidade < 1.15 ? 'fala normal' : 'fala rápida',
+          ex.vezes > 1 ? `repete ${ex.vezes}x` : 'sem repetir', ex.espera === 'aluno' ? 'espera você' : 'não espera'].join(' · ');
+      }
+
       // ---------- Resultado ----------
 
       async function mostrarResultado(ex, resultado, meta, erros, detalhes) {
@@ -483,14 +656,15 @@
         const resultados = prog.digitacao || {};
         const podeSeguir = proximo && CE.digitacaoLiberado(proximo, resultados, prog.liberadas);
         const faltou = [];
-        if (ex.tipo !== 'ditado' && resultado.ppm < meta.ppm) faltou.push(`velocidade (você fez ${resultado.ppm} ppm, a meta é ${meta.ppm})`);
+        if (ex.tipo !== 'ditado' && ex.tipo !== 'narrada' && resultado.ppm < meta.ppm) faltou.push(`velocidade (você fez ${resultado.ppm} ppm, a meta é ${meta.ppm})`);
         if (resultado.precisao < meta.precisao) faltou.push(`acertos (você fez ${resultado.precisao}%, a meta é ${meta.precisao}%)`);
         if (resultado.aprovado) CE.comemorar && CE.comemorar(ex.prova ? 'grande' : 'pequena');
 
         corpo.replaceChildren(CE.el('div', { class: 'dig-resultado' },
           CE.el('h2', {}, resultado.aprovado ? (ex.prova ? `Você passou na ${ex.titulo}! 🏆` : 'Meta batida! 🎉') : 'Quase lá! Vamos tentar de novo?'),
           CE.el('div', { class: 'dig-estrelas grande' }, '★'.repeat(resultado.estrelas) + '☆'.repeat(3 - resultado.estrelas)),
-          ex.tipo !== 'ditado' ? CE.el('p', { class: resultado.ppm >= meta.ppm ? 'ok' : 'abaixo' }, `Velocidade: ${resultado.ppm} palavras por minuto (meta ${meta.ppm})`) : null,
+          ex.tipo !== 'ditado' && ex.tipo !== 'narrada' ? CE.el('p', { class: resultado.ppm >= meta.ppm ? 'ok' : 'abaixo' }, `Velocidade: ${resultado.ppm} palavras por minuto (meta ${meta.ppm})`) : null,
+          ex.tipo === 'narrada' ? CE.el('p', {}, `Você digitou a ${resultado.ppm} palavras por minuto.`) : null,
           resultado.toquesPorHora ? CE.el('p', { 'data-toques-hora': resultado.toquesPorHora }, `Toques por hora: ${resultado.toquesPorHora.toLocaleString('pt-BR')} (a medida usada nas vagas de digitador)`) : null,
           CE.el('p', { class: resultado.precisao >= meta.precisao ? 'ok' : 'abaixo' }, `Acertos: ${resultado.precisao}% (meta ${meta.precisao}%)${erros != null ? ` · ${erros} erro${erros === 1 ? '' : 's'}` : ''}`),
           faltou.length ? CE.el('p', { class: 'dig-conselho' }, `Faltou: ${faltou.join(' e ')}. ${resultado.precisao < meta.precisao ? 'Vá mais devagar e com atenção: acertar vem antes de correr.' : 'Você está acertando bem! Agora tente um pouco mais rápido.'}`) : null,

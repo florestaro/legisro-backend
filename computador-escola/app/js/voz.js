@@ -29,7 +29,8 @@ window.CE = window.CE || {};
 
   CE.voz = {
     // opcoes.velocidade: 1 = normal; opcoes.tom: 1 = normal (mais alto ou mais baixo muda a voz, como na aula
-    // da voz clonada); opcoes.forcar: fala mesmo com a voz desligada (usado no ditado).
+    // da voz clonada); opcoes.forcar: fala mesmo com a voz desligada (usado no ditado); opcoes.aoTerminar: chamada
+    // quando a fala acaba (ou é cortada), usada na digitação narrada para repetir e seguir no tempo certo.
     falar(texto, opcoes = {}) {
       if ((!ligada && !opcoes.forcar) || !sintese) return;
       // Tela pausada pelo instrutor: o professor virtual fica quieto (a mensagem do próprio instrutor fala).
@@ -39,6 +40,7 @@ window.CE = window.CE || {};
       fala.lang = 'pt-BR';
       fala.rate = opcoes.velocidade || 1.4;
       if (opcoes.tom) fala.pitch = opcoes.tom;
+      if (opcoes.aoTerminar) { fala.onend = opcoes.aoTerminar; fala.onerror = opcoes.aoTerminar; }
       fala.volume = volume;
       if (vozEscolhida) fala.voice = vozEscolhida;
       sintese.speak(fala);
