@@ -66,6 +66,15 @@ conversa e tira dúvidas. **Funciona sem internet.**
   teclado (setas, Enter, Esc). No Desenho, como no Paint, o botão direito pinta com a "Cor 2". As aulas treinam tudo isso.
 - **🙋 Não entendi**: em todo passo de aula. O Professor Virtual explica de novo, mais devagar, com a dica e a seta, e
   o instrutor vê o pedido na hora, na Sala ao vivo.
+- **🚀 Ritmo do aluno e modo desafio automático**: em cada aula o professor mede o tempo (comparado com o tempo
+  normal da aula), o acerto de primeira nas perguntas e quantas ajudas o aluno pediu. Com as 3 últimas aulas, o aluno
+  fica 🐢 Com calma, 🚶 No ritmo ou 🚀 Avançado. O 🚀 (3 aulas seguidas bem rápidas, com 90% ou mais de primeira e
+  sem ajuda) entra sozinho no **modo desafio**: a introdução que só explica é pulada (fica no botão "📖 Explicação"),
+  sem seta piscando nem dicas automáticas (a ajuda vem só se ele pedir), meta de **85%** valendo só o acerto de
+  primeira e, no fim da aula, **🏅 Perguntas bônus** de outras aulas (todas certas de primeira = estrela de desafio).
+  Se uma aula pesar, ele volta ao normal sem aviso. Na **Digitação**, quem bate as metas com folga (30%) nos 3 últimos
+  exercícios ganha metas de velocidade 20% maiores (as provas não mudam). No Painel: coluna **Ritmo** e **🏅 Destaques
+  da turma**; em Alunos › 🔓 Liberar aulas, o instrutor pode deixar o modo desafio **automático, sempre ou nunca**.
 - **🪜 Escada de ajuda** (em toda tarefa, menos nos desafios e provas), para ninguém ficar clicando sem rumo:
   - **clicou fora do lugar certo** → na hora, "👆 Quase! O lugar certo é …", e o lugar pisca mais forte;
   - **10 segundos parado** → dica daquela tarefa, escrita e falada (a dica da aula ou uma dica montada pela tarefa:
@@ -321,6 +330,7 @@ app/js/menu-contexto.js  o menu do botão direito (igual ao do Windows) e a jane
 app/js/area-trabalho.js  ícones, menu Iniciar, barra de tarefas
 app/js/professor.js      motor das lições e conversa
 app/js/respostas-prontas.js  respostas do professor sem IA
+app/js/ritmo.js          ritmo do aluno (🐢 🚶 🚀) e modo desafio automático
 app/js/curso.js          níveis, módulos, trilha essencial (lista REFORCO) e regra de liberação das aulas (inclui as
                          liberadas pelo instrutor)
 app/js/dificuldades.js   "Não entendi", dicas, erros e saídas de cada passo (para "Onde a turma trava")

@@ -160,6 +160,7 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `sala:corrida` / `instrutor:corrida` | Convite da corrida no computador do aluno / o instrutor abriu ou deu a largada | `id` / `acao`, `turma`, `alunos` |
 | `professor:respondeu` | O professor respondeu uma pergunta | `pergunta` |
 | `professor:clique-errado` / `professor:dica` / `professor:mostrou-como` / `professor:ofereceu-pular` / `professor:app-fechado` | Escada de ajuda numa tarefa | `licao`, `passo`, `vezes` / `sozinho`, `alvo` / `app` |
+| `ritmo:atualizado` / `ritmo:bonus` | Ritmo do aluno recalculado no fim da aula / terminou as perguntas bônus | `licao`, `antes`, `depois` / `nota` |
 | `licao:tarefa-pulada` | O aluno pulou uma tarefa em que travou | `licao`, `passo` |
 | `navegador:visitou` | Abriu uma página no Navegador | `url`, `dominio`, `caminho`, `titulo`, `seguro`, `existe` |
 | `navegador:pesquisa` | Pesquisou no Procura ou na barra de endereço | `termo`, `onde` (`procura` ou `barra`) |

@@ -209,6 +209,7 @@ window.CE = window.CE || {};
     if (CE.frequencia) CE.frequencia.iniciar();
     if (CE.aulasProfessor) CE.aulasProfessor.carregar();
     if (CE.contaCidadao) CE.contaCidadao.carregar();
+    if (CE.ritmo) CE.ritmo.carregar();
     atualizarStatusIA();
     CE.professor.iniciar();
   };

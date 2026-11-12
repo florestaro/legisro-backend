@@ -1564,3 +1564,11 @@ a.cd-botao { display: inline-block; text-decoration: none !important; color: #ff
 @keyframes fantasma-clique { from { transform: scale(.4); opacity: 1; } to { transform: scale(1.8); opacity: 0; } }
 .prof-dica .botao { margin-top: 6px; }
 @media (prefers-reduced-motion: reduce) { .fantasma-mouse { transition-duration: .01s; } }
+
+/* ---------- Ritmo do aluno e modo desafio ---------- */
+.prof-selo.desafio-auto { background: #e8e1f7; color: #4b2a86; }
+.prof-ritmo { font-weight: 700; color: #4b2a86; }
+.dig-desafio { margin: 0; padding: 8px 12px; border-radius: 8px; background: #f1ecfb; border-left: 4px solid #7b5cc4; }
+.painel-destaques { margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; background: #f6f2ff; border: 1px solid #d9cdf3; }
+.painel-destaques ol { margin: 6px 0; padding-left: 22px; }
+.painel-destaques li { margin: 2px 0; }

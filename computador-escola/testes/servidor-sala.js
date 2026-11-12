@@ -227,6 +227,14 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   await pedir('progresso:liberar', [[turma[7].id], { 'nivel:n2': true }, ''], tp);
   ok(!('trilha' in (await pedir('dados:ler', ['progresso:' + turma[7].id, {}], tT7)).valor), 'trilha vazia: o aluno volta a seguir a trilha da escola');
   await pedir('escola:trilha', ['essencial'], tp);
+  // 21d) Modo desafio: só o instrutor fixa ("sempre"/"nunca"); a gravação do aluno não troca
+  await pedir('progresso:liberar', [[turma[7].id], { 'nivel:n2': true }, undefined, 'nunca'], tp);
+  const md1 = (await pedir('dados:ler', ['progresso:' + turma[7].id, {}], tT7)).valor;
+  await pedir('dados:salvar', ['progresso:' + turma[7].id, { ...md1, modoDesafio: 'sempre' }], tT7);
+  const md2 = (await pedir('dados:ler', ['progresso:' + turma[7].id, {}], tT7)).valor;
+  ok(md1.modoDesafio === 'nunca' && md2.modoDesafio === 'nunca' && md2.liberadas['nivel:n2'], 'modo desafio: o instrutor fixa, e a gravação do aluno não muda');
+  await pedir('progresso:liberar', [[turma[7].id], { 'nivel:n2': true }, undefined, ''], tp);
+  ok(!('modoDesafio' in (await pedir('dados:ler', ['progresso:' + turma[7].id, {}], tT7)).valor), 'modo desafio vazio: volta ao automático');
   // 21c) Revisão rápida: vem ligada; só o instrutor desliga
   ok(escolaPadrao.revisao === true && !(await pedir('escola:revisao', [false], tT7)).ok, 'revisão rápida vem ligada, e o aluno não desliga');
   const semRevisao = (await pedir('escola:revisao', [false], tp)).valor;

@@ -111,6 +111,8 @@
       salvo = d[exercicio.id];
     });
     CE.emitir('digitacao:concluida', { exercicio: exercicio.id, ...resultado, nivel: exercicio.nivel, prova: !!exercicio.prova });
+    // Bateu as metas com folga nos últimos exercícios? As próximas metas de velocidade sobem (modo desafio).
+    if (CE.ritmo) await CE.sessao.progresso().then((p) => CE.ritmo.atualizarDigitacao(p)).catch(() => {});
     return salvo;
   }
 
@@ -175,6 +177,7 @@
           CE.el('button', { class: 'dig-nivelamento', 'data-acao': 'nivelamento-digitacao', onclick: () => praticar(CE.DIGITACAO.nivelamento) },
             CE.el('span', { class: 'dig-ex-icone' }, '🧭'),
             CE.el('span', { class: 'dig-ex-nome' }, 'Teste de nivelamento (1 minuto)', CE.el('small', {}, 'Já sabe digitar? Faça o teste: os níveis em que você já bate a meta da prova ficam dispensados.'))),
+          CE.ritmo && CE.ritmo.digitacaoAtiva() ? CE.el('p', { class: 'dig-desafio', 'data-digitacao-desafio': '' }, '🚀 Modo desafio: você está batendo as metas com folga, então as metas de velocidade ficaram 20% maiores. As provas não mudam.') : null,
           CE.el('p', { class: 'dig-intro' }, ehInstrutor()
             ? 'Você é instrutor: todos os exercícios estão liberados.'
             : 'Faça os exercícios na ordem. Para liberar o próximo, bata a meta de velocidade (ppm = palavras por minuto) e de acertos.'),

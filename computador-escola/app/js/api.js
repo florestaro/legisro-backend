@@ -135,6 +135,7 @@ window.CE = window.CE || {};
             const p = ler('progresso:' + id, { licoes: {}, digitacao: {} });
             if (Object.keys(a[1] || {}).length) p.liberadas = a[1]; else delete p.liberadas;
             if (a[2] !== undefined) { if (a[2] === 'essencial' || a[2] === 'completa') p.trilha = a[2]; else delete p.trilha; }
+            if (a[3] !== undefined) { if (a[3] === 'sempre' || a[3] === 'nunca') p.modoDesafio = a[3]; else delete p.modoDesafio; }
             gravar('progresso:' + id, p);
           });
           return true;

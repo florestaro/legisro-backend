@@ -13,6 +13,7 @@ window.CE = window.CE || {};
   let ligadaNaEscola = true;
   let origem = null;   // aula de onde veio a pergunta em andamento
   let erros = {};      // aula -> perguntas que o aluno não acertou de primeira
+  let progressoCache = null; // progresso lido no fim da última aula (para escolher as perguntas bônus)
 
   const registro = (p, l) => (p.licoes && p.licoes[l.id]) || {};
   // As últimas aulas que o aluno fez de verdade (as dispensadas pelo nivelamento não contam) e que têm perguntas.
@@ -82,6 +83,42 @@ window.CE = window.CE || {};
       CE.LICOES_ESPECIAIS.revisao = licao;
       return licao;
     },
+    // Perguntas bônus do modo desafio: 3 perguntas de OUTRAS aulas já feitas do mesmo nível (as do mesmo módulo
+    // primeiro), sem ajuda. Não mudam nada no curso: acertar todas de primeira dá uma estrela de desafio.
+    montarBonus(terminada) {
+      const p = progressoCache;
+      const feitas = CE.LICOES.filter((l) => l !== terminada && l.nivel === terminada.nivel && l.passos.some((s) => s.quiz)
+        && (!p || CE.curso.aprovada(l, p)));
+      const ordem = feitas.filter((l) => l.modulo === terminada.modulo).concat(feitas.filter((l) => l.modulo !== terminada.modulo));
+      const perguntas = [];
+      for (const l of ordem) {
+        const qs = l.passos.filter((s) => s.quiz);
+        const q = qs[(l.id.length + perguntas.length) % qs.length];
+        perguntas.push({ aula: l, quiz: q.quiz });
+        if (perguntas.length >= 3) break;
+      }
+      if (perguntas.length < 2) return null;
+      CE.LICOES_ESPECIAIS.bonus = {
+        id: 'bonus', titulo: 'Perguntas bônus', icone: '🏅', nivel: terminada.nivel, especial: true, desafio: true,
+        descricao: 'Perguntas mais difíceis, de outras aulas, só para quem está no modo desafio.',
+        passos: [
+          info(`🏅 Perguntas bônus! São ${perguntas.length} perguntas de outras aulas do nível, sem ajuda. Para ganhar a estrela de desafio, acerte todas de primeira. Clique em "Continuar".`, { emoji: '🏅' }),
+          ...perguntas.map(({ aula, quiz }) => ({ quiz: { ...quiz, explicacao: `${quiz.explicacao ? quiz.explicacao + ' ' : ''}(Da aula "${aula.titulo}".)` } })),
+        ],
+        async aoConcluir({ nota }) {
+          await CE.sessao.atualizarProgresso((pr) => {
+            pr.ritmo = pr.ritmo || {};
+            pr.ritmo.bonus = (pr.ritmo.bonus || 0) + (nota === 100 ? 1 : 0);
+          });
+          CE.emitir('ritmo:bonus', { nota });
+          return nota === 100
+            ? { titulo: '🏅 Bônus completo!', texto: `Acertou tudo de primeira: ${nota}%. Você ganhou uma estrela de desafio!`, comemorar: true }
+            : { titulo: '🏅 Bônus feito', texto: `Você acertou ${nota}% de primeira. Na próxima aula tem mais!` };
+        },
+      };
+      return CE.LICOES_ESPECIAIS.bonus;
+    },
+    lembrarProgresso(p) { progressoCache = p; },
     // O aluno preferiu ir direto para a aula: não pergunta de novo hoje.
     pular() {
       return CE.sessao.atualizarProgresso((pr) => { pr.revisao = { dia: CE.frequencia.hoje(), em: Date.now(), pulada: true }; });

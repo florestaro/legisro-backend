@@ -164,11 +164,17 @@ window.CE = window.CE || {};
       CE.el('option', { value: '' }, `Igual à da escola (${CE.curso.TRILHAS[CE.curso.trilhaDaEscola()]})`),
       ...Object.entries(CE.curso.TRILHAS).map(([id, nome]) => CE.el('option', { value: id }, nome)));
     trilha.value = progresso.trilha || '';
+    const desafio = CE.el('select', { 'data-campo': 'modo-desafio' },
+      CE.el('option', { value: '' }, 'Automático (o professor decide pelo ritmo)'),
+      CE.el('option', { value: 'sempre' }, 'Sempre (mais exigente)'),
+      CE.el('option', { value: 'nunca' }, 'Nunca'));
+    desafio.value = progresso.modoDesafio || '';
     const paraTurma = CE.el('input', { type: 'checkbox', 'data-campo': 'liberar-turma' });
     const fundo = CE.el('div', { class: 'dialogo-fundo' }, CE.el('div', { class: 'dialogo largo painel-liberar' },
       CE.el('h3', {}, `🔓 Liberar aulas para ${usuario.nome}`),
       CE.el('p', { class: 'painel-legenda' }, 'Marque o que pode ser feito fora da ordem do curso. O resto continua liberando em sequência (e depois de uma aula liberada, a seguinte abre quando o aluno passar nela).'),
       CE.el('label', { class: 'painel-check' }, '🧭 Trilha deste aluno: ', trilha),
+      CE.el('label', { class: 'painel-check' }, '🚀 Modo desafio: ', desafio),
       CE.el('div', { class: 'liberar-lista' }, ...niveis, digitacao),
       usuario.turma && colegas.length > 1 ? CE.el('label', { class: 'painel-check' }, paraTurma, ` Fazer o mesmo para toda a turma ${usuario.turma} (${colegas.length} alunos)`) : null,
       CE.el('div', { class: 'dialogo-botoes' },
@@ -176,7 +182,7 @@ window.CE = window.CE || {};
         CE.el('button', { class: 'botao', 'data-acao': 'salvar-liberacao', onclick: async () => {
           const ids = paraTurma.checked ? colegas.map((u) => u.id) : [usuario.id];
           try {
-            await CE.api.chamar('progresso:liberar', ids, marcadas, trilha.value);
+            await CE.api.chamar('progresso:liberar', ids, marcadas, trilha.value, desafio.value);
             const n = Object.keys(marcadas).length;
             const novaTrilha = trilha.value !== (progresso.trilha || '') ? ` Trilha: ${trilha.value ? CE.curso.TRILHAS[trilha.value] : 'a da escola'}.` : '';
             CE.avisar((n ? `🔓 Liberado para ${ids.length > 1 ? `${ids.length} alunos` : usuario.nome}.` : `As aulas de ${ids.length > 1 ? 'toda a turma' : usuario.nome} seguem a sequência normal.`) + novaTrilha);

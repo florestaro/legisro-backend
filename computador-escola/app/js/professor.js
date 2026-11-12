@@ -11,6 +11,11 @@ window.CE = window.CE || {};
   let timerMostrar = null;
   let timerTravado = null;
   let ajuda = { erros: 0, pedidos: 0, ultimoAviso: 0 };
+  // Modo desafio (aluno 🚀, veja ritmo.js): pula a introdução, ajuda só quando o aluno pedir, meta de 85% de primeira.
+  let modoDesafio = false;
+  let inicioLicao = 0, ajudasNaAula = 0, certasDePrimeira = 0;
+  const primeiraAcao = (l) => { const i = l.passos.findIndex((s) => s.espera || s.quiz); return i < 0 ? l.passos.length : i; };
+  const textosDaIntroducao = (l) => l.passos.slice(0, primeiraAcao(l)).filter((s) => s.texto && !s.espera && !s.quiz).map((s) => s.texto);
 
   let licao = null;      // lição em andamento
   let indicePasso = 0;
@@ -185,7 +190,8 @@ window.CE = window.CE || {};
       CE.el('div', { class: 'prof-titulo' }, `${licao.icone} ${licao.titulo}`,
         licao.desafio ? CE.el('span', { class: 'prof-selo desafio' }, 'Desafio: sem ajuda') : null,
         licao.prova ? CE.el('span', { class: 'prof-selo prova' }, 'Prova') : null,
-        emReforco ? CE.el('span', { class: 'prof-selo reforco' }, 'Reforço (opcional)') : null),
+        emReforco ? CE.el('span', { class: 'prof-selo reforco' }, 'Reforço (opcional)') : null,
+        modoDesafio ? CE.el('span', { class: 'prof-selo desafio-auto', 'data-modo-desafio': '', title: 'Você está indo muito bem: menos ajuda e perguntas mais exigentes' }, '🚀 Desafio') : null),
       posicao ? CE.el('div', { class: 'prof-trilha', 'data-posicao-trilha': `${posicao.numero}/${posicao.total}` },
         `${posicao.nivel.icone} Aula ${posicao.numero} de ${posicao.total} do nível ${posicao.nivel.nome}`) : null,
       CE.el('div', { class: 'prof-progresso' },
@@ -199,6 +205,10 @@ window.CE = window.CE || {};
     return CE.el('div', { class: 'prof-botoes' },
       CE.el('button', { class: 'botao secundario pequeno nao-entendi', 'data-acao': 'nao-entendi', title: 'Peça ajuda: o professor explica de novo e o instrutor fica sabendo', onclick: naoEntendi }, '🙋 Não entendi'),
       passo.espera && !licao.desafio ? CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'mostrar-como', title: 'A setinha do professor mostra onde e como fazer', onclick: () => mostrarComo() }, '👀 Mostrar como') : null,
+      modoDesafio && textosDaIntroducao(licao).length ? CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'ver-explicacao', title: 'Ver a explicação do começo da aula', onclick: () => {
+        escreverNaDica(`📖 ${textosDaIntroducao(licao).join(' ')}`);
+        ajudasNaAula++;
+      } }, '📖 Explicação') : null,
       CE.el('button', { class: 'botao secundario pequeno', title: 'Ouvir de novo', onclick: () => CE.voz.falar(textoFalado(passo)) }, '🔊 Repetir'),
       CE.el('button', { class: 'botao secundario pequeno', onclick: sairDaLicao }, 'Sair da aula'),
       ...extras,
@@ -240,7 +250,8 @@ window.CE = window.CE || {};
         if (!continuar.hidden) return;
         if (i === correta) {
           e.currentTarget.classList.add('certa');
-          quizPontos += errosNestaPergunta === 0 ? 1 : errosNestaPergunta === 1 && !licao.prova ? 0.5 : 0;
+          quizPontos += errosNestaPergunta === 0 ? 1 : errosNestaPergunta === 1 && !licao.prova && !modoDesafio ? 0.5 : 0;
+          if (errosNestaPergunta === 0) certasDePrimeira++;
           retorno.textContent = '✅ Isso mesmo! ' + (explicacao || '');
           retorno.className = 'prof-retorno certo';
           continuar.hidden = false;
@@ -274,6 +285,7 @@ window.CE = window.CE || {};
     if (!passo || licao.desafio) return;
     const texto = dicaDoPasso(passo);
     if (!escreverNaDica('💡 ' + texto)) return;
+    ajudasNaAula++;
     CE.voz.falar(texto);
     CE.emitir('professor:dica', { licao: licao.id, passo: indicePasso + 1 });
     if (!licao.especial) CE.dificuldades.registrar(licao.id, indicePasso, 'dica');
@@ -331,6 +343,9 @@ window.CE = window.CE || {};
   function mostrarComo(sozinho = false, avisouInstrutor = false) {
     const passo = passoAtual();
     if (!licao || !passo || !passo.espera || licao.desafio) return;
+    // No modo desafio a seta fica escondida até o aluno pedir ajuda: aqui ela aparece.
+    if (modoDesafio && passo.destacar && !document.querySelector('.destaque')) destacar(passo.destacar);
+    ajudasNaAula++;
     const alvo = [...document.querySelectorAll('.destaque')].find((e) => e.getClientRects().length);
     const dica = dicaDoPasso(passo);
     escreverNaDica(`👀 ${dica}${avisouInstrutor ? ' Se ainda não der, o instrutor já foi avisado 🙋.' : ''}`);
@@ -365,6 +380,7 @@ window.CE = window.CE || {};
       CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'pular-tarefa', onclick: () => {
         if (licao !== esta.licao || indicePasso !== esta.indice) return;
         if (!licao.especial) CE.dificuldades.registrar(licao.id, indicePasso, 'pulou');
+        ajudasNaAula++;
         CE.emitir('licao:tarefa-pulada', { licao: licao.id, passo: indicePasso + 1 });
         avancar();
       } }, '⏭ Pular esta tarefa'));
@@ -377,7 +393,7 @@ window.CE = window.CE || {};
   // diálogo, na barra de tarefas e na barra de título das janelas (para arrastar ou trazer uma janela).
   document.addEventListener('pointerdown', (e) => {
     const passo = passoAtual();
-    if (!licao || !passo || !passo.espera || licao.desafio || !passo.destacar || e.button > 2) return;
+    if (!licao || !passo || !passo.espera || licao.desafio || modoDesafio || !passo.destacar || e.button > 2) return;
     const alvos = [...document.querySelectorAll('.destaque')].filter((x) => x.getClientRects().length);
     if (!alvos.length) return;
     const t = e.target;
@@ -417,6 +433,7 @@ window.CE = window.CE || {};
     const passo = passoAtual();
     if (!licao || !passo) return;
     ajuda.pedidos++;
+    ajudasNaAula++;
     if (!licao.especial) CE.dificuldades.registrar(licao.id, indicePasso, 'naoEntendi');
     CE.emitir('licao:nao-entendi', { licao: licao.id, passo: indicePasso + 1 });
     if (CE.sala) CE.sala.pedirAjuda();
@@ -455,10 +472,12 @@ window.CE = window.CE || {};
     if (document.activeElement && $('professor').contains(document.activeElement)) document.activeElement.blur();
     if (passo.preparar) await passo.preparar();
     if (passo.jaFeito && passo.jaFeito()) { avancar('evento'); return; }
+    // Modo desafio: a introdução que só explica fica guardada no botão "📖 Explicação".
+    if (modoDesafio && !passo.espera && !passo.quiz && indicePasso < primeiraAcao(licao)) { avancar(); return; }
     if (passo.quiz) quizTotal++;
     desenharLicao();
-    // No desafio o aluno faz sozinho: sem seta e sem destaque.
-    destacar(licao.desafio ? null : passo.destacar);
+    // No desafio (e no modo desafio do aluno 🚀) o aluno faz sozinho: sem seta e sem destaque até pedir ajuda.
+    destacar(licao.desafio || modoDesafio ? null : passo.destacar);
     CE.voz.falar(textoFalado(passo));
     if (passo.espera) {
       const estaLicao = licao, esteIndice = indicePasso;
@@ -480,8 +499,8 @@ window.CE = window.CE || {};
       pararDeOuvir = () => desligar.forEach((f) => f());
       // O aluno pode ter feito a tarefa antes de o passo aparecer (durante a troca de passo): vale também.
       recentes.filter((r) => r.t > desde && eventos.includes(r.nome)).forEach((r) => cumprir(r.dados, r.nome, r.t));
-      timerDica = setTimeout(mostrarDica, TEMPO_PARA_DICA);
-      if (!licao.desafio) {
+      if (!modoDesafio) timerDica = setTimeout(mostrarDica, TEMPO_PARA_DICA);
+      if (!licao.desafio && !modoDesafio) {
         const este = passo;
         timerMostrar = setTimeout(() => { if (passoAtual() === este) mostrarComo(true); }, TEMPO_MOSTRAR_COMO);
         timerTravado = setTimeout(() => { if (passoAtual() === este) oferecerPular(); }, TEMPO_TRAVADO);
@@ -510,7 +529,11 @@ window.CE = window.CE || {};
   async function concluirLicao() {
     const terminada = licao;
     const nota = quizTotal ? Math.round((quizPontos / quizTotal) * 100) : null;
-    const aprovada = nota == null || nota >= CE.curso.NOTA_MINIMA;
+    const notaMinima = modoDesafio ? CE.ritmo.NOTA_DESAFIO : CE.curso.NOTA_MINIMA;
+    const aprovada = nota == null || nota >= notaMinima;
+    const comoFoi = { segundos: (performance.now() - inicioLicao) / 1000, primeira: quizTotal ? Math.round((certasDePrimeira / quizTotal) * 100) : null, ajudas: ajudasNaAula, desafio: modoDesafio };
+    const eraDesafio = modoDesafio;
+    const contaRitmo = CE.sessao.usuario && CE.sessao.usuario.papel !== 'instrutor' && !terminada.especial && !terminada.extra && !terminada.desafio;
     encerrar();
     if (terminada.especial) { await concluirEspecial(terminada, nota); return; }
     const salvou = await gravarComNovaTentativa(terminada, () => CE.sessao.atualizarProgresso((p) => {
@@ -526,9 +549,14 @@ window.CE = window.CE || {};
         aprovadaEm: antes.aprovadaEm || (jaAprovada ? antes.em : aprovada ? Date.now() : undefined),
       };
     }));
-    if (!salvou || licao) return; // o aluno começou outra aula nesse meio-tempo
+    if (!salvou) return;
+    const ritmo = contaRitmo ? await CE.ritmo.registrar(terminada, comoFoi).catch(() => null) : null;
+    CE.revisao.lembrarProgresso(await CE.sessao.progresso().catch(() => null));
+    if (licao) return; // o aluno começou outra aula nesse meio-tempo
     if (!aprovada) {
-      const texto = `Sua nota foi ${nota}%. Para passar, precisa de pelo menos ${CE.curso.NOTA_MINIMA}%. Vamos refazer a aula com calma? Você consegue!`;
+      const texto = eraDesafio
+        ? `Sua nota foi ${nota}%. No modo desafio a meta é ${notaMinima}%, valendo só o acerto de primeira. Refaça a aula com atenção: você consegue!`
+        : `Sua nota foi ${nota}%. Para passar, precisa de pelo menos ${CE.curso.NOTA_MINIMA}%. Vamos refazer a aula com calma? Você consegue!`;
       $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao reprovada' },
         CE.el('div', { class: 'prof-titulo' }, `${terminada.icone} ${terminada.titulo}`),
         CE.el('div', { class: 'prof-nota baixa' }, `${nota}%`),
@@ -557,22 +585,27 @@ window.CE = window.CE || {};
       : mudouDeNivel
         ? `Você terminou o nível ${CE.NIVEIS_CURSO.find((n) => n.id === terminada.nivel).nome}! Peça ao instrutor o seu certificado. Quando quiser, clique no botão verde para começar o próximo nível.`
         : 'Quando estiver pronto, clique no botão verde "Próxima aula".';
+    // Virou 🚀: o professor avisa que vai exigir mais. (Se voltar ao normal, ele não comenta.)
+    const subiu = ritmo && ritmo.depois === 'avancado' && ritmo.antes !== 'avancado' && CE.ritmo.modo(progresso) === 'auto';
+    const avisoRitmo = subiu ? '🚀 Você está indo muito rápido e acertando quase tudo! A partir da próxima aula vou te dar menos explicação, ajuda só quando você pedir e perguntas mais exigentes.' : '';
     $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao concluida' },
       CE.el('div', { class: 'prof-titulo' }, terminada.prova ? '🏆 Prova aprovada!' : '🎉 Aula concluída!'),
       nota != null ? CE.el('div', { class: 'prof-nota' }, `${nota}%`) : null,
       CE.el('p', { class: 'prof-texto' }, terminada.conclusao),
+      avisoRitmo ? CE.el('p', { class: 'prof-texto prof-ritmo', 'data-subiu-ritmo': '' }, avisoRitmo) : null,
       CE.el('p', { class: 'prof-texto prof-conducao', 'data-conducao': '' }, conducao),
       proxima ? CE.el('div', { class: 'prof-proxima', 'data-proxima': proxima.id },
         CE.el('small', {}, 'Próxima aula'),
         CE.el('strong', {}, `${proxima.icone} ${proxima.titulo}`),
         proxima.descricao ? CE.el('span', {}, proxima.descricao) : null) : null,
       CE.el('div', { class: 'prof-botoes' },
+        eraDesafio && CE.revisao.montarBonus && CE.revisao.montarBonus(terminada) ? CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'bonus', title: 'Perguntas mais difíceis, de outras aulas: vale estrela de desafio', onclick: () => comecarLicao('bonus') }, '🏅 Perguntas bônus') : null,
         reforco ? CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'reforco', title: 'Aula a mais, para treinar (não é obrigatória)', onclick: () => comecarLicao(reforco.id) }, `💪 Treinar mais: ${reforco.titulo}`) : null,
         CE.el('button', { class: 'botao secundario pequeno', onclick: () => CE.janelas.abrir('aulas') }, 'Ver todas as aulas'),
         proxima ? CE.el('button', { class: 'botao conduzir', 'data-acao': 'proxima', onclick: () => comecarLicao(proxima.id) }, 'Próxima aula ▶') : null,
       ),
     ));
-    CE.voz.falar(`${terminada.conclusao} ${conducao}`);
+    CE.voz.falar(`${terminada.conclusao} ${avisoRitmo} ${conducao}`);
   }
 
   // Grava o resultado da aula. Se falhar (sem conexão com o instrutor, por exemplo), a aula não se perde: aparece
@@ -623,6 +656,7 @@ window.CE = window.CE || {};
   function encerrar() {
     if (pararDeOuvir) { pararDeOuvir(); pararDeOuvir = null; }
     limparAjuda();
+    modoDesafio = false;
     limparDestaque();
     licao = null;
     indicePasso = 0;
@@ -652,6 +686,8 @@ window.CE = window.CE || {};
     }
     encerrar();
     const doCurso = CE.LICOES.includes(encontrada);
+    modoDesafio = !instrutor && doCurso && !encontrada.desafio && !encontrada.prova && CE.ritmo.desafioAtivo(progresso);
+    inicioLicao = performance.now(); ajudasNaAula = 0; certasDePrimeira = 0;
     emReforco = doCurso && !CE.curso.obrigatoria(encontrada, progresso);
     posicao = doCurso && !emReforco ? CE.curso.posicao(encontrada, progresso) : null;
     licao = encontrada;

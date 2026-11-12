@@ -77,6 +77,7 @@
         if (!alunos.length) return CE.el('p', {}, 'Nenhum aluno cadastrado ainda. Vá na aba "Alunos" para cadastrar.');
         const provasDig = CE.DIGITACAO.lista.filter((e) => e.prova);
         const totalDig = CE.DIGITACAO.lista.length;
+        const destaques = [];
         const linhas = await Promise.all(alunos.map(async (u) => {
           const p = await CE.sessao.progresso(u.id);
           const r = CE.curso.resumo(p);
@@ -85,6 +86,8 @@
           const proximoDig = CE.DIGITACAO.lista.find((e) => !(dig[e.id] && dig[e.id].aprovado));
           const melhorPpm = Math.max(0, ...CE.DIGITACAO.lista.map((e) => (dig[e.id] && dig[e.id].ppm) || 0));
           const medalhas = Object.keys(p.medalhas || {}).length;
+          const rit = CE.ritmo.resumo(p);
+          destaques.push({ u, p, rit, pontos: CE.ritmo.pontos(p) });
           return CE.el('tr', {},
             CE.el('td', {}, `${u.avatar} ${u.nome}`),
             CE.el('td', {}, u.turma || '—'),
@@ -100,10 +103,21 @@
             CE.el('td', {}, melhorPpm ? `${melhorPpm} ppm` : '—'),
             CE.el('td', { class: 'painel-celula' }, ...provasDig.map((e) => CE.el('span', { title: e.titulo }, dig[e.id] && dig[e.id].aprovado ? '🏅' : '·'))),
             CE.el('td', { class: 'painel-celula' }, medalhas ? `🏅 ${medalhas}` : '—'),
+            CE.el('td', { class: 'painel-celula', 'data-ritmo-aluno': rit.nivel, title: rit.aulas ? `Últimas ${rit.aulas} aulas: ${Math.round((rit.razao || 0) * 100)}% do tempo normal, ${rit.primeira == null ? '—' : Math.round(rit.primeira) + '%'} de acerto de primeira, ${(rit.ajudas || 0).toFixed(1)} ajudas por aula` : 'Ainda sem aulas medidas' },
+              rit.aulas ? `${rit.icone} ${rit.rotulo}` : '—',
+              rit.desafio || rit.digitacao ? CE.el('small', {}, CE.el('br'), `🚀 desafio${rit.modo === 'sempre' ? ' (fixo)' : ''}${rit.digitacao && !rit.desafio ? ' na digitação' : ''}`) : null,
+              rit.modo === 'nunca' ? CE.el('small', {}, CE.el('br'), 'desafio desligado') : null),
           );
         }));
-        return CE.el('div', { class: 'painel-rolagem' }, CE.el('table', { class: 'painel-tabela' },
-          CE.el('thead', {}, CE.el('tr', {}, ...['Aluno', 'Turma', 'Aula atual', 'Informática', 'Média', 'Digitação (exercício atual)', 'Melhor velocidade', 'Provas de digitação', 'Medalhas'].map((t) => CE.el('th', {}, t)))),
+        const melhores = destaques.filter((d) => d.pontos >= 0).sort((a, b) => b.pontos - a.pontos).slice(0, 5);
+        const caixaDestaques = melhores.length ? CE.el('div', { class: 'painel-destaques', 'data-destaques': '' },
+          CE.el('strong', {}, '🏅 Destaques da turma (mais rápidos e certeiros nas últimas aulas):'),
+          CE.el('ol', {}, ...melhores.map((d) => CE.el('li', { 'data-destaque': d.u.nome },
+            `${d.u.avatar} ${d.u.nome}${d.u.turma ? ` (${d.u.turma})` : ''} — ${d.rit.icone} ${d.rit.rotulo}`,
+            CE.el('small', {}, ` · ${d.rit.primeira == null ? '' : `${Math.round(d.rit.primeira)}% de primeira · `}${Math.round((d.rit.razao || 0) * 100)}% do tempo normal`)))),
+          CE.el('p', { class: 'painel-legenda' }, 'Bons candidatos a monitor ou a liberar o próximo nível. O 🚀 entra sozinho no modo desafio (menos explicação, ajuda só quando pede, meta de 85% de primeira); dá para mudar em Alunos › 🔓 Liberar aulas.')) : null;
+        return CE.el('div', { class: 'painel-rolagem' }, caixaDestaques, CE.el('table', { class: 'painel-tabela' },
+          CE.el('thead', {}, CE.el('tr', {}, ...['Aluno', 'Turma', 'Aula atual', 'Informática', 'Média', 'Digitação (exercício atual)', 'Melhor velocidade', 'Provas de digitação', 'Medalhas', 'Ritmo'].map((t) => CE.el('th', {}, t)))),
           CE.el('tbody', {}, ...linhas),
         ), CE.el('p', { class: 'painel-legenda' }, 'Informática = aulas da trilha do aluno. Média = acertos nas perguntas das aulas. ppm = palavras por minuto. Provas de digitação: Iniciante, Intermediário e Avançado.'));
       }

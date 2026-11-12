@@ -152,13 +152,14 @@ function criarCanais(dados) {
       if (arquivo.startsWith('progresso-') && s.usuario.papel !== 'instrutor' && valor && typeof valor === 'object') {
         const guardada = dados.ler(arquivo, null);
         valor = { ...valor };
-        ['liberadas', 'trilha'].forEach((k) => { if (guardada && guardada[k]) valor[k] = guardada[k]; else delete valor[k]; });
+        ['liberadas', 'trilha', 'modoDesafio'].forEach((k) => { if (guardada && guardada[k]) valor[k] = guardada[k]; else delete valor[k]; });
       }
       return dados.salvar(arquivo, valor);
     },
     // Instrutor libera aulas fora da sequência para alunos (troca as liberações deles por estas). Com "trilha"
-    // ("essencial" ou "completa"; vazio = a da escola), troca também a trilha deles.
-    'progresso:liberar': (s, ids, liberadas, trilha) => {
+    // ("essencial" ou "completa"; vazio = a da escola), troca também a trilha deles; com "modoDesafio" ("sempre",
+    // "nunca"; vazio = automático), o modo desafio (veja app/js/ritmo.js).
+    'progresso:liberar': (s, ids, liberadas, trilha, modoDesafio) => {
       exigirInstrutor(s);
       const existem = new Set(dados.listarUsuarios().map((u) => u.id));
       const limpas = {};
@@ -167,6 +168,7 @@ function criarCanais(dados) {
         const p = dados.ler(`progresso-${id}`, { licoes: {}, digitacao: {} });
         if (Object.keys(limpas).length) p.liberadas = limpas; else delete p.liberadas;
         if (trilha !== undefined) { if (trilha === 'essencial' || trilha === 'completa') p.trilha = trilha; else delete p.trilha; }
+        if (modoDesafio !== undefined) { if (modoDesafio === 'sempre' || modoDesafio === 'nunca') p.modoDesafio = modoDesafio; else delete p.modoDesafio; }
         dados.salvar(`progresso-${id}`, p);
       });
       return true;

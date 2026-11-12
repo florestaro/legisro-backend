@@ -382,14 +382,15 @@ window.CE = window.CE || {};
     LISTA.push(nivel.prova);
   });
 
-  // Metas ajustadas para o aluno (crianças até 12 anos têm metas menores).
+  // Metas ajustadas para o aluno (crianças até 12 anos têm metas menores; no modo desafio, a velocidade sobe 20%,
+  // veja ritmo.js).
   CE.metaDigitacao = function (exercicio, usuario) {
     const meta = { ...exercicio.meta };
     if (usuario && usuario.crianca) {
       meta.ppm = Math.round(meta.ppm * 0.7);
       meta.precisao = Math.max(80, meta.precisao - 5);
     }
-    return meta;
+    return CE.ritmo ? CE.ritmo.ajustarMeta(meta, exercicio) : meta;
   };
 
   // Palavras para os jogos e para o treino das teclas difíceis.
