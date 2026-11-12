@@ -1,6 +1,168 @@
 // Respostas prontas do Professor Virtual, usadas quando não há modelo de IA instalado.
 // Este arquivo é usado tanto pelo programa principal (Node) quanto pela tela (navegador).
 (function (raiz) {
+  // Assuntos dos níveis Intermediário e Avançado e dos programas (os mais específicos primeiro: vale a primeira
+  // resposta cujas palavras aparecem na pergunta).
+  const ASSUNTOS = [
+    { palavras: ['calculadora', 'calcular'],
+      resposta: 'Abra a Calculadora com clique duplo no ícone. Clique nos números e nas operações (+, −, ×, ÷) e depois no "=" para ver o resultado.' },
+    // ----- Planilha -----
+    { palavras: ['autosoma', 'soma', 'função soma', 'funcao soma', '=soma', 'somar a coluna', 'somar na planilha', 'total da coluna'],
+      resposta: 'Para somar na Planilha: clique na célula embaixo dos números e clique em "Σ AutoSoma". Ou escreva =SOMA(B2:B10) e aperte Enter (troque B2:B10 pelas suas células).' },
+    { palavras: ['média', 'media'],
+      resposta: 'Para a média, escreva numa célula =MÉDIA(B2:B10) e aperte Enter. Ela soma os números e divide pela quantidade.' },
+    { palavras: ['porcentagem', 'por cento', '%', 'desconto', 'aumento'],
+      resposta: 'Porcentagem na Planilha: para 15% de 80, escreva =80*15% (ou =B2*15%). Para dar desconto de 10%: =B2*90%. Para aumento de 10%: =B2*110%.' },
+    { palavras: ['procv'],
+      resposta: 'O PROCV procura um valor numa tabela: =PROCV(o que procurar; onde procurar; número da coluna; 0). Exemplo: =PROCV(A2;E2:F10;2;0) acha o A2 na coluna E e traz o que está na coluna F.' },
+    { palavras: ['somase', 'cont.se', 'contse', 'cont se'],
+      resposta: 'SOMASE soma só o que combina: =SOMASE(A2:A20;"Mercado";B2:B20). CONT.SE conta quantas vezes aparece: =CONT.SE(A2:A20;"Mercado").' },
+    { palavras: ['função se', 'funcao se', '=se(', 'aprovado ou reprovado'],
+      resposta: 'A função SE escolhe entre duas respostas: =SE(B2>=7;"Aprovado";"Reprovado"). Se a nota for 7 ou mais, aparece Aprovado; senão, Reprovado.' },
+    { palavras: ['fórmula', 'formula', 'sinal de igual'],
+      resposta: 'Toda fórmula começa com o sinal de igual (=). Exemplo: =B2+B3 soma duas células, =B2*2 multiplica. Depois de escrever, aperte Enter.' },
+    { palavras: ['célula', 'celula', 'células', 'celulas'],
+      resposta: 'Célula é cada quadradinho da Planilha. O nome dela é a letra da coluna mais o número da linha: B3 é a coluna B, linha 3. Clique numa célula para escrever nela.' },
+    { palavras: ['alça', 'alca', 'arrastar a fórmula', 'copiar a fórmula', 'quadradinho do canto'],
+      resposta: 'Para copiar uma fórmula para baixo, clique na célula e arraste o quadradinho do canto de baixo, à direita (a alça), até onde quiser. As células da fórmula mudam sozinhas.' },
+    { palavras: ['gráfico', 'grafico'],
+      resposta: 'Para fazer um gráfico: selecione a tabela (nomes e números, arrastando o mouse), clique em "📊 Gráfico", escolha o tipo (barras ou pizza) e clique em "Inserir gráfico".' },
+    { palavras: ['filtro', 'filtrar'],
+      resposta: 'O "🔽 Filtro" mostra só as linhas que interessam: clique numa célula da tabela, clique em Filtro e escolha o que quer ver. Para mostrar tudo de novo, tire o filtro.' },
+    { palavras: ['classificar', 'ordem alfabética', 'ordem alfabetica', 'ordenar', 'colocar em ordem'],
+      resposta: 'Para colocar em ordem, clique numa célula da coluna e use o botão direito › Classificar › de A a Z (ou de Z a A).' },
+    { palavras: ['r$', 'moeda', 'dinheiro na planilha', 'formato de dinheiro'],
+      resposta: 'Para mostrar como dinheiro, selecione as células e clique no botão "R$". O número 1500 vira R$ 1.500,00.' },
+    { palavras: ['inserir linha', 'inserir coluna', 'excluir linha', 'excluir coluna', 'linha nova'],
+      resposta: 'Clique com o botão DIREITO no número da linha (ou na letra da coluna) e escolha Inserir ou Excluir. As fórmulas se ajustam sozinhas.' },
+    { palavras: ['planilha'],
+      resposta: 'A Planilha é feita de células (linhas com números e colunas com letras). Serve para contas, listas e orçamentos. Toda conta começa com =, por exemplo =B2+B3.' },
+    // ----- Editor de Texto -----
+    { palavras: ['tabela'],
+      resposta: 'No Editor, a tabela fica no botão de tabela da barra de cima: escolha quantas linhas e colunas. Para uma linha a mais, clique com o botão direito dentro da tabela › "Inserir linha".' },
+    { palavras: ['imagem', 'figura', 'foto no documento'],
+      resposta: 'Para pôr uma imagem no documento, clique onde ela vai ficar e depois em "🖼️ Imagem". Escolha a figura.' },
+    { palavras: ['centralizar', 'centro', 'justificar', 'alinhar', 'alinhamento'],
+      resposta: 'Selecione o texto e use os botões de alinhamento na barra: à esquerda, centralizado, à direita ou justificado (retinho dos dois lados).' },
+    { palavras: ['tamanho da letra', 'letra maior', 'aumentar a letra', 'fonte', 'tipo de letra'],
+      resposta: 'Selecione o texto e escolha o tamanho na caixinha de números da barra (Tamanho da letra) ou o tipo de letra na caixa ao lado (Fonte).' },
+    { palavras: ['cor da letra', 'colorir', 'letra colorida', 'cor do texto'],
+      resposta: 'Selecione o texto e clique no botão de cor (Cor da letra). Escolha a cor que quiser.' },
+    { palavras: ['corretor', 'ortografia', 'sublinhado vermelho', 'palavra errada'],
+      resposta: 'Palavra com risco vermelho embaixo está escrita errado. Clique em "✔️ Ortografia" ou clique com o botão DIREITO na palavra e escolha a sugestão certa.' },
+    { palavras: ['pdf'],
+      resposta: 'Para salvar em PDF, clique em "📕 PDF" no Editor e dê um nome. O PDF é o melhor formato para mandar currículo e documentos.' },
+    { palavras: ['imprimir', 'impressão', 'impressao', 'impressora'],
+      resposta: 'Para imprimir, clique em "🖨️ Imprimir" (ou Ctrl+P), confira a impressora e o número de cópias e clique em Imprimir. A impressora é escolhida em Configurações › Impressoras.' },
+    { palavras: ['título 1', 'titulo 1', 'estilo', 'estilos'],
+      resposta: 'Estilos deixam os títulos iguais em todo o trabalho: clique na linha do título e escolha "Título 1" na caixa de estilos. Eles também servem para montar o sumário automático.' },
+    { palavras: ['sumário', 'sumario', 'índice', 'indice'],
+      resposta: 'O sumário é montado sozinho a partir dos títulos com estilo "Título 1" e "Título 2". Coloque os estilos nos títulos e depois use o botão do sumário.' },
+    { palavras: ['abnt', 'trabalho escolar', 'margem', 'margens', 'espaçamento', 'espacamento'],
+      resposta: 'Padrão ABNT: letra Arial ou Times tamanho 12, espaçamento 1,5 entre linhas, margens de 3 cm em cima e à esquerda e 2 cm embaixo e à direita, e texto justificado.' },
+    { palavras: ['ctrl+z', 'desfazer', 'voltar o que fiz'],
+      resposta: 'Errou? Aperte Ctrl+Z para DESFAZER a última coisa: segure a tecla Ctrl e aperte Z. Pode apertar várias vezes.' },
+    { palavras: ['ctrl+c', 'ctrl+v', 'copiar e colar', 'colar', 'copiar'],
+      resposta: 'Para copiar e colar: selecione o texto, aperte Ctrl+C (copiar), clique onde quer e aperte Ctrl+V (colar). Também dá com o botão direito › Copiar e Colar.' },
+    { palavras: ['recortar', 'ctrl+x'],
+      resposta: 'Recortar (Ctrl+X) tira o texto do lugar e guarda; depois Ctrl+V cola em outro lugar. É como mover.' },
+    { palavras: ['localizar', 'substituir', 'trocar palavra'],
+      resposta: 'Para trocar uma palavra no texto todo, use Localizar e substituir: escreva a palavra antiga, a nova e clique em "Substituir tudo".' },
+    { palavras: ['currículo', 'curriculo'],
+      resposta: 'Para o currículo, use o modelo do Editor (📄 Novo › Currículo), troque os campos amarelos pelos seus dados, passe o corretor e salve em PDF para mandar por e-mail.' },
+    // ----- Arquivos e pen drive -----
+    { palavras: ['nova pasta', 'criar pasta', 'criar uma pasta'],
+      resposta: 'No programa Arquivos, clique em "📁 Nova pasta", escreva o nome e aperte Enter. Ou clique com o botão direito num espaço vazio › Novo › Pasta.' },
+    { palavras: ['renomear', 'mudar o nome', 'trocar o nome'],
+      resposta: 'Para mudar o nome de um arquivo: clique nele uma vez e depois em "✏️ Renomear" (ou botão direito › Renomear). Escreva o nome novo e aperte Enter.' },
+    { palavras: ['mover', 'pôr na pasta', 'por na pasta', 'guardar na pasta'],
+      resposta: 'Para guardar um arquivo numa pasta, arraste o arquivo com o mouse e solte em cima da pasta. Ou recorte (Ctrl+X), abra a pasta e cole (Ctrl+V).' },
+    { palavras: ['pen drive', 'pendrive'],
+      resposta: 'O pen drive aparece no Arquivos como "💾 Pen drive (E:)". Para mandar um arquivo para ele: botão direito no arquivo › Enviar para › Pen drive. Antes de tirar, clique em Ejetar.' },
+    { palavras: ['lixeira', 'recuperar', 'apaguei sem querer', 'restaurar'],
+      resposta: 'Arquivo apagado vai para a Lixeira. Abra a Lixeira, clique no arquivo e em "↩️ Restaurar": ele volta para onde estava.' },
+    { palavras: ['zip', 'compactar', 'extrair'],
+      resposta: 'Para juntar arquivos num ZIP: selecione e use botão direito › Enviar para › Pasta compactada (ZIP). Para abrir um ZIP, clique nele e em "📂 Extrair tudo".' },
+    { palavras: ['download', 'downloads', 'baixar', 'baixei'],
+      resposta: 'Tudo que você baixa da internet ou do e-mail vai para a pasta Downloads, no programa Arquivos.' },
+    // ----- E-mail -----
+    { palavras: ['anexo', 'anexar'],
+      resposta: 'Para mandar um arquivo junto com o e-mail: em "✏️ Escrever", clique em "📎 Anexar arquivo" e escolha o arquivo. Confira se ele apareceu antes de enviar.' },
+    { palavras: ['spam'],
+      resposta: 'Spam é propaganda ou golpe que você não pediu. Abra a mensagem estranha e clique em "🚫 É spam / golpe": ela vai para a pasta Spam.' },
+    { palavras: ['responder'],
+      resposta: 'Para responder, abra a mensagem e clique em "↩️ Responder". Escreva a resposta e clique em Enviar. O endereço já vem preenchido.' },
+    { palavras: ['criar conta', 'conta de e-mail', 'conta de email', 'endereço de e-mail', 'endereco de email', 'arroba', '@'],
+      resposta: 'O endereço de e-mail tem um nome, o @ (arroba) e o provedor, como ana.souza@correio.escola. Para criar a conta, abra o E-mail e preencha nome, usuário e senha.' },
+    { palavras: ['e-mail', 'email', 'mensagem'],
+      resposta: 'No E-mail, as mensagens que chegam ficam na Caixa de entrada. Para mandar uma, clique em "✏️ Escrever", ponha o endereço de quem recebe, o assunto e o texto, e clique em Enviar.' },
+    // ----- Banco, Pix, boleto -----
+    { palavras: ['pix', 'chave pix'],
+      resposta: 'No Pix, digite a chave de quem vai receber (CPF, telefone ou e-mail) e o valor. ANTES de confirmar, confira o nome que aparece. Pix feito não volta!' },
+    { palavras: ['boleto', 'código de barras', 'codigo de barras'],
+      resposta: 'Para pagar boleto, copie os números do código de barras (Ctrl+C) e cole no banco em "🧾 Pagar boleto" (Ctrl+V). Confira quem recebe e o valor antes de pagar.' },
+    { palavras: ['saldo', 'extrato', 'banco'],
+      resposta: 'No banco pela internet: digite você mesmo o endereço do banco, confira o cadeado, entre com agência, conta e senha. Saldo fica escondido no 👁️. Ao terminar, clique em Sair.' },
+    // ----- Serviços públicos (gov.br) -----
+    { palavras: ['prata', 'ouro', 'bronze', 'nível da conta', 'nivel da conta'],
+      resposta: 'Níveis da conta: bronze (só cadastro), prata (confirmando pelo banco ou pelo rosto no celular) e ouro (rosto com a foto da CNH ou certificado digital). INSS pede prata ou ouro.' },
+    { palavras: ['carteira de trabalho', 'ctps'],
+      resposta: 'A Carteira de Trabalho Digital mostra seus empregos com carteira assinada. Entre na conta, clique em "💼 Carteira de Trabalho Digital" e confira; dá para baixar.' },
+    { palavras: ['inss', 'aposentadoria', 'contribuição', 'contribuicao'],
+      resposta: 'No INSS (precisa conta prata), o extrato de contribuições mostra o tempo trabalhado com carteira assinada. Dá para simular a aposentadoria.' },
+    { palavras: ['esqueci a senha', 'esqueci minha senha', 'recuperar senha'],
+      resposta: 'Esqueceu a senha? Na tela de entrar, clique em "Esqueci minha senha": chega um código por SMS no seu celular, e aí você cria uma senha nova.' },
+    { palavras: ['cpf'],
+      resposta: 'Nos sites de treino, use sempre o CPF de treino 123.456.789-09. Nunca coloque seus documentos de verdade num site de treino.' },
+    { palavras: ['gov.br', 'govbr', 'conta cidadão', 'conta cidadao', 'gov br'],
+      resposta: 'A conta gov.br (no treino, Conta Cidadão) é uma conta só para vários serviços do governo. Entra com CPF e senha. O site verdadeiro sempre termina com .gov.br.' },
+    // ----- Inteligência artificial -----
+    { palavras: ['voz clonada', 'clonar a voz', 'ligação estranha', 'ligacao estranha'],
+      resposta: 'Golpistas copiam a voz de parentes com IA. Pedido de dinheiro urgente por telefone? Desligue e ligue para o número de sempre da pessoa, ou pergunte a palavra-secreta da família.' },
+    { palavras: ['deepfake', 'vídeo falso', 'video falso', 'famoso'],
+      resposta: 'Vídeo falso feito com IA: a boca não acompanha a fala, a voz é robótica e a promessa é boa demais. Famoso pedindo dinheiro em anúncio é golpe. Denuncie e não clique.' },
+    { palavras: ['inteligência artificial', 'inteligencia artificial', 'chatgpt', 'gemini', 'ia '],
+      resposta: 'IA é um programa que conversa e responde como uma pessoa. Pergunte com detalhes, confira as respostas importantes e nunca conte senhas, códigos ou dados do cartão.' },
+    // ----- Apresentações -----
+    { palavras: ['slide', 'slides', 'apresentação', 'apresentacao'],
+      resposta: 'Nas Apresentações, "➕ Novo slide" cria um slide. Escreva o título e os tópicos. "▶ Apresentar" mostra em tela cheia; as setas do teclado passam os slides e o Esc sai.' },
+    { palavras: ['tema', 'transição', 'transicao'],
+      resposta: 'O tema muda as cores e as letras de todos os slides de uma vez. A transição é o efeito na troca de um slide para o outro.' },
+    // ----- Configurações e segurança -----
+    { palavras: ['papel de parede', 'fundo da tela', 'personalizar'],
+      resposta: 'Para trocar o fundo da tela: Configurações › 🎨 Personalizar, ou clique com o botão direito na área de trabalho › Personalizar.' },
+    { palavras: ['acessibilidade', 'enxergar', 'letra pequena', 'zoom'],
+      resposta: 'Em Configurações › ♿ Acessibilidade dá para deixar as letras maiores e o contraste mais forte.' },
+    { palavras: ['volume', 'som', 'barulho', 'áudio', 'audio'],
+      resposta: 'O volume fica em Configurações › 🔊 Som, ou no alto-falante 🔊 lá embaixo, na barra de tarefas.' },
+    { palavras: ['antivírus', 'antivirus', 'vírus', 'virus'],
+      resposta: 'Em Configurações › 🛡️ Antivírus e segurança, clique em "🔍 Verificação rápida". Programa suspeito: não abra e mande para a quarentena.' },
+    { palavras: ['instalar', 'desinstalar', 'aplicativo'],
+      resposta: 'Para instalar ou tirar programas: Configurações › 📦 Aplicativos. Instale só de lugar confiável, com "✔️ Editora verificada".' },
+    { palavras: ['backup', 'cópia de segurança', 'copia de seguranca'],
+      resposta: 'Backup é uma cópia dos seus arquivos em outro lugar, como o pen drive. Em Configurações › 💾 Backup, clique em "Fazer backup no pen drive".' },
+    { palavras: ['senha forte', 'duas etapas', 'código sms', 'codigo sms', 'código por sms'],
+      resposta: 'Senha forte tem 8 letras ou mais, com maiúscula, minúscula e número. Verificação em duas etapas pede também um código no celular: esse código nunca se passa para ninguém.' },
+    { palavras: ['fake news', 'boato', 'notícia falsa', 'noticia falsa'],
+      resposta: 'Antes de compartilhar uma notícia, procure em sites de confiança. Desconfie de títulos escandalosos, sem data e sem fonte, e de "compartilhe antes que apaguem".' },
+    // ----- Área de trabalho e mouse -----
+    { palavras: ['botão direito', 'botao direito', 'menu de opções', 'menu de opcoes'],
+      resposta: 'O botão DIREITO do mouse abre um menu com opções do que está embaixo da setinha (copiar, colar, renomear...). Depois escolha a opção com o botão esquerdo.' },
+    { palavras: ['rodinha', 'rolar', 'descer a página', 'descer a pagina', 'subir a página'],
+      resposta: 'A rodinha do meio do mouse rola a página: gire para baixo para descer e para cima para subir.' },
+    { palavras: ['barra de tarefas', 'lá embaixo', 'la embaixo'],
+      resposta: 'A barra de tarefas é a faixa escura lá embaixo da tela. Nela ficam o botão Iniciar, os programas abertos e o relógio. Clique no nome de um programa para trazer a janela.' },
+    // ----- Digitação -----
+    { palavras: ['ppm', 'palavras por minuto', 'velocidade'],
+      resposta: 'ppm quer dizer palavras por minuto: mostra a sua velocidade de digitação. Primeiro acerte, depois a velocidade vem com o treino.' },
+    { palavras: ['ficha', 'tab', 'próximo campo', 'proximo campo'],
+      resposta: 'Nas fichas de cadastro, digite cada dado igual ao papel e aperte a tecla Tab (à esquerda do Q) para pular para o próximo campo. Shift+Tab volta.' },
+    { palavras: ['narrada', 'ditado', 'ouvir e digitar'],
+      resposta: 'Na digitação narrada, escute e digite o que o professor falar. Nos primeiros exercícios, aperte Espaço ao terminar cada pedaço para ouvir o próximo.' },
+    { palavras: ['corrida'],
+      resposta: 'A corrida de digitação é aberta pelo instrutor: quando aparecer o convite, clique em "Entrar na corrida", espere a largada e digite o texto o mais rápido e certo que puder.' },
+  ];
+
   const RESPOSTAS = [
     { palavras: ['clique duplo', 'duplo clique', 'dois cliques', 'abrir programa', 'abrir o programa', 'como abro', 'como abrir'],
       resposta: 'Para abrir um programa, coloque a setinha do mouse em cima do ícone e aperte o botão esquerdo duas vezes, bem rápido. Isso se chama clique duplo. Se não der certo, tente de novo um pouco mais rápido!' },
@@ -71,9 +233,16 @@
     return palavra.length <= 4 ? texto.includes(' ' + palavra + ' ') : texto.includes(palavra);
   }
 
+  // A pergunta fala de um assunto que tem resposta pronta? (Usado para o professor saber se a dúvida é sobre um
+  // assunto ou sobre a tarefa de agora.)
+  function temRespostaPronta(pergunta) {
+    const texto = normalizar(pergunta);
+    return ASSUNTOS.concat(RESPOSTAS).some((r) => r.palavras.some((p) => contem(texto, p)));
+  }
+
   function responderSemIA(pergunta, situacao = {}) {
     const texto = normalizar(pergunta);
-    const encontrada = RESPOSTAS.find((r) => r.palavras.some((p) => contem(texto, p)));
+    const encontrada = ASSUNTOS.concat(RESPOSTAS).find((r) => r.palavras.some((p) => contem(texto, p)));
     if (encontrada) return encontrada.resposta;
     if (situacao.passo) {
       return `Vamos com calma! A tarefa agora é: ${situacao.passo} Se tiver dúvida, clique no botão "Repetir" para ouvir de novo a explicação.`;
@@ -82,9 +251,10 @@
   }
 
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { responderSemIA };
+    module.exports = { responderSemIA, temRespostaPronta };
   } else {
     raiz.CE = raiz.CE || {};
     raiz.CE.responderSemIA = responderSemIA;
+    raiz.CE.temRespostaPronta = temRespostaPronta;
   }
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -21,6 +21,11 @@ antes de outro (por exemplo, antes da prova do nível). Com `novoEm`, quem já t
 data não fica travado: para essa pessoa as aulas novas são opcionais, e o certificado continua valendo
 (veja `app/js/licoes/n2-gov-ia.js`).
 
+**Dica de cada tarefa.** Escreva `dica` nas tarefas mais difíceis: ela aparece aos 10 segundos parado, no "Não entendi"
+e no chat. Sem `dica`, o professor monta uma pela tarefa (atalho Ctrl+…, `mouse`, "escreva/digite", o botão de
+`destacar` e o programa da janela). Use sempre `destacar` nas tarefas de clique: é para lá que vão a seta, o aviso de
+"Quase!" quando o aluno clica fora e a setinha do "Mostrar como".
+
 **Revisão rápida.** As perguntas (`quiz`) das aulas também servem para a revisão do começo do dia
 (`app/js/licoes/revisao.js`): o professor sorteia até 3 das últimas aulas que o aluno fez. Por isso, escreva perguntas
 que se entendem sozinhas, sem depender da tela da aula (nada de "o botão que você acabou de clicar").
@@ -154,6 +159,8 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `digitacao:corrida-entrou` / `digitacao:corrida` | Corrida da turma: entrou / terminou | `id` / `lugar`, `ppm`, `participantes` |
 | `sala:corrida` / `instrutor:corrida` | Convite da corrida no computador do aluno / o instrutor abriu ou deu a largada | `id` / `acao`, `turma`, `alunos` |
 | `professor:respondeu` | O professor respondeu uma pergunta | `pergunta` |
+| `professor:clique-errado` / `professor:dica` / `professor:mostrou-como` / `professor:ofereceu-pular` / `professor:app-fechado` | Escada de ajuda numa tarefa | `licao`, `passo`, `vezes` / `sozinho`, `alvo` / `app` |
+| `licao:tarefa-pulada` | O aluno pulou uma tarefa em que travou | `licao`, `passo` |
 | `navegador:visitou` | Abriu uma página no Navegador | `url`, `dominio`, `caminho`, `titulo`, `seguro`, `existe` |
 | `navegador:pesquisa` | Pesquisou no Procura ou na barra de endereço | `termo`, `onde` (`procura` ou `barra`) |
 | `navegador:voltou` / `navegador:avancou` / `navegador:recarregou` / `navegador:inicio` | Botões da barra do Navegador | `url` |

@@ -1552,3 +1552,15 @@ a.cd-botao { display: inline-block; text-decoration: none !important; color: #ff
 .dig-narrada-legenda { font-size: 22px; font-weight: 700; text-align: center; padding: 10px; border-radius: 10px; background: #1f2937; color: #fff; }
 .dig-narrada-texto { font-size: 20px; line-height: 1.5; min-height: 120px; resize: vertical; }
 .palavra-certa { color: #1e6b33; } .palavra-errada { color: #a4262c; text-decoration: underline wavy; }
+
+/* ---------- Escada de ajuda do Professor Virtual ---------- */
+.destaque-forte { animation: destaque-forte .4s ease-in-out 4 !important; outline-width: 6px !important; }
+@keyframes destaque-forte { 50% { outline-color: #ffb900; box-shadow: 0 0 0 10px rgba(255, 185, 0, .45); } }
+.fantasma-mouse { position: fixed; left: 0; top: 0; z-index: 6500; pointer-events: none; transition: transform 1.2s ease-in-out; filter: drop-shadow(0 3px 4px rgba(0,0,0,.45)); }
+.fantasma-mouse svg { display: block; fill: #fff; stroke: #e81123; stroke-width: 2; }
+.fantasma-rotulo { position: absolute; left: 30px; top: 22px; white-space: nowrap; background: #e81123; color: #fff; font: 700 13px var(--fonte); padding: 2px 8px; border-radius: 10px; }
+.fantasma-mouse.clica::after, .fantasma-mouse.clica-duas::after { content: ""; position: absolute; left: -10px; top: -10px; width: 24px; height: 24px; border: 3px solid #e81123; border-radius: 50%; animation: fantasma-clique .5s ease-out 2; }
+.fantasma-mouse.clica-duas::after { animation-iteration-count: 4; animation-duration: .3s; }
+@keyframes fantasma-clique { from { transform: scale(.4); opacity: 1; } to { transform: scale(1.8); opacity: 0; } }
+.prof-dica .botao { margin-top: 6px; }
+@media (prefers-reduced-motion: reduce) { .fantasma-mouse { transition-duration: .01s; } }

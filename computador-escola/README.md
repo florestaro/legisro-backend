@@ -66,6 +66,18 @@ conversa e tira dúvidas. **Funciona sem internet.**
   teclado (setas, Enter, Esc). No Desenho, como no Paint, o botão direito pinta com a "Cor 2". As aulas treinam tudo isso.
 - **🙋 Não entendi**: em todo passo de aula. O Professor Virtual explica de novo, mais devagar, com a dica e a seta, e
   o instrutor vê o pedido na hora, na Sala ao vivo.
+- **🪜 Escada de ajuda** (em toda tarefa, menos nos desafios e provas), para ninguém ficar clicando sem rumo:
+  - **clicou fora do lugar certo** → na hora, "👆 Quase! O lugar certo é …", e o lugar pisca mais forte;
+  - **10 segundos parado** → dica daquela tarefa, escrita e falada (a dica da aula ou uma dica montada pela tarefa:
+    atalho de teclado, tipo de clique, escrever numa caixa, o nome do botão que pisca, o programa que falta abrir);
+  - **22 segundos** (ou ao apertar "Não entendi", ou o botão **👀 Mostrar como**) → uma setinha fantasma vai até o
+    lugar certo e mostra o clique (duplo, botão direito ou arrastar);
+  - **45 segundos** (ou o 2º "Não entendi") → avisa o instrutor e oferece **⏭ Pular esta tarefa** (fica anotado em
+    "Onde a turma trava" e no relatório);
+  - **fechou o programa da tarefa** → "Você fechou o …" com o botão para abrir de novo;
+  - **no chat**, "não entendi", "como faço?", "onde clico?" respondem sobre a tarefa de agora e mostram como. Sem a
+    IA instalada, o professor tem respostas prontas para cerca de 100 assuntos de todas as matérias (Planilha,
+    Editor, Arquivos, E-mail, Pix e boleto, gov.br, IA, Apresentações, Configurações, Digitação...).
 
 ### Curso de Digitação: 122 exercícios em 3 níveis
 - **Iniciante** (39): fileiras do meio, de cima e de baixo, Shift, acentos e cedilha, palavras e frases.

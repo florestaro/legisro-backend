@@ -2,7 +2,15 @@
 window.CE = window.CE || {};
 
 (function () {
-  const TEMPO_PARA_DICA = 40000;
+  // Escada de ajuda numa tarefa (não vale para desafios e provas): clicou fora do lugar certo → "Quase!" na hora;
+  // parado 10 s → dica específica; 22 s (ou "Não entendi") → "Mostrar como" (a setinha fantasma faz o movimento);
+  // 45 s (ou o 2º "Não entendi") → avisa o instrutor e oferece "Pular esta tarefa".
+  const TEMPO_PARA_DICA = 10000;
+  const TEMPO_MOSTRAR_COMO = 22000;
+  const TEMPO_TRAVADO = 45000;
+  let timerMostrar = null;
+  let timerTravado = null;
+  let ajuda = { erros: 0, pedidos: 0, ultimoAviso: 0 };
 
   let licao = null;      // lição em andamento
   let indicePasso = 0;
@@ -48,12 +56,25 @@ window.CE = window.CE || {};
     return balao;
   }
 
+  const DUVIDA_DA_TAREFA = /n[aã]o entend|como (eu )?fa[cç]o|o que (eu )?fa[cç]o|n[aã]o sei|n[aã]o consig|n[aã]o acho|onde (eu )?clic|onde fica|onde est[aá]|travei|socorro|me ajud|^ajuda/i;
+
   async function enviarPergunta() {
     const campo = $('prof-campo');
     const pergunta = campo.value.trim();
     if (!pergunta || pensando) return;
     campo.value = '';
     falarNoChat(pergunta, 'do-aluno');
+    // Dúvida sobre a tarefa de agora ("não entendi", "como faço?", "onde clico?"): responde com a dica desta
+    // tarefa e mostra o movimento, em vez de uma resposta geral.
+    const tarefa = passoAtual();
+    if (licao && tarefa && tarefa.espera && !licao.desafio && DUVIDA_DA_TAREFA.test(pergunta) && !(CE.temRespostaPronta && CE.temRespostaPronta(pergunta))) {
+      const resposta = `Na tarefa de agora: ${dicaDoPasso(tarefa)}`;
+      falarNoChat(resposta);
+      CE.voz.falar(resposta);
+      setTimeout(() => mostrarComo(), 800);
+      CE.emitir('professor:respondeu', { pergunta, daTarefa: true });
+      return;
+    }
     const balao = falarNoChat('...', 'do-professor pensando');
     pensando = true;
     const app = CE.janelas.ativa();
@@ -177,6 +198,7 @@ window.CE = window.CE || {};
   function botoesFixos(passo, ...extras) {
     return CE.el('div', { class: 'prof-botoes' },
       CE.el('button', { class: 'botao secundario pequeno nao-entendi', 'data-acao': 'nao-entendi', title: 'Peça ajuda: o professor explica de novo e o instrutor fica sabendo', onclick: naoEntendi }, '🙋 Não entendi'),
+      passo.espera && !licao.desafio ? CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'mostrar-como', title: 'A setinha do professor mostra onde e como fazer', onclick: () => mostrarComo() }, '👀 Mostrar como') : null,
       CE.el('button', { class: 'botao secundario pequeno', title: 'Ouvir de novo', onclick: () => CE.voz.falar(textoFalado(passo)) }, '🔊 Repetir'),
       CE.el('button', { class: 'botao secundario pequeno', onclick: sairDaLicao }, 'Sair da aula'),
       ...extras,
@@ -250,20 +272,151 @@ window.CE = window.CE || {};
   function mostrarDica() {
     const passo = passoAtual();
     if (!passo || licao.desafio) return;
-    const texto = passo.dica || 'Tem alguma dúvida? Escreva ali embaixo que eu te ajudo!';
-    const elemento = document.querySelector('#prof-licao .prof-dica');
-    if (!elemento) return;
-    elemento.textContent = '💡 ' + texto;
-    elemento.hidden = false;
+    const texto = dicaDoPasso(passo);
+    if (!escreverNaDica('💡 ' + texto)) return;
     CE.voz.falar(texto);
+    CE.emitir('professor:dica', { licao: licao.id, passo: indicePasso + 1 });
     if (!licao.especial) CE.dificuldades.registrar(licao.id, indicePasso, 'dica');
   }
+
+  // Escreve no quadro amarelo do cartão da tarefa (texto e, se tiver, um botão). Devolve false se não há quadro.
+  function escreverNaDica(texto, ...extras) {
+    const elemento = document.querySelector('#prof-licao .prof-dica');
+    if (!elemento) return false;
+    elemento.replaceChildren(texto, ...extras.filter(Boolean));
+    elemento.hidden = false;
+    return true;
+  }
+
+  function limparAjuda() {
+    clearTimeout(timerDica); clearTimeout(timerMostrar); clearTimeout(timerTravado);
+    document.querySelectorAll('.fantasma-mouse').forEach((e) => e.remove());
+  }
+
+  // ---------- Dica de cada tarefa ----------
+  // A dica escrita na aula vem primeiro. Sem ela, o professor monta uma dica pela tarefa: atalho de teclado, tipo de
+  // clique, escrever numa caixa, o nome do botão que está piscando e o programa que precisa estar aberto.
+  const appDoPasso = (passo) => {
+    const m = [].concat(passo.destacar || []).join(' ').match(/data-app="([^"]+)"/);
+    return m ? m[1] : null;
+  };
+  const nomeDoApp = (id) => { const a = CE.listarApps().find((x) => x.id === id); return a ? a.nome : id; };
+  function rotuloDoAlvo() {
+    const alvo = [...document.querySelectorAll('.destaque')].find((e) => e.getClientRects().length);
+    if (!alvo) return '';
+    const t = (alvo.getAttribute('aria-label') || alvo.title || alvo.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length >= 1 && t.length <= 40 ? t : '';
+  }
+  function dicaDoPasso(passo) {
+    if (passo.dica) return passo.dica;
+    const texto = String(passo.texto || '');
+    const partes = [];
+    const app = appDoPasso(passo);
+    if (app && passo.espera !== 'app:aberto' && !CE.janelas.estaAberta(app)) partes.push(`Primeiro abra o programa "${nomeDoApp(app)}": clique duplo no ícone dele na área de trabalho.`);
+    const atalho = texto.match(/Ctrl\s*\+\s*([A-Za-z0-9])/);
+    if (atalho) partes.push(`Segure a tecla Ctrl (no canto de baixo, à esquerda do teclado) e, sem soltar, aperte a tecla ${atalho[1].toUpperCase()}. Depois solte as duas.`);
+    else if (passo.mouse === 'duplo') partes.push('Coloque a setinha em cima e aperte o botão esquerdo do mouse duas vezes, bem rápido: clique-clique.');
+    else if (passo.mouse === 'direito') partes.push('Aperte o botão DIREITO do mouse em cima do lugar. Vai abrir um menu: aí escolha a opção com o botão esquerdo.');
+    else if (passo.mouse === 'arrastar' || /arraste|arrastando/i.test(texto)) partes.push('Aperte o botão esquerdo do mouse e SEGURE. Mova o mouse sem soltar e só solte no lugar certo.');
+    else if (passo.mouse === 'rodinha' || /rodinha|role a/i.test(texto)) partes.push('Gire a rodinha do meio do mouse com o dedo, sem apertar.');
+    if (/\b(escreva|digite|preencha)\b/i.test(texto)) partes.push('Antes de escrever, clique dentro da caixa (aparece um risquinho piscando). Errou? A tecla Backspace apaga.');
+    const rotulo = !atalho && passo.mouse !== 'arrastar' ? rotuloDoAlvo() : '';
+    if (rotulo) partes.push(`Clique em "${rotulo}": está piscando em vermelho, com a seta apontando.`);
+    else if (passo.destacar) partes.push('O lugar certo está piscando em vermelho, com a seta apontando.');
+    if (!partes.length) partes.push('Leia a tarefa de novo, com calma, e faça um pedacinho de cada vez.');
+    return partes.join(' ');
+  }
+
+  // ---------- "Mostrar como": uma setinha fantasma vai até o lugar certo e faz o movimento ----------
+  function mostrarComo(sozinho = false, avisouInstrutor = false) {
+    const passo = passoAtual();
+    if (!licao || !passo || !passo.espera || licao.desafio) return;
+    const alvo = [...document.querySelectorAll('.destaque')].find((e) => e.getClientRects().length);
+    const dica = dicaDoPasso(passo);
+    escreverNaDica(`👀 ${dica}${avisouInstrutor ? ' Se ainda não der, o instrutor já foi avisado 🙋.' : ''}`);
+    CE.voz.falar(`${sozinho ? 'Vou te mostrar. ' : 'Olha só. '}${dica}`);
+    CE.emitir('professor:mostrou-como', { licao: licao.id, passo: indicePasso + 1, sozinho, alvo: !!alvo });
+    if (!alvo) return;
+    document.querySelectorAll('.fantasma-mouse').forEach((e) => e.remove());
+    const r = alvo.getBoundingClientRect();
+    const painel = $('professor').getBoundingClientRect();
+    const fim = { x: r.left + Math.min(r.width / 2, 40), y: r.top + Math.min(r.height / 2, 24) };
+    const fantasma = CE.el('div', { class: 'fantasma-mouse', 'aria-hidden': 'true', html: '<svg viewBox="0 0 24 24" width="34" height="34"><path d="M3 2 L3 20 L8 15 L12 23 L15 21.5 L11 14 L18 14 Z"/></svg>' });
+    fantasma.style.transform = `translate(${painel.left - 20}px, ${painel.top + 40}px)`;
+    document.body.append(fantasma);
+    const etiqueta = passo.mouse === 'duplo' ? '2 cliques' : passo.mouse === 'direito' ? 'botão direito' : passo.mouse === 'arrastar' ? 'segure e arraste' : 'clique';
+    requestAnimationFrame(() => requestAnimationFrame(() => { fantasma.style.transform = `translate(${fim.x}px, ${fim.y}px)`; }));
+    setTimeout(() => {
+      if (!fantasma.isConnected) return;
+      fantasma.append(CE.el('span', { class: 'fantasma-rotulo' }, etiqueta));
+      fantasma.classList.add(passo.mouse === 'duplo' ? 'clica-duas' : 'clica');
+      if (passo.mouse === 'arrastar') setTimeout(() => { fantasma.style.transform = `translate(${fim.x + 120}px, ${fim.y + 40}px)`; }, 500);
+    }, 1300);
+    setTimeout(() => fantasma.remove(), 4500);
+  }
+
+  // ---------- Travou: avisa o instrutor e deixa pular a tarefa ----------
+  function oferecerPular() {
+    const passo = passoAtual();
+    if (!licao || !passo || !passo.espera || licao.desafio || licao.prova) return;
+    if (CE.sala) CE.sala.pedirAjuda();
+    const esta = { licao, indice: indicePasso };
+    escreverNaDica('🙋 Está difícil? Já avisei o instrutor. Se quiser, pule esta tarefa e siga a aula: depois o instrutor te ajuda com ela. ',
+      CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'pular-tarefa', onclick: () => {
+        if (licao !== esta.licao || indicePasso !== esta.indice) return;
+        if (!licao.especial) CE.dificuldades.registrar(licao.id, indicePasso, 'pulou');
+        CE.emitir('licao:tarefa-pulada', { licao: licao.id, passo: indicePasso + 1 });
+        avancar();
+      } }, '⏭ Pular esta tarefa'));
+    CE.voz.falar('Está difícil? Já avisei o instrutor. Se quiser, pode pular esta tarefa.');
+    CE.emitir('professor:ofereceu-pular', { licao: licao.id, passo: indicePasso + 1 });
+  }
+
+  // ---------- Clique fora do lugar certo: o professor avisa na hora ----------
+  // Vale clique dentro do que está piscando, dentro da mesma janela, no próprio professor, em menus, caixas de
+  // diálogo, na barra de tarefas e na barra de título das janelas (para arrastar ou trazer uma janela).
+  document.addEventListener('pointerdown', (e) => {
+    const passo = passoAtual();
+    if (!licao || !passo || !passo.espera || licao.desafio || !passo.destacar || e.button > 2) return;
+    const alvos = [...document.querySelectorAll('.destaque')].filter((x) => x.getClientRects().length);
+    if (!alvos.length) return;
+    const t = e.target;
+    if (!(t instanceof Element)) return;
+    if (alvos.some((a) => a.contains(t))) return;
+    if (t.closest('#professor, .mc-menu, .dialogo-fundo, #menu-iniciar, .barra-tarefas, .janela-titulo, .fantasma-mouse')) return;
+    const janela = t.closest('.janela');
+    if (janela && alvos.some((a) => janela.contains(a))) return;
+    ajuda.erros++;
+    const agora = Date.now();
+    if (agora - ajuda.ultimoAviso < 2500) return;
+    ajuda.ultimoAviso = agora;
+    const rotulo = rotuloDoAlvo();
+    escreverNaDica(`👆 Quase! ${rotulo ? `O lugar certo é "${rotulo}", que` : 'O lugar certo'} está piscando em vermelho, com a seta apontando.`);
+    if (ajuda.erros === 1) CE.voz.falar('Quase! Procure o que está piscando em vermelho.');
+    alvos.forEach((a) => { a.classList.remove('destaque-forte'); void a.offsetWidth; a.classList.add('destaque-forte'); setTimeout(() => a.classList.remove('destaque-forte'), 1600); });
+    CE.emitir('professor:clique-errado', { licao: licao.id, passo: indicePasso + 1, vezes: ajuda.erros });
+  }, true);
+
+  // ---------- Fechou o programa da tarefa: o professor oferece abrir de novo ----------
+  CE.ouvir('janela:fechada', (d) => {
+    const passo = passoAtual();
+    if (!licao || !passo || !passo.espera || licao.desafio || !d) return;
+    const app = appDoPasso(passo);
+    const esperaFechar = [].concat(passo.espera).includes('janela:fechada');
+    if (!app || app !== d.app || esperaFechar) return;
+    const nome = nomeDoApp(app);
+    escreverNaDica(`🪟 Você fechou o "${nome}", e a tarefa é nele. `,
+      CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'reabrir-app', onclick: () => CE.janelas.abrir(app) }, `Abrir o ${nome} de novo`));
+    CE.voz.falar(`Você fechou o ${nome}. Clique no botão para abrir de novo.`);
+    CE.emitir('professor:app-fechado', { app });
+  });
 
   // "🙋 Não entendi": o professor explica de novo, mais devagar, com a dica e a seta; o pedido fica guardado
   // (para o instrutor ver onde a turma trava) e aparece na Sala ao vivo.
   function naoEntendi() {
     const passo = passoAtual();
     if (!licao || !passo) return;
+    ajuda.pedidos++;
     if (!licao.especial) CE.dificuldades.registrar(licao.id, indicePasso, 'naoEntendi');
     CE.emitir('licao:nao-entendi', { licao: licao.id, passo: indicePasso + 1 });
     if (CE.sala) CE.sala.pedirAjuda();
@@ -276,20 +429,25 @@ window.CE = window.CE || {};
       CE.voz.falar(texto, { velocidade: 1.1 });
       return;
     }
-    const ajuda = passo.dica || (passo.quiz
-      ? 'Leia a pergunta e todas as respostas com calma. Pense no que você viu nesta aula.'
-      : passo.espera
-        ? 'Faça o que está escrito acima, um pedacinho de cada vez. A seta vermelha piscando mostra onde clicar.'
-        : 'Leia o texto com calma. Quando terminar, clique em Continuar.');
+    const explicacao = passo.quiz
+      ? (passo.dica || 'Leia a pergunta e todas as respostas com calma. Pense no que você viu nesta aula.')
+      : passo.espera ? dicaDoPasso(passo)
+        : (passo.dica || 'Leia o texto com calma. Quando terminar, clique em Continuar.');
     clearTimeout(timerDica); // a dica já apareceu: o relógio da dica não conta outra vez
-    if (elemento) { elemento.textContent = `💡 ${ajuda} Se ainda não der, o instrutor já foi avisado 🙋.`; elemento.hidden = false; }
-    CE.voz.falar(`${textoFalado(passo)} ${ajuda}`, { velocidade: 1.1 });
+    if (elemento) { elemento.textContent = `💡 ${explicacao} Se ainda não der, o instrutor já foi avisado 🙋.`; elemento.hidden = false; }
+    CE.voz.falar(`${textoFalado(passo)} ${explicacao}`, { velocidade: 1.1 });
     if (passo.destacar) destacar(passo.destacar);
+    if (passo.espera) {
+      clearTimeout(timerMostrar);
+      setTimeout(() => { if (passoAtual() === passo) mostrarComo(false, true); }, 600);
+      if (ajuda.pedidos >= 2) { clearTimeout(timerTravado); setTimeout(() => { if (passoAtual() === passo) oferecerPular(); }, 5000); }
+    }
   }
 
   async function iniciarPasso() {
     if (pararDeOuvir) { pararDeOuvir(); pararDeOuvir = null; }
-    clearTimeout(timerDica);
+    limparAjuda();
+    ajuda = { erros: 0, pedidos: 0, ultimoAviso: 0 };
     const passo = passoAtual();
     if (CE.sala) CE.sala.ajudaResolvida(); // passo novo: o pedido de ajuda do passo anterior sai da Sala ao vivo
     if (!passo) { concluirLicao(); return; }
@@ -323,6 +481,11 @@ window.CE = window.CE || {};
       // O aluno pode ter feito a tarefa antes de o passo aparecer (durante a troca de passo): vale também.
       recentes.filter((r) => r.t > desde && eventos.includes(r.nome)).forEach((r) => cumprir(r.dados, r.nome, r.t));
       timerDica = setTimeout(mostrarDica, TEMPO_PARA_DICA);
+      if (!licao.desafio) {
+        const este = passo;
+        timerMostrar = setTimeout(() => { if (passoAtual() === este) mostrarComo(true); }, TEMPO_MOSTRAR_COMO);
+        timerTravado = setTimeout(() => { if (passoAtual() === este) oferecerPular(); }, TEMPO_TRAVADO);
+      }
     }
   }
 
@@ -459,7 +622,7 @@ window.CE = window.CE || {};
 
   function encerrar() {
     if (pararDeOuvir) { pararDeOuvir(); pararDeOuvir = null; }
-    clearTimeout(timerDica);
+    limparAjuda();
     limparDestaque();
     licao = null;
     indicePasso = 0;
@@ -565,6 +728,7 @@ window.CE = window.CE || {};
   }
 
   CE.professor = {
+    dicaDoPasso, // a dica que o professor dá numa tarefa (a da aula ou a montada pela tarefa)
     iniciar() {
       CE.curso.carregarTrilha();
       montarPainel();

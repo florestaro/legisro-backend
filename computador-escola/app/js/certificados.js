@@ -141,10 +141,10 @@ window.CE = window.CE || {};
     const trava = CE.el('div', { class: 'pagina relatorio' },
       titulo('Onde a turma mais travou'),
       d.dificuldades.length
-        ? tabela(['Aula', 'Passo', 'Alunos', '🙋', '💡', '❌', '🚪'],
-          d.dificuldades.map((x) => [`${x.licao.icone} ${x.licao.titulo}`, `${x.passo + 1}: ${x.texto}`, String(x.alunos.length), String(x.totais.naoEntendi), String(x.totais.dica), String(x.totais.erro), String(x.totais.desistiu)]))
+        ? tabela(['Aula', 'Passo', 'Alunos', '🙋', '💡', '❌', '🚪', '⏭'],
+          d.dificuldades.map((x) => [`${x.licao.icone} ${x.licao.titulo}`, `${x.passo + 1}: ${x.texto}`, String(x.alunos.length), String(x.totais.naoEntendi), String(x.totais.dica), String(x.totais.erro), String(x.totais.desistiu), String(x.totais.pulou || 0)]))
         : CE.el('p', {}, 'Nenhuma dificuldade registrada ainda.'),
-      CE.el('p', { class: 'rel-legenda' }, '🙋 Não entendi · 💡 precisou de dica · ❌ errou a pergunta · 🚪 saiu da aula no meio.'));
+      CE.el('p', { class: 'rel-legenda' }, '🙋 Não entendi · 💡 precisou de dica · ❌ errou a pergunta · 🚪 saiu da aula no meio · ⏭ pulou a tarefa.'));
     return [resumo, presenca, trava];
   }
 

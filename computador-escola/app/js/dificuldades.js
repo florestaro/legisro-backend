@@ -3,11 +3,12 @@
 //   dica       — ficou parado até o Professor Virtual mostrar a dica sozinho
 //   erro       — errou uma pergunta
 //   desistiu   — saiu da aula no meio
+//   pulou      — travou e pulou a tarefa ("⏭ Pular esta tarefa")
 // O Painel do Instrutor soma isso para a turma e mostra os passos mais difíceis.
 window.CE = window.CE || {};
 
 (function () {
-  const PESOS = { naoEntendi: 3, desistiu: 3, erro: 1, dica: 1 };
+  const PESOS = { naoEntendi: 3, desistiu: 3, pulou: 3, erro: 1, dica: 1 };
 
   CE.dificuldades = {
     TIPOS: [
@@ -15,6 +16,7 @@ window.CE = window.CE || {};
       ['dica', '💡', 'Precisou de dica'],
       ['erro', '❌', 'Erros nas perguntas'],
       ['desistiu', '🚪', 'Saiu da aula'],
+      ['pulou', '⏭', 'Pulou a tarefa'],
     ],
 
     // Só conta para alunos (o instrutor testando uma aula não entra na conta).
@@ -35,7 +37,7 @@ window.CE = window.CE || {};
       return Object.values(progresso.dificuldades || {}).reduce((s, aula) => s + Object.values(aula).reduce((t, c) => t + (c.naoEntendi || 0), 0), 0);
     },
 
-    // Junta os alunos: [{ licao, passo, texto, alunos: [nomes], totais: {naoEntendi, dica, erro, desistiu}, peso }],
+    // Junta os alunos: [{ licao, passo, texto, alunos: [nomes], totais: {naoEntendi, dica, erro, desistiu, pulou}, peso }],
     // do passo mais difícil para o mais fácil. "alunos" é a lista [{ usuario, progresso }].
     somar(alunos) {
       const passos = new Map();
@@ -51,7 +53,7 @@ window.CE = window.CE || {};
               const p = licao.passos[n];
               const texto = p ? (p.quiz ? `❓ ${p.quiz.pergunta}` : p.texto || '') : '';
               const limpo = String(texto).replace(/\s+/g, ' ').trim();
-              item = { licao, passo: n, texto: limpo.length > 140 ? limpo.slice(0, 139) + '…' : limpo, alunos: [], totais: { naoEntendi: 0, dica: 0, erro: 0, desistiu: 0 }, peso: 0 };
+              item = { licao, passo: n, texto: limpo.length > 140 ? limpo.slice(0, 139) + '…' : limpo, alunos: [], totais: { naoEntendi: 0, dica: 0, erro: 0, desistiu: 0, pulou: 0 }, peso: 0 };
               passos.set(chave, item);
             }
             let deste = 0;

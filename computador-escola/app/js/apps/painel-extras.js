@@ -21,7 +21,7 @@ window.CE = window.CE || {};
     const usuarios = await CE.api.chamar('usuarios:listar');
     const alunos = await comProgresso(alunosDe(usuarios, estado.turma));
     const lista = CE.dificuldades.somar(alunos);
-    const totais = lista.reduce((t, x) => { Object.keys(t).forEach((k) => { t[k] += x.totais[k]; }); return t; }, { naoEntendi: 0, dica: 0, erro: 0, desistiu: 0 });
+    const totais = lista.reduce((t, x) => { Object.keys(t).forEach((k) => { t[k] += x.totais[k]; }); return t; }, { naoEntendi: 0, dica: 0, erro: 0, desistiu: 0, pulou: 0 });
     const zerar = CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'zerar-dificuldades', onclick: async () => {
       if (!await CE.confirmar(`Zerar a contagem de "onde trava" de ${alunos.length} aluno(s)${estado.turma ? ` da turma ${estado.turma}` : ''}? (Bom fazer depois de mudar uma aula.)`)) return;
       await CE.api.chamar('progresso:zerar-dificuldades', alunos.map((a) => a.usuario.id));
@@ -39,7 +39,7 @@ window.CE = window.CE || {};
     return CE.el('div', { class: 'painel-trava' },
       CE.el('div', { class: 'painel-sala-acoes' },
         seletorTurma(turmasDe(usuarios), estado, redesenhar),
-        CE.el('span', { class: 'painel-legenda' }, `${alunos.length} aluno(s) · 🙋 ${totais.naoEntendi} · 💡 ${totais.dica} · ❌ ${totais.erro} · 🚪 ${totais.desistiu}`),
+        CE.el('span', { class: 'painel-legenda' }, `${alunos.length} aluno(s) · 🙋 ${totais.naoEntendi} · 💡 ${totais.dica} · ❌ ${totais.erro} · 🚪 ${totais.desistiu} · ⏭ ${totais.pulou}`),
         lista.length ? zerar : null),
       CE.el('p', { class: 'painel-legenda' }, 'Os passos em que mais alunos tiveram dificuldade aparecem primeiro. 🙋 apertou "Não entendi" · 💡 ficou parado até a dica aparecer · ❌ errou a pergunta · 🚪 saiu da aula no meio. Só conta o que os alunos fazem (não o instrutor testando).'),
       lista.length
