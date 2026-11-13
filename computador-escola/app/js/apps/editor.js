@@ -18,6 +18,7 @@
     lineHeight: 'espaçamento entre linhas', inserirTabela: 'tabela', inserirLinhaTabela: 'linha na tabela', inserirImagem: 'imagem',
     insertHorizontalRule: 'linha horizontal', margem: 'margens',
     estilo: 'estilo', colunas: 'colunas', quebraPagina: 'quebra de página', sumario: 'sumário', cabecalhoRodape: 'cabeçalho e rodapé',
+    notaRodape: 'nota de rodapé', comentario: 'comentário', forma: 'forma', malaDireta: 'mala direta',
   };
 
   // Erros comuns de português -> forma certa (o corretor funciona sem internet).
@@ -94,6 +95,46 @@
       <h1>REFERÊNCIAS</h1><div>SOBRENOME, Nome. <b>Título do livro</b>. Cidade: Editora, ano.</div>
       <div>NOME DO SITE. <b>Título da página</b>. Disponível em: endereço do site. Acesso em: ${new Date().toLocaleDateString('pt-BR')}.</div>`,
   };
+  // Modelos de documentos de trabalho (escritório).
+  MODELOS.oficio = {
+    nome: 'Ofício',
+    html: () => `<div><b>Ofício nº ${campo('número')}/${new Date().getFullYear()}</b></div><div style="text-align: right;">${campo('Cidade')}, ${hoje()}.</div><div><br></div>
+      <div>A Sua Senhoria o(a) Senhor(a)<br>${campo('Nome da pessoa')}<br>${campo('Cargo')}<br>${campo('Órgão ou empresa')}</div><div><br></div>
+      <div><b>Assunto:</b> ${campo('resumo do assunto em poucas palavras')}</div><div><br></div>
+      <div>Senhor(a) ${campo('cargo')},</div><div><br></div>
+      <div style="text-align: justify; text-indent: 47px;">${campo('Escreva aqui o pedido ou a informação, de forma clara e educada.')}</div><div><br></div>
+      <div>Atenciosamente,</div><div><br></div><div style="text-align: center;">_______________________________________</div><div style="text-align: center;">${campo('Seu nome')}<br>${campo('Seu cargo')}</div>`,
+  };
+  MODELOS.memorando = {
+    nome: 'Memorando (comunicação interna)',
+    html: () => `<div style="text-align: center;"><b><font size="5">MEMORANDO nº ${campo('número')}</font></b></div><div><br></div>
+      <div><b>De:</b> ${campo('seu setor')}</div><div><b>Para:</b> ${campo('setor que vai receber')}</div><div><b>Data:</b> ${new Date().toLocaleDateString('pt-BR')}</div><div><b>Assunto:</b> ${campo('assunto')}</div><hr>
+      <div style="text-align: justify;">${campo('Mensagem curta e direta para os colegas da empresa.')}</div><div><br></div><div>${campo('Seu nome')}</div>`,
+  };
+  MODELOS.ata = {
+    nome: 'Ata de reunião',
+    html: () => `<div style="text-align: center;"><b><font size="5">ATA DE REUNIÃO</font></b></div><div><br></div>
+      <div style="text-align: justify;">Aos ${hoje()}, às ${campo('hora')}, reuniram-se na ${campo('local')} as seguintes pessoas: ${campo('nomes dos participantes')}. A reunião tratou dos seguintes assuntos:</div>
+      <ol><li>${campo('primeiro assunto e o que foi decidido')}</li><li>${campo('segundo assunto e o que foi decidido')}</li></ol>
+      <div style="text-align: justify;">Nada mais havendo a tratar, eu, ${campo('seu nome')}, lavrei a presente ata, que vai assinada por mim e pelos presentes.</div>`,
+  };
+  MODELOS.declaracao = {
+    nome: 'Declaração',
+    html: () => `<div style="text-align: center;"><b><font size="6">DECLARAÇÃO</font></b></div><div><br></div><div><br></div>
+      <div style="text-align: justify; text-indent: 47px; line-height: 1.5;">Declaro, para os devidos fins, que ${campo('nome da pessoa')}, portador(a) do CPF nº ${campo('número')}, ${campo('o que você está declarando, ex.: trabalhou nesta empresa de 2020 a 2024 no cargo de auxiliar')}.</div><div><br></div>
+      <div style="text-align: right;">${campo('Cidade')}, ${hoje()}.</div><div><br></div><div><br></div>
+      <div style="text-align: center;">_______________________________________</div><div style="text-align: center;">${campo('Nome e cargo de quem assina')}</div>`,
+  };
+  // Formas (desenhos simples que entram no texto, como no Word).
+  const FORMAS = {
+    retangulo: ['Retângulo', '<rect x="4" y="4" width="152" height="72" rx="4"/>'],
+    circulo: ['Círculo', '<ellipse cx="80" cy="40" rx="76" ry="36"/>'],
+    seta: ['Seta', '<path d="M4 26 H110 V6 L156 40 L110 74 V54 H4 Z"/>'],
+    estrela: ['Estrela', '<path d="M80 2 L95 30 L126 32 L102 51 L111 78 L80 62 L49 78 L58 51 L34 32 L65 30 Z"/>'],
+    balao: ['Balão de fala', '<path d="M8 4 H152 Q156 4 156 8 V56 Q156 60 152 60 H60 L36 78 L42 60 H8 Q4 60 4 56 V8 Q4 4 8 4 Z"/>'],
+  };
+  const CORES_FORMA = [['#cfe3ff', '#2b6cb0'], ['#d9f7d6', '#2f855a'], ['#fff3c4', '#b7791f'], ['#ffd9d9', '#c53030']];
+  const svgForma = (tipo, texto, cor) => `<svg viewBox="0 0 160 80" width="160" height="80" xmlns="http://www.w3.org/2000/svg"><g fill="${cor[0]}" stroke="${cor[1]}" stroke-width="3">${FORMAS[tipo][1]}</g>${texto ? `<text x="80" y="${tipo === 'balao' ? 36 : 45}" text-anchor="middle" font-size="15" font-family="Arial" fill="#1a202c">${CE.escapar(texto)}</text>` : ''}</svg>`;
   const FIGURAS = ['🌻', '🎂', '🏠', '🐶', '🐱', '⭐', '❤️', '🎉', '🌳', '☀️', '⚽', '📚'];
 
   function emojiParaImagem(emoji) {
@@ -616,6 +657,153 @@
         document.body.append(fundo);
       }
 
+      // ---------- Recursos profissionais: nota de rodapé, comentário, forma e mala direta ----------
+      // Nota de rodapé: um número pequeno no texto e a explicação no fim da página.
+      function renumerarNotas() {
+        const refs = [...pagina.querySelectorAll('sup.nota-ref')];
+        let caixa = pagina.querySelector('.notas-rodape');
+        const textos = Object.fromEntries([...(caixa ? caixa.querySelectorAll('[data-nota-id]') : [])].map((li) => [li.dataset.notaId, li.dataset.texto]));
+        refs.forEach((r, i) => { r.textContent = String(i + 1); });
+        if (!refs.length) { if (caixa) caixa.remove(); return 0; }
+        if (!caixa) { caixa = CE.el('div', { class: 'notas-rodape', contenteditable: 'false' }); pagina.append(caixa); }
+        else pagina.append(caixa); // sempre no fim
+        caixa.innerHTML = refs.map((r, i) => `<div class="nota-item" data-nota-id="${r.dataset.notaId}" data-texto="${CE.escapar(textos[r.dataset.notaId] || r.dataset.texto || '')}"><sup>${i + 1}</sup> ${CE.escapar(textos[r.dataset.notaId] || r.dataset.texto || '')}</div>`).join('');
+        return refs.length;
+      }
+      async function notaDeRodape() {
+        recuperarSelecao();
+        const faixa = window.getSelection().rangeCount ? window.getSelection().getRangeAt(0).cloneRange() : null;
+        const texto = await CE.perguntar('📌 Escreva a nota de rodapé (a explicação que vai aparecer no fim da página):', '');
+        if (!texto) return;
+        pagina.focus();
+        if (faixa) { const sel = window.getSelection(); sel.removeAllRanges(); faixa.collapse(false); sel.addRange(faixa); }
+        const id = 'n' + Date.now().toString(36);
+        document.execCommand('insertHTML', false, `<sup class="nota-ref" data-nota-id="${id}" data-texto="${CE.escapar(texto)}" contenteditable="false">0</sup>&#8203;`);
+        const total = renumerarNotas();
+        avisarFormatacao('notaRodape', total, { texto, notas: total });
+      }
+      // Comentário: um balão de revisão preso ao trecho selecionado (não sai na impressão).
+      async function comentar() {
+        recuperarSelecao();
+        const sel = window.getSelection();
+        const trecho = textoSelecionado();
+        if (!trecho.trim()) { CE.avisar('Primeiro selecione (pinte) o trecho do texto que você quer comentar.'); return; }
+        const faixa = sel.getRangeAt(0).cloneRange();
+        const texto = await CE.perguntar(`💬 Comentário sobre "${trecho.trim().slice(0, 40)}":`, '');
+        if (!texto) return;
+        const marca = CE.el('span', { class: 'ed-comentario', 'data-comentario': texto, title: `💬 ${texto}` });
+        try { faixa.surroundContents(marca); } catch { marca.append(faixa.extractContents()); faixa.insertNode(marca); }
+        avisarFormatacao('comentario', texto, { trecho: trecho.trim(), comentarios: pagina.querySelectorAll('.ed-comentario').length });
+      }
+      pagina.addEventListener('click', async (e) => {
+        const c = e.target.closest('.ed-comentario');
+        if (!c || !pagina.contains(c)) return;
+        if (await CE.confirmar(`💬 Comentário: "${c.dataset.comentario}"\n\nJá resolveu? Clique em "Sim" para apagar o comentário (o texto fica).`)) {
+          c.replaceWith(...c.childNodes);
+          pagina.normalize();
+          modificado = true;
+          atualizarStatus();
+          CE.emitir('editor:comentario-resolvido', { comentario: c.dataset.comentario, restantes: pagina.querySelectorAll('.ed-comentario').length });
+        }
+      });
+      function dialogoForma() {
+        let cor = CORES_FORMA[0];
+        const texto = CE.el('input', { class: 'campo', placeholder: 'Texto dentro da forma (pode deixar vazio)', 'data-forma-texto': '' });
+        const cores = CE.el('div', { class: 'ed-forma-cores' }, ...CORES_FORMA.map((c, i) => CE.el('button', { class: 'ed-forma-cor' + (i ? '' : ' ligado'), style: `background:${c[0]};border-color:${c[1]}`, 'data-forma-cor': String(i), title: 'Cor',
+          onclick: (e) => { cor = c; cores.querySelectorAll('button').forEach((b) => b.classList.toggle('ligado', b === e.currentTarget)); } })));
+        const escolher = (tipo) => {
+          const t = texto.value.trim();
+          fundo.remove();
+          recuperarSelecao();
+          document.execCommand('insertHTML', false, `<span class="ed-forma" contenteditable="false" data-forma="${tipo}">${svgForma(tipo, t, cor)}</span>&nbsp;`);
+          avisarFormatacao('forma', tipo, { forma: tipo, texto: t, formas: pagina.querySelectorAll('.ed-forma').length });
+        };
+        const fundo = CE.el('div', { class: 'dialogo-fundo' },
+          CE.el('div', { class: 'dialogo largo' },
+            CE.el('p', {}, '🔷 Escolha a forma. Antes, se quiser, escreva o texto e escolha a cor:'),
+            texto, cores,
+            CE.el('div', { class: 'ed-galeria' }, ...Object.entries(FORMAS).map(([id, [nome]]) => CE.el('button', { class: 'ed-galeria-item', 'data-forma': id, title: nome, onclick: () => escolher(id), html: svgForma(id, '', CORES_FORMA[0]).replace('width="160" height="80"', 'width="80" height="40"') + `<small>${nome}</small>` }))),
+            CE.el('div', { class: 'dialogo-botoes' }, CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Cancelar')),
+          ));
+        document.body.append(fundo);
+      }
+      // Mala direta: o mesmo documento para várias pessoas, com os dados de uma planilha (Nome, Endereço...).
+      // Os campos ficam no texto como «Nome»; ao gerar, sai uma cópia para cada linha da planilha.
+      function lerTabela(arquivo) {
+        let dados = {};
+        try { dados = JSON.parse(arquivo.conteudo || '{}'); } catch { /* vazio */ }
+        const entradas = Object.fromEntries(Object.entries(dados.celulas || {}).map(([r, c]) => [r, c.v]));
+        const { obter } = CE.formulas.calcularTudo(entradas);
+        const formatoDe = (r) => (dados.celulas && dados.celulas[r] && dados.celulas[r].f && dados.celulas[r].f.formato) || '';
+        const titulos = [];
+        for (let c = 0; c < 26; c++) { const v = obter(CE.formulas.endereco(c, 0)); if (v === '' || v == null) break; titulos.push(String(v)); }
+        const linhas = [];
+        for (let l = 1; l < 200; l++) {
+          const linha = titulos.map((_, c) => CE.formulas.textoDe(obter(CE.formulas.endereco(c, l)), formatoDe(CE.formulas.endereco(c, l))));
+          if (linha.every((v) => v === '')) break;
+          linhas.push(Object.fromEntries(titulos.map((t, c) => [t, linha[c]])));
+        }
+        return { titulos, linhas };
+      }
+      let fonteMala = null; // { nome, titulos, linhas }
+      async function dialogoMalaDireta() {
+        const vale = CE.sessao.marca();
+        const planilhas = (await CE.sessao.arquivos()).filter((a) => a.tipo === 'planilha' && !a.naLixeira);
+        if (!vale()) return;
+        recuperarSelecao();
+        const corpoDialogo = CE.el('div', { class: 'ed-mala' });
+        const fundo = CE.el('div', { class: 'dialogo-fundo' }, CE.el('div', { class: 'dialogo largo' },
+          CE.el('p', {}, '✉️ Mala direta: escreva o documento uma vez só e o computador faz uma cópia para cada pessoa da planilha.'),
+          corpoDialogo,
+          CE.el('div', { class: 'dialogo-botoes' }, CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Fechar'))));
+        function passo1() {
+          corpoDialogo.replaceChildren(CE.el('strong', {}, '1. Escolha a planilha com os dados (a 1ª linha tem os títulos):'),
+            planilhas.length ? CE.el('div', { class: 'ed-mala-lista' }, ...planilhas.map((a) => CE.el('button', { class: 'botao secundario', 'data-mala-planilha': a.nome, onclick: () => {
+              const t = lerTabela(a);
+              if (!t.titulos.length || !t.linhas.length) { CE.avisar('Essa planilha está vazia. A 1ª linha precisa ter os títulos (Nome, Endereço...) e as outras, os dados.'); return; }
+              fonteMala = { nome: a.nome, ...t };
+              CE.emitir('editor:mala-direta', { acao: 'planilha', planilha: a.nome, campos: t.titulos, registros: t.linhas.length });
+              passo2();
+            } }, '📊 ', a.nome))) : CE.el('p', {}, 'Você ainda não tem nenhuma planilha salva. Faça uma na Planilha com os títulos na 1ª linha (ex.: Nome, Endereço).'));
+        }
+        function passo2() {
+          corpoDialogo.replaceChildren(
+            CE.el('p', {}, `Planilha "${fonteMala.nome}": ${fonteMala.linhas.length} pessoa${fonteMala.linhas.length > 1 ? 's' : ''}.`),
+            CE.el('strong', {}, '2. Clique no texto onde o dado deve entrar e depois no campo:'),
+            CE.el('div', { class: 'ed-mala-lista' }, ...fonteMala.titulos.map((t) => CE.el('button', { class: 'botao secundario', 'data-mala-campo': t, onmousedown: (e) => e.preventDefault(), onclick: () => {
+              recuperarSelecao();
+              document.execCommand('insertHTML', false, `<span class="campo-mala" contenteditable="false" data-campo="${CE.escapar(t)}">«${CE.escapar(t)}»</span>&nbsp;`);
+              avisarFormatacao('malaDireta', t, { acao: 'campo', campo: t });
+              CE.emitir('editor:mala-direta', { acao: 'campo', campo: t, campos: [...pagina.querySelectorAll('.campo-mala')].map((c) => c.dataset.campo) });
+            } }, '«', t, '»'))),
+            CE.el('strong', {}, '3. Quando o texto estiver pronto:'),
+            CE.el('button', { class: 'botao', 'data-mala-gerar': '', onclick: async () => { if (await gerarMala()) fundo.remove(); } }, `✉️ Gerar ${fonteMala.linhas.length} documentos`),
+            CE.el('button', { class: 'botao secundario', onclick: passo1 }, 'Trocar a planilha'));
+        }
+        if (fonteMala && planilhas.some((a) => a.nome === fonteMala.nome)) passo2(); else passo1();
+        document.body.append(fundo);
+      }
+      async function gerarMala() {
+        const campos = [...pagina.querySelectorAll('.campo-mala')];
+        if (!campos.length) { CE.avisar('Coloque pelo menos um campo (como «Nome») no texto antes de gerar.'); return false; }
+        if (modificado && nomeArquivo == null && await CE.confirmar('Quer salvar o documento-modelo (com os campos) antes de gerar as cópias?')) { if (!await salvar()) return false; }
+        const modelo = htmlParaSalvar().replace(/^<!--ce:\{.*?\}-->/, '');
+        const copias = fonteMala.linhas.map((linha) => {
+          const div = document.createElement('div');
+          div.innerHTML = modelo;
+          div.querySelectorAll('.campo-mala').forEach((c) => c.replaceWith(document.createTextNode(linha[c.dataset.campo] || '')));
+          return div.innerHTML;
+        });
+        pagina.innerHTML = copias.join('<div class="quebra-pagina" contenteditable="false"></div>');
+        nomeArquivo = null;
+        modificado = true;
+        atualizarStatus();
+        avisarFormatacao('malaDireta', copias.length, { acao: 'gerar', copias: copias.length });
+        CE.emitir('editor:mala-direta', { acao: 'gerar', copias: copias.length, paginas: totalPaginas(), planilha: fonteMala.nome });
+        CE.avisar(`✉️ Pronto! ${copias.length} cópias, uma em cada página. Salve com outro nome para não perder o modelo.`);
+        return true;
+      }
+
       // ---------- Arquivo ----------
 
       function htmlParaSalvar() {
@@ -753,10 +941,17 @@
           botao('substituir', '🔎 Localizar', 'Localizar e substituir palavras (Ctrl+H)', 'texto', dialogoSubstituir),
           botao('pdf', '📕 PDF', 'Salvar uma cópia em PDF', 'texto', exportarPdf),
         ),
+        CE.el('div', { class: 'ferramentas-grupo' },
+          botao('notaRodape', '¹ Nota', 'Nota de rodapé: um numerozinho no texto e a explicação no fim da página', 'texto', notaDeRodape),
+          botao('comentario', '💬 Comentário', 'Comentar o trecho selecionado (revisão). Clique no comentário para resolver.', 'texto', comentar),
+          botao('forma', '🔷 Forma', 'Inserir uma forma: retângulo, círculo, seta, estrela ou balão', 'texto', dialogoForma),
+          botao('malaDireta', '✉️ Mala direta', 'O mesmo documento para várias pessoas, com os dados de uma planilha', 'texto', dialogoMalaDireta),
+        ),
       );
 
       let esperaTexto = null;
       pagina.addEventListener('input', () => {
+        if (pagina.querySelector('.notas-rodape') && pagina.querySelectorAll('sup.nota-ref').length !== pagina.querySelectorAll('.notas-rodape .nota-item').length) renumerarNotas();
         modificado = true;
         atualizarStatus();
         clearTimeout(esperaTexto);

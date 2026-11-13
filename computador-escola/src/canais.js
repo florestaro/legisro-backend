@@ -63,7 +63,7 @@ function criarCanais(dados) {
   };
   const LIMITE_ANEXOS = 10 * 1024 * 1024;
   // Dados da escola para os certificados (carga horária de cada curso, em horas).
-  const ESCOLA_PADRAO = { nome: '', cidade: '', responsavel: '', cargo: 'Instrutor(a)', cargas: { n1: 40, n2: 40, n3: 40, digitacao1: 20, digitacao2: 20, digitacao3: 20 } };
+  const ESCOLA_PADRAO = { nome: '', cidade: '', responsavel: '', cargo: 'Instrutor(a)', cargas: { n1: 40, n2: 40, n3: 40, n4: 40, digitacao1: 20, digitacao2: 20, digitacao3: 20, digitacao4: 20 } };
   const dadosDaEscola = () => {
     const e = dados.ler('escola', {});
     return { nome: e.nome || '', cidade: e.cidade || '', responsavel: e.responsavel || '', cargo: e.cargo || ESCOLA_PADRAO.cargo, cargas: { ...ESCOLA_PADRAO.cargas, ...(e.cargas || {}) }, trilha: e.trilha === 'completa' ? 'completa' : 'essencial', revisao: e.revisao !== false };

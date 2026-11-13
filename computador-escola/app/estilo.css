@@ -481,7 +481,8 @@ button.bandeja-item:hover { background: rgba(255,255,255,.15); }
 .medalha span { font-size: 13px; color: var(--texto-suave); }
 .medalha small { font-size: 12px; color: var(--verde); }
 /* ---------- Conhecendo o Computador ---------- */
-.janela-corpo.conhecendo { display: grid; grid-template-columns: 1fr 260px; background: #eef4fb; }
+.janela-corpo.conhecendo { display: flex; flex-direction: column; background: #eef4fb; }
+.pc-area { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 260px; overflow: auto; }
 .pc-desenho { padding: 10px; display: grid; place-items: center; min-width: 0; }
 .pc-cena { width: 100%; max-height: 100%; }
 .pc-mesa { fill: #c79a6b; }
@@ -1572,3 +1573,134 @@ a.cd-botao { display: inline-block; text-decoration: none !important; color: #ff
 .painel-destaques { margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; background: #f6f2ff; border: 1px solid #d9cdf3; }
 .painel-destaques ol { margin: 6px 0; padding-left: 22px; }
 .painel-destaques li { margin: 2px 0; }
+
+/* ---------- Nível 4: recursos profissionais ---------- */
+/* Abas simples (Gerenciador de Tarefas, Agenda, Conhecendo o Computador) */
+.gt-abas { display: flex; gap: 2px; padding: 6px 10px 0; background: #f3f5f8; border-bottom: 1px solid #d8dee6; flex: none; }
+.gt-aba { padding: 7px 14px; border: 1px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0; background: transparent; font-size: 14px; cursor: pointer; }
+.gt-aba:hover { background: #e7edf5; }
+.gt-aba.ativa { background: #fff; border-color: #d8dee6; font-weight: 700; color: var(--azul-escuro); }
+/* Gerenciador de Tarefas */
+.janela-corpo.gerenciador-tarefas { display: flex; flex-direction: column; background: #fff; }
+.gt-conteudo { flex: 1; overflow: auto; padding: 12px 16px; }
+.gt-tabela { width: 100%; border-collapse: collapse; font-size: 14px; }
+.gt-tabela th { text-align: left; font-weight: 600; color: #555; border-bottom: 1px solid #ddd; padding: 6px; }
+.gt-tabela td { padding: 7px 6px; border-bottom: 1px solid #f0f0f0; }
+.gt-linha { cursor: pointer; }
+.gt-linha:hover { background: var(--azul-claro); }
+.gt-linha.selecionada { background: #cce4f7; }
+.gt-linha.travada .gt-status { color: var(--vermelho); font-weight: 700; }
+.gt-num { text-align: right; font-variant-numeric: tabular-nums; }
+.gt-num.alto { background: #ffe1d6; color: #9c2a00; font-weight: 700; }
+.gt-medida { margin: 14px 0; }
+.gt-medida-topo { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.cfg-progresso.alto > div { background: #e0662f; }
+/* Janela travada ("Não está respondendo") */
+.janela.travada .janela-corpo { filter: grayscale(.6) brightness(1.25); pointer-events: none; cursor: wait; }
+.janela.travada .janela-corpo::after { content: '⏳ Não está respondendo...'; position: absolute; inset: 0; display: grid; place-items: center; font-size: 20px; color: #333; background: rgba(255, 255, 255, .45); }
+.janela.travada .janela-corpo { position: relative; }
+/* Nuvem */
+.janela-corpo.nuvem { display: flex; flex-direction: column; background: #f5f9ff; }
+.nv-topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; background: linear-gradient(90deg, #0067c0, #2b8be0); color: #fff; }
+.nv-topo small { display: block; opacity: .9; }
+.nv-topo .botao { background: #fff; color: var(--azul-escuro); }
+.nv-lista { flex: 1; overflow: auto; padding: 12px 18px; display: grid; gap: 8px; align-content: start; }
+.nv-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #fff; border: 1px solid #dde6f0; border-radius: 8px; }
+.nv-nome { flex: 1; min-width: 0; }
+.nv-nome small { display: block; color: var(--texto-suave); }
+/* Agenda */
+.janela-corpo.agenda { display: flex; flex-direction: column; background: #fff; }
+.ag-conteudo { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.ag-principal { flex: 1; display: grid; grid-template-columns: 1fr 300px; gap: 14px; padding: 12px 16px; min-height: 0; overflow: auto; }
+.ag-mes { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; text-transform: capitalize; }
+.ag-semana, .ag-grade { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.ag-semana span { text-align: center; font-size: 12px; color: var(--texto-suave); text-transform: uppercase; }
+.ag-dia { position: relative; min-height: 48px; border: 1px solid #e3e8ef; border-radius: 6px; background: #fff; text-align: left; padding: 4px 6px; cursor: pointer; font-size: 14px; }
+.ag-dia.vazio { border: none; background: transparent; cursor: default; }
+.ag-dia:hover { background: var(--azul-claro); }
+.ag-dia.hoje span { background: var(--azul); color: #fff; border-radius: 50%; padding: 1px 6px; }
+.ag-dia.escolhido { border: 2px solid var(--azul); }
+.ag-marca { position: absolute; right: 5px; bottom: 4px; font-size: 11px; background: #e0662f; color: #fff; border-radius: 9px; padding: 0 6px; }
+.ag-lado { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ag-lado h3 { margin: 10px 0 2px; font-size: 15px; color: var(--azul-escuro); }
+.ag-compromisso { position: relative; padding: 8px 34px 8px 10px; border-left: 4px solid var(--azul); background: #f4f8fd; border-radius: 4px; }
+.ag-compromisso small { display: block; color: var(--texto-suave); }
+.ag-apagar { border: none; background: transparent; cursor: pointer; font-size: 15px; }
+.ag-compromisso .ag-apagar { position: absolute; right: 6px; top: 8px; }
+.ag-linha { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ag-contatos-topo { display: flex; gap: 10px; padding: 12px 16px 0; }
+.ag-contatos-topo .arq-busca { flex: 1; }
+.agenda .cfg-lista { padding: 10px 16px; overflow: auto; }
+/* Configurações: rede */
+.cfg-rede-status { margin: 10px 0; padding: 10px 12px; background: #f1f6fb; border-radius: 8px; font-weight: 600; }
+/* Conhecendo o Computador: por dentro, manutenção e problemas */
+.pc-interior { fill: #3a4452; }
+.pc-placa { fill: #2d7d4f; }
+.pc-trilha { stroke: #c9b458; stroke-width: 2; }
+.pc-chip { fill: #b9bfc7; stroke: #6c737c; stroke-width: 2; }
+.pc-cooler { fill: #1d232b; stroke: #8b96a3; stroke-width: 2; }
+.pc-helice { stroke: #8b96a3; stroke-width: 4; stroke-linecap: round; }
+.pc-ram { fill: #1f5fa8; stroke: #f2c94c; stroke-width: 1.5; }
+.pc-video { fill: #222; stroke: #e04f4f; stroke-width: 2; }
+.pc-ssd { fill: #6b7380; stroke: #d0d5db; stroke-width: 2; }
+.pc-fonte { fill: #5a626e; stroke: #222; stroke-width: 2; }
+.pc-rotulo { fill: #fff; font: 700 13px Arial, sans-serif; pointer-events: none; }
+.pc-dentro .pc-peca.escolhida > :first-child { stroke: #ffd400; stroke-width: 5; }
+.pc-texto-largo { grid-column: 1 / -1; padding: 14px 20px; overflow: auto; }
+.pc-checklist { display: grid; gap: 8px; }
+.pc-check { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; background: #fff; border: 1px solid #dde6f0; border-radius: 8px; cursor: pointer; }
+.pc-check input { width: 20px; height: 20px; flex: none; }
+.pc-problemas { display: grid; gap: 12px; }
+.pc-problema { padding: 10px 12px; background: #fff; border: 1px solid #dde6f0; border-radius: 8px; }
+.pc-opcoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.pc-opcoes .botao.certo { background: #2f855a; color: #fff; border-color: #2f855a; }
+.pc-opcoes .botao.errado { background: #fde2e2; color: #9b1c1c; border-color: #e5a0a0; }
+.pc-resposta { margin: 8px 0 0; }
+/* Editor: nota de rodapé, comentário, forma e mala direta */
+sup.nota-ref { color: var(--azul); font-weight: 700; cursor: default; }
+.notas-rodape { margin-top: 24px; padding-top: 6px; border-top: 1px solid #999; width: 40%; min-width: 220px; font-size: 12px; }
+.notas-rodape .nota-item { width: 250%; max-width: 640px; }
+.ed-comentario { background: #fff1a8; border-bottom: 2px solid #f0b400; cursor: pointer; }
+.ed-comentario::after { content: '💬'; font-size: 11px; vertical-align: super; }
+.ed-forma { display: inline-block; vertical-align: middle; margin: 2px 4px; }
+.ed-forma-cores { display: flex; gap: 8px; margin: 8px 0; }
+.ed-forma-cor { width: 30px; height: 30px; border-radius: 50%; border: 3px solid; cursor: pointer; }
+.ed-forma-cor.ligado { outline: 3px solid var(--azul); outline-offset: 2px; }
+.campo-mala { background: #e3f0ff; color: #0b4f9c; border-radius: 3px; padding: 0 3px; font-weight: 600; }
+.ed-mala { display: grid; gap: 8px; }
+.ed-mala-lista { display: flex; flex-wrap: wrap; gap: 6px; }
+@media print { .ed-comentario { background: none; border: none; } .ed-comentario::after { content: ''; } }
+/* Planilha: validação, congelar, protegida, imprimir */
+.pl-lista-botao { position: absolute; z-index: 5; width: 20px; height: 25px; border: 1px solid #999; background: #f3f3f3; cursor: pointer; padding: 0; font-size: 12px; }
+.pl-lista-menu { position: absolute; z-index: 6; min-width: 140px; background: #fff; border: 1px solid #999; box-shadow: 0 4px 12px rgba(0, 0, 0, .2); display: grid; }
+.pl-tabela td.pl-congelada, .pl-tabela td.pl-congelada-col { background-color: #fff; }
+.pl-tabela .pl-congelada-fim { border-bottom: 2px solid #8a8a8a !important; }
+.pl-tabela .pl-congelada-col-fim { border-right: 2px solid #8a8a8a !important; }
+.pl-opcoes-coluna { display: grid; gap: 6px; }
+.pl-check { display: flex; align-items: center; gap: 6px; }
+.ferramenta.ligado { background: #ffe9b3; }
+.pl-previa { background: #fff; border: 1px solid #ccc; box-shadow: 0 2px 8px rgba(0, 0, 0, .15); padding: 16px; overflow: hidden; aspect-ratio: 210 / 297; max-height: 360px; font-size: 9px; }
+.pl-previa.paisagem { aspect-ratio: 297 / 210; max-height: 260px; }
+.pl-previa table { border-collapse: collapse; }
+.pl-previa td { padding: 1px 4px; white-space: nowrap; }
+.pl-previa.com-grade td { border: 1px solid #bbb; }
+/* Apresentações: animação, slide mestre e modo do apresentador */
+.ap-mestre { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: center; padding: 10px 26px; font-size: 18px; opacity: .85; }
+.ap-mestre-logo { font-size: 30px; }
+.ap-slide { position: relative; }
+.ap-slide.fonte-arial { font-family: Arial, sans-serif; }
+.ap-slide.fonte-georgia { font-family: Georgia, serif; }
+.ap-slide.fonte-verdana { font-family: Verdana, sans-serif; }
+.ap-mini-animacao { position: absolute; right: 6px; bottom: 4px; font-size: 12px; }
+.ap-miniatura { position: relative; }
+.ap-anima { opacity: 0; transition: opacity .5s, transform .5s; }
+.ap-anima.anima-surgir { transform: translateY(30px); }
+.ap-anima.anima-voar { transform: translateX(-200px); }
+.ap-anima.mostrado { opacity: 1; transform: none; }
+.ap-tela-slide.com-apresentador { left: 36% !important; top: 45% !important; }
+.ap-painel-apresentador { position: fixed; right: 0; top: 0; bottom: 0; width: 30%; background: #1b1f27; color: #f5f5f5; padding: 18px; display: flex; flex-direction: column; gap: 8px; overflow: auto; font-size: 16px; }
+.ap-relogio { font-size: 32px; font-weight: 700; color: #ffd76a; }
+.ap-painel-notas { background: #2a303b; padding: 12px; border-radius: 8px; white-space: pre-wrap; font-size: 20px; line-height: 1.4; }
+.ap-painel-proximo { color: #c9d3e0; }
+/* E-mail: pastas novas */
+.em-nova-pasta { color: var(--azul-escuro); font-style: italic; }

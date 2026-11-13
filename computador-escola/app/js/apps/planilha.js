@@ -9,6 +9,8 @@
     ['MÍNIMO', 'Menor número', '=MÍNIMO('], ['SE', 'Escolhe um resultado conforme uma condição', '=SE('], ['CONT.SE', 'Conta as células que atendem a uma condição', '=CONT.SE('],
     ['SOMASE', 'Soma só o que atende a uma condição', '=SOMASE('], ['MÉDIASE', 'Média só do que atende a uma condição', '=MÉDIASE('],
     ['PROCV', 'Procura um valor numa tabela', '=PROCV('], ['CONCATENAR', 'Junta textos', '=CONCATENAR('],
+    ['HOJE', 'A data de hoje', '=HOJE()'], ['DIAS', 'Quantos dias entre duas datas (fim; início)', '=DIAS('],
+    ['DATA', 'Monta uma data (ano; mês; dia)', '=DATA('], ['MÊS', 'O mês de uma data', '=MÊS('], ['ANO', 'O ano de uma data', '=ANO('],
   ];
   const CORES_DESTAQUE = {
     vermelho: { nome: 'Vermelho', fundo: '#ffc7ce', texto: '#9c0006' },
@@ -16,7 +18,7 @@
     amarelo: { nome: 'Amarelo', fundo: '#ffeb9c', texto: '#9c5700' },
   };
   const REGRAS_DESTAQUE = { maior: 'é maior que', menor: 'é menor que', igual: 'é igual a', contem: 'contém o texto' };
-  const planilhaVazia = () => ({ celulas: {}, larguras: {}, graficos: [], condicionais: [], filtro: null });
+  const planilhaVazia = () => ({ celulas: {}, larguras: {}, graficos: [], condicionais: [], filtro: null, validacoes: [], congelar: null, protecao: null, liberadas: [] });
 
   CE.registrarApp({
     id: 'planilha',
@@ -95,6 +97,7 @@
         aplicarDestaques();
         aplicarFiltro();
         desenharGraficos();
+        aplicarCongelar();
         pintarSelecao();
       }
 
@@ -113,6 +116,10 @@
         const ultima = tds[F.endereco(r.c2, r.l2)];
         alca.style.left = ultima.offsetLeft + ultima.offsetWidth - 5 + 'px';
         alca.style.top = ultima.offsetTop + ultima.offsetHeight - 5 + 'px';
+        const lista = regraDe(ativa);
+        botaoLista.hidden = !(lista && lista.tipo === 'lista');
+        if (!botaoLista.hidden) { botaoLista.style.left = tds[ativa].offsetLeft + tds[ativa].offsetWidth + 'px'; botaoLista.style.top = tds[ativa].offsetTop + 'px'; }
+        menuLista.hidden = true;
         const nums = celulasDaSelecao().map(valorDe).filter((v) => typeof v === 'number');
         status.textContent = `${nomeArquivo || 'Planilha sem nome'}${modificado ? ' (não salva)' : ''}` +
           (nums.length > 1 ? ` · Soma: ${F.textoDe(nums.reduce((a, b) => a + b, 0))} · Média: ${F.textoDe(nums.reduce((a, b) => a + b, 0) / nums.length)} · Contagem: ${nums.length}` : '');
@@ -152,10 +159,27 @@
       }
 
       function alterar(funcao) {
+        const antes = JSON.stringify(dados);
         guardarParaDesfazer();
         funcao();
+        // Planilha protegida: só as células liberadas podem mudar. Se mexeu em outra, volta tudo.
+        if (dados.protecao) {
+          const velhas = JSON.parse(antes).celulas || {};
+          const refs = new Set([...Object.keys(velhas), ...Object.keys(dados.celulas)]);
+          const mexidas = [...refs].filter((r) => JSON.stringify(velhas[r] || null) !== JSON.stringify(dados.celulas[r] || null));
+          const proibidas = mexidas.filter((r) => !(dados.liberadas || []).includes(r));
+          if (proibidas.length) {
+            dados = JSON.parse(antes);
+            desfazer.pop();
+            recalcular();
+            CE.avisar('🔒 Esta planilha está protegida: essa célula não pode ser mudada. Para mudar, clique em "🔓 Desproteger".');
+            CE.emitir('planilha:bloqueada', { celula: proibidas[0], celulas: proibidas.length });
+            return false;
+          }
+        }
         modificado = true;
         recalcular();
+        return true;
       }
 
       function definirEntrada(ref, texto) {
@@ -168,7 +192,14 @@
       }
 
       function confirmarEntrada(ref, texto) {
-        alterar(() => definirEntrada(ref, texto));
+        const erroValidacao = validar(ref, texto);
+        if (erroValidacao) {
+          CE.avisar(`⛔ Valor não permitido em ${ref}. ${erroValidacao}`);
+          CE.emitir('planilha:invalida', { celula: ref, entrada: texto, motivo: erroValidacao });
+          pintarSelecao();
+          return;
+        }
+        if (alterar(() => definirEntrada(ref, texto)) === false) return;
         const v = valorDe(ref);
         CE.emitir('planilha:editada', { celula: ref, entrada: texto, valor: v, formula: texto.startsWith('='), texto: F.textoDe(v, formatoDe(ref).formato) });
       }
@@ -370,6 +401,7 @@
           else if (t === 'z') { e.preventDefault(); voltar(); }
           else if (t === 'y') { e.preventDefault(); avancar(); }
           else if (t === 's') { e.preventDefault(); salvar(); }
+          else if (t === 'p') { e.preventDefault(); dialogoImprimir(); }
           else if (t === 'b') { e.preventDefault(); formatar('negrito'); }
           else if (t === 'i') { e.preventDefault(); formatar('italico'); }
           return;
@@ -888,6 +920,271 @@
         mostrar();
       }
 
+
+      // ---------- Validação de dados (só aceita o que a regra deixa) ----------
+      const botaoLista = CE.el('button', { class: 'pl-lista-botao', hidden: true, title: 'Escolher da lista', 'data-lista-botao': '', onmousedown: (e) => e.preventDefault() }, '▾');
+      const menuLista = CE.el('div', { class: 'pl-lista-menu', hidden: true });
+      grade.append(botaoLista, menuLista);
+      const dentro = (ref, intervalo) => { const p = posicao(ref), r = lerFaixa(intervalo); return p.col >= r.c1 && p.col <= r.c2 && p.lin >= r.l1 && p.lin <= r.l2; };
+      const regraDe = (ref) => (dados.validacoes || []).slice().reverse().find((v) => dentro(ref, v.intervalo)) || null;
+      function validar(ref, texto) {
+        const regra = regraDe(ref);
+        if (!regra || texto === '' || String(texto).startsWith('=')) return '';
+        if (regra.tipo === 'lista') {
+          return regra.opcoes.some((o) => o.toLowerCase() === String(texto).trim().toLowerCase()) ? '' : `Escolha uma destas opções: ${regra.opcoes.join(', ')}.`;
+        }
+        const n = F.lerNumero(texto);
+        if (n == null) return 'Aqui só pode número.';
+        if (regra.min !== '' && regra.min != null && n < Number(regra.min)) return `O número precisa ser de ${regra.min} até ${regra.max}.`;
+        if (regra.max !== '' && regra.max != null && n > Number(regra.max)) return `O número precisa ser de ${regra.min} até ${regra.max}.`;
+        return '';
+      }
+      botaoLista.addEventListener('click', () => {
+        const regra = regraDe(ativa);
+        if (!regra) return;
+        menuLista.replaceChildren(...regra.opcoes.map((o) => CE.el('button', { class: 'menu-item', 'data-opcao-lista': o, onmousedown: (e) => e.preventDefault(), onclick: () => {
+          menuLista.hidden = true;
+          confirmarEntrada(ativa, o);
+          CE.emitir('planilha:lista-escolhida', { celula: ativa, valor: o });
+          grade.focus({ preventScroll: true });
+        } }, o)));
+        menuLista.style.left = tds[ativa].offsetLeft + 'px';
+        menuLista.style.top = tds[ativa].offsetTop + tds[ativa].offsetHeight + 'px';
+        menuLista.hidden = !menuLista.hidden;
+      });
+      function dialogoValidacao() {
+        terminarEdicao(true);
+        const intervalo = nomeSelecao();
+        const tipo = CE.el('select', { class: 'campo', 'data-validacao-tipo': '' }, CE.el('option', { value: 'lista' }, 'Lista de opções'), CE.el('option', { value: 'numero' }, 'Número entre dois valores'));
+        const opcoes = CE.el('input', { class: 'campo', 'data-validacao-opcoes': '', placeholder: 'Ex.: Pago; Pendente; Atrasado' });
+        const min = CE.el('input', { class: 'campo pequeno', 'data-validacao-min': '', placeholder: 'de' });
+        const max = CE.el('input', { class: 'campo pequeno', 'data-validacao-max': '', placeholder: 'até' });
+        const caixaLista = CE.el('label', {}, 'Opções (separe com ponto e vírgula ;)', opcoes);
+        const caixaNumero = CE.el('label', { hidden: true }, 'Número de ', min, ' até ', max);
+        tipo.addEventListener('change', () => { caixaLista.hidden = tipo.value !== 'lista'; caixaNumero.hidden = tipo.value === 'lista'; });
+        const fundo = CE.el('div', { class: 'dialogo-fundo' }, CE.el('div', { class: 'dialogo' },
+          CE.el('p', {}, `✅ Validação de dados em ${intervalo}: a célula só vai aceitar o que você permitir.`),
+          CE.el('label', {}, 'Permitir', tipo), caixaLista, caixaNumero,
+          CE.el('div', { class: 'dialogo-botoes' },
+            CE.el('button', { class: 'botao secundario', 'data-validacao-limpar': '', onclick: () => {
+              fundo.remove();
+              alterar(() => { dados.validacoes = (dados.validacoes || []).filter((v) => v.intervalo !== intervalo); });
+              CE.emitir('planilha:validacao', { intervalo, limpar: true });
+            } }, 'Tirar a regra'),
+            CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Cancelar'),
+            CE.el('button', { class: 'botao', 'data-validacao-ok': '', onclick: () => {
+              const regra = tipo.value === 'lista'
+                ? { intervalo, tipo: 'lista', opcoes: opcoes.value.split(/[;,]/).map((o) => o.trim()).filter(Boolean) }
+                : { intervalo, tipo: 'numero', min: min.value.trim(), max: max.value.trim() };
+              if (regra.tipo === 'lista' && regra.opcoes.length < 2) { CE.avisar('Escreva pelo menos duas opções, separadas por ponto e vírgula.'); return; }
+              if (regra.tipo === 'numero' && (F.lerNumero(regra.min) == null || F.lerNumero(regra.max) == null)) { CE.avisar('Escreva os dois números: de quanto até quanto.'); return; }
+              fundo.remove();
+              alterar(() => { dados.validacoes = (dados.validacoes || []).filter((v) => v.intervalo !== intervalo).concat(regra); });
+              CE.emitir('planilha:validacao', regra);
+              CE.avisar(regra.tipo === 'lista' ? '✅ Pronto! Clique numa dessas células e use a setinha ▾ para escolher.' : '✅ Pronto! Agora essas células só aceitam números dentro do limite.');
+              grade.focus({ preventScroll: true });
+            } }, 'Aplicar'))));
+        document.body.append(fundo);
+        opcoes.focus();
+      }
+
+      // ---------- Congelar painéis (os títulos ficam parados quando rola a planilha) ----------
+      function aplicarCongelar() {
+        tabela.querySelectorAll('.pl-congelada, .pl-congelada-fim, .pl-congelada-col, .pl-congelada-col-fim').forEach((el) => {
+          el.classList.remove('pl-congelada', 'pl-congelada-fim', 'pl-congelada-col', 'pl-congelada-col-fim');
+          el.style.position = ''; el.style.top = ''; el.style.left = ''; el.style.zIndex = '';
+        });
+        const cg = dados.congelar;
+        if (!cg) return;
+        const linhas = [...corpoTabela.children];
+        let topo = cabecalho.offsetHeight || 25;
+        for (let l = 0; l < (cg.linhas || 0); l++) {
+          const tr = linhas[l];
+          [...tr.children].forEach((cel) => { cel.classList.add('pl-congelada'); if (l === cg.linhas - 1) cel.classList.add('pl-congelada-fim'); cel.style.position = 'sticky'; cel.style.top = topo + 'px'; cel.style.zIndex = cel.tagName === 'TH' ? '4' : '2'; });
+          topo += tr.offsetHeight;
+        }
+        if (cg.colunas) {
+          linhas.forEach((tr, l) => {
+            let esquerda = 44;
+            for (let c = 0; c < cg.colunas; c++) {
+              const td = tr.children[c + 1];
+              td.classList.add('pl-congelada-col'); if (c === cg.colunas - 1) td.classList.add('pl-congelada-col-fim');
+              td.style.position = 'sticky'; td.style.left = esquerda + 'px'; td.style.zIndex = l < (cg.linhas || 0) ? '3' : '2';
+              esquerda += dados.larguras[F.numeroParaLetra(c)] || LARGURA;
+            }
+          });
+        }
+      }
+      function congelar(linhas, colunas) {
+        terminarEdicao(true);
+        dados.congelar = linhas || colunas ? { linhas, colunas } : null;
+        modificado = true;
+        recalcular();
+        CE.emitir('planilha:congelada', { linhas, colunas, ligado: !!dados.congelar });
+        CE.avisar(dados.congelar ? `🧊 Congelado! Role a planilha para baixo${colunas ? ' e para o lado' : ''}: ${linhas ? `a${linhas > 1 ? 's' : ''} ${linhas} primeira${linhas > 1 ? 's' : ''} linha${linhas > 1 ? 's' : ''}` : ''}${linhas && colunas ? ' e ' : ''}${colunas ? `a${colunas > 1 ? 's' : ''} ${colunas} primeira${colunas > 1 ? 's' : ''} coluna${colunas > 1 ? 's' : ''}` : ''} fica${(linhas || 0) + (colunas || 0) > 1 ? 'm' : ''} parada${(linhas || 0) + (colunas || 0) > 1 ? 's' : ''}.` : '🧊 Descongelado.');
+        grade.focus({ preventScroll: true });
+      }
+      function dialogoCongelar() {
+        const p = posicao(ativa);
+        const op = (id, texto, acao) => CE.el('button', { class: 'botao secundario', 'data-congelar': id, onclick: () => { fundo.remove(); acao(); } }, texto);
+        const fundo = CE.el('div', { class: 'dialogo-fundo' }, CE.el('div', { class: 'dialogo' },
+          CE.el('p', {}, '🧊 Congelar painéis: o que fica parado na tela quando você rolar a planilha?'),
+          CE.el('div', { class: 'pl-opcoes-coluna' },
+            op('linha', 'Congelar a 1ª linha (os títulos)', () => congelar(1, 0)),
+            op('coluna', 'Congelar a 1ª coluna', () => congelar(0, 1)),
+            op('celula', `Congelar acima e à esquerda de ${ativa}`, () => congelar(p.lin, p.col)),
+            op('descongelar', 'Descongelar tudo', () => congelar(0, 0))),
+          CE.el('div', { class: 'dialogo-botoes' }, CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Cancelar'))));
+        document.body.append(fundo);
+      }
+
+      // ---------- Tabela dinâmica (resumo por categoria, com fórmulas que se atualizam) ----------
+      function dialogoDinamica() {
+        terminarEdicao(true);
+        const r = regiaoAtual();
+        if (r.l2 <= r.l1 || !temCabecalho(r)) { CE.avisar('Clique dentro de uma tabela com títulos na 1ª linha (ex.: Data, Categoria, Valor) antes.'); return; }
+        const cols = []; for (let c = r.c1; c <= r.c2; c++) cols.push({ c, letra: F.numeroParaLetra(c), titulo: String(valorDe(F.endereco(c, r.l1))) });
+        const sel = (attr, padrao) => CE.el('select', { class: 'campo', [attr]: '' }, ...cols.map((x, i) => CE.el('option', { value: x.letra, selected: i === padrao }, x.titulo)));
+        const numericas = cols.filter((x) => typeof valorDe(F.endereco(x.c, r.l1 + 1)) === 'number');
+        const agrupar = sel('data-dinamica-linhas', cols.findIndex((x) => typeof valorDe(F.endereco(x.c, r.l1 + 1)) === 'string' && x !== cols[0]) === -1 ? 0 : cols.findIndex((x) => typeof valorDe(F.endereco(x.c, r.l1 + 1)) === 'string' && x !== cols[0]));
+        const valores = sel('data-dinamica-valores', numericas.length ? cols.indexOf(numericas[numericas.length - 1]) : cols.length - 1);
+        const operacao = CE.el('select', { class: 'campo', 'data-dinamica-operacao': '' }, CE.el('option', { value: 'soma' }, 'Soma'), CE.el('option', { value: 'contagem' }, 'Contagem (quantas vezes)'), CE.el('option', { value: 'media' }, 'Média'));
+        const fundo = CE.el('div', { class: 'dialogo-fundo' }, CE.el('div', { class: 'dialogo' },
+          CE.el('p', {}, `📋 Tabela dinâmica de ${nomeFaixa(r)}: um resumo da tabela, separado por categoria.`),
+          CE.el('label', {}, 'Separar por (linhas)', agrupar),
+          CE.el('label', {}, 'Calcular', operacao),
+          CE.el('label', {}, 'De (valores)', valores),
+          CE.el('div', { class: 'dialogo-botoes' },
+            CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Cancelar'),
+            CE.el('button', { class: 'botao', 'data-dinamica-ok': '', onclick: () => { fundo.remove(); criarDinamica(r, agrupar.value, valores.value, operacao.value); } }, 'Criar resumo'))));
+        document.body.append(fundo);
+      }
+      function criarDinamica(r, letraGrupo, letraValor, operacao) {
+        const cg = F.letraParaNumero(letraGrupo);
+        const grupos = [];
+        for (let l = r.l1 + 1; l <= r.l2; l++) { const v = valorDe(F.endereco(cg, l)); if (v !== '' && !grupos.some((g) => String(g).toLowerCase() === String(v).toLowerCase())) grupos.push(v); }
+        grupos.sort((a, b) => String(a).localeCompare(String(b), 'pt-BR', { numeric: true }));
+        const destino = r.c2 + 2;
+        if (destino + 1 >= COLUNAS || r.l1 + grupos.length + 1 >= LINHAS) { CE.avisar('Não tem espaço ao lado da tabela para o resumo.'); return; }
+        const faixaG = `${letraGrupo}${r.l1 + 2}:${letraGrupo}${r.l2 + 1}`, faixaV = `${letraValor}${r.l1 + 2}:${letraValor}${r.l2 + 1}`;
+        const tituloV = String(valorDe(F.endereco(F.letraParaNumero(letraValor), r.l1)));
+        const nomeOp = { soma: 'Soma', contagem: 'Contagem', media: 'Média' }[operacao];
+        const L1 = F.numeroParaLetra(destino), L2 = F.numeroParaLetra(destino + 1);
+        const formula = (ref) => (operacao === 'soma' ? `=SOMASE(${faixaG};${ref};${faixaV})` : operacao === 'contagem' ? `=CONT.SE(${faixaG};${ref})` : `=MÉDIASE(${faixaG};${ref};${faixaV})`);
+        const ok = alterar(() => {
+          const pos = (c, l) => F.endereco(c, l);
+          const por = (ref, v, f = {}) => { dados.celulas[ref] = { v: String(v), f }; };
+          por(pos(destino, r.l1), String(valorDe(F.endereco(cg, r.l1))), { negrito: true, fundo: '#dbe8fb' });
+          por(pos(destino + 1, r.l1), `${nomeOp} de ${tituloV}`, { negrito: true, fundo: '#dbe8fb' });
+          const formatoV = formatoDe(F.endereco(F.letraParaNumero(letraValor), r.l1 + 1)).formato;
+          grupos.forEach((g, i) => {
+            const l = r.l1 + 1 + i;
+            por(pos(destino, l), String(g));
+            por(pos(destino + 1, l), formula(`${L1}${l + 1}`), operacao === 'contagem' ? {} : (formatoV ? { formato: formatoV } : {}));
+          });
+          const lt = r.l1 + 1 + grupos.length;
+          por(pos(destino, lt), 'Total geral', { negrito: true });
+          por(pos(destino + 1, lt), operacao === 'media' ? `=MÉDIA(${faixaV})` : operacao === 'contagem' ? `=SOMA(${L2}${r.l1 + 2}:${L2}${lt})` : `=SOMA(${L2}${r.l1 + 2}:${L2}${lt})`, { negrito: true, ...(operacao !== 'contagem' && formatoDe(F.endereco(F.letraParaNumero(letraValor), r.l1 + 1)).formato ? { formato: formatoDe(F.endereco(F.letraParaNumero(letraValor), r.l1 + 1)).formato } : {}) });
+          if (!dados.larguras[L2]) dados.larguras[L2] = 150;
+        });
+        if (ok === false) return;
+        aplicarLarguras();
+        recalcular();
+        selecionarFaixa(F.endereco(destino, r.l1), F.endereco(destino + 1, r.l1 + 1 + grupos.length));
+        CE.emitir('planilha:dinamica', { agrupar: letraGrupo, valores: letraValor, operacao, destino: F.endereco(destino, r.l1), grupos: grupos.map(String), total: valorDe(F.endereco(destino + 1, r.l1 + 1 + grupos.length)) });
+        CE.avisar(`📋 Resumo pronto em ${L1}${r.l1 + 1}! Se você mudar a tabela, o resumo muda junto.`);
+      }
+
+      // ---------- Proteger planilha ----------
+      async function alternarProtecao() {
+        terminarEdicao(true);
+        if (dados.protecao) {
+          if (dados.protecao.senha) {
+            const senha = await CE.perguntar('🔓 Para desproteger, digite a senha da planilha:');
+            if (senha == null) return;
+            if (senha !== dados.protecao.senha) { CE.avisar('Senha errada. A planilha continua protegida.'); CE.emitir('planilha:protecao', { ligado: true, senhaErrada: true }); return; }
+          }
+          dados.protecao = null;
+        } else {
+          const senha = await CE.perguntar('🔒 Proteger a planilha: escolha uma senha para tirar a proteção depois (ou deixe vazio para não usar senha).', '');
+          dados.protecao = { senha: senha || '' };
+        }
+        modificado = true;
+        atualizarBotaoProtecao();
+        recalcular();
+        CE.emitir('planilha:protecao', { ligado: !!dados.protecao, senha: !!(dados.protecao && dados.protecao.senha), liberadas: (dados.liberadas || []).length });
+        CE.avisar(dados.protecao ? `🔒 Planilha protegida. ${(dados.liberadas || []).length ? 'Só as células liberadas podem ser mudadas.' : 'Nenhuma célula pode ser mudada.'}` : '🔓 Planilha desprotegida.');
+      }
+      function liberarCelulas() {
+        if (dados.protecao) { CE.avisar('Desproteja a planilha antes de liberar células.'); return; }
+        const refs = celulasDaSelecao();
+        const todas = refs.every((r) => (dados.liberadas || []).includes(r));
+        dados.liberadas = todas ? (dados.liberadas || []).filter((r) => !refs.includes(r)) : [...new Set([...(dados.liberadas || []), ...refs])];
+        modificado = true;
+        recalcular();
+        CE.emitir('planilha:liberadas', { intervalo: nomeSelecao(), liberadas: dados.liberadas.length, liberar: !todas });
+        CE.avisar(todas ? `As células ${nomeSelecao()} voltaram a ser travadas.` : `🔓 ${nomeSelecao()} liberada${refs.length > 1 ? 's' : ''}: quando proteger, ainda dá para escrever ali.`);
+      }
+
+      // ---------- Imprimir (área de impressão, orientação e ajuste) ----------
+      function areaUsada() {
+        let c2 = -1, l2 = -1;
+        Object.keys(dados.celulas).forEach((ref) => { if (entradaDe(ref) === '') return; const p = posicao(ref); c2 = Math.max(c2, p.col); l2 = Math.max(l2, p.lin); });
+        return c2 < 0 ? null : { c1: 0, l1: 0, c2, l2 };
+      }
+      function dialogoImprimir() {
+        terminarEdicao(true);
+        const usada = areaUsada();
+        if (!usada) { CE.avisar('A planilha está vazia: não tem nada para imprimir.'); return; }
+        const temSelecao = ancora !== fim;
+        const area = CE.el('select', { class: 'campo', 'data-imprimir-area': '' }, CE.el('option', { value: 'tudo' }, `Toda a planilha (${nomeFaixa(usada)})`), CE.el('option', { value: 'selecao', disabled: !temSelecao, selected: temSelecao }, `Só a seleção (${nomeSelecao()})`));
+        const orientacao = CE.el('select', { class: 'campo', 'data-imprimir-orientacao': '' }, CE.el('option', { value: 'retrato' }, '📄 Retrato (em pé)'), CE.el('option', { value: 'paisagem' }, '📃 Paisagem (deitada)'));
+        const ajustar = CE.el('input', { type: 'checkbox', 'data-imprimir-ajustar': '' });
+        const grades = CE.el('input', { type: 'checkbox', checked: true, 'data-imprimir-grade': '' });
+        const previa = CE.el('div', { class: 'pl-previa' });
+        const resumo = CE.el('p', { class: 'ed-dica', 'data-imprimir-paginas': '' });
+        const calcular = () => {
+          const r = area.value === 'selecao' ? faixa() : usada;
+          const cols = r.c2 - r.c1 + 1, lins = r.l2 - r.l1 + 1;
+          const [porCol, porLin] = orientacao.value === 'paisagem' ? [12, 28] : [7, 42];
+          const paginas = ajustar.checked ? 1 : Math.ceil(cols / porCol) * Math.ceil(lins / porLin);
+          const linhas = [];
+          for (let l = r.l1; l <= Math.min(r.l2, r.l1 + 14); l++) {
+            const cel = []; for (let c = r.c1; c <= Math.min(r.c2, r.c1 + 9); c++) { const ref = F.endereco(c, l); cel.push(`<td>${CE.escapar(F.textoDe(valorDe(ref), formatoDe(ref).formato))}</td>`); }
+            linhas.push(`<tr>${cel.join('')}</tr>`);
+          }
+          previa.className = `pl-previa ${orientacao.value}${grades.checked ? ' com-grade' : ''}`;
+          previa.innerHTML = `<table>${linhas.join('')}</table>`;
+          resumo.textContent = `Vai sair em ${paginas} folha${paginas > 1 ? 's' : ''}.${paginas > 1 && !ajustar.checked ? ' Dica: "Ajustar tudo em 1 página" ou a orientação Paisagem economizam papel.' : ''}`;
+          resumo.dataset.imprimirPaginas = String(paginas);
+          return { r, paginas };
+        };
+        [area, orientacao, ajustar, grades].forEach((x) => x.addEventListener('change', calcular));
+        const impressoras = CE.config ? CE.config.impressoras().map((i) => i.nome) : ['Impressora da sala (treino)'];
+        const seletorImpressora = CE.el('select', { class: 'campo' }, ...impressoras.map((n) => CE.el('option', { value: n }, n)));
+        const fundo = CE.el('div', { class: 'dialogo-fundo' }, CE.el('div', { class: 'dialogo largo' },
+          CE.el('p', {}, '🖨️ Imprimir planilha'),
+          CE.el('div', { class: 'ed-imprimir' }, previa, CE.el('div', { class: 'ed-imprimir-opcoes' },
+            CE.el('label', {}, 'Impressora', seletorImpressora),
+            CE.el('label', {}, 'O que imprimir', area),
+            CE.el('label', {}, 'Orientação', orientacao),
+            CE.el('label', { class: 'pl-check' }, ajustar, ' Ajustar tudo em 1 página'),
+            CE.el('label', { class: 'pl-check' }, grades, ' Imprimir as linhas de grade'),
+            resumo)),
+          CE.el('div', { class: 'dialogo-botoes' },
+            CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Cancelar'),
+            CE.el('button', { class: 'botao', 'data-acao': 'confirmar-impressao', onclick: () => {
+              const { r, paginas } = calcular();
+              fundo.remove();
+              CE.avisar(`🖨️ Imprimindo ${paginas} folha${paginas > 1 ? 's' : ''} de "${nomeArquivo || 'Planilha sem nome'}"...`);
+              CE.emitir('planilha:impressa', { area: area.value, intervalo: nomeFaixa(r), orientacao: orientacao.value, ajustar: ajustar.checked, grade: grades.checked, paginas, impressora: seletorImpressora.value });
+            } }, 'Imprimir'))));
+        document.body.append(fundo);
+        calcular();
+      }
+      const botaoProtecao = CE.el('button', { class: 'ferramenta texto', 'data-comando': 'proteger', title: 'Proteger a planilha para ninguém mudar sem querer', onmousedown: (e) => e.preventDefault(), onclick: () => alternarProtecao() }, '🔒 Proteger');
+      function atualizarBotaoProtecao() { botaoProtecao.textContent = dados.protecao ? '🔓 Desproteger' : '🔒 Proteger'; botaoProtecao.classList.toggle('ligado', !!dados.protecao); }
+
       // ---------- Arquivo ----------
       async function salvar() {
         terminarEdicao(true);
@@ -907,14 +1204,14 @@
         if (modificado && await CE.confirmar('Quer salvar a planilha atual antes de começar uma nova?')) { if (!await salvar()) return; }
         dados = planilhaVazia();
         nomeArquivo = null; modificado = false; desfazer = []; refazer = [];
-        aplicarLarguras(); selecionar('A1'); recalcular();
+        aplicarLarguras(); selecionar('A1'); recalcular(); atualizarBotaoProtecao();
         CE.emitir('planilha:nova');
       }
       function carregar(arquivo) {
         try { dados = JSON.parse(arquivo.conteudo || '{}'); } catch { dados = {}; }
         dados = { ...planilhaVazia(), ...dados };
         nomeArquivo = arquivo.nome; modificado = false; desfazer = []; refazer = [];
-        aplicarLarguras(); selecionar('A1'); recalcular();
+        aplicarLarguras(); selecionar('A1'); recalcular(); atualizarBotaoProtecao();
         CE.emitir('arquivo:aberto', { nome: arquivo.nome, tipo: 'planilha' });
       }
 
@@ -957,6 +1254,13 @@
             fb('filtro', '🔽 Filtro', 'Ligar ou desligar o filtro (mostrar só algumas linhas)', alternarFiltro, 'texto'),
             fb('grafico', '📊 Gráfico', 'Fazer um gráfico com os dados selecionados', dialogoGrafico, 'texto'),
             fb('destacar', '🎨 Destacar', 'Pintar sozinho as células que seguem uma regra (formatação condicional)', dialogoDestacar, 'texto')),
+          CE.el('div', { class: 'ferramentas-grupo' },
+            fb('congelar', '🧊 Congelar', 'Congelar painéis: os títulos ficam parados quando você rola a planilha', dialogoCongelar, 'texto'),
+            fb('validacao', '✅ Validação', 'Validação de dados: a célula só aceita o que você permitir (lista de opções ou números)', dialogoValidacao, 'texto'),
+            fb('dinamica', '📋 Tabela dinâmica', 'Resumo da tabela por categoria (soma, contagem ou média)', dialogoDinamica, 'texto'),
+            fb('liberar', '🔓 Liberar células', 'Deixar as células selecionadas livres para escrever mesmo com a planilha protegida', liberarCelulas, 'texto'),
+            botaoProtecao,
+            fb('imprimir', '🖨️ Imprimir', 'Imprimir a planilha (escolher a área, deitada ou em pé)', dialogoImprimir, 'texto')),
         ),
         CE.el('div', { class: 'pl-barra' }, caixaNome, CE.el('span', { class: 'pl-fx-rotulo' }, 'fx'), barraFormula),
         grade,
@@ -979,6 +1283,10 @@
         condicionais: () => dados.condicionais || [],
         linhaVisivel: (n) => !corpoTabela.children[n - 1].classList.contains('pl-oculta'),
         destacada: (ref) => tds[String(ref).toUpperCase()].classList.contains('destacada'),
+        congelar: () => dados.congelar,
+        validacoes: () => dados.validacoes || [],
+        protecao: () => dados.protecao,
+        liberadas: () => dados.liberadas || [],
       };
       CE.planilhaAtiva = api;
       const pararAtivar = CE.ouvir('janela:ativada', (d) => { if (d.app === 'planilha') CE.planilhaAtiva = api; });

@@ -1,4 +1,4 @@
-// Curso de Digitação: 3 níveis (Iniciante, Intermediário, Avançado), cada um com módulos, exercícios e uma prova.
+// Curso de Digitação: 4 níveis (Iniciante, Intermediário, Avançado e Profissional), cada um com módulos, exercícios e uma prova.
 // Cada exercício tem uma meta de velocidade (palavras por minuto) e de acertos (%). O aluno só libera o
 // próximo exercício quando bate as duas metas. Para crianças as metas são menores (veja CE.metaDigitacao).
 //
@@ -365,7 +365,70 @@ window.CE = window.CE || {};
     };
   }
 
-  const NIVEIS = [nivelIniciante(), nivelIntermediario(), nivelAvancado()];
+  // ---------- Nível 4: Profissional (digitação para o trabalho e para testes de seleção) ----------
+  const TEXTOS_ESCRITORIO = [
+    ['E-mail formal', 'Prezado Senhor Carlos, conforme combinado por telefone, encaminho em anexo o orçamento solicitado, com validade de 15 dias. Fico à disposição para qualquer esclarecimento. Atenciosamente, Ana Paula Ribeiro, Setor de Compras.'],
+    ['Ofício', 'Ofício nº 027/2025. Ao Senhor Diretor da Escola Estadual Rio Madeira. Assunto: Solicitação de uso do auditório. Senhor Diretor, solicitamos o uso do auditório no dia 12 de junho, das 14h às 17h, para a formatura do curso de informática.'],
+    ['Ata de reunião', 'Aos dez dias do mês de março de 2025, às 9h, reuniram-se na sala de reuniões os funcionários do setor administrativo. Foram tratados os seguintes assuntos: horário de atendimento, escala de férias e compra de material de escritório.'],
+    ['Atendimento ao cliente', 'Bom dia! Agradecemos o seu contato. Informamos que o seu pedido nº 45.871 foi enviado hoje e deve chegar em até cinco dias úteis. Para acompanhar a entrega, use o código de rastreio BR123456789 no site dos Correios.'],
+    ['Comunicado interno', 'Comunicado aos colaboradores: a partir de segunda-feira, o expediente será das 7h30 às 17h30, com intervalo de uma hora para o almoço. O ponto deve ser registrado na entrada, na saída e no intervalo. Dúvidas, procurar o RH.'],
+    ['Relatório', 'Relatório mensal de vendas: em abril, a loja vendeu R$ 128.450,00, um aumento de 12% em relação a março. Os produtos mais vendidos foram ventiladores, panelas e liquidificadores. A meta para maio é de R$ 135.000,00.'],
+  ];
+  const DADOS_TRABALHO = [
+    ['Códigos de produtos', 'COD-1045 Arroz 5 kg R$ 25,90; COD-2210 Feijão 1 kg R$ 8,49; COD-3307 Óleo 900 ml R$ 7,99; COD-4120 Café 500 g R$ 15,50.'],
+    ['Nota fiscal', 'NF-e 000.123.456 Série 1. CNPJ 12.345.678/0001-90. Emissão 03/04/2025. Valor total R$ 2.347,80. ICMS R$ 281,74. Natureza: venda de mercadoria.'],
+    ['Agenda de atendimentos', '08h00 Sr. João (retorno); 08h30 Dona Lúcia (exame); 09h15 Clínica Vida (entrega); 10h00 Reunião da equipe; 14h00 Fornecedor ABC Ltda.'],
+    ['Planilha de estoque', 'Item 001: 120 unidades, mínimo 50. Item 002: 35 unidades, mínimo 40 (repor). Item 003: 0 unidade (em falta). Item 004: 87 unidades, mínimo 30.'],
+  ];
+  const FICHAS_SELECAO = [
+    ['Cadastro de fornecedor', [['Razão social', 'Distribuidora Norte Ltda.'], ['CNPJ', '23.456.789/0001-12'], ['Telefone', '(69) 3224-5566'],
+      ['E-mail', 'vendas@distnorte.com.br'], ['Endereço', 'Avenida Jorge Teixeira, 3200'], ['Cidade', 'Porto Velho - RO'], ['Prazo de pagamento', '30 dias']], 30],
+    ['Ficha de paciente', [['Nome completo', 'Benedita Alves Rocha'], ['Nascimento', '09/11/1967'], ['CPF', '567.891.234-50'], ['Cartão do SUS', '898 0012 3456 7890'],
+      ['Convênio', 'Particular'], ['Alergias', 'Dipirona'], ['Contato de emergência', 'Paulo Rocha (69) 99456-1122']], 32],
+    ['Ordem de serviço', [['Número da OS', '2025-0457'], ['Cliente', 'Mercadinho Boa Vista'], ['Equipamento', 'Computador do caixa 2'],
+      ['Defeito', 'Não liga; luz da fonte apagada'], ['Técnico', 'Rafael Moura'], ['Previsão', '18/04/2025'], ['Valor', 'R$ 150,00']], 33],
+    ['Registro de entrega', [['Remetente', 'Loja Casa Bonita'], ['Destinatário', 'Joana Darc Figueiredo'], ['Endereço', 'Rua Rio Branco, 1550, apto 302'],
+      ['CEP', '76804-120'], ['Volumes', '3'], ['Peso total', '12,5 kg'], ['Rastreio', 'BR987654321']], 34],
+  ];
+  const DITADOS_TRABALHO = [
+    ['Recado ao telefone', ['O senhor Marcos ligou às dez horas.', 'Ele pediu o orçamento das cadeiras.', 'O telefone dele é nove nove oito um dois, três quatro cinco seis.', 'Retornar ainda hoje, por favor.']],
+    ['Pedido do cliente', ['A cliente quer duas caixas de papel A4.', 'Também quer cinco canetas azuis.', 'A entrega deve ser na sexta-feira.', 'O pagamento será no Pix.']],
+    ['Anotação da reunião', ['A reunião foi adiada para quinta-feira.', 'Todos devem trazer o relatório do mês.', 'A sala será a número três.', 'Não se esqueçam do crachá.']],
+  ];
+  const SELECAO = [
+    'Para concorrer à vaga de assistente administrativo, o candidato deverá ter ensino médio completo, conhecimentos de informática e boa comunicação. As inscrições vão de 1º a 15 de maio, pelo site da empresa ou presencialmente, das 8h às 17h.',
+    'A digitação é uma das habilidades mais pedidas em vagas de escritório, recepção, caixa e atendimento. Nos testes de seleção, o candidato digita um texto por alguns minutos, e são avaliadas a velocidade e, principalmente, a quantidade de erros.',
+    'Cuidar bem dos documentos da empresa é responsabilidade de todos. Arquivos importantes devem ser salvos com nomes claros, em pastas organizadas, e ter uma cópia de segurança. Senhas não devem ser anotadas em papéis colados no monitor.',
+    'O bom atendimento começa com um cumprimento educado e termina com a certeza de que o cliente foi ajudado. Anote os dados com atenção, confirme o nome, o telefone e o e-mail, e nunca prometa um prazo que não pode cumprir.',
+  ];
+  function nivelProfissional() {
+    const exEscritorio = TEXTOS_ESCRITORIO.map(([titulo, texto], i) => ({ id: `p-escrit-${i + 1}`, titulo, texto }));
+    const exDados = DADOS_TRABALHO.map(([titulo, texto], i) => ({ id: `p-dados-${i + 1}`, titulo, texto, dica: 'Atenção a cada número, ponto e vírgula: num documento de trabalho, um dígito errado muda tudo.' }));
+    const exFichas = FICHAS_SELECAO.map(([titulo, campos, ppm], i) => ({
+      id: `p-ficha-${i + 1}`, titulo, tipo: 'ficha', campos, metaFixa: { ppm, precisao: 99 },
+      dica: 'Entrada de dados de verdade: rápido e sem erro. Copie igualzinho ao papel e use o Tab para pular de campo.',
+    }));
+    const exDitado = DITADOS_TRABALHO.map(([titulo, frases], i) => ({ id: `p-ditado-${i + 1}`, titulo: `Ditado: ${titulo}`, tipo: 'ditado', frases, metaPrecisao: 93 }));
+    const exSelecao = SELECAO.map((t, i) => ({
+      id: `p-selecao-${i + 1}`, titulo: `Simulado de seleção ${i + 1} (${i < 2 ? 2 : 3} minutos)`, tipo: 'tempo', duracao: i < 2 ? 120 : 180,
+      texto: SELECAO.slice(i).concat(SELECAO.slice(0, i)).join(' '),
+      dica: 'Como num teste de emprego: o cronômetro corre e cada erro conta. Mantenha o ritmo, sem correr demais.',
+    }));
+    return {
+      id: 'profissional', nome: 'Profissional', icone: '💼', semNivelamento: true,
+      metas: { ppmInicio: 55, ppmFim: 65, precisao: 97 },
+      modulos: [
+        { titulo: 'Textos de escritório', exercicios: exEscritorio },
+        { titulo: 'Números e códigos do trabalho', exercicios: exDados },
+        { titulo: 'Entrada de dados rápida', exercicios: exFichas },
+        { titulo: 'Ditado do trabalho (recados e pedidos)', exercicios: exDitado },
+        { titulo: 'Simulados de teste de seleção', exercicios: exSelecao },
+      ],
+      prova: { id: 'prova-profissional', titulo: 'Prova do nível Profissional (teste de seleção, 5 minutos)', tipo: 'tempo', duracao: 300, meta: { ppm: 55, precisao: 97 }, texto: TEXTOS_ESCRITORIO.map((t) => t[1]).concat(SELECAO).join(' ') },
+    };
+  }
+
+  const NIVEIS = [nivelIniciante(), nivelIntermediario(), nivelAvancado(), nivelProfissional()];
 
   // Distribui as metas: a velocidade exigida sobe aos poucos dentro de cada nível.
   const LISTA = [];

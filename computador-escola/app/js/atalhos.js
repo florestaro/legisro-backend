@@ -4,6 +4,13 @@ window.CE = window.CE || {};
 (function () {
   const NOMES = { c: 'Ctrl+C', v: 'Ctrl+V', x: 'Ctrl+X', z: 'Ctrl+Z', y: 'Ctrl+Y', a: 'Ctrl+A', s: 'Ctrl+S', b: 'Ctrl+B', i: 'Ctrl+I', u: 'Ctrl+U', n: 'Ctrl+N', p: 'Ctrl+P' };
   document.addEventListener('keydown', (e) => {
+    // Ctrl+Shift+Esc: Gerenciador de Tarefas (como no Windows).
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Escape' && CE.sessao && CE.sessao.usuario) {
+      e.preventDefault();
+      CE.janelas.abrir('tarefas');
+      CE.emitir('atalho:usado', { atalho: 'Ctrl+Shift+Esc', app: 'tarefas' });
+      return;
+    }
     if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
     const nome = NOMES[e.key.toLowerCase()];
     if (!nome) return;

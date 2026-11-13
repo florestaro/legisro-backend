@@ -8,7 +8,14 @@
     fuso: null, automatico: true, ajusteMs: 0, instalados: [],
     impressoras: [{ nome: 'Impressora da sala (treino)', padrao: true }],
     protecao: true, firewall: true, ameaca: false, antivirusEm: null, atualizacoesFeitas: false, ultimoBackup: null,
+    contas: [], wifi: null, aviao: false, inicializacao: {},
   };
+  // Redes Wi-Fi de treino. A da escola tem senha; a "aberta" não tem (cuidado com dados pessoais nelas).
+  const REDES = [
+    { nome: 'ESCOLA_SALA_INFO', sinal: 4, senha: 'aprender2025', segura: true },
+    { nome: 'Lanchonete_Gratis', sinal: 3, senha: '', segura: false },
+    { nome: 'Vizinho_5G', sinal: 2, senha: 'x9!kq2', segura: true },
+  ];
   const FUSOS = [[-2, 'Fernando de Noronha (UTC−2)'], [-3, 'Brasília, São Paulo, Nordeste (UTC−3)'], [-4, 'Porto Velho, Manaus, Cuiabá (UTC−4)'], [-5, 'Rio Branco, Acre (UTC−5)']];
   const LOJA = [
     { id: 'bloco-notas', nome: 'Bloco de Notas', icone: '🗒️', editora: 'Computador Escola', verificado: true, tamanho: '2 MB', descricao: 'Para anotações rápidas, sem formatação.' },
@@ -183,7 +190,7 @@
       const SECOES = [
         ['personalizar', '🎨', 'Personalizar'], ['acessibilidade', '♿', 'Acessibilidade'], ['data-hora', '🕒', 'Data e hora'], ['som', '🔊', 'Som'],
         ['aplicativos', '📦', 'Aplicativos'], ['seguranca', '🛡️', 'Antivírus e segurança'], ['atualizacoes', '🔄', 'Atualizações'],
-        ['impressoras', '🖨️', 'Impressoras'], ['backup', '💾', 'Backup'], ['sobre', '💻', 'Sobre o computador'],
+        ['impressoras', '🖨️', 'Impressoras'], ['backup', '💾', 'Backup'], ['contas', '👤', 'Contas de usuário'], ['rede', '📶', 'Rede e Internet'], ['sobre', '💻', 'Sobre o computador'],
       ];
       function ir(id) { secao = id; estado = { ...estado, resultado: null, encontradas: null }; desenhar(); CE.emitir('config:secao', { secao: id }); }
       const titulo = (t, sub) => [CE.el('h2', {}, t), sub ? CE.el('p', { class: 'cfg-sub' }, sub) : null];
@@ -193,6 +200,32 @@
       const barra = (pct) => CE.el('div', { class: 'cfg-progresso' }, CE.el('div', { style: `width:${pct}%` }));
 
       const TELAS = {
+        contas() {
+          const minha = CE.sessao.usuario ? CE.sessao.usuario.nome : 'Você';
+          const contas = atual.contas || [];
+          return [...titulo('👤 Contas de usuário', 'Num computador do trabalho, cada pessoa usa a SUA conta, com a sua senha. Conta de "Administrador" pode instalar programas e mudar tudo; a "Padrão" só usa o computador.'),
+            CE.el('div', { class: 'cfg-lista' },
+              CE.el('div', { class: 'cfg-app' }, CE.el('span', { class: 'cfg-app-icone' }, '🧑'), CE.el('div', {}, CE.el('b', {}, `${minha} (você)`), CE.el('small', {}, 'Administrador · conta que está usando agora'))),
+              ...contas.map((c) => CE.el('div', { class: 'cfg-app', 'data-conta': c.nome },
+                CE.el('span', { class: 'cfg-app-icone' }, c.tipo === 'admin' ? '🛡️' : '👤'),
+                CE.el('div', {}, CE.el('b', {}, c.nome), CE.el('small', {}, `${c.tipo === 'admin' ? 'Administrador' : 'Padrão'}${c.senha ? ' · com senha' : ' · ⚠️ sem senha'}`)),
+                CE.el('button', { class: 'botao secundario', 'data-mudar-tipo': c.nome, onclick: () => salvarE({ contas: contas.map((x) => (x === c ? { ...x, tipo: x.tipo === 'admin' ? 'padrao' : 'admin' } : x)) }, 'config:conta-tipo', { nome: c.nome, tipo: c.tipo === 'admin' ? 'padrao' : 'admin' }) }, c.tipo === 'admin' ? 'Tornar padrão' : 'Tornar administrador'),
+                CE.el('button', { class: 'botao secundario', 'data-remover-conta': c.nome, onclick: async () => { if (await CE.confirmar(`Remover a conta "${c.nome}"? Os arquivos dela também saem do computador.`)) salvarE({ contas: contas.filter((x) => x !== c) }, 'config:conta-removida', { nome: c.nome }); } }, 'Remover')))),
+            CE.el('button', { class: 'botao', 'data-acao': 'nova-conta', onclick: novaConta }, '➕ Adicionar outra pessoa'),
+            CE.el('p', { class: 'ed-dica' }, '🔒 Ao sair de perto do computador, clique em Iniciar › Sair. Assim ninguém mexe nas suas coisas com a sua conta.')];
+        },
+        rede() {
+          const conectada = !atual.aviao && atual.wifi ? REDES.find((r) => r.nome === atual.wifi) : null;
+          return [...titulo('📶 Rede e Internet', 'Conecte o computador ao Wi‑Fi. Em rede aberta (sem senha), não acesse banco nem digite senhas.'),
+            interruptor('aviao', !!atual.aviao, '✈️ Modo avião (desliga o Wi‑Fi)', (v) => salvarE({ aviao: v }, 'config:aviao', { ligado: v })),
+            CE.el('div', { class: 'cfg-rede-status', 'data-rede-status': conectada ? conectada.nome : '' }, conectada ? `✅ Conectado a ${conectada.nome}${conectada.segura ? ' (protegida com senha)' : ' (⚠️ rede aberta)'}` : atual.aviao ? '✈️ Modo avião ligado: sem internet.' : '❌ Sem conexão. Escolha uma rede abaixo.'),
+            atual.aviao ? null : CE.el('div', { class: 'cfg-lista' }, ...REDES.map((r) => CE.el('div', { class: 'cfg-app', 'data-rede': r.nome },
+              CE.el('span', { class: 'cfg-app-icone' }, ['', '▂', '▂▄', '▂▄▆', '▂▄▆█'][r.sinal]),
+              CE.el('div', {}, CE.el('b', {}, `${r.segura ? '🔒' : '🔓'} ${r.nome}`), CE.el('small', {}, r.segura ? 'Protegida (precisa de senha)' : 'Aberta: qualquer um entra, cuidado!')),
+              conectada === r ? CE.el('button', { class: 'botao secundario', 'data-desconectar': r.nome, onclick: () => salvarE({ wifi: null }, 'config:wifi', { rede: r.nome, conectado: false }) }, 'Desconectar')
+                : CE.el('button', { class: 'botao', 'data-conectar': r.nome, onclick: () => conectar(r) }, 'Conectar')))),
+            CE.el('p', { class: 'ed-dica' }, 'A senha do Wi‑Fi da sala está no cartaz da parede (no treino: aprender2025).')];
+        },
         personalizar() {
           return [...titulo('🎨 Personalizar', 'Escolha a imagem de fundo da área de trabalho.'),
             CE.el('div', { class: 'cfg-fundos' }, ...CE.FUNDOS_TELA.map((f) => CE.el('button', {
@@ -390,6 +423,37 @@
           desenhar();
         };
         passo();
+      }
+      async function novaConta() {
+        const nome = CE.el('input', { class: 'campo', 'data-campo': 'nome-conta', placeholder: 'Nome da pessoa' });
+        const senha = CE.el('input', { class: 'campo', type: 'password', 'data-campo': 'senha-conta', placeholder: 'Senha (mínimo 6 letras ou números)' });
+        const tipo = CE.el('select', { class: 'campo', 'data-campo': 'tipo-conta' }, CE.el('option', { value: 'padrao' }, '👤 Padrão (só usa o computador)'), CE.el('option', { value: 'admin' }, '🛡️ Administrador (pode instalar e mudar tudo)'));
+        const erro = CE.el('p', { class: 'login-erro em-claro' });
+        const fundo = CE.el('div', { class: 'dialogo-fundo' }, CE.el('div', { class: 'dialogo' },
+          CE.el('p', {}, '➕ Nova conta neste computador'),
+          CE.el('label', {}, 'Nome', nome), CE.el('label', {}, 'Senha', senha), CE.el('label', {}, 'Tipo de conta', tipo), erro,
+          CE.el('div', { class: 'dialogo-botoes' },
+            CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Cancelar'),
+            CE.el('button', { class: 'botao', 'data-acao': 'criar-conta', onclick: () => {
+              if (!nome.value.trim()) { erro.textContent = 'Escreva o nome da pessoa.'; return; }
+              if ((atual.contas || []).some((c) => c.nome.toLowerCase() === nome.value.trim().toLowerCase())) { erro.textContent = 'Já existe uma conta com esse nome.'; return; }
+              if (senha.value.length < 6) { erro.textContent = 'A senha precisa ter pelo menos 6 letras ou números.'; return; }
+              fundo.remove();
+              const c = { nome: nome.value.trim(), tipo: tipo.value, senha: true };
+              salvarE({ contas: [...(atual.contas || []), c] }, 'config:conta-criada', c);
+              CE.avisar(`👤 Conta de ${c.nome} criada (${c.tipo === 'admin' ? 'administrador' : 'padrão'}).`);
+            } }, 'Criar conta'))));
+        document.body.append(fundo);
+        nome.focus();
+      }
+      async function conectar(r) {
+        if (r.senha) {
+          const senha = await CE.perguntar(`🔒 Senha da rede "${r.nome}":`);
+          if (senha == null) return;
+          if (senha !== r.senha) { CE.avisar('❌ Senha errada. Confira as letras e os números (maiúscula e minúscula fazem diferença).'); CE.emitir('config:wifi-erro', { rede: r.nome }); return; }
+        } else if (!await CE.confirmar(`⚠️ "${r.nome}" é uma rede ABERTA: outras pessoas podem ver o que passa por ela. Conectar mesmo assim? (Se conectar, não entre no banco nem digite senhas.)`)) return;
+        salvarE({ wifi: r.nome }, 'config:wifi', { rede: r.nome, conectado: true, segura: r.segura });
+        CE.avisar(`📶 Conectado a ${r.nome}.`);
       }
       async function desinstalar(p) {
         if (!await CE.confirmar(`Desinstalar "${p.nome}"? Ele sai do computador.`)) return;

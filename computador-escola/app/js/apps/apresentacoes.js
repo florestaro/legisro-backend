@@ -9,6 +9,9 @@
   };
   const TEMAS = { claro: 'Claro', azul: 'Azul', verde: 'Verde', sol: 'Pôr do sol', quadro: 'Quadro-negro' };
   const TRANSICOES = { nenhuma: 'Sem transição', aparecer: 'Aparecer', deslizar: 'Deslizar', zoom: 'Zoom' };
+  // Animação dos tópicos: na apresentação, cada clique mostra o próximo tópico.
+  const ANIMACOES = { nenhuma: 'Sem animação', aparecer: 'Aparecer', surgir: 'Surgir (de baixo)', voar: 'Voar (da esquerda)' };
+  const LOGOS = ['', '🏢', '🏫', '🏥', '🛒', '🌳', '⭐', '💼', '🔧'];
   const DICAS = {
     titulo: 'Clique para escrever o título', subtitulo: 'Clique para escrever o subtítulo',
     texto: 'Clique para escrever os tópicos', texto2: 'Clique para escrever a outra coluna',
@@ -19,7 +22,7 @@
   const textoPuro = (html) => { const d = document.createElement('div'); d.innerHTML = html || ''; return d.innerText.trim(); };
 
   // Monta um slide (editável no programa, ou só para ver nas miniaturas e na apresentação).
-  function montarSlide(slide, tema, editavel, aoEditar) {
+  function montarSlide(slide, tema, editavel, aoEditar, mestre = null, numero = 0) {
     const caixa = (campo, classe) => {
       const el = CE.el('div', { class: classe, 'data-campo': campo, 'data-dica': DICAS[campo === 'texto' && slide.layout === 'titulo' ? 'subtitulo' : campo], html: slide[campo] || '' });
       if (editavel) {
@@ -37,7 +40,11 @@
       conteudo: [caixa('titulo', 'ap-titulo'), caixa('texto', 'ap-texto')],
       imagem: [caixa('titulo', 'ap-titulo'), CE.el('div', { class: 'ap-colunas' }, caixa('texto', 'ap-texto'), midia)],
       comparacao: [caixa('titulo', 'ap-titulo'), CE.el('div', { class: 'ap-colunas' }, caixa('texto', 'ap-texto'), caixa('texto2', 'ap-texto'))] };
-    return CE.el('div', { class: `ap-slide tema-${tema} layout-${slide.layout}`, 'data-slide': slide.id }, ...(partes[slide.layout] || partes.conteudo));
+    // Slide mestre: rodapé, número e logotipo iguais em todos os slides.
+    const m = mestre || {};
+    const extras = m.rodape || m.numerar || m.logo ? [CE.el('div', { class: 'ap-mestre', 'data-mestre': '' },
+      CE.el('span', { class: 'ap-mestre-logo' }, m.logo || ''), CE.el('span', { class: 'ap-mestre-rodape' }, m.rodape || ''), CE.el('span', { class: 'ap-mestre-numero' }, m.numerar && numero ? String(numero) : ''))] : [];
+    return CE.el('div', { class: `ap-slide tema-${tema} layout-${slide.layout}${m.fonte ? ' fonte-' + m.fonte : ''}`, 'data-slide': slide.id, 'data-animacao': slide.animacao || 'nenhuma' }, ...(partes[slide.layout] || partes.conteudo), ...extras);
   }
 
   CE.registrarApp({
@@ -80,7 +87,7 @@
         miniaturas.replaceChildren(...doc.slides.map((s, i) => {
           const m = CE.el('button', { class: 'ap-miniatura' + (i === atual ? ' ativa' : ''), 'data-miniatura': i + 1, draggable: 'true', title: `Slide ${i + 1}` },
             CE.el('span', { class: 'ap-numero' }, String(i + 1)),
-            CE.el('div', { class: 'ap-mini-slide' }, montarSlide(s, doc.tema, false)));
+            CE.el('div', { class: 'ap-mini-slide' }, montarSlide(s, doc.tema, false, null, doc.mestre, i + 1)), s.animacao && s.animacao !== 'nenhuma' ? CE.el('span', { class: 'ap-mini-animacao', title: 'Este slide tem animação' }, '🎬') : '');
           m.addEventListener('click', () => irPara(i));
           m.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', String(i)); });
           m.addEventListener('dragover', (e) => { e.preventDefault(); m.classList.add('soltar-aqui'); });
@@ -99,7 +106,8 @@
             desenharMiniaturas();
             CE.emitir('apresentacao:texto', { slide: atual + 1, campo, texto: textoPuro(html) });
           }, 350);
-        }));
+        }, doc.mestre, atual + 1));
+        seletorAnimacao.value = s.animacao || 'nenhuma';
         const botaoImagem = moldura.querySelector('[data-acao="escolher-imagem"]');
         if (botaoImagem) botaoImagem.addEventListener('click', escolherImagem);
         notas.value = s.notas || '';
@@ -196,9 +204,12 @@
 
       // ---------- Apresentar (tela cheia) ----------
       let sairApresentacao = null; // fecha a tela cheia aberta (o programa fechando, ou o aluno saindo do sistema)
-      function apresentar(inicio = 0) {
+      function apresentar(inicio = 0, opcoes = {}) {
         if (sairApresentacao) sairApresentacao({ calado: true });
-        let i = inicio, fim = false;
+        const apresentador = !!opcoes.apresentador;
+        let i = inicio, fim = false, mostrados = 0; // mostrados: quantos tópicos animados já apareceram
+        const comecou = Date.now();
+        const topicos = (k) => (doc.slides[k].animacao && doc.slides[k].animacao !== 'nenhuma' ? (doc.slides[k].texto.match(/<li/gi) || []).length + (doc.slides[k].layout === 'comparacao' ? (doc.slides[k].texto2.match(/<li/gi) || []).length : 0) : 0);
         const vistos = new Set([i]);
         const tela = CE.el('div', { class: 'ap-apresentacao', tabindex: '0', 'data-transicao': doc.transicao });
         const contador = CE.el('div', { class: 'ap-contador' });
@@ -209,11 +220,26 @@
             contador.textContent = '';
             return;
           }
-          const s = montarSlide(doc.slides[i], doc.tema, false);
-          const caixa = CE.el('div', { class: `ap-tela-slide transicao-${doc.transicao}`, style: `transform: translate(-50%, -50%) scale(${escala})` }, s);
-          tela.replaceChildren(caixa, contador);
+          const area = apresentador ? 0.68 : 1;
+          const esc = apresentador ? Math.min((window.innerWidth * area) / 960, (window.innerHeight * 0.8) / 540) : escala;
+          const s = montarSlide(doc.slides[i], doc.tema, false, null, doc.mestre, i + 1);
+          const anim = doc.slides[i].animacao || 'nenhuma';
+          if (anim !== 'nenhuma') s.querySelectorAll('li').forEach((li, k) => { li.classList.add('ap-anima', 'anima-' + anim); if (k < mostrados) li.classList.add('mostrado'); });
+          const caixa = CE.el('div', { class: `ap-tela-slide transicao-${doc.transicao}${apresentador ? ' com-apresentador' : ''}`, style: `transform: translate(-50%, -50%) scale(${esc})` }, s);
+          const partes = [caixa, contador];
+          if (apresentador) {
+            const prox = doc.slides[i + 1];
+            const minutos = Math.floor((Date.now() - comecou) / 60000), segundos = Math.floor((Date.now() - comecou) / 1000) % 60;
+            partes.push(CE.el('div', { class: 'ap-painel-apresentador', 'data-apresentador': '' },
+              CE.el('div', { class: 'ap-relogio' }, `⏱️ ${minutos}:${String(segundos).padStart(2, '0')}`),
+              CE.el('strong', {}, '🗒️ Suas anotações (o público não vê):'),
+              CE.el('div', { class: 'ap-painel-notas', 'data-notas-apresentador': '' }, doc.slides[i].notas || '(sem anotações neste slide)'),
+              CE.el('strong', {}, 'Próximo slide:'),
+              CE.el('div', { class: 'ap-painel-proximo' }, prox ? `${i + 2}. ${textoPuro(prox.titulo) || '(sem título)'}` : 'É o último slide.')));
+          }
+          tela.replaceChildren(...partes);
           contador.textContent = `${i + 1} / ${doc.slides.length}`;
-          CE.emitir('apresentacao:slide', { numero: i + 1, total: doc.slides.length });
+          CE.emitir('apresentacao:slide', { numero: i + 1, total: doc.slides.length, apresentador, notas: apresentador ? doc.slides[i].notas || '' : undefined });
         };
         const sair = (opcoes = {}) => {
           tela.remove();
@@ -224,10 +250,19 @@
         sairApresentacao = sair;
         const avancar = () => {
           if (fim) { sair(); return; }
+          // Slide com animação: cada clique mostra o próximo tópico antes de trocar de slide.
+          if (mostrados < topicos(i)) {
+            mostrados++;
+            const li = tela.querySelectorAll('.ap-anima')[mostrados - 1];
+            if (li) li.classList.add('mostrado');
+            CE.emitir('apresentacao:animou', { slide: i + 1, item: mostrados, total: topicos(i), animacao: doc.slides[i].animacao });
+            return;
+          }
+          mostrados = 0;
           if (i < doc.slides.length - 1) { i++; vistos.add(i); } else fim = true;
           mostrar();
         };
-        const voltar = () => { if (fim) fim = false; else if (i > 0) i--; mostrar(); };
+        const voltar = () => { mostrados = 0; if (fim) fim = false; else if (i > 0) i--; mostrar(); };
         const teclas = (e) => {
           const k = e.key;
           if (['ArrowRight', 'ArrowDown', ' ', 'Enter', 'PageDown'].includes(k)) { e.preventDefault(); e.stopPropagation(); avancar(); }
@@ -239,7 +274,7 @@
         document.addEventListener('keydown', teclas, true);
         document.body.append(tela);
         tela.focus();
-        CE.emitir('apresentacao:iniciada', { total: doc.slides.length, inicio: inicio + 1 });
+        CE.emitir('apresentacao:iniciada', { total: doc.slides.length, inicio: inicio + 1, apresentador });
         mostrar();
       }
 
@@ -279,6 +314,35 @@
       const seletorTransicao = CE.el('select', { class: 'ferramenta-select', 'data-comando': 'transicao', title: 'Transição: o efeito ao passar de um slide para o outro', onchange: (e) => {
         doc.transicao = e.target.value; marcar(); CE.emitir('apresentacao:transicao', { transicao: doc.transicao });
       } }, ...Object.entries(TRANSICOES).map(([id, n]) => CE.el('option', { value: id }, `✨ ${n}`)));
+      const seletorAnimacao = CE.el('select', { class: 'ferramenta-select', 'data-comando': 'animacao', title: 'Animação deste slide: na apresentação, os tópicos aparecem um de cada vez, a cada clique', onchange: (e) => {
+        slideAtual().animacao = e.target.value; marcar(); desenharMiniaturas();
+        CE.emitir('apresentacao:animacao', { slide: atual + 1, animacao: e.target.value, nome: ANIMACOES[e.target.value] });
+      } }, ...Object.entries(ANIMACOES).map(([id, n]) => CE.el('option', { value: id }, `🎬 ${n}`)));
+      // Slide mestre: o que se repete em todos os slides (rodapé, número, logotipo e fonte).
+      function dialogoMestre() {
+        const m = { rodape: '', numerar: false, logo: '', fonte: '', ...(doc.mestre || {}) };
+        const rodape = CE.el('input', { class: 'campo', value: m.rodape, placeholder: 'Ex.: Empresa Bom Preço — Reunião de novembro', 'data-mestre-rodape': '' });
+        const numerar = CE.el('input', { type: 'checkbox', checked: !!m.numerar, 'data-mestre-numerar': '' });
+        const fonte = CE.el('select', { class: 'campo', 'data-mestre-fonte': '' }, ...[['', 'A fonte do tema'], ['arial', 'Arial'], ['georgia', 'Georgia (com serifa)'], ['verdana', 'Verdana']].map(([v, n]) => CE.el('option', { value: v, selected: v === m.fonte }, n)));
+        let logo = m.logo;
+        const logos = CE.el('div', { class: 'ed-galeria' }, ...LOGOS.map((l) => CE.el('button', { class: 'ed-galeria-item figura' + (l === logo ? ' ligado' : ''), 'data-mestre-logo': l || 'nenhum', onclick: (e) => { logo = l; logos.querySelectorAll('button').forEach((b) => b.classList.toggle('ligado', b === e.currentTarget)); } }, l || '∅')));
+        const fundo = CE.el('div', { class: 'dialogo-fundo' }, CE.el('div', { class: 'dialogo largo' },
+          CE.el('p', {}, '🧩 Slide mestre: o que você puser aqui aparece em TODOS os slides de uma vez.'),
+          CE.el('label', {}, 'Rodapé', rodape),
+          CE.el('label', { class: 'pl-check' }, numerar, ' Mostrar o número do slide'),
+          CE.el('label', {}, 'Fonte de todos os slides', fonte),
+          CE.el('strong', {}, 'Logotipo (no canto):'), logos,
+          CE.el('div', { class: 'dialogo-botoes' },
+            CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Cancelar'),
+            CE.el('button', { class: 'botao', 'data-mestre-ok': '', onclick: () => {
+              fundo.remove();
+              doc.mestre = { rodape: rodape.value.trim(), numerar: numerar.checked, logo, fonte: fonte.value };
+              marcar(); desenhar();
+              CE.emitir('apresentacao:mestre', { ...doc.mestre, slides: doc.slides.length });
+            } }, 'Aplicar em todos'))));
+        document.body.append(fundo);
+        rodape.focus();
+      }
       notas.addEventListener('input', () => { slideAtual().notas = notas.value; marcar(); });
       notas.addEventListener('change', () => CE.emitir('apresentacao:notas', { slide: atual + 1, texto: notas.value }));
 
@@ -297,12 +361,14 @@
             fb('sublinhado', 'S', 'Sublinhado (Ctrl+U)', () => formatar('underline'), 'sublinhado'), fb('topicos', '•', 'Tópicos (lista com marcadores)', () => formatar('insertUnorderedList'), ''),
             fb('aumentar', 'A+', 'Letra maior', () => formatar('increaseFontSize'), ''), fb('diminuir', 'A−', 'Letra menor', () => formatar('decreaseFontSize'), '')),
           CE.el('div', { class: 'ferramentas-grupo' }, fb('imagem', '🖼️ Imagem', 'Pôr uma imagem no slide', escolherImagem), fb('grafico', '📊 Gráfico', 'Pôr um gráfico de uma planilha', escolherGrafico)),
-          CE.el('div', { class: 'ferramentas-grupo' }, seletorTema, seletorTransicao),
-          CE.el('div', { class: 'ferramentas-grupo' }, CE.el('button', { class: 'botao ap-apresentar', 'data-comando': 'apresentar', title: 'Apresentar em tela cheia (F5)', onclick: () => apresentar(0) }, '▶ Apresentar'))),
+          CE.el('div', { class: 'ferramentas-grupo' }, seletorTema, seletorTransicao, seletorAnimacao, fb('mestre', '🧩 Slide mestre', 'Slide mestre: rodapé, número e logotipo em todos os slides', dialogoMestre)),
+          CE.el('div', { class: 'ferramentas-grupo' },
+            CE.el('button', { class: 'botao ap-apresentar', 'data-comando': 'apresentar', title: 'Apresentar em tela cheia (F5)', onclick: () => apresentar(0) }, '▶ Apresentar'),
+            fb('apresentador', '🗒️ Modo apresentador', 'Apresentar vendo as suas anotações, o próximo slide e o relógio (Alt+F5)', () => apresentar(0, { apresentador: true })))),
         CE.el('div', { class: 'ap-principal' }, miniaturas, CE.el('div', { class: 'ap-centro' }, palco, notas)),
         status);
       corpo.addEventListener('keydown', (e) => {
-        if (e.key === 'F5') { e.preventDefault(); apresentar(e.shiftKey ? atual : 0); }
+        if (e.key === 'F5') { e.preventDefault(); apresentar(e.shiftKey ? atual : 0, { apresentador: e.altKey }); }
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); salvar(); }
       });
       if (argumento && argumento.arquivo) carregar(argumento.arquivo); else desenhar();
@@ -312,6 +378,7 @@
         atual: () => atual + 1,
         tema: () => doc.tema,
         transicao: () => doc.transicao,
+        mestre: () => doc.mestre || null,
         nome: () => nomeArquivo,
       };
       CE.apresentacaoAtiva = api;

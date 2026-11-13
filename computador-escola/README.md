@@ -6,7 +6,7 @@ conversa e tira dúvidas. **Funciona sem internet.**
 
 ## O que já tem
 
-### Curso de Informática: 3 níveis (um por semestre)
+### Curso de Informática: 4 níveis (um por semestre)
 - **Nível Iniciante completo: 48 aulas em 10 módulos.** Os módulos são: Conhecendo o computador, Mouse, Teclado,
   Janelas e menu Iniciar, Arquivos e pastas, Editor de Texto, Calculadora e Desenho, **Internet**, Segurança básica e a
   Prova do nível.
@@ -39,6 +39,19 @@ conversa e tira dúvidas. **Funciona sem internet.**
   **Segurança digital avançada** (senha forte, duas etapas, golpes, backup, privacidade e fake news),
   **Computador e trabalho** (currículo em PDF, e-mail profissional, vagas e entrevista por vídeo),
   **Projeto final** (organizar um evento com planilha, convite, apresentação e e-mail) e a Prova do nível.
+- **Nível 4: Informática Profissional: 34 aulas em 8 módulos** (baseado nos cursos de Operador de Computador do
+  Pronatec e do Senac, de 160 horas). Os módulos são: **Windows avançado** (programa travado e **Gerenciador de
+  Tarefas** com Ctrl+Shift+Esc, programas que abrem sozinhos, **contas de usuário** administrador e padrão, **rede e
+  Wi‑Fi** com senha e modo avião, **nuvem** com link de compartilhamento), **Editor de Texto profissional** (modelos de
+  ofício, memorando, ata e declaração, **notas de rodapé**, **comentários e revisão**, **formas** e **mala direta** a
+  partir de uma planilha), **Planilha profissional** (**congelar painéis**, **validação de dados** com lista de opções,
+  **tabela dinâmica** feita com fórmulas que se atualizam, **contas com datas** — DIAS, DATA.SOMAR, HOJE —, **proteger
+  planilha** com células liberadas e senha, **imprimir** com área de impressão, paisagem e "ajustar em 1 página"),
+  **Apresentação profissional** (**animação** dos tópicos a cada clique, **anotações e modo do apresentador** com
+  relógio e próximo slide, **slide mestre** com rodapé, número e logotipo), **E-mail e agenda de trabalho** (programa
+  **Agenda** com compromissos, lembretes e contatos, **assinatura de e-mail** e **pastas**), **Hardware e manutenção**
+  (o computador por dentro, limpeza e cuidados, problemas comuns e o que fazer primeiro), o **Projeto final "Um dia no
+  escritório"** e a Prova do nível.
 - **O aluno só avança quando é aprovado** (70% nas perguntas). O instrutor tem tudo liberado (aulas, níveis de
   digitação, jogos e os programas instaláveis) e pode **liberar aulas fora da sequência** para um aluno ou para a turma
   (veja "Painel do Instrutor" abaixo).
@@ -88,7 +101,7 @@ conversa e tira dúvidas. **Funciona sem internet.**
     IA instalada, o professor tem respostas prontas para cerca de 100 assuntos de todas as matérias (Planilha,
     Editor, Arquivos, E-mail, Pix e boleto, gov.br, IA, Apresentações, Configurações, Digitação...).
 
-### Curso de Digitação: 122 exercícios em 3 níveis
+### Curso de Digitação: 144 exercícios em 4 níveis
 - **Iniciante** (39): fileiras do meio, de cima e de baixo, Shift, acentos e cedilha, palavras e frases.
 - **Intermediário** (43): números, pontuação, frases, textos curtos, ritmo, trava-línguas e **digitação narrada**.
 - **🗣️ Digitação narrada (o professor fala)**: 8 exercícios em que o Professor Virtual narra e o aluno digita sem ver o
@@ -101,6 +114,9 @@ conversa e tira dúvidas. **Funciona sem internet.**
 - **Avançado** (37): símbolos, dados do dia a dia (e-mail, telefone, CEP), **fichas de cadastro**, teclado numérico,
   textos de Machado de Assis, Gonçalves Dias e Olavo Bilac, **ditado** (o professor fala e o aluno digita) e testes de
   velocidade.
+- **💼 Profissional** (22): textos de escritório (e-mail formal, ofício, ata, relatório), números e códigos do trabalho
+  (nota fiscal, estoque), entrada de dados rápida (meta de 99% de acertos), ditado de recados e pedidos e **simulados
+  de teste de seleção** de 2 e 3 minutos. Metas de 55 a 65 ppm. Não é dispensado pelo teste de nivelamento.
 - **📋 Fichas de cadastro (entrada de dados)**: a ficha de papel fica à esquerda e o "sistema" à direita; o aluno passa
   campo por campo (nome, CPF, telefone, CEP, data, valor...) pulando com o **Tab**. São 6 fichas de trabalho de verdade:
   posto de saúde, loja, matrícula escolar, admissão no RH, pedido de entrega e nota de serviço. Meta de 98% de
@@ -112,8 +128,8 @@ conversa e tira dúvidas. **Funciona sem internet.**
   placar ao vivo aparece na tela de cada aluno e, grande, na tela do instrutor (bom para o projetor), com pódio no fim.
   Vence quem termina primeiro; se ninguém terminar, quem chegou mais longe. O recorde de cada aluno fica guardado.
 - **Cada exercício tem meta de velocidade (ppm) e de acertos (%)**, e o próximo só libera quando bate as duas.
-- **Provas cronometradas**: Iniciante (3 min, 20 ppm, 92%), Intermediário (5 min, 35 ppm, 95%) e Avançado
-  (5 min, 45 ppm, 97%). Crianças têm metas menores.
+- **Provas cronometradas**: Iniciante (3 min, 20 ppm, 92%), Intermediário (5 min, 35 ppm, 95%), Avançado
+  (5 min, 45 ppm, 97%) e Profissional (teste de seleção de 5 min, 55 ppm, 97%). Crianças têm metas menores.
 - O teclado ABNT2 aparece na tela, com uma cor por dedo e a dica de como fazer acentos e símbolos.
 - **Teste de nivelamento de digitação** (1 minuto): dispensa os níveis em que o aluno já bate a meta da prova.
 - **Jogos e treinos**: Corrida da turma, Chuva de palavras, Treino das teclas difíceis (feito com as teclas em que o
@@ -133,7 +149,9 @@ Digitação, **Arquivos** (pastas e subpastas, copiar/recortar/colar, arrastar, 
 **pen drive** simulado), programas que o aluno instala pelas Configurações (**Bloco de Notas**, **Relógio e
 Cronômetro** e **Jogo da Memória**),
 **Lixeira**, Calculadora, **Conhecendo o Computador** (desenho interativo das
-peças), **Jogos do Mouse** (7 jogos: balões, presentes, feira, caixas secretas, caça ao tesouro, pontaria e labirinto, cada um com os níveis Fácil, Médio e Difícil; o nível seguinte só libera quando o aluno vence o anterior; na Pontaria, cada clique mostra a precisão — 100% no centro do alvo — e no fim aparece a média; no Labirinto, o ratinho anda junto com o mouse), **Treino do Teclado**,
+peças por fora e por dentro do gabinete, manutenção e problemas comuns), **Gerenciador de Tarefas** (Ctrl+Shift+Esc ou
+botão direito na barra de tarefas: processos, finalizar tarefa, desempenho e inicialização), **Nuvem** (guardar
+arquivos e compartilhar por link), **Agenda** (compromissos com lembrete e contatos), **Jogos do Mouse** (7 jogos: balões, presentes, feira, caixas secretas, caça ao tesouro, pontaria e labirinto, cada um com os níveis Fácil, Médio e Difícil; o nível seguinte só libera quando o aluno vence o anterior; na Pontaria, cada clique mostra a precisão — 100% no centro do alvo — e no fim aparece a média; no Labirinto, o ratinho anda junto com o mouse), **Treino do Teclado**,
 **Desenho** (parecido com o Paint), **Navegador** (abas, favoritos, voltar/avançar e barra de endereço com cadeado),
 Aulas e Painel do Instrutor.
 
@@ -336,7 +354,7 @@ app/js/curso.js          níveis, módulos, trilha essencial (lista REFORCO) e r
 app/js/dificuldades.js   "Não entendi", dicas, erros e saídas de cada passo (para "Onde a turma trava")
 app/js/frequencia.js     frequência automática (dias e minutos de uso)
 app/js/certificados.js   certificados, relatório da turma (páginas e CSV) e a tela de impressão/PDF
-app/js/licoes/           as aulas (n1-*, n2-*, n3-*), os atalhos para escrever aulas (ajudantes.js) e as aulas do professor
+app/js/licoes/           as aulas (n1-*, n2-*, n3-*, n4-profissional.js), os atalhos para escrever aulas (ajudantes.js) e as aulas do professor
                          (também o teste de nivelamento e a revisão rápida do começo do dia, revisao.js)
 app/js/sala.js           a sala ao vivo do lado do aluno (presença, pausa, mensagens) e a janela "Rede da sala"
 app/js/apps/             os programas (editor, planilha, e-mail, digitação, arquivos...) e o Painel do Instrutor

@@ -73,6 +73,12 @@ window.CE = window.CE || {};
   function fechar(id) {
     const j = abertas[id];
     if (!j) return;
+    // Programa travado ("Não está respondendo"): o X não funciona, como no Windows. Só o Gerenciador de Tarefas fecha.
+    if (j.travada) {
+      CE.avisar(`⏳ "${apps[id].nome}" não está respondendo. Espere um pouco ou abra o Gerenciador de Tarefas (Ctrl+Shift+Esc) e clique em "Finalizar tarefa".`);
+      CE.emitir('janela:travada-fechar', { app: id });
+      return;
+    }
     if (j.instancia && j.instancia.aoFechar && j.instancia.aoFechar() === false) return;
     j.elemento.remove();
     j.botaoTarefa.remove();
@@ -184,6 +190,31 @@ window.CE = window.CE || {};
       });
     },
     estaAberta: (id) => !!abertas[id],
+    // Programas abertos agora (para o Gerenciador de Tarefas).
+    abertas: () => Object.keys(abertas).map((id) => ({ id, nome: apps[id].nome, icone: apps[id].icone, travada: !!abertas[id].travada, minimizada: abertas[id].elemento.classList.contains('minimizada') })),
+    // Treino: deixa um programa "Não está respondendo" (a janela fica esbranquiçada e não aceita cliques).
+    travar(id) {
+      const j = abertas[id];
+      if (!j) return false;
+      j.travada = true;
+      j.elemento.classList.add('travada');
+      const nome = j.elemento.querySelector('.janela-nome');
+      if (!/Não está respondendo/.test(nome.textContent)) nome.textContent += ' (Não está respondendo)';
+      CE.emitir('janela:travou', { app: id });
+      return true;
+    },
+    estaTravada: (id) => !!(abertas[id] && abertas[id].travada),
+    // "Finalizar tarefa": fecha na marra, sem perguntar se quer salvar.
+    finalizar(id) {
+      const j = abertas[id];
+      if (!j) return;
+      const travada = !!j.travada;
+      j.travada = false;
+      if (j.instancia && j.instancia.aoFechar) { try { j.instancia.aoFechar({ forcado: true }); } catch { /* fecha mesmo assim */ } }
+      j.instancia = null;
+      fechar(id);
+      CE.emitir('tarefa:finalizada', { app: id, travada });
+    },
     // "Mostrar a área de trabalho": minimiza tudo.
     minimizarTodas() {
       Object.keys(abertas).forEach((id) => { if (!abertas[id].elemento.classList.contains('minimizada')) minimizar(id); });

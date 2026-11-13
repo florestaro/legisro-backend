@@ -155,6 +155,8 @@ window.CE = window.CE || {};
     }
     if (e.target.closest('.tarefa, .bandeja')) return;
     CE.menuContexto.abrir(e, 'barra-tarefas', [
+      { id: 'gerenciador-tarefas', rotulo: 'Gerenciador de Tarefas', icone: '📊', atalho: 'Ctrl+Shift+Esc', acao: () => CE.janelas.abrir('tarefas') },
+      '-',
       { id: 'mostrar-area-de-trabalho', rotulo: 'Mostrar a área de trabalho', icone: '🖥️', acao: () => CE.janelas.minimizarTodas() },
     ]);
   }

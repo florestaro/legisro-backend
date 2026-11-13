@@ -14,6 +14,7 @@ window.CE = window.CE || {};
     { id: 'n1', nome: 'Iniciante', icone: '🌱', descricao: 'Usar o computador com confiança' },
     { id: 'n2', nome: 'Intermediário', icone: '🌿', descricao: 'Computador para estudo e trabalho' },
     { id: 'n3', nome: 'Avançado', icone: '🌳', descricao: 'Produtividade e autonomia' },
+    { id: 'n4', nome: 'Profissional', icone: '💼', descricao: 'Informática para o trabalho (como os cursos de Operador de Computador)' },
   ];
 
   // Aulas de reforço: treino a mais, desafios de módulo e assuntos que as provas não cobram.
@@ -29,6 +30,9 @@ window.CE = window.CE || {};
     // Avançado
     'n3-ed-colunas', 'n3-ed-substituir', 'n3-ed-desafio', 'n3-pl-destacar', 'n3-pl-procv', 'n3-pl-desafio', 'n3-ap-desafio',
     'n3-cfg-hora-som', 'n3-cfg-atualizar', 'n3-cfg-impressora', 'n3-cfg-desafio', 'n3-seg-desafio', 'n3-tr-desafio',
+    // Profissional
+    'n4-win-inicializar', 'n4-win-desafio', 'n4-ed-formas', 'n4-ed-desafio', 'n4-pl-imprimir', 'n4-pl-desafio', 'n4-ap-desafio',
+    'n4-em-pastas', 'n4-ag-desafio', 'n4-hw-desafio',
   ]);
   const TRILHAS = { essencial: 'Trilha essencial', completa: 'Trilha completa' };
 

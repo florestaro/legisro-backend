@@ -166,10 +166,29 @@
     'CONT.VAZIO': (a) => a.flat(Infinity).filter((v) => v === '' || v == null).length,
     ABS: ([n]) => Math.abs(num(n)),
     HOJE: () => new Date().toLocaleDateString('pt-BR'),
+    // Datas no formato dd/mm/aaaa. DIAS(fim; início) = quantos dias entre as duas.
+    DIAS: ([fim, inicio]) => Math.round((dataDe(fim) - dataDe(inicio)) / DIA_MS),
+    DATA: ([ano, mes, dia]) => new Date(Date.UTC(num(ano), num(mes) - 1, num(dia))).toLocaleDateString('pt-BR', { timeZone: 'UTC' }),
+    DIA: ([d]) => new Date(dataDe(d)).getUTCDate(),
+    'MÊS': ([d]) => new Date(dataDe(d)).getUTCMonth() + 1,
+    ANO: ([d]) => new Date(dataDe(d)).getUTCFullYear(),
+    'DIA.DA.SEMANA': ([d]) => new Date(dataDe(d)).getUTCDay() + 1,
+    // Soma dias a uma data e devolve a data (ex.: vencimento daqui a 30 dias).
+    'DATA.SOMAR': ([d, dias]) => new Date(dataDe(d) + num(dias) * DIA_MS).toLocaleDateString('pt-BR', { timeZone: 'UTC' }),
   };
+  const DIA_MS = 86400000;
+  // "25/12/2025" (ou um número de dias desde 30/12/1899, como no Excel) -> milissegundos em UTC.
+  function dataDe(v) {
+    if (ehErro(v)) throw new Error(v);
+    if (typeof v === 'number') return Date.UTC(1899, 11, 30) + v * DIA_MS;
+    const m = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s*$/.exec(String(v));
+    if (!m) throw new Error(ERRO.VALOR);
+    const ano = Number(m[3]) < 100 ? 2000 + Number(m[3]) : Number(m[3]);
+    return Date.UTC(ano, Number(m[2]) - 1, Number(m[1]));
+  }
   const APELIDOS = {
     MEDIA: 'MÉDIA', MAXIMO: 'MÁXIMO', MINIMO: 'MÍNIMO', MAX: 'MÁXIMO', MIN: 'MÍNIMO', 'CONT.NUM': 'CONT.NÚM', ARREDONDAR: 'ARRED',
-    MEDIASE: 'MÉDIASE', MAIUSCULA: 'MAIÚSCULA', MINUSCULA: 'MINÚSCULA', CONCAT: 'CONCATENAR',
+    MEDIASE: 'MÉDIASE', MAIUSCULA: 'MAIÚSCULA', MINUSCULA: 'MINÚSCULA', CONCAT: 'CONCATENAR', MES: 'MÊS', 'DIA.SEMANA': 'DIA.DA.SEMANA',
   };
 
   function num(v) {
@@ -178,7 +197,11 @@
     if (typeof v === 'boolean') return v ? 1 : 0;
     if (v === '' || v == null) return 0;
     const n = lerNumero(v);
-    if (n == null) throw new Error(ERRO.VALOR);
+    if (n == null) {
+      // Data escrita como 25/12/2025: vira o número de dias (assim =B2-A2 dá a diferença em dias).
+      if (/^\s*\d{1,2}\/\d{1,2}\/\d{2,4}\s*$/.test(String(v))) return Math.round((dataDe(v) - Date.UTC(1899, 11, 30)) / DIA_MS);
+      throw new Error(ERRO.VALOR);
+    }
     return n;
   }
 

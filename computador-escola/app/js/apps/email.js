@@ -74,7 +74,7 @@
     icone: '📧',
     largura: 1000,
     altura: 620,
-    abrir(corpo, janela) {
+    abrir(corpo, janela, argumento) {
       const dono = CE.sessao.usuario.id;
       const chave = `email:${dono}`;
       // Se quem abriu o Correio já saiu (e outra pessoa entrou), nada mais é lido ou gravado nesta caixa.
@@ -101,7 +101,9 @@
 
       async function iniciar() {
         caixa = await ler();
-        if (!caixa.conta) telaCriarConta(); else desenhar();
+        if (!caixa.conta) telaCriarConta();
+        else if (argumento && argumento.para) escrever({ para: argumento.para, assunto: argumento.assunto || '' });
+        else desenhar();
         timer = setInterval(verificarNovas, 4000);
       }
 
@@ -159,16 +161,49 @@
       }
 
       // ---------- Caixa ----------
+      // Pastas que o aluno criou (ex.: "Trabalho", "Currículos"), além das do sistema.
+      const pastasExtras = () => caixa.pastasExtras || [];
+      const todasPastas = () => [...PASTAS, ...pastasExtras().map((x) => [x.id, `📁 ${x.nome}`])];
+      async function criarPasta() {
+        const nome = await CE.perguntar('📁 Nome da nova pasta (ex.: Trabalho, Currículos, Contas):');
+        if (!nome) return;
+        if (todasPastas().some(([, r]) => r.slice(3).toLowerCase() === nome.toLowerCase())) { CE.avisar('Já existe uma pasta com esse nome.'); return; }
+        caixa.pastasExtras = [...pastasExtras(), { id: 'p-' + Date.now().toString(36), nome }];
+        try { await gravar(); } catch (e) { CE.avisar(`⚠️ ${e.message}`); return; }
+        CE.emitir('email:pasta-criada', { nome });
+        desenhar();
+      }
+      async function editarAssinatura() {
+        const campo = CE.el('textarea', { class: 'campo em-corpo pequeno', 'data-campo': 'assinatura', placeholder: 'Ex.:\nMaria da Silva\nAuxiliar Administrativo — Empresa Boa\n(69) 99999-0000' });
+        campo.value = caixa.conta.assinatura || '';
+        const fundo = CE.el('div', { class: 'dialogo-fundo' }, CE.el('div', { class: 'dialogo' },
+          CE.el('p', {}, '✍️ Assinatura: o texto que entra sozinho no fim de cada e-mail que você escrever (nome, cargo, telefone).'),
+          campo,
+          CE.el('div', { class: 'dialogo-botoes' },
+            CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Cancelar'),
+            CE.el('button', { class: 'botao', 'data-acao': 'salvar-assinatura', onclick: async () => {
+              caixa.conta.assinatura = campo.value.trim();
+              try { await gravar(); } catch (e) { CE.avisar(`⚠️ ${e.message}`); return; }
+              fundo.remove();
+              CE.emitir('email:assinatura', { texto: caixa.conta.assinatura, linhas: caixa.conta.assinatura ? caixa.conta.assinatura.split('\n').length : 0 });
+              CE.avisar(caixa.conta.assinatura ? '✍️ Assinatura salva! Ela vai aparecer nas próximas mensagens.' : 'Assinatura apagada.');
+            } }, 'Salvar'))));
+        document.body.append(fundo);
+        campo.focus();
+      }
+
       function desenhar() {
         rascunho = null;
         const daPasta = caixa.mensagens.filter((m) => m.pasta === pasta).sort((a, b) => b.em - a.em);
         const naoLidas = (p) => caixa.mensagens.filter((m) => m.pasta === p && !m.lida).length;
         const lateral = CE.el('nav', { class: 'em-lateral' },
           CE.el('button', { class: 'botao em-escrever', 'data-acao': 'escrever', onclick: () => escrever() }, '✏️ Escrever'),
-          ...PASTAS.map(([id, rotulo]) => CE.el('button', {
+          ...todasPastas().map(([id, rotulo]) => CE.el('button', {
             class: 'em-pasta' + (id === pasta ? ' ativa' : ''), 'data-pasta': id,
             onclick: () => { pasta = id; aberta = null; desenhar(); CE.emitir('email:pasta', { pasta: id }); },
           }, rotulo, naoLidas(id) ? CE.el('b', { class: 'em-contador' }, String(naoLidas(id))) : null)),
+          CE.el('button', { class: 'em-pasta em-nova-pasta', 'data-acao': 'nova-pasta', onclick: criarPasta }, '➕ Nova pasta'),
+          CE.el('button', { class: 'em-pasta', 'data-acao': 'assinatura', onclick: editarAssinatura }, '✍️ Assinatura'),
           CE.el('div', { class: 'em-conta' }, CE.el('small', {}, 'Sua conta:'), CE.el('span', {}, caixa.conta.endereco)),
         );
         const esvaziar = pasta === 'lixeira' && daPasta.length
@@ -183,7 +218,7 @@
         )) : [CE.el('p', { class: 'arq-vazio' }, 'Nenhuma mensagem nesta pasta.')]));
         const leitura = CE.el('div', { class: 'em-leitura' }, aberta && aberta.pasta === pasta ? telaMensagem(aberta) : CE.el('p', { class: 'em-vazio' }, '📧 Clique numa mensagem para ler.'));
         corpo.replaceChildren(CE.el('div', { class: 'em-principal' }, lateral, lista, leitura));
-        janela.definirTitulo(PASTAS.find((p) => p[0] === pasta)[1].slice(3));
+        janela.definirTitulo((todasPastas().find((p) => p[0] === pasta) || PASTAS[0])[1].slice(3));
       }
 
       async function abrirMensagem(m) {
@@ -239,14 +274,25 @@
           }),
           m.pasta === 'spam' ? op('nao-spam', 'Não é spam', '✅', () => moverPara(m, 'entrada', 'email:nao-spam'))
             : m.pasta !== 'enviados' && !naLixeira ? op('spam', 'É spam / golpe', '🚫', () => moverPara(m, 'spam', 'email:spam')) : null,
+          !naLixeira && m.pasta !== 'enviados' && pastasExtras().length ? op('mover-para', 'Mover para', '📁', null, { submenu: [['entrada', '📥 Caixa de entrada'], ...pastasExtras().map((x) => [x.id, `📁 ${x.nome}`])]
+            .filter(([id]) => id !== m.pasta).map(([id, rotulo]) => op('mover-' + id, rotulo.slice(3), rotulo.slice(0, 2), () => moverParaPasta(m, id))) }) : null,
           '-',
           naLixeira ? op('restaurar', 'Voltar para a entrada', '↩️', () => moverPara(m, 'entrada', 'email:restaurado')) : null,
           naLixeira ? op('apagar-de-vez', 'Apagar de vez', '❌', () => apagarDeVez([m])) : op('excluir', 'Excluir', '🗑️', () => moverPara(m, 'lixeira', 'email:excluido'), { atalho: 'Delete' }),
         ].filter(Boolean), m.assunto);
       }
 
+      async function moverParaPasta(m, destino) {
+        const nome = (todasPastas().find((p) => p[0] === destino) || ['', '   ?'])[1].slice(3);
+        await moverPara(m, destino, 'email:movido');
+        CE.emitir('email:movido-pasta', { assunto: m.assunto, pasta: nome, id: destino });
+      }
       function telaMensagem(m) {
         const acoes = [];
+        if (pastasExtras().length && m.pasta !== 'enviados' && m.pasta !== 'lixeira') {
+          acoes.push(CE.el('select', { class: 'ferramenta-select', 'data-acao': 'mover-para', title: 'Mover a mensagem para uma pasta', onchange: (e) => e.target.value && moverParaPasta(m, e.target.value) },
+            CE.el('option', { value: '' }, '📁 Mover para...'), ...[['entrada', '📥 Caixa de entrada'], ...pastasExtras().map((x) => [x.id, `📁 ${x.nome}`])].filter(([id]) => id !== m.pasta).map(([id, r]) => CE.el('option', { value: id }, r.slice(3)))));
+        }
         if (m.pasta !== 'enviados') acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'responder', onclick: () => responder(m) }, '↩️ Responder'));
         acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'encaminhar', onclick: () => encaminhar(m) }, '➡️ Encaminhar'));
         if (m.pasta === 'spam') acoes.push(CE.el('button', { class: 'ferramenta texto', 'data-acao': 'nao-spam', onclick: () => moverPara(m, 'entrada', 'email:nao-spam') }, '✅ Não é spam'));
@@ -281,6 +327,8 @@
       // ---------- Escrever ----------
       async function escrever(inicial = {}) {
         rascunho = { para: '', assunto: '', texto: '', anexos: [], ...inicial };
+        // A assinatura entra sozinha no fim do texto (antes da mensagem respondida, como no Outlook).
+        if (caixa.conta.assinatura && !rascunho.semAssinatura) rascunho.texto = `\n\n--\n${caixa.conta.assinatura}${rascunho.texto}`;
         const contatos = Object.entries(CONTATOS_TREINO).map(([endereco, c]) => ({ nome: c.nome, endereco }))
           .concat(await CE.api.chamar('email:contatos').catch(() => []));
         const para = CE.el('input', { class: 'campo', 'data-campo': 'para', value: rascunho.para, list: 'em-contatos', placeholder: 'endereco@exemplo.com', autocomplete: 'off' });
@@ -326,7 +374,7 @@
           };
           caixa.mensagens.push(mensagem);
           try { await gravar(); } catch (e) { caixa.mensagens = caixa.mensagens.filter((x) => x !== mensagem); erro.textContent = e.message; return; }
-          const info = { para: destino, assunto: mensagem.assunto, texto: mensagem.texto, anexos: mensagem.anexos.length, nomesAnexos: mensagem.anexos.map((a) => a.nome), tiposAnexos: mensagem.anexos.map((a) => a.tipo), resposta: !!rascunho.resposta, encaminhamento: !!rascunho.encaminhamento };
+          const info = { assinatura: !!(caixa.conta.assinatura && texto.value.includes(caixa.conta.assinatura)), para: destino, assunto: mensagem.assunto, texto: mensagem.texto, anexos: mensagem.anexos.length, nomesAnexos: mensagem.anexos.map((a) => a.nome), tiposAnexos: mensagem.anexos.map((a) => a.tipo), resposta: !!rascunho.resposta, encaminhamento: !!rascunho.encaminhamento };
           CE.avisar('📤 Mensagem enviada!');
           CE.emitir('email:enviado', info);
           if (rascunho.resposta) CE.emitir('email:respondido', info);
@@ -387,7 +435,11 @@
 
       corpo.classList.add('email');
       iniciar();
-      return { aoFechar() { clearInterval(timer); return true; } };
+      return {
+        // Outro programa (a Agenda, por exemplo) pede para escrever para alguém.
+        receber(arg) { if (arg && arg.para && caixa && caixa.conta) escrever({ para: arg.para, assunto: arg.assunto || '' }); },
+        aoFechar() { clearInterval(timer); return true; },
+      };
     },
   });
 })();

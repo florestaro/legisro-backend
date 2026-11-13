@@ -195,6 +195,11 @@
           op('enviar-para', 'Enviar para', '📤', null, { submenu: [
             op('enviar-pendrive', 'Pen drive (E:)', '💾', () => enviarParaPendrive(a), { desativado: !CE.pendrive.conectado || local === 'pendrive', dica: CE.pendrive.conectado ? '' : 'Conecte o pen drive primeiro' }),
             a.tipo !== 'zip' ? op('enviar-zip', 'Pasta compactada (zipada)', '🗜️', compactar) : null,
+            a.tipo !== 'pasta' && CE.nuvem ? op('enviar-nuvem', 'Nuvem (salvar na internet)', '☁️', async () => {
+              try { await CE.nuvem.enviar(a); } catch (err) { avisoErro(err); return; }
+              CE.avisar(`☁️ "${a.nome}" foi para a nuvem (pasta Nuvem).`);
+              desenhar();
+            }, { desativado: (a.local || 'pc') === 'pc' && a.pasta === CE.nuvem.PASTA }) : null,
           ] }),
           '-',
           op('propriedades', 'Propriedades', 'ℹ️', () => propriedades(a)),

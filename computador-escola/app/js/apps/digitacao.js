@@ -1,4 +1,4 @@
-// Curso de Digitação: 3 níveis com metas de velocidade e acertos, provas cronometradas, ditado e jogos.
+// Curso de Digitação: 4 níveis com metas de velocidade e acertos, provas cronometradas, ditado e jogos.
 // O aluno só libera o próximo exercício quando bate a meta do atual. O instrutor tem tudo liberado.
 (function () {
   // Teclado ABNT2 (o padrão no Brasil). Cada tecla: [caractere, dedo].
@@ -313,6 +313,7 @@
       async function aplicarNivelamento(r, errosPorTecla) {
         const dispensados = [];
         for (const nivel of CE.DIGITACAO.niveis) {
+          if (nivel.semNivelamento) break; // o nível Profissional é feito por inteiro (é o treino para teste de seleção)
           const meta = CE.metaDigitacao(nivel.prova, CE.sessao.usuario);
           if (r.ppm >= meta.ppm && r.precisao >= meta.precisao) dispensados.push(nivel); else break;
         }
@@ -341,7 +342,7 @@
               : `O nível ${dispensados[0].nome} foi dispensado`}. ${proximo ? `Você começa no nível ${proximo.nome}.` : 'Você já digita como um profissional!'}`
             : `Você começa no nível Iniciante. Para dispensar um nível, é preciso bater a meta da prova dele (Iniciante: ${CE.metaDigitacao(CE.DIGITACAO.niveis[0].prova, CE.sessao.usuario).ppm} ppm e ${CE.metaDigitacao(CE.DIGITACAO.niveis[0].prova, CE.sessao.usuario).precisao}%).`),
           CE.el('div', { class: 'dialogo-botoes' },
-            CE.el('button', { class: 'botao', onclick: () => mostrarLista(proximo ? proximo.id : 'avancado') }, 'Ver os exercícios →')),
+            CE.el('button', { class: 'botao', onclick: () => mostrarLista(proximo ? proximo.id : CE.DIGITACAO.niveis[CE.DIGITACAO.niveis.length - 1].id) }, 'Ver os exercícios →')),
         ));
       }
 

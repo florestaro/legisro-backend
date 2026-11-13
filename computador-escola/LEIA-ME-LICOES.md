@@ -147,6 +147,19 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `rolagem:fundo` | Chegou ao fundo do mar no jogo do tesouro | |
 | `tecla:apertada` / `teclas:texto` | Treino do Teclado | `tecla` (ex.: `Enter`, `Backspace`, `CapsLock`, `ArrowLeft`, `" "`) / `texto` |
 | `desenho:traco` / `desenho:forma` / `desenho:cor` / `desenho:cor2` / `desenho:ferramenta` / `desenho:balde` / `desenho:desfeito` / `desenho:limpo` | Desenho (como no Paint: botão esquerdo pinta com a Cor 1, botão direito com a Cor 2; botão direito na paleta escolhe a Cor 2) | `ferramenta`, `forma`, `cor` (ex.: `vermelho`), `botao` (`esquerdo` ou `direito`) |
+| `janela:travou` / `janela:travada-fechar` / `tarefa:finalizada` | Programa travado (`CE.janelas.travar(id)`): o X não fecha; "Finalizar tarefa" fecha | `app`, `travada` |
+| `tarefas:aberto` / `tarefas:aba` / `tarefa:selecionada` / `tarefas:inicializacao` | Gerenciador de Tarefas (Ctrl+Shift+Esc) | `aba` (`processos`, `desempenho`, `inicializacao`) / `app` / `programa`, `ativo`, `impacto` |
+| `config:conta-criada` / `config:conta-tipo` / `config:conta-removida` / `config:aviao` / `config:wifi` / `config:wifi-erro` | Contas de usuário e Rede | `nome`, `tipo` (`padrao`, `admin`) / `ligado` / `rede`, `conectado`, `segura` |
+| `nuvem:aberta` / `nuvem:enviado` / `nuvem:compartilhado` / `nuvem:aberto` | Nuvem (pasta "Nuvem" de Meus Documentos) | `nome`, `atualizado` / `nome`, `pessoa`, `permissao` (`ver`, `editar`), `link` |
+| `editor:formatado` (profissional) | Nota de rodapé, comentário, forma e mala direta | `comando` (`notaRodape`, `comentario`, `forma`, `malaDireta`), `notas` / `trecho` / `forma` (`retangulo`, `circulo`, `seta`, `estrela`, `balao`), `texto` |
+| `editor:comentario-resolvido` / `editor:mala-direta` | Revisão e mala direta | `comentario`, `restantes` / `acao` (`planilha`, `campo`, `gerar`), `planilha`, `campo`, `copias` |
+| `planilha:congelada` / `planilha:validacao` / `planilha:invalida` / `planilha:lista-escolhida` | Congelar painéis e validação de dados | `linhas`, `colunas` / `intervalo`, `tipo` (`lista`, `numero`), `opcoes` / `celula`, `entrada` / `celula`, `valor` |
+| `planilha:dinamica` / `planilha:liberadas` / `planilha:protecao` / `planilha:bloqueada` / `planilha:impressa` | Tabela dinâmica, proteger e imprimir | `agrupar`, `valores`, `operacao` (`soma`, `contagem`, `media`), `grupos` / `intervalo`, `liberar` / `ligado` / `celula` / `area` (`tudo`, `selecao`), `orientacao`, `ajustar`, `paginas` |
+| `apresentacao:animacao` / `apresentacao:animou` / `apresentacao:mestre` | Animação dos tópicos, slide mestre | `slide`, `animacao` / `slide`, `item`, `total` / `rodape`, `numerar`, `logo`, `fonte` |
+| `apresentacao:iniciada` (`apresentador: true`) | Modo do apresentador (anotações, próximo slide e relógio) | `apresentador` |
+| `agenda:compromisso` / `agenda:contato` / `agenda:escrever` / `agenda:aba` / `agenda:dia` / `agenda:lembrete` | Agenda | `titulo`, `data`, `hora`, `lembrete`, `convidado` / `nome`, `email` / `aba` (`calendario`, `contatos`) |
+| `email:assinatura` / `email:pasta-criada` / `email:movido-pasta` | E-mail (assinatura e pastas); `email:enviado` traz `assinatura` | `texto`, `linhas` / `nome` / `assunto`, `pasta` |
+| `computador:tela` / `peca:interna` / `manutencao:item` / `problema:resposta` | Conhecendo o Computador (por dentro, manutenção, problemas) | `tela` (`fora`, `dentro`, `manutencao`, `problemas`) / `peca`, `todas` / `item`, `todos` / `problema`, `certo`, `todos` |
 | `licao:concluida` / `licao:reprovada` / `medalha:ganha` | Curso | `licao`, `nota` / `medalha` |
 | `licao:nao-entendi` | Apertou "🙋 Não entendi" num passo | `licao`, `passo` (começa em 1) |
 | `impressao:aberta` | Abriu a prévia de impressão (certificado ou relatório) | `titulo`, `paginas` |

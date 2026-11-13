@@ -42,6 +42,14 @@ window.CE = window.CE || {};
     { id: 'n3-trabalho', icone: '💼', nome: 'Pronto para o trabalho', descricao: 'Terminou o módulo Computador e trabalho.', ganhou: (p) => moduloAprovado(p, 'n3-trabalho') },
     { id: 'n3-projeto', icone: '🎉', nome: 'Organizador de eventos', descricao: 'Concluiu o Projeto final.', ganhou: (p) => moduloAprovado(p, 'n3-projeto') },
     { id: 'formado-n3', icone: '🏆', nome: 'Formado no Avançado', descricao: 'Passou na prova do nível Avançado de informática.', ganhou: (p) => moduloAprovado(p, 'n3-prova') },
+    { id: 'n4-windows', icone: '🪟', nome: 'Operador de computador', descricao: 'Terminou o módulo Windows avançado.', ganhou: (p) => moduloAprovado(p, 'n4-windows') },
+    { id: 'n4-word', icone: '🏢', nome: 'Redator do escritório', descricao: 'Terminou o Editor de Texto profissional.', ganhou: (p) => moduloAprovado(p, 'n4-word') },
+    { id: 'n4-excel', icone: '📋', nome: 'Analista de planilhas', descricao: 'Terminou a Planilha profissional.', ganhou: (p) => moduloAprovado(p, 'n4-excel') },
+    { id: 'n4-apresentacao', icone: '🎬', nome: 'Apresentador profissional', descricao: 'Terminou a Apresentação profissional.', ganhou: (p) => moduloAprovado(p, 'n4-apresentacao') },
+    { id: 'n4-agenda', icone: '📅', nome: 'Secretário digital', descricao: 'Terminou o módulo E-mail e agenda de trabalho.', ganhou: (p) => moduloAprovado(p, 'n4-agenda') },
+    { id: 'n4-hardware', icone: '🔧', nome: 'Técnico de primeira ajuda', descricao: 'Terminou o módulo Hardware e manutenção.', ganhou: (p) => moduloAprovado(p, 'n4-hardware') },
+    { id: 'n4-projeto', icone: '💼', nome: 'Assistente administrativo', descricao: 'Concluiu o projeto "Um dia no escritório".', ganhou: (p) => moduloAprovado(p, 'n4-projeto') },
+    { id: 'formado-n4', icone: '🏆', nome: 'Formado no Profissional', descricao: 'Passou na prova do nível Profissional de informática.', ganhou: (p) => moduloAprovado(p, 'n4-prova') },
     { id: 'curso-completo', icone: '👑', nome: 'Curso completo', descricao: 'Passou nas provas dos três níveis de informática e na prova de digitação Avançada.', ganhou: (p) => CE.curso.aprovada(CE.curso.licao('prova-n3'), p) && CE.curso.aprovada(CE.curso.licao('prova-n2'), p) && digAprovado(p, 'prova-avancado') },
     { id: 'mouse-medio', icone: '🎯', nome: 'Mouse afiado', descricao: 'Venceu todos os Jogos do Mouse no nível Médio.', ganhou: (p) => CE.jogosMouse.venceuTodos(p, 'medio') },
     { id: 'mouse-dificil', icone: '🏅', nome: 'Campeão do mouse', descricao: 'Venceu todos os Jogos do Mouse no nível Difícil.', ganhou: (p) => CE.jogosMouse.venceuTodos(p, 'dificil') },
@@ -53,6 +61,8 @@ window.CE = window.CE || {};
     { id: 'dig-iniciante', icone: '🥉', nome: 'Digitador Iniciante', descricao: 'Passou na prova de digitação do nível Iniciante.', ganhou: (p) => digAprovado(p, 'prova-iniciante') },
     { id: 'dig-intermediario', icone: '🥈', nome: 'Digitador Intermediário', descricao: 'Passou na prova de digitação do nível Intermediário.', ganhou: (p) => digAprovado(p, 'prova-intermediario') },
     { id: 'dig-avancado', icone: '🥇', nome: 'Digitador Avançado', descricao: 'Passou na prova de digitação do nível Avançado.', ganhou: (p) => digAprovado(p, 'prova-avancado') },
+    { id: 'dig-profissional', icone: '💼', nome: 'Digitador Profissional', descricao: 'Passou na prova de digitação do nível Profissional (teste de seleção).', ganhou: (p) => digAprovado(p, 'prova-profissional') },
+    { id: 'ppm-60', icone: '🚀', nome: '60 palavras por minuto', descricao: 'Digitou a 60 ppm: velocidade de profissional.', ganhou: (p) => melhorPpm(p) >= 60 },
     { id: 'chuva', icone: '🌧️', nome: 'Rei da chuva', descricao: 'Fez 100 pontos na Chuva de palavras.', ganhou: (p) => ((p.digitacao && p.digitacao._jogos && p.digitacao._jogos.chuva) || 0) >= 100 },
   ];
 
