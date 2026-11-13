@@ -93,7 +93,7 @@ window.CE = window.CE || {};
     servicos: () => [
       link(`${DOMINIO}/carteira`, '💼<b>Carteira de Trabalho Digital</b><span>Seus empregos com carteira assinada</span>', 'class="cd-servico" data-servico="carteira"'),
       link(`${DOMINIO}/inss`, '👵<b>INSS: extrato de contribuições</b><span>Tempo para a aposentadoria</span>', 'class="cd-servico" data-servico="inss"'),
-      link(`${DOMINIO}/cpf`, '🪪<b>Situação do CPF</b><span>Comprovante de inscrição</span>', 'class="cd-servico" data-servico="cpf"'),
+      link(`${DOMINIO}/cpf`, '🆔<b>Situação do CPF</b><span>Comprovante de inscrição</span>', 'class="cd-servico" data-servico="cpf"'),
       link(`${DOMINIO}/valores`, '💰<b>Valores a receber</b><span>Dinheiro esquecido em bancos</span>', 'class="cd-servico" data-servico="valores"'),
       link(`${DOMINIO}/assinar`, '✍️<b>Assinar documento digital</b><span>Assine um PDF sem imprimir (grátis)</span>', 'class="cd-servico" data-servico="assinar"'),
       link(`${DOMINIO}/validar`, '🔍<b>Validar assinatura</b><span>Confira se um PDF assinado é verdadeiro</span>', 'class="cd-servico" data-servico="validar"'),
@@ -226,7 +226,7 @@ window.CE = window.CE || {};
     if (caminho === '/cpf') {
       const fora = precisaEntrar(busca);
       if (fora) return fora;
-      return pagina('Situação do CPF', `<h1>🪪 Situação cadastral do CPF</h1><div class="gv-caixa"><p>CPF: <b>${CPF_TREINO}</b></p><p>Nome: <b>${e(conta.nome)}</b></p>
+      return pagina('Situação do CPF', `<h1>🆔 Situação cadastral do CPF</h1><div class="gv-caixa"><p>CPF: <b>${CPF_TREINO}</b></p><p>Nome: <b>${e(conta.nome)}</b></p>
         <p>Situação: <b class="gv-regular" data-situacao-cpf>REGULAR</b></p></div><button class="cd-botao" data-site-acao="baixar-cpf">⬇️ Baixar comprovante</button>`);
     }
     if (caminho === '/assinar') {

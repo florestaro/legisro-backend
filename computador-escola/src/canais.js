@@ -102,7 +102,7 @@ function criarCanais(dados) {
     'usuarios:existe-instrutor': () => dados.existeInstrutor(),
     'usuarios:primeiro-instrutor': (s, info) => {
       if (dados.existeInstrutor()) throw new Error('O instrutor já foi cadastrado.');
-      s.usuario = dados.criarUsuario({ ...info, papel: 'instrutor', avatar: '🧑‍🏫' });
+      s.usuario = dados.criarUsuario({ ...info, papel: 'instrutor', avatar: '👨‍🏫' });
       s.versaoSenha = dados.versaoSenha(s.usuario.id);
       return s.usuario;
     },

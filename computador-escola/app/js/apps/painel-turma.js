@@ -76,7 +76,7 @@ window.CE = window.CE || {};
         try {
           await CE.api.chamar('monitor:definir', [usuario.id], caixa.checked);
           CE.emitir('instrutor:monitor', { aluno: usuario.nome, monitor: caixa.checked });
-          CE.avisar(caixa.checked ? `🧑‍🏫 ${usuario.nome} agora é monitor(a) da turma (vale a partir do próximo login).` : `${usuario.nome} não é mais monitor(a).`);
+          CE.avisar(caixa.checked ? `💁 ${usuario.nome} agora é monitor(a) da turma (vale a partir do próximo login).` : `${usuario.nome} não é mais monitor(a).`);
         } catch (e) { CE.avisar('⚠️ ' + e.message); caixa.checked = !caixa.checked; }
       } });
       return CE.el('tr', { 'data-aluno-monitor': usuario.nome },
@@ -85,8 +85,8 @@ window.CE = window.CE || {};
         CE.el('td', { class: 'num', 'data-ajudas-aluno': String(progresso.ajudas || 0) }, String(progresso.ajudas || 0)));
     });
     return CE.el('section', { class: 'pt-secao', 'data-secao-turma': 'monitores' },
-      CE.el('h3', {}, '🧑‍🏫 Monitores da turma'),
-      CE.el('p', {}, 'Marque alunos que vão bem (os 🚀 avançados, por exemplo) para ajudar os colegas que apertam "🙋 Não entendi". O monitor vê os pedidos no 🧑‍🏫 da barra de tarefas, avisa que vai ajudar (o colega recebe o aviso) e marca quando ajudou. Funciona na rede da sala.'),
+      CE.el('h3', {}, '💁 Monitores da turma'),
+      CE.el('p', {}, 'Marque alunos que vão bem (os 🚀 avançados, por exemplo) para ajudar os colegas que apertam "🙋 Não entendi". O monitor vê os pedidos no 💁 da barra de tarefas, avisa que vai ajudar (o colega recebe o aviso) e marca quando ajudou. Funciona na rede da sala.'),
       alunos.length ? CE.el('table', { class: 'painel-tabela' },
         CE.el('thead', {}, CE.el('tr', {}, ...['Monitor', 'Turma', 'Ritmo', 'Ajudas dadas'].map((t) => CE.el('th', {}, t)))),
         CE.el('tbody', {}, ...linhas)) : CE.el('p', {}, 'Nenhum aluno nesta turma.'));

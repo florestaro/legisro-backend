@@ -28,13 +28,13 @@
   });
 
   CE.adicionarModulo({
-    id: 'n2-gov', nivel: 'n2', titulo: 'Serviços públicos pela internet (gov.br)', icone: '🪪', antes: 'n2-prova', novoEm: NOVO_EM,
+    id: 'n2-gov', nivel: 'n2', titulo: 'Serviços públicos pela internet (gov.br)', icone: '🆔', antes: 'n2-prova', novoEm: NOVO_EM,
     licoes: [
       {
-        id: 'n2-gov-conta', titulo: 'Conta Cidadão: a porta dos serviços do governo', icone: '🪪',
+        id: 'n2-gov-conta', titulo: 'Conta Cidadão: a porta dos serviços do governo', icone: '🆔',
         descricao: 'Criar a conta com CPF, código por SMS e senha forte (o treino da conta gov.br).',
         passos: [
-          info('Hoje quase todo serviço público é pela internet: Carteira de Trabalho, INSS, CPF, SUS, Bolsa Família, título de eleitor. Para entrar em todos eles você usa UMA conta só. Na vida real ela se chama conta gov.br. Aqui na escola treinamos no "Cidadão Digital", que funciona do mesmo jeito.', { emoji: '🪪' }),
+          info('Hoje quase todo serviço público é pela internet: Carteira de Trabalho, INSS, CPF, SUS, Bolsa Família, título de eleitor. Para entrar em todos eles você usa UMA conta só. Na vida real ela se chama conta gov.br. Aqui na escola treinamos no "Cidadão Digital", que funciona do mesmo jeito.', { emoji: '🆔' }),
           info('Atenção ao endereço: o site verdadeiro do governo SEMPRE termina com .gov.br (por exemplo, gov.br). No treino, o endereço é cidadaodigital.org.br. E nunca coloque seus documentos de verdade num site de treino!', { emoji: '🔒' }),
           irAoSite(),
           visitar('Na barra de endereço, digite  cidadaodigital.org.br  e aperte Enter.', (d) => d.dominio === DOMINIO, { destacar: nav('.nav-endereco-caixa'), jaFeito: () => ultima.dominio === DOMINIO }),
@@ -138,7 +138,7 @@
           esperar('Consulte a situação do seu CPF e baixe o comprovante.', 'navegador:download', (d) => d.site === DOMINIO && d.nome === 'cpf'),
           esperar('Saia da conta.', 'gov:sair'),
         ],
-        conclusao: 'Desafio vencido! Você resolve os serviços públicos pela internet. 🪪',
+        conclusao: 'Desafio vencido! Você resolve os serviços públicos pela internet. 🆔',
       },
     ],
   });

@@ -133,12 +133,12 @@ const responder = async (p, v) => { await p.waitForSelector('.dialogo-fundo .dia
 
   // ================= Monitoria: o Bruno (PC 3) ajuda a Ana (PC 2) =================
   await entrar(p3, BRUNO);
-  ok(await p3.isVisible('#status-monitor'), 'PC 3: o Bruno (monitor) vê o 🧑‍🏫 na barra de tarefas');
+  ok(await p3.isVisible('#status-monitor'), 'PC 3: o Bruno (monitor) vê o 💁 na barra de tarefas');
   await p2.evaluate(() => { window.__monitorVindo = null; CE.ouvir('sala:monitor-vindo', (d) => { window.__monitorVindo = d.nome; }); });
   await p2.evaluate(() => CE.professor.comecarLicao(CE.LICOES[0].id)); await p2.waitForTimeout(800);
   await p2.click('#prof-licao [data-acao="nao-entendi"]'); await p2.waitForTimeout(500);
-  const chegou = await p3.waitForFunction(() => /🧑‍🏫\d/.test(document.getElementById('status-monitor').textContent), null, { timeout: 25000 }).then(() => true).catch(() => false);
-  ok(chegou, 'PC 3: o pedido de ajuda da Ana chegou no 🧑‍🏫 do Bruno (com o número de pedidos)');
+  const chegou = await p3.waitForFunction(() => /💁\d/.test(document.getElementById('status-monitor').textContent), null, { timeout: 25000 }).then(() => true).catch(() => false);
+  ok(chegou, 'PC 3: o pedido de ajuda da Ana chegou no 💁 do Bruno (com o número de pedidos)');
   await p3.click('#status-monitor'); await p3.waitForSelector(J('monitoria', `[data-pedido="${ANA.nome}"]`), { timeout: 15000 }).catch(() => {});
   ok(!!(await p3.$(J('monitoria', `[data-pedido="${ANA.nome}"] [data-acao="monitor-ajudar"]`))), 'PC 3: a Monitoria mostra a Ana, com o botão "🙋 Vou ajudar"');
   await p3.click(J('monitoria', `[data-pedido="${ANA.nome}"] [data-acao="monitor-ajudar"]`)); await p3.waitForTimeout(800);
@@ -152,7 +152,7 @@ const responder = async (p, v) => { await p.waitForSelector('.dialogo-fundo .dia
   await p3.screenshot({ path: foto('fase3-04-monitoria.png') });
   await p3.waitForTimeout(3000);
   const prBruno = JSON.parse(fs.readFileSync(path.join(DI, 'dados', `progresso-${idBruno}.json`), 'utf8'));
-  ok(prBruno.ajudas === 1 && prBruno.medalhas && prBruno.medalhas.monitor, 'disco do instrutor: 1 ajuda contada para o Bruno e a medalha 🧑‍🏫 Monitor da turma');
+  ok(prBruno.ajudas === 1 && prBruno.medalhas && prBruno.medalhas.monitor, 'disco do instrutor: 1 ajuda contada para o Bruno e a medalha 💁 Monitor da turma');
 
   // ================= Onde os dados ficaram =================
   const prAna = JSON.parse(fs.readFileSync(path.join(DI, 'dados', `progresso-${idAna}.json`), 'utf8'));

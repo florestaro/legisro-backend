@@ -1,7 +1,7 @@
 # Testes da sala de aula
 
-Quatro testes automáticos do modo sala de aula em rede. Antes da primeira vez, rode `npm install` na pasta
-`computador-escola`.
+Quatro testes automáticos do modo sala de aula em rede e um dos emojis (o último). Antes da primeira vez, rode
+`npm install` na pasta `computador-escola`.
 
 ## Teste do servidor (rápido, sem tela)
 
@@ -109,12 +109,23 @@ Abre o programa de verdade 4 vezes (1 instrutor e 3 alunos) e confere:
 - **Computador 2:** a Ana entra com o mesmo nome e senha e encontra o MEI (CNPJ de treino), o anúncio com a foto em
   "Meus anúncios" e o PDF preenchido.
 - **Monitoria:** a instrutora escolhe o Bruno como monitor pelo Painel; a Ana (computador 2) aperta "🙋 Não entendi"; o
-  pedido chega no 🧑‍🏫 do Bruno (computador 3), que clica em "Vou ajudar"; a Ana recebe na tela "Bruno Lima, monitor(a)
+  pedido chega no 💁 do Bruno (computador 3), que clica em "Vou ajudar"; a Ana recebe na tela "Bruno Lima, monitor(a)
   da turma, está vindo te ajudar!", a Sala ao vivo da instrutora mostra quem está indo ajudar e, depois do "Já ajudei",
   a ajuda fica contada (e a medalha de monitor) no computador da instrutora.
 - **Onde os dados ficam:** tudo no disco do computador da instrutora, nada nos computadores dos alunos.
 
 Leva uns 3 minutos e usa a porta 47123 (ou outra: `PORTA=47130 npm run teste:fase3`).
+
+## Emojis que o Windows 10 desenha (rápido, sem tela)
+
+```
+npm run teste:emojis
+```
+
+Os ícones e figuras do programa são emojis, e quem desenha é a fonte do Windows. A do Windows 10 vai até o Emoji 12.0:
+um emoji mais novo aparece como um quadradinho, e os desenhos novos de pessoa (como 🧑‍🏫, que deveria ser um professor)
+aparecem separados, 🧑 e 🏫 lado a lado. Este teste lê todos os arquivos do programa e aponta, com arquivo e linha,
+qualquer emoji assim. Rode sempre que mudar ou criar aulas, sites e programas.
 
 ## Outra porta
 

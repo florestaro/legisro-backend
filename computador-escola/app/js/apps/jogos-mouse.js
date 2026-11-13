@@ -249,7 +249,7 @@
       // ---------- Presentes: clique duplo ----------
       function presentes(ctx) {
         const { regra, palco } = ctx;
-        const PREMIOS = ['🧸', '⚽', '📚', '🎨', '🍫', '🚲', '🎧', '🌻', '🪁', '🎹', '🧩', '🏀', '🎮', '🦖', '🍰', '🛼'];
+        const PREMIOS = ['🧸', '⚽', '📚', '🎨', '🍫', '🚲', '🎧', '🌻', '🪁', '🎹', '🧩', '🏀', '🎮', '🦖', '🍰', '🎈'];
         let abertos = 0;
         ctx.mostrar(`0 de ${regra.quantos}`);
         PREMIOS.slice(0, regra.quantos).forEach((premio, i) => {
@@ -376,7 +376,7 @@
         const { regra, palco } = ctx;
         let perolas = 0, abriu = false;
         const profundidade = () => `Profundidade: ${Math.round(palco.scrollTop / 10)} m` + (regra.perolas ? ` · Pérolas: ${perolas} de ${regra.perolas}` : '');
-        const bichos = ['🐠', '🐟', '🐡', '🦀', '🐙', '🐢', '🦑', '🐳', '🪸', '🐚', '🦈', '🐬', '🦐', '🐋'];
+        const bichos = ['🐠', '🐟', '🐡', '🦀', '🐙', '🐢', '🦑', '🐳', '🦞', '🐚', '🦈', '🐬', '🦐', '🐋'];
         const quantosBichos = Math.round(regra.altura / 230);
         const mar = CE.el('div', { class: 'jm-mar' });
         mar.style.height = regra.altura + 'px';

@@ -37,7 +37,7 @@ window.CE = window.CE || {};
     m('pendrive', 'n2', '🔌', 'Copie um arquivo para o pen drive', 'No Arquivos, botão direito no arquivo › Enviar para › Pen drive.', 'arquivo:enviado', { se: (d) => d.para === 'pendrive' }),
     m('digitar-30', 'n2', '⌨️', 'Digite a 30 palavras por minuto (ou mais) num exercício', 'Abra a Digitação e faça um exercício com calma e ritmo.', 'digitacao:concluida', { se: (d) => d.ppm >= 30 && !d.nivelamento }),
     m('boleto', 'n2', '🧾', 'Pague um boleto no Banco Escola copiando e colando o código', 'Copie (Ctrl+C) o código do boleto e cole (Ctrl+V) em "🧾 Pagar boleto".', 'banco:boleto'),
-    m('gov', 'n2', '🪪', 'Entre na sua Conta Cidadão (o treino do gov.br)', 'Navegador › cidadaodigital.org.br › Entrar com a Conta Cidadão.', 'gov:login'),
+    m('gov', 'n2', '🆔', 'Entre na sua Conta Cidadão (o treino do gov.br)', 'Navegador › cidadaodigital.org.br › Entrar com a Conta Cidadão.', 'gov:login'),
     m('pdf-form', 'n2', '📝', 'Preencha um formulário em PDF e salve preenchido', 'Abra um PDF com campos (ex.: Ficha de inscrição), escreva e clique em "💾 Salvar preenchido".', 'pdf:formulario-salvo'),
     m('juntar', 'n2', '➕', 'Junte dois PDFs num só', 'Leitor de PDF › "➕ Juntar PDFs".', 'pdf:juntado'),
     m('assinar', 'n2', '✍️', 'Assine um documento pelo Cidadão Digital', 'Abra o PDF no Leitor de PDF e clique em "✍️ Assinar".', 'gov:assinado'),

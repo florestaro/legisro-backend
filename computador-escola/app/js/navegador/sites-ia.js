@@ -12,9 +12,9 @@ window.CE = window.CE || {};
     abrir({ estado: e }) {
       const v = estado(e);
       const player = v.assistiu
-        ? `<div class="va-video tocando"><div class="va-rosto" aria-hidden="true">🧑‍💼</div><p class="va-legenda">"${FALA}"</p>
+        ? `<div class="va-video tocando"><div class="va-rosto" aria-hidden="true">👨‍💼</div><p class="va-legenda">"${FALA}"</p>
             <ul class="va-sinais"><li>👄 A boca não acompanha a fala</li><li>🤖 A voz é meio robótica</li><li>👀 Quase não pisca</li></ul></div>`
-        : `<div class="va-video"><div class="va-rosto" aria-hidden="true">🧑‍💼</div><button class="va-play" data-site-acao="assistir">▶ Assistir</button></div>`;
+        : `<div class="va-video"><div class="va-rosto" aria-hidden="true">👨‍💼</div><button class="va-play" data-site-acao="assistir">▶ Assistir</button></div>`;
       const denuncia = v.denunciou
         ? '<p class="va-denunciado" data-denunciado>⚑ Obrigado! Vamos analisar este anúncio.</p>'
         : v.denunciando

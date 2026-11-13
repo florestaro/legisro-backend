@@ -3,7 +3,7 @@
   const CORES = ['#000000', '#7f7f7f', '#ffffff', '#e81123', '#ff8c00', '#ffb900', '#107c10', '#00b7c3', '#0067c0', '#5c2d91', '#e3008c', '#8e562e'];
   const FERRAMENTAS = [
     ['lapis', '✏️', 'Lápis'], ['borracha', '🧽', 'Borracha'], ['linha', '📏', 'Linha'],
-    ['retangulo', '⬛', 'Retângulo'], ['circulo', '⚪', 'Círculo'], ['balde', '🪣', 'Balde de tinta (pinta uma área)'],
+    ['retangulo', '⬛', 'Retângulo'], ['circulo', '⚪', 'Círculo'], ['balde', '🥫', 'Balde de tinta (pinta uma área)'],
   ];
   const NOMES_CORES = { '#000000': 'preto', '#7f7f7f': 'cinza', '#ffffff': 'branco', '#e81123': 'vermelho', '#ff8c00': 'laranja', '#ffb900': 'amarelo', '#107c10': 'verde', '#00b7c3': 'azul-claro', '#0067c0': 'azul', '#5c2d91': 'roxo', '#e3008c': 'rosa', '#8e562e': 'marrom' };
 

@@ -63,9 +63,9 @@
     ['conteudo', 'O que NÃO fazer', topicos('Ficar no celular', 'Prometer o que não pode cumprir', 'Discutir com o cliente')],
   ]);
 
-  // ======================= 🪟 Windows avançado e operador =======================
+  // ======================= 👩‍💻 Windows avançado e operador =======================
   CE.adicionarModulo({
-    id: 'n4-windows', nivel: 'n4', titulo: 'Windows avançado (operador de computador)', icone: '🪟',
+    id: 'n4-windows', nivel: 'n4', titulo: 'Windows avançado (operador de computador)', icone: '👩‍💻',
     licoes: [
       {
         id: 'n4-win-tarefas', titulo: 'Programa travou? Gerenciador de Tarefas', icone: '📊',
@@ -169,7 +169,7 @@
           esperar('Desabilite o "Atualizador de impressora" na inicialização.', 'tarefas:inicializacao', (d) => d.programa === 'atualizador' && !d.ativo, { ...pularSe(async () => CE.config && CE.config.atual.inicializacao && CE.config.atual.inicializacao.atualizador === false) }),
           esperar('Mande qualquer arquivo para a nuvem.', 'nuvem:enviado'),
         ],
-        conclusao: 'Desafio vencido! Você cuida do computador do escritório. 🪟',
+        conclusao: 'Desafio vencido! Você cuida do computador do escritório. 👩‍💻',
       },
     ],
   });

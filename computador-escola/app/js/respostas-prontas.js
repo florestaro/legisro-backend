@@ -39,7 +39,7 @@
     { palavras: ['mei', 'microempreendedor', 'cnpj', 'das do mei'],
       resposta: 'O MEI é para quem trabalha por conta própria: CNPJ, nota fiscal e INSS pagando só o DAS por mês (cerca de R$ 76 a R$ 81). Abrir é GRÁTIS, no Portal do Empreendedor. Boleto de "taxa do MEI" que chega pelo correio ou WhatsApp é golpe.' },
     { palavras: ['monitoria', 'sou monitor', 'ser monitor', 'monitor da turma', 'monitora da turma', 'ajudar o colega', 'ajudar um colega'],
-      resposta: 'Monitor da turma: quando um colega aperta "🙋 Não entendi", aparece no 🧑‍🏫 da barra. Clique em "Vou ajudar", vá até ele, explique sem fazer por ele e depois clique em "✅ Já ajudei".' },
+      resposta: 'Monitor da turma: quando um colega aperta "🙋 Não entendi", aparece no 💁 da barra. Clique em "Vou ajudar", vá até ele, explique sem fazer por ele e depois clique em "✅ Já ajudei".' },
     { palavras: ['toques líquidos', 'toques liquidos', 'concurso', 'prova de digitação de concurso'],
       resposta: 'Nos concursos, a nota da digitação é em TOQUES LÍQUIDOS: tudo o que você digitou menos um desconto por erro (no treino, 5 toques por erro). Por isso, acertar vale mais do que correr.' },
     // ----- Curso livre: Celular -----

@@ -18,15 +18,23 @@ window.CE = window.CE || {};
     const tamanho = (CE.config && CE.config.atual.icones) || 'medios';
     ['grandes', 'medios', 'pequenos'].forEach((t) => lista.classList.toggle('icones-' + t, t === tamanho));
     lista.replaceChildren(...appsDoUsuario().filter((a) => !a.semIcone).map((app) => {
+      const nome = CE.el('span', { class: 'icone-nome' }, app.nome);
       const icone = CE.el('button', { class: 'icone', 'data-icone': app.id, title: app.nome },
         CE.el('span', { class: 'icone-imagem' }, app.icone),
-        CE.el('span', { class: 'icone-nome' }, app.nome),
+        nome,
       );
+      // Nome que não coube nas duas linhas da grade: com o mouse em cima ou selecionado, aparece inteiro (como no Windows).
+      const verSeCortou = () => {
+        if (!icone.classList.contains('nome-cortado') && nome.scrollHeight > nome.clientHeight + 1) icone.classList.add('nome-cortado');
+      };
       const selecionar = () => {
         lista.querySelectorAll('.icone').forEach((i) => i.classList.remove('selecionado'));
+        verSeCortou();
         icone.classList.add('selecionado');
         CE.emitir('icone:selecionado', { app: app.id });
       };
+      icone.addEventListener('mouseenter', verSeCortou);
+      icone.addEventListener('focus', verSeCortou);
       icone.addEventListener('click', selecionar);
       // Botão direito no ícone: seleciona e mostra o menu dele (como no Windows).
       icone.addEventListener('contextmenu', (e) => { selecionar(); menuDoIcone(e, app); });

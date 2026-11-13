@@ -196,7 +196,7 @@
           atalho('F2', 'Aperte a tecla F2 (na fileira de cima do teclado). Ela serve para RENOMEAR.'),
           esperar('Abriu a caixa para mudar o nome. Escreva: Atalho renomeado   e clique em OK.', 'arquivo:renomeado'),
           atalho('Delete', 'Agora, com o arquivo selecionado, aperte a tecla Delete. Ela manda para a lixeira. Confirme com "Sim".'),
-          info('Outros atalhos muito usados no Windows de verdade: Alt+Tab troca de janela; a tecla Windows (⊞) abre o menu Iniciar; Windows+D mostra a área de trabalho; Ctrl+P imprime.', { emoji: '🪟' }),
+          info('Outros atalhos muito usados no Windows de verdade: Alt+Tab troca de janela; a tecla Windows (⊞) abre o menu Iniciar; Windows+D mostra a área de trabalho; Ctrl+P imprime.', { emoji: '⌨️' }),
           quiz('Qual tecla renomeia um arquivo selecionado?', ['F2', 'F5', 'Esc'], 0),
           quiz('Qual atalho troca de uma janela para outra no Windows?', ['Alt+Tab', 'Ctrl+B', 'Shift+A'], 0),
           quiz('A tecla Delete, com um arquivo selecionado...', ['Manda o arquivo para a lixeira', 'Abre o arquivo', 'Imprime o arquivo'], 0),

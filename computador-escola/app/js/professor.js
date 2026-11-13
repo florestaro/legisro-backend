@@ -35,7 +35,7 @@ window.CE = window.CE || {};
     const painel = $('professor');
     painel.replaceChildren(
       CE.el('div', { class: 'prof-cabecalho', onclick: () => painel.classList.toggle('recolhido') },
-        CE.el('span', { class: 'prof-avatar' }, '🧑‍🏫'),
+        CE.el('span', { class: 'prof-avatar' }, '👨‍🏫'),
         CE.el('strong', {}, 'Professor Virtual'),
         CE.el('span', { class: 'prof-recolher', title: 'Esconder/mostrar o professor' }, '▾'),
       ),
@@ -421,7 +421,7 @@ window.CE = window.CE || {};
     const esperaFechar = [].concat(passo.espera).includes('janela:fechada');
     if (!app || app !== d.app || esperaFechar) return;
     const nome = nomeDoApp(app);
-    escreverNaDica(`🪟 Você fechou o "${nome}", e a tarefa é nele. `,
+    escreverNaDica(`⚠️ Você fechou o "${nome}", e a tarefa é nele. `,
       CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'reabrir-app', onclick: () => CE.janelas.abrir(app) }, `Abrir o ${nome} de novo`));
     CE.voz.falar(`Você fechou o ${nome}. Clique no botão para abrir de novo.`);
     CE.emitir('professor:app-fechado', { app });

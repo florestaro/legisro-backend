@@ -102,7 +102,7 @@ window.CE = window.CE || {};
     if (!nome) { monitorAvisado = null; return; }
     if (monitorAvisado === nome) return;
     monitorAvisado = nome;
-    CE.avisar(`🧑‍🏫 ${nome}, monitor(a) da turma, está vindo te ajudar!`);
+    CE.avisar(`💁 ${nome}, monitor(a) da turma, está vindo te ajudar!`);
     CE.voz.falar(`${nome} está vindo te ajudar.`);
     CE.emitir('sala:monitor-vindo', { nome });
   }
@@ -155,7 +155,7 @@ window.CE = window.CE || {};
   // ---------- Janela "Rede da sala" (na tela de entrada) ----------
   const MODOS = [
     ['local', '🖥️', 'Este computador sozinho', 'Os dados dos alunos ficam neste computador mesmo.'],
-    ['servidor', '🧑‍🏫', 'Computador do INSTRUTOR', 'Guarda os dados de todos os alunos. Os outros computadores da sala se ligam nele pelo cabo de rede.'],
+    ['servidor', '👨‍🏫', 'Computador do INSTRUTOR', 'Guarda os dados de todos os alunos. Os outros computadores da sala se ligam nele pelo cabo de rede.'],
     ['aluno', '👩‍🎓', 'Computador de ALUNO', 'O aluno entra e salva tudo no computador do instrutor. Assim ele pode sentar em qualquer computador.'],
   ];
   CE.abrirRedeSala = async function (aoMudar) {
@@ -188,7 +188,7 @@ window.CE = window.CE || {};
           achados.replaceChildren(CE.el('p', {}, '🔎 Procurando o computador do instrutor na rede…'));
           const lista = await CE.api.chamar('sala:procurar').catch(() => []);
           e.target.disabled = false;
-          achados.replaceChildren(...(lista.length ? lista.map((s) => CE.el('button', { class: 'chip', 'data-achado': s.endereco, onclick: () => { endereco.value = `${s.endereco}:${s.porta}`; } }, `🧑‍🏫 ${s.nome} (${s.endereco})`))
+          achados.replaceChildren(...(lista.length ? lista.map((s) => CE.el('button', { class: 'chip', 'data-achado': s.endereco, onclick: () => { endereco.value = `${s.endereco}:${s.porta}`; } }, `👨‍🏫 ${s.nome} (${s.endereco})`))
             : [CE.el('p', {}, 'Não achei. Confira se o computador do instrutor está ligado com o Computador Escola aberto, ou escreva o endereço abaixo.')]));
         } }, '🔎 Procurar o computador do instrutor'), achados, endereco, codigo);
       }
@@ -209,7 +209,7 @@ window.CE = window.CE || {};
             try {
               await CE.api.chamar('sala:salvar', { modo, servidor: endereco.value, codigo: codigo.value.trim(), codigoAtual: codigoAtual.value.trim() });
               fundo.remove();
-              CE.avisar(modo === 'local' ? '🖥️ Este computador agora funciona sozinho.' : modo === 'servidor' ? '🧑‍🏫 Este é o computador do instrutor. Abra "Rede da sala" de novo para ver o código.' : '👩‍🎓 Computador de aluno ligado ao instrutor!');
+              CE.avisar(modo === 'local' ? '🖥️ Este computador agora funciona sozinho.' : modo === 'servidor' ? '👨‍🏫 Este é o computador do instrutor. Abra "Rede da sala" de novo para ver o código.' : '👩‍🎓 Computador de aluno ligado ao instrutor!');
               if (aoMudar) aoMudar();
             } catch (er) { erro.textContent = er.message; }
             e.target.disabled = false;

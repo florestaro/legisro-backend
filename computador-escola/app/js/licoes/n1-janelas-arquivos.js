@@ -17,13 +17,13 @@
   const DOC_EXEMPLO = '<b>Lista de compras</b><ul><li>Arroz</li><li>Feijão</li><li>Leite</li><li>Pão</li></ul>';
 
   CE.adicionarModulo({
-    id: 'n1-janelas', nivel: 'n1', titulo: 'Janelas e menu Iniciar', icone: '🪟',
+    id: 'n1-janelas', nivel: 'n1', titulo: 'Janelas e menu Iniciar', icone: '🔳',
     licoes: [
       {
-        id: 'janelas', titulo: 'Trabalhando com janelas', icone: '🪟',
+        id: 'janelas', titulo: 'Trabalhando com janelas', icone: '🔳',
         descricao: 'Mover, aumentar, esconder e trazer de volta uma janela.',
         passos: [
-          info('Cada programa abre dentro de uma "janela". Os três botões do canto de cima são iguais em quase todos os programas do Windows: – (minimizar), □ (maximizar) e X (fechar).', { emoji: '🪟' }),
+          info('Cada programa abre dentro de uma "janela". Os três botões do canto de cima são iguais em quase todos os programas do Windows: – (minimizar), □ (maximizar) e X (fechar).', { emoji: '🔳' }),
           abrir('arquivos', 'Arquivos'),
           esperar('Vamos mudar a janela de lugar. Clique na barra azul de cima da janela (onde está escrito o nome), SEGURE o botão e arraste. Solte quando quiser.', 'janela:movida', (d) => d.app === 'arquivos', {
             destacar: naJanela('arquivos', '.janela-titulo'), mouse: 'arrastar', dica: 'Não solte o botão enquanto estiver arrastando. Só solte no final.',
@@ -111,7 +111,7 @@
           esperar('Traga a Calculadora de volta.', 'janela:restaurada', (d) => d.app === 'calculadora'),
           esperar('Por último, feche a Calculadora.', 'janela:fechada', (d) => d.app === 'calculadora'),
         ],
-        conclusao: 'Desafio vencido! Você domina as janelas. 🪟',
+        conclusao: 'Desafio vencido! Você domina as janelas. 🔳',
       },
     ],
   });

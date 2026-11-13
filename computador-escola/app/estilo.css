@@ -103,18 +103,38 @@ button { cursor: pointer; }
 .fundo-rio { background: linear-gradient(180deg, #7ec8e3 0%, #4a90b8 38%, #8a6b3d 62%, #4d6b2f 100%); }
 .fundo-cafe { background: radial-gradient(ellipse at 30% 20%, #c69c6d 0%, #7b4b2a 45%, #3b2314 100%); }
 
+/* Ícones numa grade fixa, como no Windows: toda célula tem o mesmo tamanho e a grade enche de cima para
+   baixo e depois passa para a coluna do lado. Assim linhas e colunas ficam sempre alinhadas, mesmo quando
+   um nome ocupa duas linhas. Exibir › Ícones grandes/médios/pequenos só troca as medidas. */
 .icones {
-  position: absolute; top: 8px; left: 8px; bottom: 56px; display: flex; flex-direction: column; flex-wrap: wrap;
-  align-content: flex-start; gap: 6px;
+  --icone-largura: 110px; --icone-altura: 100px; --icone-figura: 50px; --icone-fonte: 42px; --icone-nome: 14px;
+  position: absolute; top: 8px; left: 8px; bottom: 56px; display: grid; grid-auto-flow: column;
+  grid-template-rows: repeat(auto-fill, var(--icone-altura)); grid-auto-columns: var(--icone-largura);
+  gap: 4px; align-content: start;
 }
+.icones.icones-grandes { --icone-largura: 130px; --icone-altura: 122px; --icone-figura: 68px; --icone-fonte: 58px; --icone-nome: 15px; }
+.icones.icones-pequenos { --icone-largura: 92px; --icone-altura: 80px; --icone-figura: 34px; --icone-fonte: 28px; --icone-nome: 12px; }
 .icone {
-  width: 100px; padding: 8px 4px; background: transparent; border: 1px solid transparent; border-radius: 3px;
-  color: #fff; display: grid; justify-items: center; gap: 4px; text-shadow: 0 1px 3px rgba(0,0,0,.8);
+  width: var(--icone-largura); height: var(--icone-altura); padding: 5px 2px; align-self: start;
+  background: transparent; border: 1px solid transparent; border-radius: 3px;
+  color: #fff; display: flex; flex-direction: column; align-items: center; gap: 3px; text-shadow: 0 1px 3px rgba(0,0,0,.8);
 }
 .icone:hover { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.25); }
 .icone.selecionado, .icone:focus-visible { background: rgba(255,255,255,.3); border-color: rgba(255,255,255,.55); outline: none; }
-.icone-imagem { font-size: 42px; line-height: 1.1; text-shadow: none; }
-.icone-nome { font-size: 14px; line-height: 1.2; text-align: center; }
+/* A figura tem caixa fixa e centralizada: um emoji mais largo não empurra o ícone para o lado. */
+.icone-imagem {
+  flex: none; width: 100%; height: var(--icone-figura); display: flex; align-items: center; justify-content: center;
+  font-size: var(--icone-fonte); line-height: 1; white-space: nowrap; overflow-x: clip; text-shadow: none;
+}
+/* Nome em até duas linhas; o que não couber termina em "…" e aparece inteiro com o mouse em cima ou ao selecionar. */
+.icone-nome {
+  max-width: 100%; font-size: var(--icone-nome); line-height: 1.25; text-align: center; overflow-wrap: break-word;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+}
+.icone.nome-cortado:is(:hover, .selecionado, :focus-visible) {
+  height: auto; min-height: var(--icone-altura); position: relative; z-index: 2; background: rgba(8, 44, 80, .92);
+}
+.icone.nome-cortado:is(:hover, .selecionado, :focus-visible) .icone-nome { display: block; overflow: visible; }
 
 .area-janelas { position: absolute; inset: 0 0 48px 0; overflow: hidden; pointer-events: none; }
 .area-janelas > * { pointer-events: auto; }
@@ -1400,11 +1420,6 @@ body.alto-contraste .mc-item:hover:not([disabled]), body.alto-contraste .mc-item
 .prop-linhas { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; font-size: 14px; }
 .prop-linhas dt { color: var(--texto-suave); }
 .prop-linhas dd { margin: 0; word-break: break-word; }
-.icones.icones-grandes .icone { width: 122px; }
-.icones.icones-grandes .icone-imagem { font-size: 58px; }
-.icones.icones-pequenos .icone { width: 76px; }
-.icones.icones-pequenos .icone-imagem { font-size: 28px; }
-.icones.icones-pequenos .icone-nome { font-size: 12px; }
 .ed-dialogo-fonte { width: min(460px, 94vw); }
 .ed-grade-fonte { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
 .ed-grade-fonte label { display: grid; gap: 4px; font-size: 14px; color: var(--texto-suave); }

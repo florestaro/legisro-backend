@@ -39,7 +39,7 @@
         id: 'seg-cuidados', titulo: 'Cuidados no dia a dia', icone: '🧭',
         descricao: 'Dados pessoais, computador público e notícias falsas.',
         passos: [
-          info('Seus dados pessoais (CPF, endereço, fotos dos documentos, número do cartão) são valiosos. Só informe em sites e lugares que você confia de verdade.', { emoji: '🪪' }),
+          info('Seus dados pessoais (CPF, endereço, fotos dos documentos, número do cartão) são valiosos. Só informe em sites e lugares que você confia de verdade.', { emoji: '🆔' }),
           quiz('Um site desconhecido pede a foto do seu documento e o número do cartão para dar um "brinde". Você...', ['Manda, porque é brinde', 'Não manda: pode ser golpe', 'Manda só o cartão'], 1),
           info('Em computador público (escola, lan house, biblioteca), sempre clique em "Sair" da sua conta quando terminar. Senão, a próxima pessoa pode entrar no seu e-mail!', { emoji: '🚪' }),
           quiz('Terminei de usar meu e-mail num computador da escola. O que faço?', ['Clico em "Sair" da conta', 'Deixo aberto para a próxima vez', 'Desligo o monitor'], 0),

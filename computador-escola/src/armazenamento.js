@@ -58,8 +58,11 @@ function confere(segredo, usuario) {
   }));
 }
 
+// O 🧑‍🏫 (gravado como avatar do instrutor até a fase 3) o Windows 10 desenha como dois desenhos (🧑 e 🏫): mostra o 👨‍🏫.
+const AVATAR_TROCADO = { '🧑‍🏫': '👨‍🏫' };
+
 function publico(u) {
-  return { id: u.id, nome: u.nome, papel: u.papel, turma: u.turma || '', avatar: u.avatar || '🙂', crianca: !!u.crianca };
+  return { id: u.id, nome: u.nome, papel: u.papel, turma: u.turma || '', avatar: AVATAR_TROCADO[u.avatar] || u.avatar || '🙂', crianca: !!u.crianca };
 }
 
 function listarUsuarios() {

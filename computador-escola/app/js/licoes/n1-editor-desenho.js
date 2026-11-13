@@ -153,7 +153,7 @@
           ferramentaDesenho('circulo', 'Clique na ferramenta "Círculo" (⚪).'),
           esperar('Arraste na folha para desenhar um círculo grande, como um sol.', 'desenho:forma', (d) => d.forma === 'circulo', { mouse: 'arrastar' }),
           corDesenho('amarelo', 'Escolha a cor AMARELA.'),
-          ferramentaDesenho('balde', 'Clique no "Balde de tinta" (🪣).'),
+          ferramentaDesenho('balde', 'Clique no "Balde de tinta" (🥫).'),
           esperar('Clique DENTRO do círculo para pintar o sol de amarelo.', 'desenho:balde', null, { mouse: 'esquerdo' }),
           ferramentaDesenho('lapis', 'Agora um truque do Paint de verdade. Escolha o "Lápis" (✏️).'),
           esperar('Clique com o botão DIREITO na cor AZUL da paleta: ela vira a "Cor 2" (veja a caixinha "Cor 2" mudar).', 'desenho:cor2', (d) => d.cor === 'azul', {

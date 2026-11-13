@@ -33,7 +33,7 @@ window.CE = window.CE || {};
       permissoes: ['seus contatos', 'suas mensagens SMS', 'sua localização', 'o microfone', 'a câmera'], descricao: 'A lanterna MAIS FORTE do mundo!!! Grátis!!!' },
     { id: 'jogo', nome: 'Fazendinha Feliz', icone: '🐔', dev: 'Jogos Divertidos Ltda', nota: 4.1, baixados: '5 mi', permissoes: ['pede ao abrir'], descricao: 'Cuide da sua fazenda. Tem propagandas.' },
     { id: 'mapas', nome: 'Mapas', icone: '🗺️', dev: 'Sistema do celular', nota: 4.5, baixados: '1 bi', permissoes: ['localização (quando usar)'], descricao: 'Mapas e como chegar.' },
-    { id: 'carteira', nome: 'Carteira Digital (gov)', icone: '🪪', dev: 'Governo Federal ✔', nota: 4.3, baixados: '50 mi', permissoes: ['câmera (para ler documentos)'], descricao: 'Documentos digitais oficiais.' },
+    { id: 'carteira', nome: 'Carteira Digital (gov)', icone: '🆔', dev: 'Governo Federal ✔', nota: 4.3, baixados: '50 mi', permissoes: ['câmera (para ler documentos)'], descricao: 'Documentos digitais oficiais.' },
   ];
   // Pedidos de permissão que alguns apps fazem ao abrir.
   const PEDIDOS = { jogo: ['contatos', 'microfone'], mapas: ['localização'] };
@@ -43,8 +43,8 @@ window.CE = window.CE || {};
     cachorro: { nome: 'Cachorro', emoji: '🐶', fundo: ['#f6f1d9', '#d7c78f'], mesa: '#9c7a4f' },
     flor: { nome: 'Flor', emoji: '🌻', fundo: ['#c9f0d3', '#7cc88f'], mesa: '#5a9b5f' },
     prato: { nome: 'Almoço', emoji: '🍲', fundo: ['#fff1d6', '#ffd38a'], mesa: '#b07a3a' },
-    documento: { nome: 'Documento', emoji: '🪪', fundo: ['#e7ecf3', '#c4ceda'], mesa: '#8794a5' },
-    'documento-verso': { nome: 'Documento (verso)', emoji: '🪪', fundo: ['#e7ecf3', '#c4ceda'], mesa: '#8794a5' },
+    documento: { nome: 'Documento', emoji: '🆔', fundo: ['#e7ecf3', '#c4ceda'], mesa: '#8794a5' },
+    'documento-verso': { nome: 'Documento (verso)', emoji: '🆔', fundo: ['#e7ecf3', '#c4ceda'], mesa: '#8794a5' },
   };
   const ORDEM_CENAS = ['bolo', 'paisagem', 'cachorro', 'flor', 'prato', 'documento', 'documento-verso'];
   const ehDocumento = (cena) => cena === 'documento' || cena === 'documento-verso';
@@ -670,7 +670,7 @@ window.CE = window.CE || {};
           const conteudo = app === 'lanterna' || app === 'lanterna-super' ? CE.el('button', { class: 'cel-lanterna' + (lanternaLigada ? ' ligada' : ''), 'data-acao': 'lanterna', onclick: () => { lanternaLigada = !lanternaLigada; CE.emitir('celular:lanterna', { ligada: lanternaLigada }); desenhar(); } }, lanternaLigada ? '🔦 Desligar' : '🔦 Ligar')
             : app === 'jogo' ? CE.el('div', { class: 'cel-jogo' }, '🐔🌽🐄', CE.el('p', {}, 'Sua fazenda está crescendo!'), CE.el('small', {}, 'Propaganda: BAIXE O LANTERNA SUPER TURBO!!!'))
               : app === 'mapas' ? CE.el('div', { class: 'cel-mapa' }, '🗺️', CE.el('p', {}, estado.permissoes.mapas && estado.permissoes.mapas['localização'] ? '📍 Você está aqui: Centro, Porto Velho.' : 'Sem acesso à localização: digite o endereço.'))
-                : CE.el('div', { class: 'cel-carteira' }, '🪪', CE.el('p', {}, 'Documento digital de treino.'));
+                : CE.el('div', { class: 'cel-carteira' }, '🆔', CE.el('p', {}, 'Documento digital de treino.'));
           return [topo(`${a.icone} ${a.nome}`), conteudo];
         },
         // ----- Ajustes -----

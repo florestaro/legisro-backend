@@ -42,7 +42,7 @@ window.CE = window.CE || {};
   async function simulado(canal, ...a) {
     try {
       const usuarios = ler('usuarios', []);
-      const publico = (u) => ({ id: u.id, nome: u.nome, papel: u.papel, turma: u.turma || '', avatar: u.avatar, crianca: !!u.crianca });
+      const publico = (u) => ({ id: u.id, nome: u.nome, papel: u.papel, turma: u.turma || '', avatar: u.avatar === '🧑‍🏫' ? '👨‍🏫' : u.avatar, crianca: !!u.crianca });
       const criar = (info, papel) => {
         if (!info.nome || !info.nome.trim()) throw new Error('Informe o nome.');
         if (!info.segredo || info.segredo.length < 4) throw new Error('A senha precisa ter pelo menos 4 caracteres.');
@@ -53,7 +53,7 @@ window.CE = window.CE || {};
       const valor = {
         'usuarios:listar': () => usuarios.map(publico),
         'usuarios:existe-instrutor': () => usuarios.some((u) => u.papel === 'instrutor'),
-        'usuarios:primeiro-instrutor': () => (atual = criar({ ...a[0], avatar: '🧑‍🏫' }, 'instrutor')),
+        'usuarios:primeiro-instrutor': () => (atual = criar({ ...a[0], avatar: '👨‍🏫' }, 'instrutor')),
         'usuarios:criar': () => criar(a[0], a[0].papel === 'instrutor' ? 'instrutor' : 'aluno'),
         'usuarios:trocar-senha': () => { const u = usuarios.find((x) => x.id === a[0]); u.segredo = a[1]; return gravar('usuarios', usuarios); },
         'usuarios:remover': () => gravar('usuarios', usuarios.filter((u) => u.id !== a[0])),

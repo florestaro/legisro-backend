@@ -24,7 +24,7 @@ conversa e tira dúvidas. **Funciona sem internet.**
   páginas** (girar a que veio deitada, tirar a página em branco); **digitalizar** o documento com o celular (frente e
   verso viram PDF no computador); e **assinar** pelo Cidadão Digital (como a assinatura gov.br: conta prata, código por
   SMS) e **validar** a assinatura (o documento mexido depois de assinado é acusado).
-- **🪪 Serviços públicos pela internet (o treino da conta gov.br)**: no site de treino Cidadão Digital, o aluno cria a
+- **🆔 Serviços públicos pela internet (o treino da conta gov.br)**: no site de treino Cidadão Digital, o aluno cria a
   "Conta Cidadão" (CPF de TREINO, código por SMS que aparece num "celular" na tela, senha forte), entende os níveis
   bronze, prata e ouro, sobe para prata autorizando pelo site do Banco Escola, vê a **Carteira de Trabalho Digital**,
   o **extrato do INSS** (com simulação), a situação do CPF e os valores a receber, troca a senha esquecida, e aprende o
@@ -105,6 +105,10 @@ conversa e tira dúvidas. **Funciona sem internet.**
   o aluno fez (uns 2 minutos). Errar não reprova nada: com menos de 70% de primeira, ele sugere "↻ Rever" a aula mais
   esquecida; depois, o botão verde começa a aula de hoje. Dá para pular. O resultado aparece no Painel (coluna "Aula
   atual"), e o instrutor liga ou desliga em **Painel › Progresso da turma**.
+- **Ícones da área de trabalho em grade, como no Windows**: todos do mesmo tamanho, alinhados em linhas e colunas (enchem
+  de cima para baixo e depois a coluna do lado), nos três tamanhos de Exibir. O nome ocupa até duas linhas; o que não
+  couber termina em "…" e aparece inteiro com o mouse em cima. Os desenhos (emojis) usados são só os que o Windows 10
+  mostra direito (os mais novos, como 🧑‍🏫, o Windows 10 mostra separados ou como um quadradinho).
 - **Botão direito do mouse igual ao do Windows**, em todo o sistema: área de trabalho (Exibir › tamanho dos ícones,
   Atualizar, Personalizar), ícones (Abrir, Propriedades; na Lixeira, Esvaziar Lixeira), botão Iniciar, barra de tarefas
   ("Fechar janela", "Mostrar a área de trabalho"), barra de título (Restaurar, Minimizar, Maximizar, Fechar), Arquivos e
@@ -240,11 +244,11 @@ Os arquivos baixados vão para a pasta **Downloads**.
   semana** calculados sozinhos (certificados e medalhas da semana, o mais rápido no teclado, quem cumpriu a missão e o
   pódio da gincana). Ao fechar a edição, as aprovadas viram a edição publicada e começa a próxima. Por segurança, a
   matéria passa por um filtro: só texto, formatação e fotos (nada de código ou link).
-- **🧑‍🏫 Monitoria** (na rede da sala): o instrutor marca alunos como **monitores** (os 🚀 avançados, por exemplo). Quando
-  um colega aperta "🙋 Não entendi", o pedido aparece no 🧑‍🏫 da barra de tarefas do monitor, com o computador e a aula;
+- **💁 Monitoria** (na rede da sala): o instrutor marca alunos como **monitores** (os 🚀 avançados, por exemplo). Quando
+  um colega aperta "🙋 Não entendi", o pedido aparece no 💁 da barra de tarefas do monitor, com o computador e a aula;
   o monitor clica em "Vou ajudar" (o colega recebe na tela "Fulano, monitor da turma, está vindo te ajudar!" e o
   instrutor vê na Sala ao vivo) e depois em "Já ajudei". Cada ajuda conta para as medalhas de monitor.
-- Tudo fica no **Painel do Instrutor → 🏁 Gincana, missão e jornal** (com a seção 🧑‍🏫 Monitores).
+- Tudo fica no **Painel do Instrutor → 🏁 Gincana, missão e jornal** (com a seção 💁 Monitores).
 
 ### Outros
 - **74 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova (também por cumprir missões, ir ao
@@ -460,7 +464,7 @@ app/js/corrida-regras.js as regras da corrida de digitação (usadas pelo servid
 app/js/gincana-regras.js as regras da gincana ao vivo (idem)
 app/js/jornal-regras.js  as regras do jornal da turma (idem); jornal.js monta o jornal e filtra as matérias
 app/js/missao.js         a missão da semana (banco de missões por nível, semana do ano e conferência automática)
-app/js/monitoria.js      a monitoria (o botão 🧑‍🏫 e a janela dos pedidos de ajuda)
+app/js/monitoria.js      a monitoria (o botão 💁 e a janela dos pedidos de ajuda)
 testes/                  testes automáticos do modo sala de aula (servidor, turma de 20 alunos e as novidades da
                          fase 2 em 3 computadores)
 ```

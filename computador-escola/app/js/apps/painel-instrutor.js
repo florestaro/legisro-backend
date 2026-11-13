@@ -5,7 +5,7 @@
   CE.registrarApp({
     id: 'instrutor',
     nome: 'Painel do Instrutor',
-    icone: '🧑‍🏫',
+    icone: '👨‍🏫',
     largura: 920,
     altura: 600,
     soInstrutor: true,
@@ -133,7 +133,7 @@
           .sort((a, b) => (b.ajudaHa != null) - (a.ajudaHa != null) || (b.ajudaHa || 0) - (a.ajudaHa || 0) || a.usuario.nome.localeCompare(b.usuario.nome));
         const pedindo = alunos.filter((a) => a.ajudaHa != null).length;
         const aviso = rede.modo === 'servidor'
-          ? CE.el('p', { class: 'painel-legenda' }, `🧑‍🏫 Este é o computador do instrutor. Nos computadores dos alunos, em "🖧 Rede da sala", use o endereço `, CE.el('b', {}, rede.ips.join(' ou ') || '—'), ' e o código ', CE.el('b', { 'data-codigo-sala': '' }, rede.codigo), '.')
+          ? CE.el('p', { class: 'painel-legenda' }, `👨‍🏫 Este é o computador do instrutor. Nos computadores dos alunos, em "🖧 Rede da sala", use o endereço `, CE.el('b', {}, rede.ips.join(' ou ') || '—'), ' e o código ', CE.el('b', { 'data-codigo-sala': '' }, rede.codigo), '.')
           : rede.modo === 'aluno' ? CE.el('p', { class: 'painel-legenda' }, `Ligado ao computador do instrutor (${rede.servidor}).`)
             : CE.el('p', { class: 'painel-legenda painel-alerta' }, '🖥️ Este computador está sozinho: aqui aparece só quem está nele. Para ver a sala inteira ao vivo, deixe este computador como "Computador do INSTRUTOR" e os outros como "Computador de ALUNO" (botão "🖧 Rede da sala" na tela de entrada).');
         return CE.el('div', { class: 'painel-sala' },
@@ -154,7 +154,7 @@
           st.mensagem ? CE.el('p', { class: 'painel-legenda' }, `Última mensagem: "${st.mensagem.texto}"`) : null,
           alunos.length ? CE.el('div', { class: 'painel-cartoes' }, ...alunos.map((a) => CE.el('div', { class: 'painel-cartao' + (a.ajudaHa != null ? ' pediu-ajuda' : a.ha > 25 ? ' parado' : ''), 'data-aluno-online': a.usuario.nome },
             CE.el('div', { class: 'painel-cartao-topo' }, CE.el('span', { class: 'login-avatar' }, a.usuario.avatar), CE.el('div', {}, CE.el('b', {}, a.usuario.nome), CE.el('small', {}, `💻 ${a.pc}${a.usuario.turma ? ' · ' + a.usuario.turma : ''}`))),
-            a.ajudaHa != null ? CE.el('p', { class: 'painel-cartao-ajuda' }, `🙋 Não entendeu — pediu ajuda ${a.ajudaHa < 15 ? 'agora' : `há ${tempoLongo(a.ajudaHa)}`}${a.ajudante ? ` · 🧑‍🏫 ${a.ajudante} ${a.ajudado ? 'já ajudou' : 'está indo ajudar'}` : ''}`) : null,
+            a.ajudaHa != null ? CE.el('p', { class: 'painel-cartao-ajuda' }, `🙋 Não entendeu — pediu ajuda ${a.ajudaHa < 15 ? 'agora' : `há ${tempoLongo(a.ajudaHa)}`}${a.ajudante ? ` · 💁 ${a.ajudante} ${a.ajudado ? 'já ajudou' : 'está indo ajudar'}` : ''}`) : null,
             CE.el('p', {}, a.atividade.licao ? `📘 ${a.atividade.licao} — passo ${a.atividade.passo}` : '📘 Fora de aula'),
             CE.el('p', {}, a.atividade.app),
             CE.el('small', {}, `Atualizado ${tempo(a.ha)}`))))
