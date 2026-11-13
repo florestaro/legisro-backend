@@ -41,6 +41,41 @@ window.CE = window.CE || {};
   const sms = (codigo) => `<div class="gv-sms" data-sms-codigo="${codigo}"><b>📱 Nova mensagem (SMS) no seu celular</b>
     <span>CIDADÃO DIGITAL: seu código de confirmação é <b>${codigo}</b>. Não passe este código para ninguém.</span></div>`;
 
+  // ---------- Assinatura eletrônica (como a assinatura gov.br) ----------
+  // O carimbo vai no fim do PDF, com o nome de quem assinou, a data, um código e o "resumo" do documento: se alguém
+  // mudar o documento depois, o resumo não bate e a validação mostra que foi alterado.
+  const CARIMBO = '<div class="pdf-assinatura"';
+  CE.assinatura = {
+    pendente: null, // o PDF que o Leitor mandou assinar
+    // As assinaturas de um PDF, com "valida" (o documento não mudou depois daquela assinatura).
+    ler(conteudo) {
+      const { html } = CE.lerDocumento(conteudo || '');
+      const lista = [];
+      let i = html.indexOf(CARIMBO);
+      while (i >= 0) {
+        const m = html.slice(i).match(/data-assinatura="([^"]*)"/);
+        try {
+          const d = JSON.parse(decodeURIComponent(m ? m[1] : ''));
+          lista.push({ ...d, valida: d.resumo === resumo(html.slice(0, i)) });
+        } catch { lista.push({ nome: '?', valida: false }); }
+        i = html.indexOf(CARIMBO, i + 1);
+      }
+      return lista;
+    },
+    carimbar(conteudo, quem) {
+      const { meta, html } = CE.lerDocumento(conteudo || '');
+      const em = Date.now();
+      const codigo = `${resumo(html + em).slice(0, 4)}-${resumo(em + quem.nome).slice(0, 4)}`.toUpperCase();
+      const dados = { nome: quem.nome, cpf: '***.456.789-**', em, codigo, resumo: resumo(html) };
+      const quando = new Date(em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const carimbo = `${CARIMBO} data-assinatura="${encodeURIComponent(JSON.stringify(dados))}"><b>✍️ Documento assinado digitalmente</b><span>${e(quem.nome.toUpperCase())}</span><span>Data: ${quando}</span>`
+        + `<span>Verifique em ${DOMINIO}/validar · Código ${codigo}</span><small>Assinatura eletrônica de TREINO (na vida real, assinatura gov.br)</small></div>`;
+      return (Object.keys(meta).length ? `<!--ce:${JSON.stringify(meta)}-->` : '') + html + carimbo;
+    },
+  };
+  let assinando = null; // { arquivo, codigo, confirmado }
+  let validado = null; // resultado da última validação
+
   CE.contaCidadao = {
     async carregar() {
       const id = CE.sessao.usuario && CE.sessao.usuario.id;
@@ -60,6 +95,8 @@ window.CE = window.CE || {};
       link(`${DOMINIO}/inss`, '👵<b>INSS: extrato de contribuições</b><span>Tempo para a aposentadoria</span>', 'class="cd-servico" data-servico="inss"'),
       link(`${DOMINIO}/cpf`, '🪪<b>Situação do CPF</b><span>Comprovante de inscrição</span>', 'class="cd-servico" data-servico="cpf"'),
       link(`${DOMINIO}/valores`, '💰<b>Valores a receber</b><span>Dinheiro esquecido em bancos</span>', 'class="cd-servico" data-servico="valores"'),
+      link(`${DOMINIO}/assinar`, '✍️<b>Assinar documento digital</b><span>Assine um PDF sem imprimir (grátis)</span>', 'class="cd-servico" data-servico="assinar"'),
+      link(`${DOMINIO}/validar`, '🔍<b>Validar assinatura</b><span>Confira se um PDF assinado é verdadeiro</span>', 'class="cd-servico" data-servico="validar"'),
     ].join(''),
   };
 
@@ -192,6 +229,42 @@ window.CE = window.CE || {};
       return pagina('Situação do CPF', `<h1>🪪 Situação cadastral do CPF</h1><div class="gv-caixa"><p>CPF: <b>${CPF_TREINO}</b></p><p>Nome: <b>${e(conta.nome)}</b></p>
         <p>Situação: <b class="gv-regular" data-situacao-cpf>REGULAR</b></p></div><button class="cd-botao" data-site-acao="baixar-cpf">⬇️ Baixar comprovante</button>`);
     }
+    if (caminho === '/assinar') {
+      const fora = precisaEntrar(busca);
+      if (fora) return fora;
+      if (conta.nivel === 'bronze') {
+        return pagina('Assinar documento', `<h1>✍️ Assinar documento digital</h1><div class="gv-bloqueado" data-precisa-prata>🔒 Para assinar documentos, a conta precisa ser <b>${NIVEIS.prata}</b> ou <b>${NIVEIS.ouro}</b>.<br>A sua conta é ${NIVEIS.bronze}.</div>
+          <p>${link(`${DOMINIO}/nivel`, '⬆️ Aumentar o nível da conta', 'class="cd-botao" data-gov="nivel"')}</p>`);
+      }
+      const doc = CE.assinatura.pendente;
+      return pagina('Assinar documento', `<h1>✍️ Assinar documento digital</h1>
+        <p>A assinatura eletrônica vale como a assinatura no papel em muitos documentos (requerimentos, contratos simples, declarações), e é <b>grátis</b>.</p>
+        ${doc ? `<div class="gv-caixa" data-documento-assinar="${e(doc.nome)}"><p>📕 Documento: <b>${e(doc.nome)}.pdf</b></p><p>Confira se é o documento certo e se está tudo preenchido: depois de assinado, o documento não pode mudar.</p>
+          <button class="cd-botao" data-site-acao="assinar-codigo">✍️ Assinar este documento</button> <button class="cd-botao secundario" data-site-acao="escolher-pdf">📎 Trocar o documento</button></div>`
+          : '<button class="cd-botao" data-site-acao="escolher-pdf">📎 Escolher o documento (PDF)</button><p class="cd-dica">💡 Também dá para começar pelo Leitor de PDF: abra o PDF e clique em "✍️ Assinar".</p>'}`);
+    }
+    if (caminho === '/assinar-codigo') {
+      const fora = precisaEntrar(busca);
+      if (fora) return fora;
+      if (!assinando) return abrirGov('/assinar', {});
+      return pagina('Confirmar assinatura', `<h1>📱 Confirme a assinatura</h1><p>Documento: <b>${e(assinando.arquivo.nome)}.pdf</b></p><p>Mandamos um código por SMS para ${e(celularEscondido(conta.celular))}.</p>${sms(assinando.codigo)}
+        <form class="cd-form" data-formulario="assinar">${erro(ERROS[busca.erro])}<label>Código de 6 números <input name="codigo" inputmode="numeric" maxlength="6" autocomplete="off"></label>
+        <button class="cd-botao" type="submit">Assinar</button></form>`);
+    }
+    if (caminho === '/assinado') {
+      if (!assinando || !assinando.salvo) return abrirGov('/assinar', {});
+      return pagina('Documento assinado', `<h1>✅ Documento assinado!</h1><div class="gv-caixa" data-assinado="${e(assinando.salvo)}"><p>O arquivo <b>${e(assinando.salvo)}.pdf</b> foi para a pasta <b>Downloads</b>.</p>
+        <p>Mande ESTE arquivo (o assinado) para quem pediu. Se alguém mudar o documento, a assinatura deixa de valer.</p></div>
+        <p>${link(`${DOMINIO}/validar`, '🔍 Validar uma assinatura', 'class="cd-botao secundario"')}</p>`);
+    }
+    if (caminho === '/validar') {
+      const r = validado;
+      return pagina('Validar assinatura', `<h1>🔍 Validar documento assinado</h1><p>Recebeu um PDF assinado? Confira aqui se a assinatura é verdadeira e se o documento não foi mudado depois. Não precisa entrar na conta.</p>
+        <button class="cd-botao" data-site-acao="validar-escolher">📎 Escolher o PDF para validar</button>
+        ${r ? `<div class="gv-caixa ${r.valida ? 'gv-valida' : 'gv-invalida'}" data-validacao="${r.valida ? 'valida' : r.assinaturas ? 'alterado' : 'sem-assinatura'}"><h2>${e(r.nome)}.pdf</h2>
+          ${!r.assinaturas ? '<p>❌ Este documento <b>não tem assinatura digital</b>.</p>'
+            : r.lista.map((a) => `<p>${a.valida ? '✅ Assinatura <b>VÁLIDA</b>' : '❌ Assinatura <b>INVÁLIDA</b>: o documento foi mudado depois de assinado'} — ${e(a.nome)}${a.em ? `, em ${new Date(a.em).toLocaleString('pt-BR')}` : ''}${a.codigo ? ` (código ${e(a.codigo)})` : ''}</p>`).join('')}</div>` : ''}`);
+    }
     if (caminho === '/valores') {
       const fora = precisaEntrar(busca);
       if (fora) return fora;
@@ -219,6 +292,33 @@ window.CE = window.CE || {};
         CE.emitir('navegador:download', { nome: arquivo, site: DOMINIO });
       };
       if (nome === 'mandar-codigo') { recuperar = { codigo: codigoNovo() }; ctx.ir(`${DOMINIO}/recuperar`); return; }
+      if (nome === 'escolher-pdf') {
+        CE.escolherArquivo({ mensagem: '📎 Escolha o PDF para assinar:', filtro: (a) => a.tipo === 'pdf' }).then((a) => {
+          if (!a) return;
+          CE.assinatura.pendente = a;
+          CE.emitir('gov:assinar-escolheu', { nome: a.nome });
+          ctx.ir(`${DOMINIO}/assinar`);
+        });
+        return;
+      }
+      if (nome === 'assinar-codigo') {
+        const doc = CE.assinatura.pendente;
+        if (!doc || !logado || !conta) { ctx.ir(`${DOMINIO}/assinar`); return; }
+        assinando = { arquivo: doc, codigo: codigoNovo() };
+        CE.emitir('gov:assinar-codigo', { nome: doc.nome });
+        ctx.ir(`${DOMINIO}/assinar-codigo`);
+        return;
+      }
+      if (nome === 'validar-escolher') {
+        CE.escolherArquivo({ mensagem: '📎 Escolha o PDF assinado para validar:', filtro: (a) => a.tipo === 'pdf' }).then((a) => {
+          if (!a) return;
+          const lista = CE.assinatura.ler(a.conteudo);
+          validado = { nome: a.nome, assinaturas: lista.length, lista, valida: lista.length > 0 && lista.every((x) => x.valida) };
+          CE.emitir('gov:validado', { nome: a.nome, valida: validado.valida, assinaturas: lista.length });
+          ctx.ir(`${DOMINIO}/validar?v=${Date.now()}`);
+        });
+        return;
+      }
       if (nome === 'simular-aposentadoria') { CE.emitir('gov:simulou', { meses: mesesContribuidos }); ctx.ir(`${DOMINIO}/inss-simular`); return; }
       if (nome === 'baixar-carteira') {
         baixar('carteira', 'Carteira de Trabalho Digital', `<div style="text-align: center;"><b><font size="5">Carteira de Trabalho Digital</font></b></div><div><br></div><div>Nome: ${e(conta.nome)} · CPF ${CPF_TREINO}</div><div><br></div>`
@@ -288,6 +388,20 @@ window.CE = window.CE || {};
         CE.avisar('🔑 Senha trocada! Agora entre com a senha nova.');
         CE.emitir('gov:senha-trocada');
         ir('/conta');
+        return;
+      }
+      if (formulario === 'assinar') {
+        if (!assinando || soDigitos(d.codigo) !== assinando.codigo) { ir('/assinar-codigo', 'codigo'); return; }
+        const doc = assinando.arquivo;
+        const nomeNovo = /assinado/i.test(doc.nome) ? doc.nome : `${doc.nome} assinado`;
+        const conteudo = CE.assinatura.carimbar(doc.conteudo, conta);
+        CE.sessao.baixarArquivo({ nome: nomeNovo, tipo: 'pdf', conteudo }, 'internet').then(() => {
+          assinando = { ...assinando, salvo: nomeNovo };
+          CE.assinatura.pendente = null;
+          CE.comemorar('pequena');
+          CE.emitir('gov:assinado', { nome: nomeNovo, original: doc.nome });
+          ir('/assinado');
+        }).catch((er) => CE.avisar('⚠️ ' + er.message));
         return;
       }
       if (formulario === 'valores') {
@@ -364,5 +478,7 @@ window.CE = window.CE || {};
     { url: `${DOMINIO}/carteira`, titulo: 'Carteira de Trabalho Digital – Cidadão Digital', descricao: 'Veja os seus empregos com carteira assinada e baixe a carteira.', palavras: 'carteira de trabalho digital ctps emprego contrato' },
     { url: `${DOMINIO}/inss`, titulo: 'INSS: extrato de contribuições – Cidadão Digital', descricao: 'Tempo de contribuição e simulação de aposentadoria.', palavras: 'inss aposentadoria extrato cnis contribuicao meu inss' },
     { url: `${DOMINIO}/valores`, titulo: 'Valores a receber – Cidadão Digital', descricao: 'Consulte dinheiro esquecido em bancos. Serviço gratuito.', palavras: 'valores a receber dinheiro esquecido banco' },
+    { url: `${DOMINIO}/assinar`, titulo: 'Assinar documento digital – Cidadão Digital', descricao: 'Assine um PDF pela internet, sem imprimir. Grátis, com a Conta Cidadão prata ou ouro.', palavras: 'assinar assinatura eletronica digital documento pdf gov govbr' },
+    { url: `${DOMINIO}/validar`, titulo: 'Validar assinatura – Cidadão Digital', descricao: 'Confira se um documento assinado é verdadeiro e não foi alterado.', palavras: 'validar verificar assinatura documento assinado pdf' },
   );
 })();

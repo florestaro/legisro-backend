@@ -44,8 +44,10 @@ window.CE = window.CE || {};
     flor: { nome: 'Flor', emoji: '🌻', fundo: ['#c9f0d3', '#7cc88f'], mesa: '#5a9b5f' },
     prato: { nome: 'Almoço', emoji: '🍲', fundo: ['#fff1d6', '#ffd38a'], mesa: '#b07a3a' },
     documento: { nome: 'Documento', emoji: '🪪', fundo: ['#e7ecf3', '#c4ceda'], mesa: '#8794a5' },
+    'documento-verso': { nome: 'Documento (verso)', emoji: '🪪', fundo: ['#e7ecf3', '#c4ceda'], mesa: '#8794a5' },
   };
-  const ORDEM_CENAS = ['bolo', 'paisagem', 'cachorro', 'flor', 'prato', 'documento'];
+  const ORDEM_CENAS = ['bolo', 'paisagem', 'cachorro', 'flor', 'prato', 'documento', 'documento-verso'];
+  const ehDocumento = (cena) => cena === 'documento' || cena === 'documento-verso';
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const so = (t) => String(t || '').replace(/\D/g, '');
   const reais = (v) => 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -89,6 +91,36 @@ window.CE = window.CE || {};
   }
 
   // ---------- Fotos (desenhadas na hora: guardamos só qual cena foi fotografada) ----------
+  // A carteira de identidade de TREINO (frente ou verso), num cartão de 300 x 190 a partir de (ox, oy).
+  function desenharRG(x, verso, ox, oy) {
+    x.textAlign = 'left'; x.textBaseline = 'alphabetic';
+    x.fillStyle = '#f7f3e6'; x.fillRect(ox, oy, 300, 190); x.strokeStyle = '#6b7b8c'; x.lineWidth = 3; x.strokeRect(ox, oy, 300, 190);
+    if (!verso) {
+      x.fillStyle = '#2a4d6e'; x.font = 'bold 16px Arial'; x.fillText('CARTEIRA DE IDENTIDADE', ox + 30, oy + 30);
+      x.font = '64px "Segoe UI Emoji", "Noto Color Emoji", sans-serif'; x.fillText('🙂', ox + 20, oy + 130);
+      x.fillStyle = '#333'; x.font = '14px Arial'; ['Nome: FULANO DE TAL', 'RG: 00.000.000-0', 'Nasc.: 01/01/1980'].forEach((t, i) => x.fillText(t, ox + 110, oy + 80 + i * 26));
+    } else {
+      x.fillStyle = '#2a4d6e'; x.font = 'bold 13px Arial'; x.fillText('REPÚBLICA FEDERATIVA DO BRASIL', ox + 30, oy + 26);
+      x.fillStyle = '#333'; x.font = '13px Arial';
+      ['Filiação: MARIA DE TAL', '              JOÃO DE TAL', 'Natural de: PORTO VELHO - RO', 'Expedição: 10/05/2015'].forEach((t, i) => x.fillText(t, ox + 18, oy + 58 + i * 24));
+      x.strokeStyle = '#6b7b8c'; x.lineWidth = 1.5; x.strokeRect(ox + 214, oy + 40, 68, 88); x.font = '11px Arial'; x.fillText('Polegar dir.', ox + 218, oy + 144);
+    }
+    x.fillStyle = '#b00'; x.font = 'bold 14px Arial'; x.fillText('DOCUMENTO DE TREINO', ox + 70, oy + 180);
+  }
+  // O documento "digitalizado" (como nos apps de escanear): só o documento, reto, em fundo branco e em tons de cinza.
+  const cacheScan = {};
+  function scanDe(cena) {
+    if (cacheScan[cena]) return cacheScan[cena];
+    const c = document.createElement('canvas'); c.width = 620; c.height = 420;
+    const x = c.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, 620, 420);
+    x.save(); x.translate(40, 39); x.scale(1.8, 1.8); desenharRG(x, cena === 'documento-verso', 0, 0); x.restore();
+    const img = x.getImageData(0, 0, 620, 420), d = img.data;
+    for (let i = 0; i < d.length; i += 4) { const v = 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]; const k = v > 205 ? 255 : v < 100 ? Math.max(0, v - 50) : v; d[i] = d[i + 1] = d[i + 2] = k; }
+    x.putImageData(img, 0, 0);
+    cacheScan[cena] = c.toDataURL('image/jpeg', 0.85);
+    return cacheScan[cena];
+  }
   const cacheFotos = {};
   function imagemDe(item) {
     const chave = item.cena + (item.dados ? JSON.stringify(item.dados) : '');
@@ -109,12 +141,8 @@ window.CE = window.CE || {};
       x.fillStyle = g; x.fillRect(0, 0, 480, 360);
       if (cena.sol) { x.fillStyle = '#ffd84d'; x.beginPath(); x.arc(400, 70, 38, 0, Math.PI * 2); x.fill(); }
       x.fillStyle = cena.mesa; x.fillRect(0, 270, 480, 90);
-      if (item.cena === 'documento') {
-        x.fillStyle = '#f7f3e6'; x.fillRect(90, 70, 300, 190); x.strokeStyle = '#6b7b8c'; x.lineWidth = 3; x.strokeRect(90, 70, 300, 190);
-        x.fillStyle = '#2a4d6e'; x.font = 'bold 16px Arial'; x.fillText('CARTEIRA DE IDENTIDADE', 120, 100);
-        x.fillStyle = '#b00'; x.font = 'bold 14px Arial'; x.fillText('DOCUMENTO DE TREINO', 160, 250);
-        x.font = '64px "Segoe UI Emoji", "Noto Color Emoji", sans-serif'; x.fillText('🙂', 110, 200);
-        x.fillStyle = '#333'; x.font = '14px Arial'; ['Nome: FULANO DE TAL', 'RG: 00.000.000-0', 'Nasc.: 01/01/1980'].forEach((t, i) => x.fillText(t, 200, 150 + i * 26));
+      if (ehDocumento(item.cena)) {
+        desenharRG(x, item.cena === 'documento-verso', 90, 70);
       } else {
         x.font = '170px "Segoe UI Emoji", "Noto Color Emoji", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
         x.fillText(cena.emoji, 240, 200);
@@ -334,6 +362,8 @@ window.CE = window.CE || {};
 
   // ---------- API para as aulas ----------
   CE.celular = {
+    scanDe, // o documento "digitalizado" (para as aulas de documentos em PDF)
+    imagemDe, // a foto de uma cena (o bolo, o prato...): as aulas usam como foto de produto
     CONTATOS, CENTRAL_OFICIAL, CHAVES_PIX,
     async carregar() { estado = null; dono = null; bloqueado = true; chamada = null; conversaAberta = null; try { await garantir(); } catch { /* sem sessão */ } },
     reiniciar() { estado = null; dono = null; bloqueado = true; chamada = null; conversaAberta = null; notificacao = null; },
@@ -369,6 +399,7 @@ window.CE = window.CE || {};
     abrir(corpo, janela, argumento) {
       let pilha = [{ tela: 'inicio' }];
       let folha = null; // menu que sobe de baixo (ações da mensagem, escolher conversa...)
+      let digitalizadas = []; // páginas do documento que está sendo digitalizado (frente, verso...)
       const aparelho = CE.el('div', { class: 'cel-aparelho' });
       const telaEl = CE.el('div', { class: 'cel-tela' });
       const barraStatus = CE.el('div', { class: 'cel-status' });
@@ -597,7 +628,12 @@ window.CE = window.CE || {};
                 CE.avisar('📸 Foto tirada! Ela está na Galeria.');
               } }, ''),
               CE.el('button', { class: 'cel-botao-redondo', 'data-acao': 'cena-seguinte', title: 'Apontar para outra coisa', onclick: () => trocar(1) }, '▶')),
-            CE.el('p', { class: 'cel-dica' }, 'Use ◀ ▶ para apontar a câmera para outra coisa. O botão redondo tira a foto.')];
+            ehDocumento(cena) ? CE.el('button', { class: 'botao cel-digitalizar', 'data-acao': 'cel-digitalizar', title: 'Escanear o documento: vira PDF, reto e legível', onclick: () => {
+              digitalizadas.push(cena);
+              CE.emitir('celular:pagina-digitalizada', { cena, paginas: digitalizadas.length });
+              folha = { tipo: 'digitalizar' }; desenhar();
+            } }, '📄 Digitalizar documento (PDF)') : '',
+            CE.el('p', { class: 'cel-dica' }, ehDocumento(cena) ? 'Documento: em vez de foto, toque em "📄 Digitalizar documento" para virar PDF. Use ◀ ▶ para virar o documento (frente e verso).' : 'Use ◀ ▶ para apontar a câmera para outra coisa. O botão redondo tira a foto.')];
         },
         galeria() {
           return [topo('🖼️ Galeria'), CE.el('div', { class: 'cel-galeria' }, ...estado.galeria.slice().reverse().map((f) => CE.el('button', { class: 'cel-miniatura', 'data-foto': f.cena, 'data-foto-id': f.id, onclick: () => ir('foto', { id: f.id }) },
@@ -802,6 +838,22 @@ window.CE = window.CE || {};
         } catch (e) { CE.avisar('⚠️ ' + e.message); }
       }
 
+      async function salvarDigitalizado() {
+        const nome = await CE.perguntar('Nome do PDF:', 'Documento digitalizado');
+        if (!nome || !digitalizadas.length) return;
+        const paginas = digitalizadas.map((c) => `<div style="text-align: center;"><img src="${scanDe(c)}" style="width: 92%;" alt="Página digitalizada"></div>`);
+        const conteudo = `<!--ce:${JSON.stringify({ margem: 'estreita' })}-->` + paginas.join('<div class="quebra-pagina"></div>');
+        try {
+          const pasta = 'Documentos digitalizados';
+          await CE.sessao.garantirPasta(pasta, 'pc', '');
+          await CE.sessao.salvarArquivo({ nome, tipo: 'pdf', conteudo, local: 'pc', pasta });
+          const n = digitalizadas.length, verso = digitalizadas.includes('documento-verso');
+          digitalizadas = []; folha = null; desenhar();
+          CE.emitir('celular:digitalizado', { nome, paginas: n, verso });
+          CE.avisar(`📄 PDF "${nome}" (${n} página(s)) salvo em Meus Documentos › ${pasta}.`);
+        } catch (e) { CE.avisar('⚠️ ' + e.message); }
+      }
+
       // ---------- Folhas (menus que sobem de baixo) ----------
       function desenharFolha() {
         if (!folha) return null;
@@ -845,6 +897,12 @@ window.CE = window.CE || {};
           conteudo = [CE.el('b', {}, 'Mandar a foto para:'), ...['maria', 'familia', 'carlos', 'rosa'].map((c) => opcao(CONTATOS[c].avatar, CONTATOS[c].nome, () => {
             folha = null; pilha = [{ tela: 'inicio' }, { tela: 'mensagens' }, { tela: 'conversa', id: c }]; mandar(c, { foto: { cena: f.cena, dados: f.dados } });
           }, `compartilhar-${c}`))];
+        } else if (folha.tipo === 'digitalizar') {
+          conteudo = [CE.el('b', {}, `📄 Digitalizado: ${digitalizadas.length} página(s)`),
+            CE.el('div', { class: 'cel-scans' }, ...digitalizadas.map((c, i) => CE.el('img', { class: 'cel-scan', src: scanDe(c), alt: `Página ${i + 1}`, 'data-scan': c }))),
+            opcao('➕', 'Digitalizar mais uma página (o verso, por exemplo)', () => { folha = null; desenhar(); }, 'scan-mais'),
+            opcao('💾', 'Salvar como PDF no computador', () => salvarDigitalizado(), 'scan-salvar'),
+            opcao('🗑️', 'Descartar', () => { digitalizadas = []; CE.emitir('celular:digitalizacao-descartada'); fechar(); }, 'scan-descartar')];
         } else if (folha.tipo === 'instalar') {
           const a = LOJA.find((x) => x.id === folha.app);
           conteudo = [CE.el('div', { class: 'cel-instalar' + (a.suspeito ? ' suspeito' : ''), 'data-instalar': a.id }, CE.el('b', {}, `Instalar ${a.icone} ${a.nome}?`),

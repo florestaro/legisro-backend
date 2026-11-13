@@ -85,6 +85,12 @@ function criarCanais(dados) {
   const sala = { pausada: false, mensagens: [] };
   const corridas = criarCorridas(); // corrida de digitação da turma (só na memória, como a sala ao vivo)
   const gincanas = criarGincanas(); // gincana ao vivo (na memória; o resultado final fica guardado para o jornal)
+  const ajudasContadas = new Set(); // monitor > colega : pedido (cada ajuda conta uma vez só)
+  const exigirMonitor = (s) => {
+    exigirSessao(s);
+    const p = dados.ler(`progresso-${s.usuario.id}`, null);
+    if (!p || !p.monitor) throw new Error('Só os monitores da turma veem os pedidos de ajuda.');
+  };
   const guardarResumoGincana = (estado) => { if (estado && estado.fase === 'fim') { const r = gincanas.resumo(); if (r && r.participantes) dados.salvar('gincana-ultima', r); } return estado; };
   // Cada mensagem do instrutor vale por 15 minutos (quem entrar bem depois não vê um aviso velho); as últimas
   // ficam guardadas, para duas mensagens mandadas em seguida chegarem as duas.
@@ -152,12 +158,13 @@ function criarCanais(dados) {
         anotarEndereco(dono, valor.conta);
         return true;
       }
-      // O que o instrutor liberou fora da sequência ("liberadas") e a trilha do aluno só o instrutor muda: a gravação
+      // O que o instrutor liberou fora da sequência ("liberadas"), a trilha, o modo desafio e a monitoria ("monitor" e
+      // a contagem de "ajudas") só o instrutor e o servidor mudam: a gravação
       // do próprio aluno mantém o que está guardado (e uma gravação dele feita ao mesmo tempo não desfaz a mudança).
       if (arquivo.startsWith('progresso-') && s.usuario.papel !== 'instrutor' && valor && typeof valor === 'object') {
         const guardada = dados.ler(arquivo, null);
         valor = { ...valor };
-        ['liberadas', 'trilha', 'modoDesafio'].forEach((k) => { if (guardada && guardada[k]) valor[k] = guardada[k]; else delete valor[k]; });
+        ['liberadas', 'trilha', 'modoDesafio', 'monitor', 'ajudas'].forEach((k) => { if (guardada && guardada[k]) valor[k] = guardada[k]; else delete valor[k]; });
       }
       return dados.salvar(arquivo, valor);
     },
@@ -296,6 +303,8 @@ function criarCanais(dados) {
       const anterior = presencas.get(s.usuario.id);
       const pedido = Number(atividade.ajuda) || 0;
       const ajudaEm = !pedido ? 0 : anterior && anterior.pedidoAjuda === pedido ? anterior.ajudaEm : Date.now();
+      // O monitor que foi ajudar continua anotado enquanto o pedido for o mesmo.
+      const ajudante = pedido && anterior && anterior.pedidoAjuda === pedido ? anterior.ajudante || null : null;
       presencas.set(s.usuario.id, {
         usuario: { id: s.usuario.id, nome: s.usuario.nome, avatar: s.usuario.avatar, papel: s.usuario.papel, turma: s.usuario.turma || '' },
         pc: String(atividade.pc || s.pc || os.hostname()).slice(0, 60),
@@ -303,7 +312,7 @@ function criarCanais(dados) {
           app: String(atividade.app || '').slice(0, 60), licao: String(atividade.licao || '').slice(0, 120),
           passo: String(atividade.passo || '').slice(0, 30), detalhe: String(atividade.detalhe || '').slice(0, 120),
         },
-        pedidoAjuda: pedido, ajudaEm,
+        pedidoAjuda: pedido, ajudaEm, ajudante,
         em: Date.now(),
       });
       const aluno = s.usuario.papel !== 'instrutor';
@@ -312,6 +321,7 @@ function criarCanais(dados) {
         pausada: sala.pausada && aluno, mensagens: aluno ? mensagensAtuais() : [], mensagem: aluno ? mensagemAtual() : null,
         corrida: aluno ? corridas.convite(s.usuario) : null,
         gincana: aluno ? gincanas.convite(s.usuario) : null,
+        ajudante: ajudante ? ajudante.nome : null, // o monitor que está vindo ajudar
       };
     },
     'sala:turma': (s) => {
@@ -324,6 +334,7 @@ function criarCanais(dados) {
           usuario: p.usuario, pc: p.pc, atividade: p.atividade, em: p.em,
           ha: Math.round((agora - p.em) / 1000),
           ajudaHa: p.ajudaEm ? Math.round((agora - p.ajudaEm) / 1000) : null, // segundos desde o "Não entendi"
+          ajudante: p.ajudante ? p.ajudante.nome : null, ajudado: !!(p.ajudante && p.ajudante.resolvido),
         })),
       };
     },
@@ -356,6 +367,52 @@ function criarCanais(dados) {
     'gincana:responder': (s, d) => { exigirSessao(s); return gincanas.responder(s.usuario, d); },
     'gincana:tarefa': (s, d) => { exigirSessao(s); return gincanas.tarefa(s.usuario, d); },
     'gincana:ultima': (s) => { exigirSessao(s); return dados.ler('gincana-ultima', null); },
+
+    // ---------- Monitoria: alunos que ajudam os colegas que apertaram "🙋 Não entendi" ----------
+    'monitor:definir': (s, ids, ligar) => {
+      exigirInstrutor(s);
+      const existem = new Set(dados.listarUsuarios().filter((u) => u.papel === 'aluno').map((u) => u.id));
+      (Array.isArray(ids) ? ids : []).filter((id) => existem.has(id)).forEach((id) => {
+        const p = dados.ler(`progresso-${id}`, { licoes: {}, digitacao: {} });
+        if (ligar) p.monitor = true; else delete p.monitor;
+        dados.salvar(`progresso-${id}`, p);
+      });
+      return true;
+    },
+    'monitor:pedidos': (s) => {
+      exigirMonitor(s);
+      const agora = Date.now();
+      return [...presencas.values()]
+        .filter((p) => p.usuario.id !== s.usuario.id && p.usuario.papel !== 'instrutor' && p.pedidoAjuda && agora - p.em < 45000)
+        .map((p) => ({
+          id: p.usuario.id, nome: p.usuario.nome, avatar: p.usuario.avatar, turma: p.usuario.turma, pc: p.pc,
+          app: p.atividade.app, licao: p.atividade.licao, passo: p.atividade.passo, ajudaHa: Math.round((agora - p.ajudaEm) / 1000),
+          ajudante: p.ajudante ? p.ajudante.nome : null, euAjudo: !!(p.ajudante && p.ajudante.id === s.usuario.id), ajudado: !!(p.ajudante && p.ajudante.resolvido),
+        }))
+        .sort((a, b) => a.ajudado - b.ajudado || b.ajudaHa - a.ajudaHa);
+    },
+    'monitor:ajudar': (s, alvo) => {
+      exigirMonitor(s);
+      const p = presencas.get(String(alvo));
+      if (!p || !p.pedidoAjuda || p.usuario.id === s.usuario.id) throw new Error('Esse colega já não está pedindo ajuda.');
+      if (p.ajudante && p.ajudante.id !== s.usuario.id && !p.ajudante.resolvido) throw new Error(`${p.ajudante.nome} já está ajudando esse colega.`);
+      p.ajudante = { id: s.usuario.id, nome: s.usuario.nome, em: Date.now() };
+      return true;
+    },
+    'monitor:ajudei': (s, alvo) => {
+      exigirMonitor(s);
+      const p = presencas.get(String(alvo));
+      if (!p || !p.ajudante || p.ajudante.id !== s.usuario.id) throw new Error('Primeiro clique em "🙋 Vou ajudar".');
+      const chave = `${s.usuario.id}>${p.usuario.id}:${p.pedidoAjuda}`;
+      const pr = dados.ler(`progresso-${s.usuario.id}`, { licoes: {}, digitacao: {} });
+      if (!ajudasContadas.has(chave)) {
+        ajudasContadas.add(chave);
+        pr.ajudas = (pr.ajudas || 0) + 1;
+        dados.salvar(`progresso-${s.usuario.id}`, pr);
+      }
+      p.ajudante = { ...p.ajudante, resolvido: true };
+      return { ajudas: pr.ajudas || 0 };
+    },
 
     // ---------- Missão da semana (o instrutor escolhe; vazio = automática) ----------
     'escola:missao': (s, missao) => {

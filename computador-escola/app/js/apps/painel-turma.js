@@ -34,7 +34,8 @@ window.CE = window.CE || {};
     const escola = await CE.escola.ler().catch(() => ({}));
     const semana = CE.missao.semana().id;
     const escolhida = escola.missao && escola.missao.id && (!escola.missao.semana || escola.missao.semana === semana) ? escola.missao.id : '';
-    const auto = CE.missao.automatica();
+    const exemplos = [1, 2, 3].map((n) => `${CE.missao.NOMES_NIVEL[n]}: ${CE.missao.automatica(n).icone} ${CE.missao.automatica(n).titulo}`).join(' · ');
+    const grupos = Object.entries({ n1: 'Iniciante', n2: 'Intermediário', cel: 'Curso de Celular', n3: 'Avançado', cri: 'Criação digital', n4: 'Profissional', n5: 'Assistente Administrativo' });
     const seletor = CE.el('select', { class: 'campo painel-seletor', 'data-campo': 'missao-semana', onchange: async () => {
       await CE.api.chamar('escola:missao', { id: seletor.value, semana });
       await CE.missao.atualizar();
@@ -43,15 +44,16 @@ window.CE = window.CE || {};
       CE.avisar(`🎯 Missão da semana: ${m.titulo}. Os alunos veem no próximo login (ou ao clicar no 🎯 da barra).`);
       redesenhar();
     } },
-    CE.el('option', { value: '' }, `🔄 Automática (muda toda segunda): ${auto.icone} ${auto.titulo}`),
-    ...CE.MISSOES.map((m) => CE.el('option', { value: m.id }, `${m.icone} ${m.titulo}`)));
+    CE.el('option', { value: '' }, '🔄 Automática: cada aluno recebe uma missão do nível dele (muda toda segunda)'),
+    ...grupos.map(([nivel, nome]) => CE.el('optgroup', { label: `Para todos — ${nome}` }, ...CE.MISSOES.filter((m) => m.nivel === nivel).map((m) => CE.el('option', { value: m.id }, `${m.icone} ${m.titulo}`)))));
     seletor.value = escolhida;
-    const atual = CE.missao.atual();
+    const atual = CE.missao.escolhida();
     const linhas = alunos.map(({ usuario, progresso }) => {
       const s = CE.missao.situacao(progresso);
-      return CE.el('tr', { 'data-aluno-missao': usuario.nome, 'data-cumpriu': s.feita ? 'sim' : 'nao' },
+      return CE.el('tr', { 'data-aluno-missao': usuario.nome, 'data-cumpriu': s.feita ? 'sim' : 'nao', 'data-missao-aluno': s.missao.id },
         CE.el('td', {}, `${usuario.avatar || ''} ${usuario.nome}`), CE.el('td', {}, usuario.turma || '—'),
-        CE.el('td', {}, s.feita ? `✅ Cumpriu (${data(s.em)})` : atual.contar > 1 && s.contador ? `⏳ ${s.contador} de ${atual.contar}` : '—'),
+        CE.el('td', {}, `${s.missao.icone} ${s.missao.titulo}`),
+        CE.el('td', {}, s.feita ? `✅ Cumpriu (${data(s.em)})` : s.missao.contar > 1 && s.contador ? `⏳ ${s.contador} de ${s.missao.contar}` : '—'),
         CE.el('td', { class: 'num' }, String(CE.missao.cumpridas(progresso))));
     });
     const cumpriram = alunos.filter(({ progresso }) => CE.missao.situacao(progresso).feita).length;
@@ -59,10 +61,34 @@ window.CE = window.CE || {};
       CE.el('h3', {}, '🎯 Missão da semana'),
       CE.el('p', {}, 'Um desafio curto que vale para a semana toda. O computador confere sozinho quando o aluno cumpre, pelo que ele fez de verdade (e comemora).'),
       CE.el('label', {}, 'Missão desta semana', seletor),
-      CE.el('p', { class: 'ft-dica' }, `${atual.icone} ${atual.titulo}. 💡 ${atual.dica}`),
+      CE.el('p', { class: 'ft-dica' }, atual ? `Para todos: ${atual.icone} ${atual.titulo}. 💡 ${atual.dica}` : `Automática nesta semana — ${exemplos}...`),
       CE.el('p', { 'data-missao-total': String(cumpriram) }, `${cumpriram} de ${alunos.length} aluno(s) já cumpriram.`),
       alunos.length ? CE.el('table', { class: 'painel-tabela' },
-        CE.el('thead', {}, CE.el('tr', {}, ...['Aluno', 'Turma', 'Nesta semana', 'Missões cumpridas'].map((t) => CE.el('th', {}, t)))),
+        CE.el('thead', {}, CE.el('tr', {}, ...['Aluno', 'Turma', 'Missão desta semana', 'Situação', 'Missões cumpridas'].map((t) => CE.el('th', {}, t)))),
+        CE.el('tbody', {}, ...linhas)) : CE.el('p', {}, 'Nenhum aluno nesta turma.'));
+  }
+
+  // ---------- Monitores da turma ----------
+  function monitores(alunos) {
+    const linhas = alunos.map(({ usuario, progresso }) => {
+      const ritmo = CE.ritmo ? CE.ritmo.NIVEIS[CE.ritmo.classificar(progresso)] : null;
+      const caixa = CE.el('input', { type: 'checkbox', 'data-monitor': usuario.nome, checked: progresso.monitor ? true : null, onchange: async () => {
+        try {
+          await CE.api.chamar('monitor:definir', [usuario.id], caixa.checked);
+          CE.emitir('instrutor:monitor', { aluno: usuario.nome, monitor: caixa.checked });
+          CE.avisar(caixa.checked ? `🧑‍🏫 ${usuario.nome} agora é monitor(a) da turma (vale a partir do próximo login).` : `${usuario.nome} não é mais monitor(a).`);
+        } catch (e) { CE.avisar('⚠️ ' + e.message); caixa.checked = !caixa.checked; }
+      } });
+      return CE.el('tr', { 'data-aluno-monitor': usuario.nome },
+        CE.el('td', {}, CE.el('label', { class: 'pc-check' }, caixa, CE.el('span', {}, `${usuario.avatar || ''} ${usuario.nome}`))),
+        CE.el('td', {}, usuario.turma || '—'), CE.el('td', {}, ritmo ? `${ritmo.icone} ${ritmo.rotulo}` : '—'),
+        CE.el('td', { class: 'num', 'data-ajudas-aluno': String(progresso.ajudas || 0) }, String(progresso.ajudas || 0)));
+    });
+    return CE.el('section', { class: 'pt-secao', 'data-secao-turma': 'monitores' },
+      CE.el('h3', {}, '🧑‍🏫 Monitores da turma'),
+      CE.el('p', {}, 'Marque alunos que vão bem (os 🚀 avançados, por exemplo) para ajudar os colegas que apertam "🙋 Não entendi". O monitor vê os pedidos no 🧑‍🏫 da barra de tarefas, avisa que vai ajudar (o colega recebe o aviso) e marca quando ajudou. Funciona na rede da sala.'),
+      alunos.length ? CE.el('table', { class: 'painel-tabela' },
+        CE.el('thead', {}, CE.el('tr', {}, ...['Monitor', 'Turma', 'Ritmo', 'Ajudas dadas'].map((t) => CE.el('th', {}, t)))),
         CE.el('tbody', {}, ...linhas)) : CE.el('p', {}, 'Nenhum aluno nesta turma.'));
   }
 
@@ -129,6 +155,7 @@ window.CE = window.CE || {};
       CE.el('div', { class: 'painel-sala-acoes' }, CE.el('strong', {}, '🏁 Gincana, missão e jornal'), seletor),
       await gincana(),
       await missao(alunos, redesenhar),
+      monitores(alunos),
       await jornal(todos, redesenhar));
   }
 

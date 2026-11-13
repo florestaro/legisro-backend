@@ -11,7 +11,8 @@
     "demo-web": "node scripts/gerar-demo-web.js",
     "teste:servidor": "node testes/servidor-sala.js",
     "teste:sala": "node testes/sala-20-alunos.js",
-    "teste:fase2": "node testes/sala-fase2.js"
+    "teste:fase2": "node testes/sala-fase2.js",
+    "teste:fase3": "node testes/sala-fase3.js"
   },
   "dependencies": {
     "node-llama-cpp": "^3.22.2"

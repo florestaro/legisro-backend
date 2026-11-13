@@ -277,6 +277,29 @@ window.CE = window.CE || {};
     };
   }
 
+  // Textos da nossa terra: Rondônia (Intermediário).
+  const TEXTOS_TERRA = [
+    ['Porto Velho', 'Porto Velho, a capital de Rondônia, fica às margens do rio Madeira. A cidade nasceu no começo do século vinte, junto com a construção da Estrada de Ferro Madeira-Mamoré.'],
+    ['A Madeira-Mamoré', 'A Estrada de Ferro Madeira-Mamoré ligava Porto Velho a Guajará-Mirim. Trabalhadores de muitos países ajudaram a construir a ferrovia no meio da floresta, enfrentando chuva, calor e doenças.'],
+    ['O tacacá', 'O tacacá é servido bem quente, na cuia. Leva tucupi, goma de mandioca, jambu e camarão seco. O jambu deixa a boca tremendo, e muita gente adora essa sensação no fim da tarde.'],
+    ['O rio Madeira', 'O rio Madeira é um dos maiores afluentes do rio Amazonas. Nele ficam as usinas de Santo Antônio e de Jirau, que produzem energia elétrica para muitos estados do Brasil.'],
+    ['O Forte Príncipe da Beira', 'O Real Forte Príncipe da Beira fica em Costa Marques, às margens do rio Guaporé. Foi construído pelos portugueses no século dezoito, para proteger a fronteira com as terras da Espanha.'],
+    ['O nome Rondônia', 'O nome Rondônia é uma homenagem ao Marechal Cândido Rondon, que levou as linhas do telégrafo pelo interior do Brasil e defendeu os povos indígenas. A frase dele era: morrer, se preciso for; matar, nunca.'],
+    ['Arraial Flor do Maracujá', 'O Arraial Flor do Maracujá é a grande festa junina de Porto Velho. Tem quadrilhas, bois-bumbás, música e comidas típicas, como pamonha, canjica, milho cozido e quentão.'],
+    ['O café de Rondônia', 'Rondônia é um dos maiores produtores de café do Brasil. Em cidades como Cacoal, Ji-Paraná e Alta Floresta, muitas famílias vivem da lavoura e capricham na colheita para ter um café especial.'],
+  ];
+  // Caixa de supermercado (teclado numérico): os preços, o total, o valor pago e o troco.
+  const COMPRAS_CAIXA = [[[4.99, 7.5, 12.9, 3.25], 50], [[2.49, 2.49, 18.9, 6.75, 1.99], 50], [[32.9, 5.49, 9.99], 100], [[1.25, 3.8, 15.6, 22.45, 4.3], 50], [[89.9, 12.5, 7.99, 3.49], 200]];
+  const reais = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
+  const textoCaixa = ([itens, pago]) => { const total = itens.reduce((a, b) => a + b, 0); return `${itens.map(reais).join(' + ')} = ${reais(total)} pago ${reais(pago)} troco ${reais(pago - total)}`; };
+  // Simulado de concurso: textos formais, como os das provas de digitação dos concursos.
+  const TEXTOS_CONCURSO = [
+    'O candidato deverá comparecer ao local de prova com uma hora de antecedência, munido de documento oficial com foto e caneta esferográfica de tinta preta, fabricada em material transparente. Não será permitida a entrada após o fechamento dos portões.',
+    'A prova prática de digitação terá duração de cinco minutos. Será considerado o número de toques líquidos, que corresponde ao total de toques digitados menos os toques descontados por erro. Cada erro cometido desconta cinco toques do total.',
+    'Compete ao assistente administrativo atender o público, receber e encaminhar documentos, organizar arquivos, redigir ofícios e memorandos, controlar o material de expediente e apoiar as atividades das demais áreas do órgão.',
+    'O servidor público deve tratar os cidadãos com cortesia, prestar informações de forma clara e guardar sigilo sobre os assuntos do serviço. A pontualidade, a assiduidade e o zelo com o patrimônio público são deveres de todos.',
+  ];
+
   function nivelIntermediario() {
     const exNumeros = [
       { id: 'm-num-1', titulo: 'Números 1 2 3 4 5', texto: '1 2 3 4 5 12 23 34 45 15 21 32 43 54 51 123 345 512' },
@@ -297,6 +320,7 @@ window.CE = window.CE || {};
       id: `m-frases-${i + 1}`, titulo: `Frases do dia a dia ${i + 1}`, texto: FRASES_DIA_A_DIA.slice(i * 3, i * 3 + 3).join(' '),
     }));
     const exTextos = TEXTOS_CURTOS.map(([titulo, texto], i) => ({ id: `m-texto-${i + 1}`, titulo, texto }));
+    const exTerra = TEXTOS_TERRA.map(([titulo, texto], i) => ({ id: `m-terra-${i + 1}`, titulo, texto, dica: 'Textos da nossa terra: capriche nos acentos e na pontuação.' }));
     const exRitmo = Array.from({ length: 4 }, (_, i) => ({
       id: `m-ritmo-${i + 1}`, titulo: `Ritmo: 1 minuto ${i + 1}`, tipo: 'tempo', duracao: 60,
       texto: sortearPalavras(`m-ritmo-${i + 1}`, PALAVRAS_COMUNS.concat(PALAVRAS_ACENTO), 80),
@@ -321,6 +345,7 @@ window.CE = window.CE || {};
         { titulo: 'Pontuação', exercicios: exPontuacao },
         { titulo: 'Frases do dia a dia', exercicios: exFrases },
         { titulo: 'Textos curtos', exercicios: exTextos },
+        { titulo: 'Textos da nossa terra (Rondônia)', exercicios: exTerra },
         { titulo: 'Ritmo', exercicios: exRitmo },
         { titulo: 'Trava-línguas', exercicios: exTrava },
         { titulo: 'Digitação narrada (o professor fala)', exercicios: exNarrada },
@@ -340,6 +365,10 @@ window.CE = window.CE || {};
       id: `a-numerico-${i + 1}`, titulo: `Teclado numérico: ${titulo}`, texto,
       dica: 'Use o teclado numérico, à direita do teclado. O dedo médio fica no 5, que tem um risquinho. Ligue o Num Lock.',
     }));
+    const exCaixa = COMPRAS_CAIXA.map((compra, i) => ({
+      id: `a-caixa-${i + 1}`, titulo: `Caixa do mercado: compra ${i + 1}`, texto: textoCaixa(compra),
+      dica: 'Como no caixa do mercado: os números, a vírgula e o "+" ficam no teclado numérico. Confira o total e o troco!',
+    }));
     const exLongos = TEXTOS_LONGOS.map(([titulo, texto], i) => ({ id: `a-longo-${i + 1}`, titulo, texto }));
     const exDitado = DITADOS.map(([titulo, frases], i) => ({
       id: `a-ditado-${i + 1}`, titulo: `Ditado: ${titulo}`, tipo: 'ditado', frases, metaPrecisao: 90,
@@ -357,6 +386,7 @@ window.CE = window.CE || {};
         { titulo: 'Dados do dia a dia', exercicios: exDados },
         { titulo: 'Fichas de cadastro (trabalho)', exercicios: exFichas },
         { titulo: 'Teclado numérico', exercicios: exNumerico },
+        { titulo: 'Caixa de supermercado (teclado numérico)', exercicios: exCaixa },
         { titulo: 'Textos longos', exercicios: exLongos },
         { titulo: 'Ditado (ouvir e digitar)', exercicios: exDitado },
         { titulo: 'Velocidade', exercicios: exVelocidade },
@@ -414,6 +444,12 @@ window.CE = window.CE || {};
       texto: SELECAO.slice(i).concat(SELECAO.slice(0, i)).join(' '),
       dica: 'Como num teste de emprego: o cronômetro corre e cada erro conta. Mantenha o ritmo, sem correr demais.',
     }));
+    // Concurso: 5 e 10 minutos, e a nota em "toques líquidos" (cada erro desconta 5 toques).
+    const exConcurso = [5, 5, 10, 10].map((min, i) => ({
+      id: `p-concurso-${i + 1}`, titulo: `Simulado de concurso ${i + 1} (${min} minutos)`, tipo: 'tempo', duracao: min * 60, concurso: { desconto: 5 },
+      texto: TEXTOS_CONCURSO.slice(i).concat(TEXTOS_CONCURSO.slice(0, i), SELECAO, TEXTOS_ESCRITORIO.map((t) => t[1])).join(' '),
+      dica: 'Como na prova prática dos concursos: a nota é em TOQUES LÍQUIDOS (o que você digitou menos 5 toques por erro). Errar custa caro!',
+    }));
     return {
       id: 'profissional', nome: 'Profissional', icone: '💼', semNivelamento: true,
       metas: { ppmInicio: 55, ppmFim: 65, precisao: 97 },
@@ -423,6 +459,7 @@ window.CE = window.CE || {};
         { titulo: 'Entrada de dados rápida', exercicios: exFichas },
         { titulo: 'Ditado do trabalho (recados e pedidos)', exercicios: exDitado },
         { titulo: 'Simulados de teste de seleção', exercicios: exSelecao },
+        { titulo: 'Simulado de concurso (5 e 10 minutos)', exercicios: exConcurso },
       ],
       prova: { id: 'prova-profissional', titulo: 'Prova do nível Profissional (teste de seleção, 5 minutos)', tipo: 'tempo', duracao: 300, meta: { ppm: 55, precisao: 97 }, texto: TEXTOS_ESCRITORIO.map((t) => t[1]).concat(SELECAO).join(' ') },
     };

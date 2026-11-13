@@ -37,10 +37,11 @@ window.CE = window.CE || {};
     // Intermediário
     'n2-pastas-pesquisar', 'n2-pastas-desafio', 'n2-atalhos-gerais', 'n2-editor-paragrafos', 'n2-editor-requerimento',
     'n2-editor-desafio', 'n2-pl-alca', 'n2-pl-formatar', 'n2-pl-notas', 'n2-pl-desafio', 'n2-email-desafio', 'n2-servicos-desafio',
-    'n2-gov-desafio', 'n2-ia-desafio',
+    'n2-gov-desafio', 'n2-ia-desafio', 'n2-doc-desafio',
     // Avançado
     'n3-ed-colunas', 'n3-ed-substituir', 'n3-ed-desafio', 'n3-pl-destacar', 'n3-pl-procv', 'n3-pl-desafio', 'n3-ap-desafio',
     'n3-cfg-hora-som', 'n3-cfg-atualizar', 'n3-cfg-impressora', 'n3-cfg-desafio', 'n3-seg-desafio', 'n3-tr-desafio',
+    'n3-din-parcelado', 'n3-din-desafio', 'n3-ven-desafio',
     // Profissional
     'n4-win-inicializar', 'n4-win-desafio', 'n4-ed-formas', 'n4-ed-desafio', 'n4-pl-imprimir', 'n4-pl-desafio', 'n4-ap-desafio',
     'n4-em-pastas', 'n4-ag-desafio', 'n4-hw-desafio',

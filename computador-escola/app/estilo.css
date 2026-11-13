@@ -2006,3 +2006,105 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .jn-texto p { margin: 0 0 2mm; } .jn-texto img { max-width: 100%; height: auto; display: block; margin: 2mm auto; }
 .jn-texto h1, .jn-texto h2, .jn-texto h3 { font-size: 15px; margin: 2mm 0 1mm; }
 .jn-vazio { font-family: Arial, sans-serif; font-size: 14px; color: #555; text-align: center; padding: 10mm; border: 1px dashed #aaa; border-radius: 3mm; }
+
+/* ---------- Leitor de PDF: formulário, organizar páginas, assinatura ---------- */
+.pdf-barra-form { display: flex; align-items: center; gap: 12px; padding: 6px 12px; background: #fff7d6; border-bottom: 1px solid #f0d77a; font-size: 14px; }
+.pdf-barra-form[hidden] { display: none; }
+.pdf-input { font: inherit; font-size: 15px; padding: 2px 6px; border: none; border-bottom: 2px solid #7aa7e0; background: #eef4ff; border-radius: 3px 3px 0 0; max-width: 100%; }
+.pdf-input:focus { outline: 2px solid #2f6fd1; background: #fff; }
+.pdf-marcar { width: 18px; height: 18px; vertical-align: middle; accent-color: #2f6fd1; }
+.pdf-aviso.assinado { color: #1e6b33; font-weight: 700; }
+.pdf-assinatura { display: grid; gap: 2px; margin: 18px 0 0 auto; width: 330px; padding: 8px 12px; border: 2px solid #1e6b33; border-radius: 8px; background: #f2fbf4; color: #1e3a28; font-size: 12px; line-height: 1.3; }
+.pdf-assinatura b { font-size: 13px; } .pdf-assinatura small { color: #557; }
+.pdf-pagina[data-giro="180"] .pdf-conteudo > * { transform: rotate(180deg); }
+.pdf-pagina[data-giro="90"] .pdf-conteudo, .pdf-pagina[data-giro="270"] .pdf-conteudo { padding-top: 160px !important; padding-bottom: 160px !important; }
+.pdf-pagina[data-giro="90"] .pdf-conteudo > * { transform: rotate(90deg); }
+.pdf-pagina[data-giro="270"] .pdf-conteudo > * { transform: rotate(270deg); }
+.pdf-organizar { display: grid; gap: 12px; width: 100%; max-width: 900px; }
+.pdf-organizar-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #fff; }
+.pdf-organizar-topo .ft-dica { flex: 1; min-width: 220px; }
+.pdf-miniaturas { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+.pdf-miniatura { display: grid; justify-items: center; gap: 6px; padding: 10px; border-radius: 10px; background: rgba(255, 255, 255, .12); }
+.pdf-mini-folha { width: 160px; height: 226px; overflow: hidden; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .5); position: relative; }
+.pdf-mini-conteudo { width: 794px; min-height: 1123px; transform: scale(.2); transform-origin: top left; box-shadow: none; max-width: none; cursor: default; }
+.pdf-miniatura[data-giro="90"] .pdf-mini-conteudo > * { transform: rotate(90deg); } .pdf-miniatura[data-giro="180"] .pdf-mini-conteudo > * { transform: rotate(180deg); }
+.pdf-miniatura[data-giro="270"] .pdf-mini-conteudo > * { transform: rotate(270deg); }
+.pdf-miniatura[data-giro="90"] .pdf-mini-conteudo, .pdf-miniatura[data-giro="270"] .pdf-mini-conteudo { padding-top: 160px !important; }
+.pdf-mini-numero { color: #fff; font-size: 13px; font-weight: 700; }
+.pdf-mini-botoes { display: flex; gap: 4px; }
+.pdf-mini-botoes button { min-width: 32px; height: 30px; border-radius: 6px; border: 1px solid #c6d0dc; background: #fff; cursor: pointer; font-size: 15px; }
+.pdf-mini-botoes button:hover:not([disabled]) { background: #e5efff; } .pdf-mini-botoes button[disabled] { opacity: .4; cursor: default; }
+
+/* Escolher arquivo (um ou vários, em ordem) */
+.escolher-arquivo .arq-item { position: relative; }
+.arq-ordem:not(:empty) { position: absolute; left: 4px; top: 4px; min-width: 22px; height: 22px; border-radius: 11px; background: #2f6fd1; color: #fff; font-weight: 700; font-size: 13px; display: grid; place-items: center; }
+.arq-item.escolhido { outline: 2px solid #2f6fd1; background: #eef4ff; }
+
+/* Cidadão Digital: validação da assinatura */
+.gv-valida { border-color: #1e8e3e; background: #f2fbf4; } .gv-invalida { border-color: #b3261e; background: #fdecea; }
+
+/* Celular: digitalizar documento */
+.cel-digitalizar { justify-self: center; margin: 4px auto 0; display: block; }
+.cel-scans { display: flex; gap: 6px; flex-wrap: wrap; }
+.cel-scan { width: 120px; border: 1px solid #ccd; border-radius: 4px; background: #fff; }
+
+/* ---------- Banco Escola: cartão e empréstimo ---------- */
+.ng-bom { border-color: #9fd8ae; background: #f2fbf4; } .ng-ruim { border-color: #f1b0a8; background: #fdecea; }
+.ng-fatura .bc-valor { font-size: 24px; }
+.ng-letra-miuda { font-size: 13px; color: #666; margin: 6px 0; }
+.bc-tabela.ng-credito { width: min(760px, 100%); margin-top: 12px; }
+.ng-credito tr.ng-escolhido td { background: #f7f4fc; font-weight: 600; }
+
+/* ---------- Site FALSO de empréstimo ---------- */
+.ng-golpe-pagina { min-height: 100%; background: linear-gradient(180deg, #ffeb3b, #ffc107); padding: 0 0 30px; font-family: Arial, sans-serif; }
+.ng-golpe-topo { background: #d50000; color: #fff; font-size: 26px; font-weight: 900; padding: 12px 24px; letter-spacing: .04em; }
+.ng-golpe-pagina h1 { text-align: center; font-size: 32px; margin: 18px 12px; } .ng-golpe-pagina h1 span { color: #d50000; font-size: 40px; }
+.ng-golpe-faixa { text-align: center; font-weight: 800; color: #1b5e20; background: #fff; margin: 0 24px; padding: 8px; border-radius: 8px; }
+.ng-golpe-form { display: grid; gap: 8px; max-width: 420px; margin: 16px auto; background: #fff; padding: 16px; border-radius: 12px; border: 3px dashed #d50000; }
+.ng-golpe-form label { display: grid; gap: 4px; font-weight: 700; } .ng-golpe-form input { padding: 8px; font-size: 15px; }
+.ng-golpe-form button { background: #00c853; color: #fff; font-size: 20px; font-weight: 900; border: none; border-radius: 30px; padding: 12px; }
+.ng-golpe-rodape { text-align: center; font-size: 12px; color: #444; }
+
+/* ---------- Feira Online ---------- */
+.fo-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 24px; background: #ff6f00; flex-wrap: wrap; }
+.fo-topo a { color: #fff !important; font-weight: 800; font-size: 20px; text-decoration: none !important; }
+.fo-topo nav { display: flex; gap: 14px; align-items: center; } .fo-topo nav a { font-size: 15px; font-weight: 600; }
+.fo-pagina { padding: 16px 24px 30px; }
+.fo-botao { display: inline-block; background: #ff6f00; color: #fff !important; border: none; border-radius: 8px; padding: 10px 16px; font-size: 15px; font-weight: 700; text-decoration: none !important; cursor: pointer; }
+.fo-topo .fo-botao { background: #fff; color: #e65100 !important; }
+.fo-botao.secundario { background: #fff; color: #e65100 !important; border: 2px solid #ff6f00; }
+.fo-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.fo-cartao { display: grid; gap: 4px; padding: 10px; border: 1px solid #f1d3b8; border-radius: 10px; background: #fff; }
+.fo-cartao img { width: 100%; height: 120px; object-fit: cover; border-radius: 6px; } .fo-icone { font-size: 64px; text-align: center; background: #fff3e0; border-radius: 6px; }
+.fo-cartao b { font-size: 18px; color: #e65100; } .fo-cartao small { color: #777; }
+.fo-form { display: grid; gap: 10px; max-width: 520px; } .fo-form label { display: grid; gap: 4px; font-weight: 600; }
+.fo-form input, .fo-form select, .fo-form textarea { padding: 8px; font: inherit; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; }
+.fo-foto { display: flex; align-items: center; gap: 12px; padding: 8px; border: 1px dashed #ffb74d; border-radius: 8px; } .fo-foto img { width: 120px; border-radius: 6px; }
+.fo-detalhe { display: flex; gap: 18px; flex-wrap: wrap; } .fo-detalhe img { width: 260px; border-radius: 10px; } .fo-preco { font-size: 26px; font-weight: 800; color: #e65100; }
+.fo-chat { display: grid; gap: 8px; max-width: 560px; }
+.fo-msg { margin: 0; padding: 8px 12px; background: #f1f1f1; border-radius: 0 12px 12px 12px; }
+.fo-comprovante { display: grid; gap: 2px; width: 260px; padding: 10px 12px; border-radius: 10px; background: #e8f5e9; border: 1px solid #81c784; font-size: 14px; }
+.fo-comprovante b:first-child { color: #1b5e20; font-size: 16px; }
+.fo-respostas { display: grid; gap: 6px; margin-top: 6px; } .fo-respostas button { text-align: left; }
+.fo-saiu { font-size: 13px; color: #777; font-style: italic; margin: 0; }
+
+/* ---------- Portal do Empreendedor ---------- */
+.em-topo { display: flex; align-items: center; gap: 16px; padding: 12px 28px; background: #1565c0; color: #fff; flex-wrap: wrap; }
+.em-topo a { color: #fff !important; font: 800 22px Georgia, serif; text-decoration: none !important; }
+.em-lista { line-height: 1.8; }
+.em-codigo { font-family: Consolas, monospace; font-size: 17px; letter-spacing: .03em; background: #fff; padding: 8px; border: 1px solid #ccc; border-radius: 6px; user-select: all; }
+
+/* Digitação: nota de concurso (toques líquidos) */
+.dig-concurso { display: grid; gap: 3px; padding: 10px 14px; border-radius: 10px; background: #eef3fb; border: 1px solid #c9d8ef; text-align: left; max-width: 560px; margin: 0 auto; }
+.dig-concurso small { color: #556; }
+
+/* ---------- Monitoria ---------- */
+#status-monitor.pendente { background: rgba(255, 200, 0, .35); }
+.monitoria-app { padding: 14px 18px; overflow: auto; }
+.mo-topo h2 { margin: 0 0 4px; } .mo-topo p { margin: 0 0 10px; color: #445; }
+.mo-lista { display: grid; gap: 8px; }
+.mo-pedido { display: grid; gap: 4px; padding: 10px 12px; border-radius: 10px; border: 1px solid #f0d77a; border-left: 6px solid #f5b400; background: #fffaf0; }
+.mo-pedido.ajudado { border-color: #9fd8ae; border-left-color: #1e8e3e; background: #f2fbf4; }
+.mo-pedido .botao { justify-self: start; }
+.mo-situacao { font-weight: 600; color: #1e6b33; }
+.mo-vazio { font-size: 17px; color: #556; text-align: center; padding: 20px; }

@@ -337,6 +337,44 @@ window.CE = window.CE || {};
     });
   };
 
+  // Escolher um arquivo salvo (ou vários, na ordem em que a pessoa clica: "1", "2", "3"...). Devolve o arquivo, a lista
+  // (com varios = true) ou null se a pessoa cancelar. Usado pelo Leitor de PDF (juntar) e pelos sites de treino.
+  CE.escolherArquivo = function ({ mensagem = 'Escolha o arquivo:', filtro = () => true, varios = false, minimo = 1, botao = 'OK' } = {}) {
+    return new Promise((resolver) => {
+      const vale = CE.sessao.marca();
+      CE.sessao.arquivos().catch(() => []).then((todos) => {
+        if (!vale()) { resolver(null); return; }
+        const lista = todos.filter((a) => !a.naLixeira && a.tipo !== 'pasta' && filtro(a));
+        const ordem = [];
+        const cancelar = () => fechar(null);
+        const fechar = (valor) => { dialogos.delete(cancelar); fundo.remove(); resolver(valor); };
+        dialogos.add(cancelar);
+        const ok = CE.el('button', { class: 'botao', 'data-acao': 'confirmar-escolha', disabled: true, onclick: () => fechar(ordem.slice()) }, botao);
+        const itens = lista.map((a) => {
+          const numero = CE.el('span', { class: 'arq-ordem' });
+          const item = CE.el('button', {
+            class: 'arq-item', 'data-escolher': a.nome,
+            onclick: () => {
+              if (!varios) { fechar(a); return; }
+              const i = ordem.indexOf(a);
+              if (i >= 0) ordem.splice(i, 1); else ordem.push(a);
+              itens.forEach((x) => { const n = ordem.indexOf(x.a) + 1; x.numero.textContent = n ? String(n) : ''; x.item.classList.toggle('escolhido', n > 0); });
+              ok.disabled = ordem.length < minimo;
+            },
+          }, numero, CE.el('span', { class: 'arq-icone' }, (CE.TIPOS_ARQUIVO[a.tipo] || {}).icone || '📄'), CE.el('span', { class: 'arq-nome' }, a.nome),
+          CE.el('span', { class: 'arq-tipo' }, a.local === 'pendrive' ? '🔌 Pen drive' : a.pasta ? `📁 ${a.pasta}` : 'Meus Documentos'));
+          return { a, item, numero };
+        });
+        const fundo = CE.el('div', { class: 'dialogo-fundo' }, CE.el('div', { class: 'dialogo largo escolher-arquivo' },
+          CE.el('p', {}, mensagem),
+          varios ? CE.el('p', { class: 'ft-dica' }, 'Clique nos arquivos na ordem em que eles devem ficar (aparece 1, 2, 3...). Clique de novo para desmarcar.') : '',
+          lista.length ? CE.el('div', { class: 'em-escolher' }, ...itens.map((x) => x.item)) : CE.el('p', {}, 'Nenhum arquivo desse tipo salvo ainda.'),
+          CE.el('div', { class: 'dialogo-botoes' }, CE.el('button', { class: 'botao secundario', onclick: () => fechar(null) }, 'Cancelar'), varios ? ok : '')));
+        document.body.append(fundo);
+      });
+    });
+  };
+
   CE.avisar = function (mensagem) {
     const aviso = CE.el('div', { class: 'aviso' }, mensagem);
     document.body.append(aviso);

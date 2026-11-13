@@ -96,6 +96,17 @@ window.CE = window.CE || {};
     CE.voz.falar('O professor abriu uma gincana! Clique em Entrar na gincana.');
   }
 
+  // Monitoria: o colega monitor avisou que vem ajudar (uma vez por pedido de ajuda).
+  let monitorAvisado = null;
+  function avisarMonitor(nome) {
+    if (!nome) { monitorAvisado = null; return; }
+    if (monitorAvisado === nome) return;
+    monitorAvisado = nome;
+    CE.avisar(`🧑‍🏫 ${nome}, monitor(a) da turma, está vindo te ajudar!`);
+    CE.voz.falar(`${nome} está vindo te ajudar.`);
+    CE.emitir('sala:monitor-vindo', { nome });
+  }
+
   // Sem resposta do instrutor por uns 20 s (3 tentativas), a pausa sai sozinha: o aluno não fica com a tela travada.
   let falhasSeguidas = 0;
   let geracao = 0; // muda ao entrar e ao sair: resposta de uma presença antiga é ignorada
@@ -111,6 +122,7 @@ window.CE = window.CE || {};
       mostrarMensagens(r.mensagens || (r.mensagem ? [r.mensagem] : []));
       if (r.corrida && !document.getElementById('tela-pausa')) convidarParaCorrida(r.corrida);
       if (r.gincana && !document.getElementById('tela-pausa')) convidarParaGincana(r.gincana);
+      avisarMonitor(r.ajudante);
     } catch (e) {
       if (minha !== geracao) return;
       marcarRede(false, e.message);

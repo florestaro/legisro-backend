@@ -13,6 +13,14 @@ window.CE = window.CE || {};
     fundo: { texto: 'Troque o fundo da área de trabalho (Configurações › Personalizar)', icone: '🎨', evento: 'config:fundo' },
     email: { texto: 'Mande um e-mail para professor@correio.escola com o assunto GINCANA', icone: '📧', evento: 'email:enviado', se: (d) => /gincana/i.test(d.assunto) },
     foto: { texto: 'No Celular, tire uma foto (Câmera)', icone: '📷', evento: 'celular:foto' },
+    // Para o desafio relâmpago de Planilha e Editor.
+    grafico: { texto: 'Na Planilha, faça um gráfico (de qualquer tabelinha)', icone: '📊', evento: 'planilha:grafico', relampago: true },
+    autosoma: { texto: 'Na Planilha, some uma coluna com a AutoSoma (Σ)', icone: '➕', evento: 'planilha:autosoma', relampago: true },
+    moeda: { texto: 'Na Planilha, mostre números em dinheiro (botão R$)', icone: '💲', evento: 'planilha:formatada', se: (d) => d.comando === 'formato' && d.valor === 'moeda', relampago: true },
+    centralizar: { texto: 'No Editor, escreva um título e deixe CENTRALIZADO', icone: '↔️', evento: 'editor:formatado', se: (d) => d.comando === 'justifyCenter', relampago: true },
+    tabela: { texto: 'No Editor, insira uma tabela', icone: '📋', evento: 'editor:formatado', se: (d) => d.comando === 'inserirTabela', relampago: true },
+    salvar: { texto: 'No Editor, salve um documento com o nome GINCANA', icone: '💾', evento: 'arquivo:salvo', se: (d) => d.tipo === 'documento' && /gincana/i.test(d.nome || ''), relampago: true },
+    pdf: { texto: 'No Editor, salve uma cópia em PDF', icone: '📕', evento: 'editor:pdf', relampago: true },
   };
   const NIVEIS_PERGUNTAS = () => CE.NIVEIS_CURSO.filter((n) => CE.LICOES.some((l) => l.nivel === n.id && l.passos.some((p) => p.quiz)));
   const embaralhar = (lista) => lista.map((v) => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(([, v]) => v);
@@ -49,21 +57,35 @@ window.CE = window.CE || {};
         const equipes = CE.el('select', { class: 'campo', 'data-campo': 'equipes-gincana' }, CE.el('option', { value: '0' }, 'Cada um por si'), ...[2, 3, 4].map((n) => CE.el('option', { value: String(n) }, `${n} equipes`)));
         const turma = CE.el('select', { class: 'campo', 'data-campo': 'turma-gincana' }, CE.el('option', { value: '' }, 'Todos os alunos'), ...turmas.map((t) => CE.el('option', { value: t }, `Turma ${t}`)));
         const erro = CE.el('p', { class: 'login-erro' });
+        // Tipo: gincana (perguntas + tarefas) ou desafio relâmpago (só tarefas de Planilha e Editor, ranking por quem termina primeiro).
+        const soPerguntas = [];
+        const tipo = CE.el('select', { class: 'campo', 'data-campo': 'tipo-gincana', onchange: () => {
+          const relampago = tipo.value === 'relampago';
+          soPerguntas.forEach((el) => { el.hidden = relampago; });
+          tarefas.querySelectorAll('input').forEach((i) => { i.checked = relampago ? !!TAREFAS[i.value].relampago && ['grafico', 'autosoma', 'centralizar', 'salvar'].includes(i.value) : i.value === 'calculadora' || i.value === 'soma'; });
+          if (relampago && titulo.value === 'Gincana da turma') titulo.value = 'Desafio relâmpago';
+          if (!relampago && titulo.value === 'Desafio relâmpago') titulo.value = 'Gincana da turma';
+        } }, CE.el('option', { value: 'gincana' }, '🏆 Gincana: perguntas das aulas + tarefas práticas'), CE.el('option', { value: 'relampago' }, '⚡ Desafio relâmpago: só tarefas práticas (Planilha e Editor), ranking por quem termina primeiro'));
+        const rotuloNivel = CE.el('label', {}, 'Perguntas do nível', nivel), rotuloQuantas = CE.el('label', {}, 'Quantas perguntas', quantas);
+        soPerguntas.push(rotuloNivel, rotuloQuantas);
         corpo.replaceChildren(CE.el('div', { class: 'gc-config' },
           CE.el('h2', {}, '🏆 Gincana ao vivo'),
+          CE.el('label', {}, 'Tipo', tipo),
           CE.el('p', {}, 'Perguntas sorteadas das aulas e tarefas práticas no computador. Acertar vale 100 pontos e responder rápido dá até 50 de bônus. Os alunos recebem o convite em poucos segundos.'),
-          CE.el('label', {}, 'Nome da gincana', titulo), CE.el('label', {}, 'Perguntas do nível', nivel), CE.el('label', {}, 'Quantas perguntas', quantas),
+          CE.el('label', {}, 'Nome da gincana', titulo), rotuloNivel, rotuloQuantas,
           CE.el('strong', {}, 'Tarefas práticas (entram no meio das perguntas)'), tarefas,
           CE.el('label', {}, 'Equipes', equipes), CE.el('label', {}, 'Quem participa', turma), erro,
           CE.el('button', { class: 'botao grande', 'data-acao': 'abrir-gincana', onclick: async () => {
             erro.textContent = '';
-            const perguntas = perguntasDo(nivel.value, Number(quantas.value));
-            const escolhidas = [...tarefas.querySelectorAll('input:checked')].map((i) => ({ tipo: 'tarefa', tarefa: i.value, texto: TAREFAS[i.value].texto, limite: 90 }));
+            const relampago = tipo.value === 'relampago';
+            const perguntas = relampago ? [] : perguntasDo(nivel.value, Number(quantas.value));
+            const escolhidas = [...tarefas.querySelectorAll('input:checked')].map((i) => ({ tipo: 'tarefa', tarefa: i.value, texto: TAREFAS[i.value].texto, limite: relampago ? 150 : 90 }));
+            if (relampago && escolhidas.length < 2) { erro.textContent = 'No desafio relâmpago, marque pelo menos 2 tarefas.'; return; }
             const rodadas = [...perguntas];
             escolhidas.forEach((tf, k) => rodadas.splice(Math.min(rodadas.length, Math.round(((k + 1) * rodadas.length) / (escolhidas.length + 1)) + k), 0, tf));
             try {
               receber(await CE.api.chamar('gincana:criar', { titulo: titulo.value, rodadas, equipes: Number(equipes.value), turma: turma.value }));
-              CE.emitir('instrutor:gincana', { acao: 'abriu', rodadas: rodadas.length, equipes: Number(equipes.value) });
+              CE.emitir('instrutor:gincana', { acao: 'abriu', rodadas: rodadas.length, equipes: Number(equipes.value), tipo: tipo.value });
               acompanhar();
             } catch (e) { erro.textContent = e.message; }
           } }, 'Abrir a gincana')));

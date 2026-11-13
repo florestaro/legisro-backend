@@ -6,7 +6,7 @@ conversa e tira dúvidas. **Funciona sem internet.**
 
 ## O que já tem
 
-### Curso de Informática: 5 níveis e 2 cursos livres (239 aulas)
+### Curso de Informática: 5 níveis e 2 cursos livres (255 aulas)
 - **Nível Iniciante completo: 48 aulas em 10 módulos.** Os módulos são: Conhecendo o computador, Mouse, Teclado,
   Janelas e menu Iniciar, Arquivos e pastas, Editor de Texto, Calculadora e Desenho, **Internet**, Segurança básica e a
   Prova do nível.
@@ -14,11 +14,16 @@ conversa e tira dúvidas. **Funciona sem internet.**
   dispensadas (continuam abertas para revisão).
 - Cada aula tem explicação, prática guiada (com a seta vermelha e o desenho do mouse) e perguntas. Cada módulo termina
   num **desafio sem ajuda**, e o nível termina numa **prova**.
-- **Nível Intermediário completo: 50 aulas em 10 módulos.** Os módulos são: Pastas e organização (com pen drive),
+- **Nível Intermediário completo: 56 aulas em 11 módulos.** Os módulos são: Pastas e organização (com pen drive),
   Atalhos de teclado, Editor de Texto (carta, currículo, requerimento, tabela, imagem, corretor, imprimir),
   **Planilha** (fórmulas, SOMA, alça de preenchimento, notas, orçamento da casa), Internet segura e downloads,
   **E-mail**, **Serviços pela internet** (banco, Pix, boleto, agendamento), **Serviços públicos (gov.br)**,
-  **Inteligência artificial e golpes com IA** e a Prova do nível.
+  **Inteligência artificial e golpes com IA**, **Documentos e formulários em PDF** e a Prova do nível.
+- **📄 Documentos e formulários em PDF**: preencher uma ficha de inscrição em PDF (campos e caixinha de marcar) e salvar
+  preenchida; **juntar** RG frente e verso e o comprovante de residência num PDF só, na ordem certa; **organizar as
+  páginas** (girar a que veio deitada, tirar a página em branco); **digitalizar** o documento com o celular (frente e
+  verso viram PDF no computador); e **assinar** pelo Cidadão Digital (como a assinatura gov.br: conta prata, código por
+  SMS) e **validar** a assinatura (o documento mexido depois de assinado é acusado).
 - **🪪 Serviços públicos pela internet (o treino da conta gov.br)**: no site de treino Cidadão Digital, o aluno cria a
   "Conta Cidadão" (CPF de TREINO, código por SMS que aparece num "celular" na tela, senha forte), entende os níveis
   bronze, prata e ouro, sobe para prata autorizando pelo site do Banco Escola, vê a **Carteira de Trabalho Digital**,
@@ -31,14 +36,23 @@ conversa e tira dúvidas. **Funciona sem internet.**
   denúncia do anúncio e a notícia que desmente.
 - Aulas novas que entram antes da prova de um nível não atrapalham quem já tinha passado nessa prova: para essa pessoa
   elas ficam opcionais, e o certificado continua valendo.
-- **Nível Avançado completo: 48 aulas em 8 módulos.** Os módulos são: Editor de Texto avançado (estilos, trabalho
+- **Nível Avançado completo: 58 aulas em 10 módulos.** Os módulos são: Editor de Texto avançado (estilos, trabalho
   escolar no padrão ABNT, sumário automático, quebra de página, cabeçalho e número de página, colunas, localizar e
   substituir, PDF), **Planilha avançada** (porcentagem, classificar, filtro, SOMASE e CONT.SE, destaque automático,
   gráficos, PROCV e controle de caixa), **Apresentações**, **Configurações do computador** (personalizar,
   acessibilidade, fuso horário, som, instalar e desinstalar, antivírus, atualizações, impressoras e ZIP),
   **Segurança digital avançada** (senha forte, duas etapas, golpes, backup, privacidade e fake news),
   **Computador e trabalho** (currículo em PDF, e-mail profissional, vagas e entrevista por vídeo),
+  **Dinheiro e dívidas**, **Vender pela internet e MEI**,
   **Projeto final** (organizar um evento com planilha, convite, apresentação e e-mail) e a Prova do nível.
+- **💰 Dinheiro e dívidas**: a fatura do cartão (pagar o total, o mínimo ou parcelar) e, na planilha, quanto a dívida
+  do **rotativo** cresce em 12 meses; **à vista ou parcelado** (o total de cada forma); simular **empréstimo** e
+  comparar o **CET** (crédito pessoal, consignado e cheque especial); e o **golpe do empréstimo fácil** (taxa antes de
+  liberar), num site falso de treino.
+- **🛒 Vender pela internet e MEI**: anunciar um produto **com foto**, preço e descrição na "Feira Online"; o **golpe do
+  comprovante falso** (o comprador manda um comprovante e pede para entregar na hora: o aluno confere no extrato e não
+  entrega); **controle de vendas e lucro** na planilha; e o **MEI**: abrir de graça no Portal do Empreendedor, baixar o
+  certificado e pagar o **DAS** no banco (copiando e colando o código).
 - **Nível 4: Informática Profissional: 34 aulas em 8 módulos** (baseado nos cursos de Operador de Computador do
   Pronatec e do Senac, de 160 horas). Os módulos são: **Windows avançado** (programa travado e **Gerenciador de
   Tarefas** com Ctrl+Shift+Esc, programas que abrem sozinhos, **contas de usuário** administrador e padrão, **rede e
@@ -78,8 +92,8 @@ conversa e tira dúvidas. **Funciona sem internet.**
   digitação, jogos e os programas instaláveis) e pode **liberar aulas fora da sequência** para um aluno ou para a turma
   (veja "Painel do Instrutor" abaixo).
 - **Trilha essencial (o padrão)**, para turmas com pouco tempo (1 hora por semana): o aluno segue só as aulas essenciais
-  (Iniciante 29, Intermediário 36, Avançado 35, Profissional 24, Assistente Administrativo 19, Celular 12 e Criação
-  digital 11, em vez de 48, 50, 48, 34, 26, 17 e 16). As outras viram **Reforço (opcional)**: abrem
+  (Iniciante 29, Intermediário 41, Avançado 42, Profissional 24, Assistente Administrativo 19, Celular 12 e Criação
+  digital 11, em vez de 48, 56, 58, 34, 26, 17 e 16). As outras viram **Reforço (opcional)**: abrem
   junto com a aula essencial seguinte, não travam o curso, não são pedidas para o certificado nem para as medalhas, e
   o professor oferece "💪 Treinar mais" no fim da aula. Provas e o que elas cobram são sempre essenciais. Na **trilha
   completa**, todas as aulas são obrigatórias. O instrutor escolhe em **Painel › Progresso da turma › 🧭 Trilha do
@@ -121,13 +135,15 @@ conversa e tira dúvidas. **Funciona sem internet.**
     "Onde a turma trava" e no relatório);
   - **fechou o programa da tarefa** → "Você fechou o …" com o botão para abrir de novo;
   - **no chat**, "não entendi", "como faço?", "onde clico?" respondem sobre a tarefa de agora e mostram como. Sem a
-    IA instalada, o professor tem respostas prontas para cerca de 130 assuntos de todas as matérias (Planilha,
+    IA instalada, o professor tem respostas prontas para cerca de 150 assuntos de todas as matérias (Planilha,
     Editor, Arquivos, E-mail, Pix e boleto, gov.br, IA, Apresentações, Configurações, Digitação, Celular, Gestão
-    Fácil, Fotos, Vídeo, gincana, missão e jornal...).
+    Fácil, Fotos, Vídeo, gincana, missão, jornal, PDF, cartão e empréstimo, MEI, monitoria...).
 
-### Curso de Digitação: 144 exercícios em 4 níveis
+### Curso de Digitação: 161 exercícios em 4 níveis
 - **Iniciante** (39): fileiras do meio, de cima e de baixo, Shift, acentos e cedilha, palavras e frases.
-- **Intermediário** (43): números, pontuação, frases, textos curtos, ritmo, trava-línguas e **digitação narrada**.
+- **Intermediário** (51): números, pontuação, frases, textos curtos, **textos da nossa terra** (Rondônia: Porto Velho, a
+  Madeira-Mamoré, o tacacá, o rio Madeira, o Forte Príncipe da Beira, o Marechal Rondon, o Arraial Flor do Maracujá e
+  o café), ritmo, trava-línguas e **digitação narrada**.
 - **🗣️ Digitação narrada (o professor fala)**: 8 exercícios em que o Professor Virtual narra e o aluno digita sem ver o
   texto. Começa **pausado e com repetições** (palavra por palavra, bem devagar, cada uma falada 2 vezes, com a
   pontuação falada — "vírgula", "ponto" — e o professor espera o aluno apertar Espaço para falar a próxima), passa por
@@ -135,12 +151,16 @@ conversa e tira dúvidas. **Funciona sem internet.**
   repetição**: o professor segue sozinho, no ritmo de 18 e depois 25 palavras por minuto, sem esperar. No resultado
   aparecem as palavras certas e erradas. Sem voz instalada no computador, cada pedaço aparece escrito por alguns
   segundos.
-- **Avançado** (37): símbolos, dados do dia a dia (e-mail, telefone, CEP), **fichas de cadastro**, teclado numérico,
+- **Avançado** (42): símbolos, dados do dia a dia (e-mail, telefone, CEP), **fichas de cadastro**, teclado numérico,
+  **caixa de supermercado** (preços, total e troco no teclado numérico),
   textos de Machado de Assis, Gonçalves Dias e Olavo Bilac, **ditado** (o professor fala e o aluno digita) e testes de
   velocidade.
-- **💼 Profissional** (22): textos de escritório (e-mail formal, ofício, ata, relatório), números e códigos do trabalho
-  (nota fiscal, estoque), entrada de dados rápida (meta de 99% de acertos), ditado de recados e pedidos e **simulados
-  de teste de seleção** de 2 e 3 minutos. Metas de 55 a 65 ppm. Não é dispensado pelo teste de nivelamento.
+- **💼 Profissional** (26): textos de escritório (e-mail formal, ofício, ata, relatório), números e códigos do trabalho
+  (nota fiscal, estoque), entrada de dados rápida (meta de 99% de acertos), ditado de recados e pedidos, **simulados
+  de teste de seleção** de 2 e 3 minutos e **simulados de concurso** de 5 e 10 minutos, com a nota em **toques
+  líquidos** (tudo o que foi digitado menos 5 toques por erro, como na prova prática dos concursos). Metas de 55 a 65
+  ppm. Não é dispensado pelo teste de nivelamento.
+- O **certificado de digitação** mostra a velocidade e os acertos da prova do nível.
 - **📋 Fichas de cadastro (entrada de dados)**: a ficha de papel fica à esquerda e o "sistema" à direita; o aluno passa
   campo por campo (nome, CPF, telefone, CEP, data, valor...) pulando com o **Tab**. São 6 fichas de trabalho de verdade:
   posto de saúde, loja, matrícula escolar, admissão no RH, pedido de entrega e nota de serviço. Meta de 98% de
@@ -167,7 +187,8 @@ SOMA, MÉDIA, SE, CONT.SE, SOMASE e PROCV, formatação de moeda e porcentagem, 
 filtro, gráficos de colunas, barras, linhas e pizza e destaque automático), **Apresentações** (tipo PowerPoint: slides,
 temas, transições, imagens, gráficos da planilha, anotações e modo Apresentar), **Configurações** (fundo de tela,
 acessibilidade, data e hora, som, instalar e desinstalar programas, antivírus, atualizações, impressoras, backup no
-pen drive), **Leitor de PDF**, **E-mail** (Correio: cada aluno cria o próprio
+pen drive), **Leitor de PDF** (preencher formulário, juntar PDFs, organizar páginas e mandar assinar pelo Cidadão
+Digital), **E-mail** (Correio: cada aluno cria o próprio
 endereço `@correio.escola` e manda mensagens com anexo para os colegas e para contatos de treino que respondem),
 Digitação, **Arquivos** (pastas e subpastas, copiar/recortar/colar, arrastar, pesquisar, compactar e extrair ZIP e
 **pen drive** simulado), programas que o aluno instala pelas Configurações (**Bloco de Notas**, **Relógio e
@@ -188,35 +209,46 @@ Aulas e Painel do Instrutor.
 ### Internet de treino (offline)
 O Navegador tem sites inventados que funcionam sem internet: o buscador **Procura**, a enciclopédia **Saber Livre**,
 as receitas do **Cozinha Fácil**, o **Jornal do Bairro** (com anúncios enganosos), a loja segura **Compra Certa**
-(carrinho e compra de treino), o **Banco Escola** (conta de treino com saldo, extrato, Pix e boleto),
-o **Cidadão Digital** (agendar atendimento e tirar 2ª via da conta de água), o **Escudo Digital** (teste de senha,
+(carrinho e compra de treino), o **Banco Escola** (conta de treino com saldo, extrato, Pix, boleto, a fatura do
+**cartão de crédito** e o simulador de **empréstimo** com CET), o **Cidadão Digital** (agendar atendimento, 2ª via da
+conta de água, Conta Cidadão, **assinar documento** e **validar assinatura**), a **Feira Online** (anúncios com foto e
+o comprador do comprovante falso), o **Portal do Empreendedor** (abrir o MEI e pagar o DAS), o **Escudo Digital** (teste de senha,
 verificação em duas etapas com um celular de treino, jogo "Golpe ou não?", privacidade de rede social e "Boato ou
 verdade?"), o **Emprega Já** (vagas de emprego com filtro e candidatura com currículo), a **Sala de Reunião**
 (entrevista por vídeo com câmera, microfone, mão levantada e chat) e sites de **golpe** (loja falsa,
-prêmio falso e banco falso), que mostram uma página explicando os sinais de golpe quando o aluno cai na armadilha.
+prêmio falso, banco falso e empréstimo fácil), que mostram uma página explicando os sinais de golpe quando o aluno cai na armadilha.
 Os arquivos baixados vão para a pasta **Downloads**.
 
-### Turma: gincana ao vivo, missão da semana e jornal
+### Turma: gincana, desafio relâmpago, missão da semana, jornal e monitoria
 - **🏆 Gincana ao vivo** (na rede da sala): o instrutor abre a gincana com perguntas sorteadas das aulas de um nível
   (5, 8 ou 10) e **tarefas práticas** no meio (abrir a Calculadora, criar uma pasta, deixar o nome em negrito, fazer uma
   conta na Planilha, trocar o fundo, mandar um e-mail, tirar foto no Celular: o computador do aluno confere sozinho),
   escolhe **equipes** (2 a 4, montadas sozinhas do mesmo tamanho) e a turma. Os alunos recebem o convite na tela e
   respondem no computador deles; acertar vale 100 pontos e responder rápido dá até 50 de bônus (na tarefa, quem termina
   primeiro ganha mais). O placar e o pódio aparecem ao vivo (dá para mostrar no projetor).
-- **🎯 Missão da semana**: um desafio curto que vale a semana toda (mandar um e-mail com anexo, fazer um gráfico,
-  digitar a 30 ppm, concluir 3 aulas, desmascarar um golpe, organizar arquivos, fazer um cartaz ou foto, fazer um Pix
-  conferindo o nome, mandar matéria para o jornal). Muda sozinha toda segunda-feira, ou o instrutor escolhe. Fica no
-  🎯 da barra de tarefas; o computador confere sozinho quando o aluno cumpre e comemora.
+- **⚡ Desafio relâmpago**: a gincana só com tarefas práticas de Planilha e Editor (fazer um gráfico, usar a AutoSoma,
+  mostrar em R$, centralizar um título, inserir uma tabela, salvar um documento, salvar em PDF), com **ranking** por quem
+  termina primeiro.
+- **🎯 Missão da semana**: um desafio curto que vale a semana toda, de um banco de **55 missões** (mandar um e-mail com
+  anexo, fazer um gráfico, digitar a 30 ppm, concluir 3 aulas, desmascarar um golpe, organizar arquivos, assinar um PDF,
+  pagar a fatura inteira, anunciar na Feira Online, abrir o MEI...). No automático, **cada aluno recebe uma missão do
+  nível dele** (um iniciante não recebe "pague o DAS do MEI") e ela muda toda segunda-feira; o instrutor também pode
+  escolher uma missão para todos. Fica no 🎯 da barra de tarefas; o computador confere sozinho quando o aluno cumpre e
+  comemora.
 - **📰 Jornal da turma**: o aluno escreve no Editor de Texto (com fotos, se quiser) e clica em **📰 Jornal**. O
   instrutor lê, aprova ou pede para melhorar e **monta o jornal** para imprimir ou salvar em PDF, com os **destaques da
   semana** calculados sozinhos (certificados e medalhas da semana, o mais rápido no teclado, quem cumpriu a missão e o
   pódio da gincana). Ao fechar a edição, as aprovadas viram a edição publicada e começa a próxima. Por segurança, a
   matéria passa por um filtro: só texto, formatação e fotos (nada de código ou link).
-- Tudo fica no **Painel do Instrutor → 🏁 Gincana, missão e jornal**.
+- **🧑‍🏫 Monitoria** (na rede da sala): o instrutor marca alunos como **monitores** (os 🚀 avançados, por exemplo). Quando
+  um colega aperta "🙋 Não entendi", o pedido aparece no 🧑‍🏫 da barra de tarefas do monitor, com o computador e a aula;
+  o monitor clica em "Vou ajudar" (o colega recebe na tela "Fulano, monitor da turma, está vindo te ajudar!" e o
+  instrutor vê na Sala ao vivo) e depois em "Já ajudei". Cada ajuda conta para as medalhas de monitor.
+- Tudo fica no **Painel do Instrutor → 🏁 Gincana, missão e jornal** (com a seção 🧑‍🏫 Monitores).
 
 ### Outros
-- **69 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova (também por cumprir missões, ir ao
-  pódio da gincana e mandar matéria para o jornal).
+- **74 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova (também por cumprir missões, ir ao
+  pódio da gincana, mandar matéria para o jornal e ajudar colegas como monitor).
 - **Painel do Instrutor**: cadastro (com a opção "criança"), aula atual de cada aluno, média, exercício de digitação
   atual, melhor velocidade, provas e medalhas. Também:
   - **🧩 Onde a turma trava**: os passos de aula em que mais alunos apertaram "Não entendi", precisaram da dica, erraram
@@ -305,6 +337,7 @@ npm run teste:servidor        # servidor da sala, sem tela (menos de 1 minuto)
 npm run teste:sala            # 1 instrutor + 20 alunos usando o sistema ao mesmo tempo (uns 2 minutos)
 npm run teste:sala -- 5       # o mesmo com 5 alunos
 npm run teste:fase2           # novidades da fase 2: o aluno troca de computador e encontra tudo (uns 3 minutos)
+npm run teste:fase3           # novidades da fase 3: MEI, anúncio e PDF em outro computador, e a monitoria (uns 3 minutos)
 ```
 
 ## Primeiro uso
@@ -373,7 +406,9 @@ instrutor, inclusive o Celular de treino (PIN, letra, conversas, banco), a empre
 e vídeos salvos, a missão da semana, as matérias do jornal, as medalhas e as gincanas. Testado com o programa de verdade
 (`npm run teste:fase2`): a aluna usa tudo isso no computador 1, entra no computador 2 e encontra tudo igual (o Celular
 pede o PIN criado no outro computador), joga a gincana no computador 2 e vê as medalhas no computador 3; nada fica
-guardado nos computadores dos alunos.
+guardado nos computadores dos alunos. Também vale para a fase 3 (`npm run teste:fase3`): o MEI aberto, o anúncio com
+foto na Feira Online e o formulário em PDF preenchido num computador aparecem no outro, e a monitoria funciona entre
+computadores (o monitor vê o pedido de ajuda do colega, avisa que vai ajudar e o colega recebe o aviso na tela dele).
 
 ## Criar aulas sem programar
 No **Painel do Instrutor → 📝 Criar aulas**, o instrutor monta aulas novas com três tipos de passo:
@@ -419,11 +454,13 @@ app/js/apps/             os programas (editor, planilha, e-mail, digitação, ar
                          (painel-instrutor.js; as abas novas ficam em painel-extras.js e painel-turma.js); os da fase 2:
                          celular.js, gestao.js (Gestão Fácil), fotos.js, vetorial.js, video.js e gincana.js
 app/js/planilha/         as fórmulas da planilha
-app/js/navegador/        os sites de treino (sites-gov.js: a Conta Cidadão; sites-ia.js: o vídeo falso)
+app/js/navegador/        os sites de treino (sites-gov.js: a Conta Cidadão e a assinatura de documentos; sites-ia.js: o
+                         vídeo falso; sites-negocios.js: cartão, empréstimo, Feira Online e Portal do Empreendedor)
 app/js/corrida-regras.js as regras da corrida de digitação (usadas pelo servidor da sala e pelo modo navegador)
 app/js/gincana-regras.js as regras da gincana ao vivo (idem)
 app/js/jornal-regras.js  as regras do jornal da turma (idem); jornal.js monta o jornal e filtra as matérias
-app/js/missao.js         a missão da semana (catálogo, semana do ano e conferência automática)
+app/js/missao.js         a missão da semana (banco de missões por nível, semana do ano e conferência automática)
+app/js/monitoria.js      a monitoria (o botão 🧑‍🏫 e a janela dos pedidos de ajuda)
 testes/                  testes automáticos do modo sala de aula (servidor, turma de 20 alunos e as novidades da
                          fase 2 em 3 computadores)
 ```

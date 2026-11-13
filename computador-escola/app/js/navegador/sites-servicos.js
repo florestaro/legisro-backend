@@ -23,6 +23,7 @@ window.CE = window.CE || {};
     '83650000001250001800001202512340001': { beneficiario: 'Companhia de Águas (treino)', valor: 125.0, vencimento: '10/12/2025' },
   };
   CE.BOLETO_AGUA = '83650000001-2 50001800001-2 02512340001';
+  CE.BOLETOS_TREINO = BOLETOS; // outros sites de treino registram os boletos deles aqui (o DAS do MEI, por exemplo)
 
   function estadoBanco(estado) {
     if (!estado.banco) {

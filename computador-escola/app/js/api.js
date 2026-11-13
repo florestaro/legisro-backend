@@ -176,6 +176,32 @@ window.CE = window.CE || {};
         'gincana:responder': () => gincanas().responder(atual, a[0]),
         'gincana:tarefa': () => gincanas().tarefa(atual, a[0]),
         'gincana:ultima': () => ler('gincana-ultima', null),
+        // Monitoria (no navegador de teste, os pedidos vêm das presenças guardadas aqui).
+        'monitor:definir': () => {
+          if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.');
+          (a[0] || []).forEach((id) => { const p = ler('progresso:' + id, { licoes: {}, digitacao: {} }); if (a[1]) p.monitor = true; else delete p.monitor; gravar('progresso:' + id, p); });
+          return true;
+        },
+        'monitor:pedidos': () => {
+          if (!atual || !ler('progresso:' + atual.id, {}).monitor) throw new Error('Só os monitores da turma veem os pedidos de ajuda.');
+          return Object.values(salaTeste.presencas).filter((x) => x.usuario.id !== atual.id && x.atividade && x.atividade.ajuda && Date.now() - x.em < 45000)
+            .map((x) => ({ id: x.usuario.id, nome: x.usuario.nome, avatar: x.usuario.avatar, turma: x.usuario.turma, pc: x.pc, app: x.atividade.app, licao: x.atividade.licao, passo: x.atividade.passo,
+              ajudaHa: Math.round((Date.now() - x.atividade.ajuda) / 1000), ajudante: x.ajudante ? x.ajudante.nome : null, euAjudo: !!(x.ajudante && x.ajudante.id === atual.id), ajudado: !!(x.ajudante && x.ajudante.resolvido) }));
+        },
+        'monitor:ajudar': () => {
+          const x = salaTeste.presencas[a[0]];
+          if (!x || !x.atividade.ajuda) throw new Error('Esse colega já não está pedindo ajuda.');
+          x.ajudante = { id: atual.id, nome: atual.nome };
+          return true;
+        },
+        'monitor:ajudei': () => {
+          const x = salaTeste.presencas[a[0]];
+          if (!x || !x.ajudante || x.ajudante.id !== atual.id) throw new Error('Primeiro clique em "🙋 Vou ajudar".');
+          const p = ler('progresso:' + atual.id, { licoes: {}, digitacao: {} });
+          if (!x.ajudante.resolvido) { p.ajudas = (p.ajudas || 0) + 1; gravar('progresso:' + atual.id, p); }
+          x.ajudante = { ...x.ajudante, resolvido: true };
+          return { ajudas: p.ajudas || 0 };
+        },
         'escola:missao': () => {
           if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.');
           const id = String((a[0] && a[0].id) || '').slice(0, 40);

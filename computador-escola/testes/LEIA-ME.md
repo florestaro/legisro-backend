@@ -1,6 +1,6 @@
 # Testes da sala de aula
 
-Três testes automáticos do modo sala de aula em rede. Antes da primeira vez, rode `npm install` na pasta
+Quatro testes automáticos do modo sala de aula em rede. Antes da primeira vez, rode `npm install` na pasta
 `computador-escola`.
 
 ## Teste do servidor (rápido, sem tela)
@@ -9,7 +9,7 @@ Três testes automáticos do modo sala de aula em rede. Antes da primeira vez, r
 npm run teste:servidor
 ```
 
-Liga o servidor da sala sozinho (sem abrir o programa) e confere, pedido por pedido, cerca de 100 situações:
+Liga o servidor da sala sozinho (sem abrir o programa) e confere, pedido por pedido, cerca de 110 situações:
 - o instrutor fecha e abre o programa, e os alunos continuam dentro;
 - um aluno entra em outro computador, é removido pelo instrutor ou tem a senha trocada;
 - 20 alunos entram ao mesmo tempo, e senhas erradas em série esbarram no limite;
@@ -25,6 +25,9 @@ Liga o servidor da sala sozinho (sem abrir o programa) e confere, pedido por ped
   resultado, a resposta não muda depois de dada, na tarefa quem termina primeiro ganha mais e o resultado fica
   guardado); a **missão da semana** (só o instrutor troca); o **jornal** (matéria curta é recusada, no máximo 5 esperando
   por aluno, o aluno não lê as dos outros nem aprova, e fechar a edição publica as aprovadas);
+- a fase 3: a **monitoria** (só o instrutor escolhe monitor; quem não é monitor não vê os pedidos de ajuda; o aluno não
+  se faz monitor nem inventa ajudas gravando o próprio progresso; o monitor vê o "Não entendi" do colega com a aula,
+  avisa que vai ajudar, o colega e a Sala ao vivo recebem o aviso, e cada ajuda conta uma vez só);
 - um arquivo de dados está estragado.
 
 Leva menos de 1 minuto. Usa uma pasta temporária e a porta 47199 (para usar outra, veja "Outra porta" abaixo).
@@ -91,6 +94,27 @@ usar qualquer computador da sala com o mesmo nome e senha** e encontra tudo o qu
   armazenamento do navegador deles).
 
 Leva uns 3 minutos e usa a porta 47123 (ou outra, como no teste com 20 alunos: `PORTA=47130 npm run teste:fase2`).
+
+## Teste das novidades da fase 3 em 3 computadores
+
+```
+npm run teste:fase3
+```
+
+No Linux sem tela: `xvfb-run -a npm run teste:fase3`.
+
+Abre o programa de verdade 4 vezes (1 instrutor e 3 alunos) e confere:
+- **Computador 1:** a Ana abre o MEI no Portal do Empreendedor, publica um anúncio com foto na Feira Online e preenche
+  um formulário em PDF.
+- **Computador 2:** a Ana entra com o mesmo nome e senha e encontra o MEI (CNPJ de treino), o anúncio com a foto em
+  "Meus anúncios" e o PDF preenchido.
+- **Monitoria:** a instrutora escolhe o Bruno como monitor pelo Painel; a Ana (computador 2) aperta "🙋 Não entendi"; o
+  pedido chega no 🧑‍🏫 do Bruno (computador 3), que clica em "Vou ajudar"; a Ana recebe na tela "Bruno Lima, monitor(a)
+  da turma, está vindo te ajudar!", a Sala ao vivo da instrutora mostra quem está indo ajudar e, depois do "Já ajudei",
+  a ajuda fica contada (e a medalha de monitor) no computador da instrutora.
+- **Onde os dados ficam:** tudo no disco do computador da instrutora, nada nos computadores dos alunos.
+
+Leva uns 3 minutos e usa a porta 47123 (ou outra: `PORTA=47130 npm run teste:fase3`).
 
 ## Outra porta
 

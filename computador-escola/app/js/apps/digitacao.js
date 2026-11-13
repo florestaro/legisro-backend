@@ -207,7 +207,10 @@
           const minutos = inicio ? Math.max((Date.now() - inicio) / 60000, 1 / 60) : 1;
           const ppm = Math.round((posicao / 5) / minutos);
           const precisao = posicao + erros ? Math.round((posicao / (posicao + erros)) * 100) : 100;
-          return { ppm, precisao };
+          if (!ex.concurso) return { ppm, precisao };
+          // Concurso: toques brutos (tudo o que digitou) menos o desconto de cada erro = toques líquidos.
+          const brutos = posicao + erros, liquidos = Math.max(0, brutos - erros * ex.concurso.desconto);
+          return { ppm, precisao, toquesBrutos: brutos, toquesLiquidos: liquidos, tlpm: Math.round(liquidos / minutos) };
         }
 
         function atualizar() {
@@ -224,6 +227,7 @@
             CE.el('span', { class: inicio && meta.ppm && r.ppm >= meta.ppm ? 'ok' : '' }, `Velocidade: ${inicio ? r.ppm : 0} ppm${meta.ppm ? ` (meta ${meta.ppm})` : ''}`),
             CE.el('span', { class: !meta.precisao ? '' : r.precisao >= meta.precisao ? 'ok' : 'abaixo' }, `Acertos: ${r.precisao}%${meta.precisao ? ` (meta ${meta.precisao}%)` : ''}`),
             CE.el('span', {}, `Erros: ${erros}`),
+            ex.concurso ? CE.el('span', { 'data-placar-tlpm': '' }, `Toques líquidos por minuto: ${inicio ? r.tlpm : 0}`) : null,
           );
         }
 
@@ -670,6 +674,10 @@
           ex.tipo !== 'ditado' && ex.tipo !== 'narrada' ? CE.el('p', { class: resultado.ppm >= meta.ppm ? 'ok' : 'abaixo' }, `Velocidade: ${resultado.ppm} palavras por minuto (meta ${meta.ppm})`) : null,
           ex.tipo === 'narrada' ? CE.el('p', {}, `Você digitou a ${resultado.ppm} palavras por minuto.`) : null,
           resultado.toquesPorHora ? CE.el('p', { 'data-toques-hora': resultado.toquesPorHora }, `Toques por hora: ${resultado.toquesPorHora.toLocaleString('pt-BR')} (a medida usada nas vagas de digitador)`) : null,
+          resultado.tlpm != null ? CE.el('div', { class: 'dig-concurso', 'data-toques-liquidos': resultado.toquesLiquidos },
+            CE.el('b', {}, `📝 Nota de concurso: ${resultado.tlpm} toques líquidos por minuto`),
+            CE.el('span', {}, `${resultado.toquesBrutos} toques digitados − ${erros || 0} erro(s) × ${ex.concurso.desconto} = ${resultado.toquesLiquidos} toques líquidos.`),
+            CE.el('small', {}, 'Muitos concursos pedem de 120 a 200 toques líquidos por minuto. Cada erro tira 5 toques: acertar vale mais que correr.')) : null,
           CE.el('p', { class: resultado.precisao >= meta.precisao ? 'ok' : 'abaixo' }, `Acertos: ${resultado.precisao}% (meta ${meta.precisao}%)${erros != null ? ` · ${erros} erro${erros === 1 ? '' : 's'}` : ''}`),
           faltou.length ? CE.el('p', { class: 'dig-conselho' }, `Faltou: ${faltou.join(' e ')}. ${resultado.precisao < meta.precisao ? 'Vá mais devagar e com atenção: acertar vem antes de correr.' : 'Você está acertando bem! Agora tente um pouco mais rápido.'}`) : null,
           detalhes ? CE.el('div', { class: 'dig-ditado-comparacao' }, ...detalhes) : null,

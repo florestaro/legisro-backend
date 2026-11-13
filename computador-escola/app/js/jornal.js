@@ -84,9 +84,13 @@ window.CE = window.CE || {};
     Object.entries(porAluno).slice(0, 6).forEach(([nome, ms]) => lista.push(`🏅 ${nome} ganhou: ${ms.slice(0, 3).join(', ')}${ms.length > 3 ? ` e mais ${ms.length - 3}` : ''}.`));
     const recorde = alunos.map(({ usuario, progresso: p }) => ({ nome: usuario.nome, ppm: Math.max(0, ...Object.entries(p.digitacao || {}).filter(([k]) => !k.startsWith('_')).map(([, r]) => (r && r.aprovado && r.ppm) || 0)) })).sort((a, b) => b.ppm - a.ppm)[0];
     if (recorde && recorde.ppm > 0) lista.push(`⌨️ Mais rápido da turma no teclado: ${recorde.nome}, com ${recorde.ppm} palavras por minuto.`);
-    const missao = CE.missao ? CE.missao.atual() : null;
-    const cumpriram = missao ? alunos.filter(({ progresso: p }) => CE.missao.situacao(p).feita).map(({ usuario }) => usuario.nome) : [];
-    if (missao) lista.push(`🎯 Missão da semana (${missao.titulo}): ${cumpriram.length ? `cumprida por ${cumpriram.join(', ')}` : 'ainda ninguém cumpriu. Quem vai ser o primeiro?'}.`);
+    if (CE.missao) {
+      const escolhida = CE.missao.escolhida();
+      const cumpriram = alunos.filter(({ progresso: p }) => CE.missao.situacao(p).feita).map(({ usuario }) => usuario.nome);
+      lista.push(escolhida
+        ? `🎯 Missão da semana (${escolhida.titulo}): ${cumpriram.length ? `cumprida por ${cumpriram.join(', ')}` : 'ainda ninguém cumpriu. Quem vai ser o primeiro?'}.`
+        : `🎯 Missão da semana: ${cumpriram.length ? `cumprida por ${cumpriram.join(', ')}` : 'ainda ninguém cumpriu. Quem vai ser o primeiro?'}.`);
+    }
     if (ultimaGincana && ultimaGincana.podio && ultimaGincana.podio.length && agora - ultimaGincana.em < SEMANA * 2) {
       lista.push(`🏆 ${ultimaGincana.titulo}: ${ultimaGincana.podio.map((p, i) => `${['🥇', '🥈', '🥉'][i]} ${p.nome}`).join(' ')}${ultimaGincana.equipes && ultimaGincana.equipes.length ? ` · Equipe campeã: ${ultimaGincana.equipes[0].nome}` : ''}.`);
     }

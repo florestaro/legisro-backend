@@ -37,7 +37,7 @@ window.CE = window.CE || {};
       conteudo: () => n.modulos.map((m) => m.titulo),
       situacao(p) {
         const r = p.digitacao && p.digitacao[n.prova.id];
-        return r && r.aprovado ? { conquistado: true, em: r.aprovadoEm || r.em || Date.now(), dispensado: !!r.dispensado } : { conquistado: false, faltam: null };
+        return r && r.aprovado ? { conquistado: true, em: r.aprovadoEm || r.em || Date.now(), dispensado: !!r.dispensado, ppm: r.dispensado ? null : r.ppm, precisao: r.dispensado ? null : r.precisao } : { conquistado: false, faltam: null };
       },
     }));
     return [...informatica, ...digitacao];
@@ -50,7 +50,8 @@ window.CE = window.CE || {};
         CE.el('div', { class: 'cert-escola' }, escola.nome || 'Computador Escola'),
         CE.el('h1', { class: 'cert-titulo' }, 'Certificado'),
         CE.el('p', { class: 'cert-texto' }, 'Certificamos que ', CE.el('b', { class: 'cert-nome' }, aluno.nome),
-          ` concluiu, em ${porExtenso(situacao.em)}, o Curso de ${curso.curso} — ${curso.nivel}, com carga horária de ${carga} horas.`),
+          ` concluiu, em ${porExtenso(situacao.em)}, o Curso de ${curso.curso} — ${curso.nivel}, com carga horária de ${carga} horas.`
+          + (situacao.ppm ? ` Velocidade na prova: ${situacao.ppm} palavras por minuto, com ${situacao.precisao}% de acertos.` : '')),
         CE.el('p', { class: 'cert-conteudo' }, CE.el('b', {}, 'Conteúdo: '), curso.conteudo().join(' · ')),
         CE.el('p', { class: 'cert-data' }, `${escola.cidade ? escola.cidade + ', ' : ''}${porExtenso(Date.now())}.`),
         CE.el('div', { class: 'cert-assinaturas' },

@@ -154,7 +154,7 @@
           st.mensagem ? CE.el('p', { class: 'painel-legenda' }, `Última mensagem: "${st.mensagem.texto}"`) : null,
           alunos.length ? CE.el('div', { class: 'painel-cartoes' }, ...alunos.map((a) => CE.el('div', { class: 'painel-cartao' + (a.ajudaHa != null ? ' pediu-ajuda' : a.ha > 25 ? ' parado' : ''), 'data-aluno-online': a.usuario.nome },
             CE.el('div', { class: 'painel-cartao-topo' }, CE.el('span', { class: 'login-avatar' }, a.usuario.avatar), CE.el('div', {}, CE.el('b', {}, a.usuario.nome), CE.el('small', {}, `💻 ${a.pc}${a.usuario.turma ? ' · ' + a.usuario.turma : ''}`))),
-            a.ajudaHa != null ? CE.el('p', { class: 'painel-cartao-ajuda' }, `🙋 Não entendeu — pediu ajuda ${a.ajudaHa < 15 ? 'agora' : `há ${tempoLongo(a.ajudaHa)}`}`) : null,
+            a.ajudaHa != null ? CE.el('p', { class: 'painel-cartao-ajuda' }, `🙋 Não entendeu — pediu ajuda ${a.ajudaHa < 15 ? 'agora' : `há ${tempoLongo(a.ajudaHa)}`}${a.ajudante ? ` · 🧑‍🏫 ${a.ajudante} ${a.ajudado ? 'já ajudou' : 'está indo ajudar'}` : ''}`) : null,
             CE.el('p', {}, a.atividade.licao ? `📘 ${a.atividade.licao} — passo ${a.atividade.passo}` : '📘 Fora de aula'),
             CE.el('p', {}, a.atividade.app),
             CE.el('small', {}, `Atualizado ${tempo(a.ha)}`))))

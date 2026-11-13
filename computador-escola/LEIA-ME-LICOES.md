@@ -143,6 +143,14 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `vetor:pagina` / `vetor:modelo` / `vetor:forma` / `vetor:selecionado` / `vetor:propriedade` / `vetor:ordem` / `vetor:alinhado` / `vetor:duplicado` / `vetor:exportado` | Desenho Vetorial | `pagina`, `modelo` / `tipo`, `total` / `prop`, `valor` / `acao`, `posicao` / `nome`, `formas` |
 | `video:adicionado` / `video:cortado` / `video:dividido` / `video:movido` / `video:legenda` / `video:transicao` / `video:titulo` / `video:musica` / `video:play` / `video:exportado` | Editor de Vídeo | `tipo`, `fonte` / `inicio`, `fim`, `duracao` / `texto` / `transicao` / `faixa` / `nome`, `duracao`, `qualidade`, `legendas`, `titulos` |
 | `missao:cumprida` / `jornal:enviada` / `gincana:entrou` / `gincana:respondeu` / `gincana:tarefa-feita` / `gincana:terminou` | Missão da semana, jornal da turma e gincana | `missao`, `semana` / `titulo`, `edicao` / `equipe` / `opcao` / `tarefa` / `lugar`, `pontos` |
+| `pdf:aberto` / `pdf:campo` / `pdf:formulario-salvo` | Leitor de PDF: abriu, escreveu num campo, salvou o formulário preenchido | `nome`, `paginas`, `campos` / `campo`, `valor` / `nome`, `preenchidos`, `valores` |
+| `pdf:juntar` / `pdf:juntado` / `pdf:organizar` / `pdf:pagina-girada` / `pdf:pagina-excluida` / `pdf:pagina-movida` / `pdf:organizado` / `pdf:assinar` | Juntar PDFs, organizar as páginas e mandar assinar | `nome`, `arquivos`, `paginas` / `pagina`, `giro` / `vazia` / `de`, `para` / `giros`, `ordem`, `excluidas` |
+| `gov:assinar-escolheu` / `gov:assinar-codigo` / `gov:assinado` / `gov:validado` | Assinatura de documento no Cidadão Digital (CE.assinatura) | `nome`, `original` / `valida`, `assinaturas` |
+| `celular:pagina-digitalizada` / `celular:digitalizado` | Digitalizar documento com o celular (frente e verso viram PDF) | `cena`, `paginas` / `nome`, `paginas`, `verso` |
+| `banco:fatura` / `banco:emprestimo-simulado` / `credito:golpe-caiu` | Banco Escola: fatura do cartão e simulador de empréstimo; site falso de empréstimo | `opcao` (`total`, `minimo`, `parcelar`), `valor` / `tipo`, `valor`, `parcelas`, `cet`, `total` |
+| `feira:foto` / `feira:anuncio` / `feira:anuncio-erro` / `feira:conferir` / `feira:golpe-evitado` / `feira:golpe-caiu` | Feira Online: anúncio com foto e o comprador do comprovante falso | `nome` / `titulo`, `preco`, `categoria`, `foto` / `campo` |
+| `mei:aberto` / `mei:certificado` / `mei:das-gerado` | Portal do Empreendedor: abrir o MEI, baixar o certificado e gerar o DAS (o pagamento é `banco:boleto`) | `ocupacao` / `valor` |
+| `monitor:pedido` / `monitor:aberto` / `monitor:ajudar` / `monitor:ajudou` / `sala:monitor-vindo` | Monitoria: pedido de ajuda chegou ao monitor, ele avisou que vai, marcou que ajudou; o colega recebeu o aviso | `colega`, `ajudas` / `nome` |
 | `pdf:zoom` / `pdf:impresso` | Leitor de PDF | `zoom` / `nome` |
 | `planilha:classificada` / `planilha:filtro` / `planilha:menu-filtro` / `planilha:filtrada` | Classificar e filtro | `coluna`, `ordem` (`az`, `za`) / `ligado` / `coluna`, `mostrando`, `escondidos`, `visiveis` |
 | `planilha:grafico` / `planilha:grafico-tipo` / `planilha:grafico-movido` / `planilha:condicional` | Gráficos e destaque automático | `tipo`, `intervalo`, `series`, `nomesSeries` / `regra`, `valor`, `cor` |
@@ -212,7 +220,13 @@ opção se o menu estiver aberto e, se não, para o arquivo. Os `data-opcao` apa
 `inserir-linha`, `nova-aba`).
 
 Os códigos dos programas (`app`) são: `aulas`, `editor`, `planilha`, `apresentacoes`, `configuracoes`, `leitor-pdf`, `bloco-notas`, `cronometro`, `jogo-memoria`, `email`, `digitacao`, `arquivos`, `lixeira`, `calculadora`, `computador`, `jogos-mouse`, `teclas`, `desenho`, `navegador`, `instrutor`,
-`celular`, `gestao`, `fotos`, `vetorial`, `video`, `gincana`.
+`celular`, `gestao`, `fotos`, `vetorial`, `video`, `gincana`, `leitor-pdf`, `monitoria`.
+
+**PDF de treino.** Para uma aula com PDF, monte o arquivo com `CE.pdf.montar(meta, paginas)` (uma lista de trechos de
+HTML, uma por página; `meta.giros = { 1: 90 }` deixa a página 2 deitada). Um campo de formulário é
+`<span class="pdf-campo" data-campo="nome" data-rotulo="Nome completo"></span>` (com `data-tipo="marcar"` vira caixinha
+de marcar). `CE.pdf.campos(conteudo)` lê o que foi preenchido e `CE.assinatura.ler(conteudo)` lê as assinaturas (veja
+`app/js/licoes/n2-documentos.js`).
 
 ## Atalhos para escrever aulas (`CE.L`, em `ajudantes.js`)
 - `info(texto)`, `quiz(pergunta, opcoes, certa)`, `esperar(texto, evento, condicao, extras)`, `abrir(app, nome)`, `fechar(app)`
