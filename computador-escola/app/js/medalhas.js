@@ -92,6 +92,12 @@ window.CE = window.CE || {};
     { id: 'monitor', icone: '💁', nome: 'Monitor da turma', descricao: 'Ajudou um colega que pediu ajuda.', ganhou: (p) => (p.ajudas || 0) >= 1 },
     { id: 'monitor-ouro', icone: '🌟', nome: 'Monitor de ouro', descricao: 'Ajudou 10 colegas.', ganhou: (p) => (p.ajudas || 0) >= 10 },
     { id: 'reporter', icone: '📰', nome: 'Repórter da turma', descricao: 'Mandou uma matéria para o jornal da turma.', ganhou: (p) => ((p.jornal && p.jornal.enviadas) || 0) >= 1 },
+    // Praça Escola (app/js/apps/praca.js): cada conquista fica em p.praca.
+    { id: 'praca-visita', icone: '⛲', nome: 'Passeio na praça', descricao: 'Entrou na Praça Escola, o encontro da turma.', ganhou: (p) => !!(p.praca && p.praca.visitou) },
+    { id: 'praca-professor', icone: '👵', nome: 'Professor por um dia', descricao: 'Ensinou a Dona Rosa a mandar uma foto para o neto, na Praça Escola.', ganhou: (p) => !!(p.praca && p.praca.ensinou) },
+    { id: 'praca-caixa', icone: '🧺', nome: 'Caixa da feira', descricao: 'Deu o troco certo para o Seu Raimundo, na feira da Praça Escola.', ganhou: (p) => !!(p.praca && p.praca.caixa) },
+    { id: 'praca-olho-vivo', icone: '👀', nome: 'Olho vivo', descricao: 'Percebeu o golpe do Moço da Oferta, na Praça Escola.', ganhou: (p) => !!(p.praca && p.praca.olhoVivo) },
+    { id: 'praca-velha', icone: '❌', nome: 'Bom de jogo', descricao: 'Ganhou uma partida de jogo da velha na Praça Escola.', ganhou: (p) => !!(p.praca && p.praca.velha) },
   ];
 
   CE.medalhas = {
@@ -113,7 +119,7 @@ window.CE = window.CE || {};
     },
   };
 
-  ['licao:concluida', 'digitacao:concluida', 'digitacao:jogo', 'jogo:concluido', 'missao:cumprida', 'gincana:terminou', 'jornal:registrada', 'monitor:ajudou'].forEach((evento) => CE.ouvir(evento, () => CE.medalhas.verificar()));
+  ['licao:concluida', 'digitacao:concluida', 'digitacao:jogo', 'jogo:concluido', 'missao:cumprida', 'gincana:terminou', 'jornal:registrada', 'monitor:ajudou', 'praca:conquista'].forEach((evento) => CE.ouvir(evento, () => CE.medalhas.verificar()));
   CE.ouvir('golpe:evitado', async () => {
     if (!CE.sessao.usuario) return;
     await CE.sessao.atualizarProgresso((p) => { p.navegador = p.navegador || {}; p.navegador.golpesEvitados = (p.navegador.golpesEvitados || 0) + 1; });

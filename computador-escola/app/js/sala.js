@@ -96,6 +96,25 @@ window.CE = window.CE || {};
     CE.voz.falar('O professor abriu uma gincana! Clique em Entrar na gincana.');
   }
 
+  // Praça Escola: o instrutor chamou todos para a praça (uma vez por chamada; quem já está na praça não recebe).
+  const pracasVistas = new Map(); // aluno -> chamada já mostrada
+  function convidarParaPraca(convite) {
+    const quem = CE.sessao.usuario && CE.sessao.usuario.id;
+    if (!quem || !convite || pracasVistas.get(quem) === convite.id || CE.janelas.estaAberta('praca')) return;
+    pracasVistas.set(quem, convite.id);
+    document.querySelectorAll('.praca-convite').forEach((d) => d.remove());
+    const fundo = CE.el('div', { class: 'dialogo-fundo praca-convite', 'data-convite-praca': convite.id },
+      CE.el('div', { class: 'dialogo' },
+        CE.el('h3', {}, '⛲ Todo mundo para a praça!'),
+        CE.el('p', {}, 'O instrutor chamou a turma para a Praça Escola. Vamos?'),
+        CE.el('div', { class: 'dialogo-botoes' },
+          CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Agora não'),
+          CE.el('button', { class: 'botao', 'data-acao': 'ir-para-praca', onclick: () => { fundo.remove(); CE.janelas.abrir('praca'); } }, 'Ir para a praça ▶'))));
+    document.body.append(fundo);
+    CE.emitir('sala:praca', { id: convite.id });
+    CE.voz.falar('O instrutor chamou todos para a praça.');
+  }
+
   // Monitoria: o colega monitor avisou que vem ajudar (uma vez por pedido de ajuda).
   let monitorAvisado = null;
   function avisarMonitor(nome) {
@@ -122,6 +141,7 @@ window.CE = window.CE || {};
       mostrarMensagens(r.mensagens || (r.mensagem ? [r.mensagem] : []));
       if (r.corrida && !document.getElementById('tela-pausa')) convidarParaCorrida(r.corrida);
       if (r.gincana && !document.getElementById('tela-pausa')) convidarParaGincana(r.gincana);
+      if (r.praca && !document.getElementById('tela-pausa')) convidarParaPraca(r.praca);
       avisarMonitor(r.ajudante);
     } catch (e) {
       if (minha !== geracao) return;
@@ -145,7 +165,7 @@ window.CE = window.CE || {};
       timer = setInterval(avisar, 8000);
     },
     // Ao sair: a pausa e a mensagem do instrutor não ficam na frente da tela de entrada.
-    parar() { clearInterval(timer); geracao++; ajudaEm = 0; pausar(false); document.querySelectorAll('.sala-mensagem, .corrida-convite, .gincana-convite').forEach((d) => d.remove()); },
+    parar() { clearInterval(timer); geracao++; ajudaEm = 0; pausar(false); document.querySelectorAll('.sala-mensagem, .corrida-convite, .gincana-convite, .praca-convite').forEach((d) => d.remove()); },
     avisarAgora: avisar,
     // "Não entendi": avisa o instrutor na hora (sem esperar a próxima presença).
     pedirAjuda() { ajudaEm = Date.now(); avisar(); },

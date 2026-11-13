@@ -354,6 +354,26 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   await pedir('sala:presenca', [{ app: 'Aulas', ajuda: 0 }], tT7);
   ok(!(await pedir('monitor:pedidos', [], tT8)).valor.length, 'o colega seguiu a aula: o pedido some da lista');
   ok((await pedir('monitor:definir', [[turma[8].id], false], tp)).ok && !(await pedir('monitor:pedidos', [], tT8)).ok, 'instrutor tira a monitoria: a lista deixa de abrir');
+  // 26) Praça Escola (regras em app/js/praca-regras.js): só o instrutor comanda; o resto fica no disco do instrutor
+  const naPraca = (await pedir('praca:sincronizar', [{}, 0], tT7)).valor;
+  ok(naPraca.novo && naPraca.pessoas.some((x) => x.id === turma[7].id), 'praça: o aluno entra e aparece na lista de quem está lá');
+  const sohInstrutor = [['praca:megafone', ['oi']], ['praca:configurar', [{ aberta: false }]], ['praca:chamar', []], ['praca:silenciar', [turma[8].id, true]], ['praca:apagar-recado', [1]], ['praca:encerrar-votacao', []], ['praca:nova-votacao', []]];
+  const recusados = await Promise.all(sohInstrutor.map(([canal, args]) => pedir(canal, args, tT7)));
+  ok(recusados.every((r) => !r.ok && /instrutor/.test(r.erro)), 'praça: aluno não usa megafone, não fecha, não chama todos, não silencia, não apaga recado nem mexe na votação');
+  await pedir('praca:configurar', [{ soFrases: true }], tp);
+  ok(/frases prontas/.test((await pedir('praca:falar', ['texto livre'], tT7)).erro) && (await pedir('praca:falar', ['Bom dia!'], tT7)).ok, 'praça: com "só frases prontas", texto livre é recusado e frase pronta passa');
+  await pedir('praca:configurar', [{ soFrases: false }], tp);
+  await pedir('praca:silenciar', [turma[7].id, true], tp); await espera(1100);
+  ok(/ouvindo/.test((await pedir('praca:falar', ['oi'], tT7)).erro), 'praça: aluno silenciado não fala');
+  await pedir('praca:silenciar', [turma[7].id, false], tp); await espera(1100);
+  ok((await pedir('praca:recado', ['Recado do teste'], tT7)).ok && (dados.ler('praca', {}).recados || []).some((r) => r.texto === 'Recado do teste'), 'praça: o recado do mural fica no disco do instrutor');
+  const voto = (await pedir('praca:votar', ['horta'], tT7)).valor;
+  ok(voto.meu === 'horta' && voto.cofre && voto.cofre.moedas === voto.cofre.aulas * 4, 'praça: o voto conta e o cofre vem das aulas da turma (4 moedas cada)');
+  await pedir('praca:chamar', [], tp);
+  const convites = [(await pedir('sala:presenca', [{}], tT7)).valor.praca, (await pedir('sala:presenca', [{}], tT8)).valor.praca];
+  ok(!convites[0] && convites[1] && convites[1].id, 'praça: "chamar todos" convida quem está fora (quem já está na praça não recebe)');
+  await pedir('praca:sair', [], tT7);
+  ok(!(await pedir('praca:sincronizar', [{}, 0], tp)).valor.pessoas.some((x) => x.id === turma[7].id), 'praça: quem fecha a praça sai da lista na hora');
   // 9) Arquivo de usuários estragado: usa a cópia de reserva
   const antes = dados.listarUsuarios().length;
   fs.writeFileSync(path.join(PASTA, 'usuarios.json'), '{ estragado');

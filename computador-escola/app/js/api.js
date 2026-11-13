@@ -37,6 +37,12 @@ window.CE = window.CE || {};
   const corridas = () => (corridasTeste = corridasTeste || CE.corridaRegras());
   let gincanasTeste = null; // a gincana no navegador de teste (regras em gincana-regras.js)
   const gincanas = () => (gincanasTeste = gincanasTeste || CE.gincanaRegras());
+  // Praça Escola no navegador de teste: com colegas de demonstração andando e conversando (regras em praca-regras.js).
+  let pracaTeste = null;
+  const praca = () => (pracaTeste = pracaTeste || CE.pracaRegras({ ler: () => ler('praca', null), salvar: (v) => gravar('praca', v), demonstracao: true }));
+  const progressoAtual = () => (atual && ler('progresso:' + atual.id, null)) || {};
+  // Cofre: as aulas concluídas de quem usa este navegador, mais as dos colegas de demonstração.
+  const cofreTeste = () => { const aulas = 300 + Object.values(progressoAtual().licoes || {}).filter((r) => r && r.concluida && !r.dispensada).length; return { aulas, moedas: aulas * 4, meta: 1500 }; };
   const guardarResumoGincana = (estado) => { if (estado && estado.fase === 'fim') { const r = gincanas().resumo(); if (r && r.participantes) gravar('gincana-ultima', r); } return estado; };
 
   async function simulado(canal, ...a) {
@@ -98,7 +104,7 @@ window.CE = window.CE || {};
         'sala:presenca': () => {
           if (!atual) throw new Error('Ninguém entrou no sistema.');
           salaTeste.presencas[atual.id] = { usuario: atual, pc: 'Este computador', atividade: a[0] || {}, em: Date.now() };
-          return { pausada: salaTeste.pausada && atual.papel !== 'instrutor', mensagem: atual.papel !== 'instrutor' ? salaTeste.mensagem : null, corrida: atual.papel !== 'instrutor' ? corridas().convite(atual) : null, gincana: atual.papel !== 'instrutor' ? gincanas().convite(atual) : null };
+          return { pausada: salaTeste.pausada && atual.papel !== 'instrutor', mensagem: atual.papel !== 'instrutor' ? salaTeste.mensagem : null, corrida: atual.papel !== 'instrutor' ? corridas().convite(atual) : null, gincana: atual.papel !== 'instrutor' ? gincanas().convite(atual) : null, praca: atual.papel !== 'instrutor' && pracaTeste ? pracaTeste.convite(atual) : null };
         },
         'sala:turma': () => ({ pausada: salaTeste.pausada, mensagem: salaTeste.mensagem, alunos: Object.values(salaTeste.presencas).filter((x) => Date.now() - x.em < 45000).map((x) => ({ ...x, ha: Math.round((Date.now() - x.em) / 1000), ajudaHa: x.atividade.ajuda ? Math.round((Date.now() - x.atividade.ajuda) / 1000) : null })) }),
         'escola:ler': () => {
@@ -213,6 +219,22 @@ window.CE = window.CE || {};
         'jornal:listar': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); return CE.jornalRegras.normal(ler('jornal', null)); },
         'jornal:status': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); const j = CE.jornalRegras.mudarStatus(ler('jornal', null), a[0], a[1]); gravar('jornal', j); return j; },
         'jornal:nova-edicao': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); const j = CE.jornalRegras.novaEdicao(ler('jornal', null)); gravar('jornal', j); return j; },
+        'praca:sincronizar': () => { if (!atual) throw new Error('Ninguém entrou no sistema.'); return praca().sincronizar(atual, a[0], a[1], { monitor: !!progressoAtual().monitor }); },
+        'praca:sair': () => (atual ? praca().sair(atual) : true),
+        'praca:falar': () => praca().falar(atual, a[0]),
+        'praca:gesto': () => praca().gesto(atual, a[0]),
+        'praca:megafone': () => praca().megafone(atual, a[0]),
+        'praca:configurar': () => praca().configurar(atual, a[0] || {}),
+        'praca:chamar': () => praca().chamar(atual),
+        'praca:silenciar': () => praca().silenciar(atual, a[0], !!a[1]),
+        'praca:mural': () => praca().mural(),
+        'praca:recado': () => praca().recado(atual, a[0]),
+        'praca:apagar-recado': () => praca().apagarRecado(atual, a[0]),
+        'praca:votacao': () => ({ ...praca().votacao(atual), cofre: cofreTeste() }),
+        'praca:votar': () => ({ ...praca().votar(atual, a[0]), cofre: cofreTeste() }),
+        'praca:encerrar-votacao': () => ({ ...praca().encerrarVotacao(atual), cofre: cofreTeste() }),
+        'praca:nova-votacao': () => ({ ...praca().novaVotacao(atual), cofre: cofreTeste() }),
+        'praca:mesa': () => praca().mesa(atual, a[0], a[1]),
         'sala:mensagem': () => (salaTeste.mensagem = String(a[0] || '').trim() ? { id: Date.now(), texto: String(a[0]).trim().slice(0, 300), de: atual.nome } : null),
       }[canal];
       return { ok: true, valor: await valor() };

@@ -250,9 +250,36 @@ Os arquivos baixados vão para a pasta **Downloads**.
   instrutor vê na Sala ao vivo) e depois em "Já ajudei". Cada ajuda conta para as medalhas de monitor.
 - Tudo fica no **Painel do Instrutor → 🏁 Gincana, missão e jornal** (com a seção 💁 Monitores).
 
+### ⛲ Praça Escola: o encontro virtual da turma (na rede da sala)
+Um programa da área de trabalho em que a turma se encontra numa **cidade de treino**: cada aluno anda com o seu boneco
+(o avatar do cadastro), conversa com quem está perto, joga com os colegas e entra nos prédios, que levam às partes do
+curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela rede (sem internet).
+- **Andar**: clicando no chão (treina o mouse) ou com as setas (treina o teclado). "Ver a cidade inteira" mostra o mapa
+  todo; clicar num prédio leva o boneco até a porta.
+- **Conversar**: frases prontas ("Bom dia!", "Vamos jogar?"...) ou escrevendo; a fala aparece num balão em cima do
+  boneco e, no registro da conversa, só para quem está perto. Gestos: 👋 acenar, 👏 aplaudir e 🙋 pedir ajuda (a mão
+  levantada aparece para todos, inclusive para o instrutor e os monitores). Palavrões viram asteriscos.
+- **Prédios**: Escola (as Aulas), Banco Escola (o banco de treino), Correios (o E-mail), Prefeitura (o Cidadão Digital),
+  Agência de Empregos (o Emprega Já), Feira (a Feira Online), Estação Madeira-Mamoré (os textos da nossa terra na
+  Digitação), Posto de Saúde e o cais do Rio Madeira (em breve), e a **Sua casa**, com as medalhas na parede.
+- **Moradores** (personagens do computador, com conversas que ensinam): a Dona Rosa pede ajuda para mandar foto ao neto,
+  a Dona Lúcia explica o Pix, o Seu Raimundo desafia no troco da feira, a Enfermeira Cida dá dicas, o Seu Bené conta a
+  história da Madeira-Mamoré e o **Moço da Oferta** oferece um golpe (quem percebe ganha medalha).
+- **Mesa do jogo da velha**: dois colegas jogam, cada um no seu computador (ou um aluno contra o computador, enquanto
+  ninguém senta do outro lado). A mesa de dominó vem em breve.
+- **Mural de recados** e **votação**: a turma vota no que construir no Lote da turma (quadra, horta ou biblioteca); o
+  **cofre da turma** soma 4 moedas por aula concluída pelos alunos.
+- **O instrutor comanda** (na janela da praça dele): **📣 megafone** (o recado aparece no mapa de todos e é falado em
+  voz alta), **chamar todos para a praça** (quem está na praça vai para perto da fonte; quem está fora recebe o convite
+  na tela), **fechar e abrir a praça** (por exemplo, só no recreio), **só frases prontas** (bom para crianças),
+  **silenciar** um aluno, tirar recados do mural e encerrar a votação.
+- Onde fica cada coisa: quem está onde e a conversa ficam só na memória do computador do instrutor; o mural, a votação
+  e as escolhas do instrutor ficam no disco dele (`praca.json`); as medalhas, no progresso de cada aluno. No modo de
+  teste pelo navegador, a praça tem **colegas de demonstração** andando e conversando.
+
 ### Outros
-- **74 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova (também por cumprir missões, ir ao
-  pódio da gincana, mandar matéria para o jornal e ajudar colegas como monitor).
+- **79 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova (também por cumprir missões, ir ao
+  pódio da gincana, mandar matéria para o jornal, ajudar colegas como monitor e conquistas na Praça Escola).
 - **Painel do Instrutor**: cadastro (com a opção "criança"), aula atual de cada aluno, média, exercício de digitação
   atual, melhor velocidade, provas e medalhas. Também:
   - **🧩 Onde a turma trava**: os passos de aula em que mais alunos apertaram "Não entendi", precisaram da dica, erraram
@@ -342,6 +369,8 @@ npm run teste:sala            # 1 instrutor + 20 alunos usando o sistema ao mesm
 npm run teste:sala -- 5       # o mesmo com 5 alunos
 npm run teste:fase2           # novidades da fase 2: o aluno troca de computador e encontra tudo (uns 3 minutos)
 npm run teste:fase3           # novidades da fase 3: MEI, anúncio e PDF em outro computador, e a monitoria (uns 3 minutos)
+npm run teste:praca           # a Praça Escola em 3 computadores: andar, conversar, jogar, mural, votação e comandos do instrutor
+npm run teste:emojis          # todos os emojis aparecem direito no Windows 10 (sem tela, segundos)
 ```
 
 ## Primeiro uso
@@ -413,6 +442,9 @@ pede o PIN criado no outro computador), joga a gincana no computador 2 e vê as 
 guardado nos computadores dos alunos. Também vale para a fase 3 (`npm run teste:fase3`): o MEI aberto, o anúncio com
 foto na Feira Online e o formulário em PDF preenchido num computador aparecem no outro, e a monitoria funciona entre
 computadores (o monitor vê o pedido de ajuda do colega, avisa que vai ajudar e o colega recebe o aviso na tela dele).
+E a Praça Escola (`npm run teste:praca`): cada aluno vê o boneco do outro andar, a conversa chega para quem está perto,
+os dois jogam jogo da velha cada um no seu computador, e o megafone, o fechar/abrir, o só frases prontas, o silenciar e
+o chamar todos da instrutora chegam na hora.
 
 ## Criar aulas sem programar
 No **Painel do Instrutor → 📝 Criar aulas**, o instrutor monta aulas novas com três tipos de passo:
@@ -465,6 +497,9 @@ app/js/gincana-regras.js as regras da gincana ao vivo (idem)
 app/js/jornal-regras.js  as regras do jornal da turma (idem); jornal.js monta o jornal e filtra as matérias
 app/js/missao.js         a missão da semana (banco de missões por nível, semana do ano e conferência automática)
 app/js/monitoria.js      a monitoria (o botão 💁 e a janela dos pedidos de ajuda)
-testes/                  testes automáticos do modo sala de aula (servidor, turma de 20 alunos e as novidades da
-                         fase 2 em 3 computadores)
+app/js/praca-mapa.js     o mapa da Praça Escola (prédios, praça, caminhos); praca-regras.js: as regras (quem está onde,
+                         conversa, mural, votação, mesa de jogo, comandos do instrutor, colegas de demonstração), usadas
+                         pelo servidor da sala e pelo modo navegador; apps/praca.js: a janela da praça
+testes/                  testes automáticos do modo sala de aula (servidor, turma de 20 alunos, as novidades das
+                         fases 2 e 3 e a Praça Escola em 3 computadores) e o dos emojis do Windows 10
 ```

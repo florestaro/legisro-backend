@@ -5,6 +5,7 @@ const os = require('os');
 const criarCorridas = require('../app/js/corrida-regras');
 const criarGincanas = require('../app/js/gincana-regras');
 const jornalRegras = require('../app/js/jornal-regras');
+const criarPraca = require('../app/js/praca-regras');
 
 // Chaves que a tela pode usar: "progresso:<id>", "arquivos:<id>", "email:<id>" (a caixa de e-mail do aluno) e
 // "empresa:<id>" (a empresa de treino do Gestão Fácil).
@@ -91,6 +92,28 @@ function criarCanais(dados) {
     const p = dados.ler(`progresso-${s.usuario.id}`, null);
     if (!p || !p.monitor) throw new Error('Só os monitores da turma veem os pedidos de ajuda.');
   };
+  // Praça Escola: quem está onde e a conversa ficam na memória; o mural, a votação e as escolhas do instrutor, no disco.
+  const praca = criarPraca({ ler: () => dados.ler('praca', null), salvar: (v) => dados.salvar('praca', v) });
+  const monitores = new Map(); // id -> { sim, em }: quem é monitor (lido do progresso no máximo a cada 30 s)
+  function ehMonitor(u) {
+    const c = monitores.get(u.id);
+    if (c && Date.now() - c.em < 30000) return c.sim;
+    const p = dados.ler(`progresso-${u.id}`, null);
+    const sim = !!(p && p.monitor);
+    monitores.set(u.id, { sim, em: Date.now() });
+    return sim;
+  }
+  // Cofre da turma: cada aula concluída pelos alunos vale 4 moedas para a obra que a turma escolher.
+  function cofreDaTurma() {
+    let aulas = 0;
+    for (const u of dados.listarUsuarios()) {
+      if (u.papel === 'instrutor') continue;
+      const p = dados.ler(`progresso-${u.id}`, null);
+      aulas += Object.values((p && p.licoes) || {}).filter((r) => r && r.concluida && !r.dispensada).length;
+    }
+    return { aulas, moedas: aulas * 4, meta: 1500 };
+  }
+  const comCofre = (v) => ({ ...v, cofre: cofreDaTurma() });
   const guardarResumoGincana = (estado) => { if (estado && estado.fase === 'fim') { const r = gincanas.resumo(); if (r && r.participantes) dados.salvar('gincana-ultima', r); } return estado; };
   // Cada mensagem do instrutor vale por 15 minutos (quem entrar bem depois não vê um aviso velho); as últimas
   // ficam guardadas, para duas mensagens mandadas em seguida chegarem as duas.
@@ -128,7 +151,7 @@ function criarCanais(dados) {
       s.motivo = null;
       return s.usuario;
     },
-    'sessao:sair': (s) => { if (s.usuario) presencas.delete(s.usuario.id); s.usuario = null; s.motivo = null; return true; },
+    'sessao:sair': (s) => { if (s.usuario) { presencas.delete(s.usuario.id); praca.sair(s.usuario); } s.usuario = null; s.motivo = null; return true; },
     'dados:ler': (s, chave, padrao) => dados.ler(conferirChave(s, chave), padrao),
     'dados:salvar': (s, chave, valor) => {
       const arquivo = conferirChave(s, chave);
@@ -321,6 +344,7 @@ function criarCanais(dados) {
         pausada: sala.pausada && aluno, mensagens: aluno ? mensagensAtuais() : [], mensagem: aluno ? mensagemAtual() : null,
         corrida: aluno ? corridas.convite(s.usuario) : null,
         gincana: aluno ? gincanas.convite(s.usuario) : null,
+        praca: aluno ? praca.convite(s.usuario) : null, // o instrutor chamou todos para a Praça Escola
         ajudante: ajudante ? ajudante.nome : null, // o monitor que está vindo ajudar
       };
     },
@@ -423,6 +447,24 @@ function criarCanais(dados) {
     },
 
     // ---------- Jornal da turma (regras em app/js/jornal-regras.js) ----------
+    // ---------- Praça Escola (regras em app/js/praca-regras.js) ----------
+    'praca:sincronizar': (s, eu, desde) => { exigirSessao(s); return praca.sincronizar(s.usuario, eu, desde, { monitor: ehMonitor(s.usuario) }); },
+    'praca:sair': (s) => { exigirSessao(s); return praca.sair(s.usuario); },
+    'praca:falar': (s, texto) => { exigirSessao(s); return praca.falar(s.usuario, texto); },
+    'praca:gesto': (s, tipo) => { exigirSessao(s); return praca.gesto(s.usuario, tipo); },
+    'praca:megafone': (s, texto) => { exigirInstrutor(s); return praca.megafone(s.usuario, texto); },
+    'praca:configurar': (s, c) => { exigirInstrutor(s); return praca.configurar(s.usuario, c || {}); },
+    'praca:chamar': (s) => { exigirInstrutor(s); return praca.chamar(s.usuario); },
+    'praca:silenciar': (s, id, sim) => { exigirInstrutor(s); return praca.silenciar(s.usuario, id, !!sim); },
+    'praca:mural': (s) => { exigirSessao(s); return praca.mural(); },
+    'praca:recado': (s, texto) => { exigirSessao(s); return praca.recado(s.usuario, texto); },
+    'praca:apagar-recado': (s, id) => { exigirInstrutor(s); return praca.apagarRecado(s.usuario, id); },
+    'praca:votacao': (s) => { exigirSessao(s); return comCofre(praca.votacao(s.usuario)); },
+    'praca:votar': (s, opcao) => { exigirSessao(s); return comCofre(praca.votar(s.usuario, opcao)); },
+    'praca:encerrar-votacao': (s) => { exigirInstrutor(s); return comCofre(praca.encerrarVotacao(s.usuario)); },
+    'praca:nova-votacao': (s) => { exigirInstrutor(s); return comCofre(praca.novaVotacao(s.usuario)); },
+    'praca:mesa': (s, acao, casa) => { exigirSessao(s); return praca.mesa(s.usuario, acao, casa); },
+
     'jornal:enviar': (s, materia) => {
       exigirSessao(s);
       const r = jornalRegras.enviar(dados.ler('jornal', null), s.usuario, materia);

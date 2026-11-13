@@ -1,6 +1,6 @@
 # Testes da sala de aula
 
-Quatro testes automáticos do modo sala de aula em rede e um dos emojis (o último). Antes da primeira vez, rode
+Cinco testes automáticos do modo sala de aula em rede e um dos emojis (o último). Antes da primeira vez, rode
 `npm install` na pasta `computador-escola`.
 
 ## Teste do servidor (rápido, sem tela)
@@ -115,6 +115,27 @@ Abre o programa de verdade 4 vezes (1 instrutor e 3 alunos) e confere:
 - **Onde os dados ficam:** tudo no disco do computador da instrutora, nada nos computadores dos alunos.
 
 Leva uns 3 minutos e usa a porta 47123 (ou outra: `PORTA=47130 npm run teste:fase3`).
+
+## Teste da Praça Escola em 3 computadores
+
+```
+npm run teste:praca
+```
+
+Abre o programa de verdade em 3 computadores (a instrutora e dois alunos, a Ana e o Bruno, que é monitor) e confere:
+- **Os dois na praça**: cada um vê o boneco do outro; a Ana anda com as setas e o computador do Bruno vê ela andar; o
+  "Bom dia!" da Ana chega na conversa do Bruno (estão perto); o 🙋 do Bruno aparece em cima dele no computador da Ana.
+- **Jogo da velha** entre os dois computadores: cada um joga na sua vez, a conversa conta quem ganhou e a vencedora
+  ganha a medalha (guardada no computador da instrutora).
+- **A instrutora na praça**: vê os dois em "Na praça agora", fala no megafone (aparece no mapa dos dois), liga "só
+  frases prontas" (o campo de escrever some e texto livre é recusado), silencia e libera a Ana, fecha e abre a praça.
+- **Mural e votação** guardados no computador da instrutora; encerrada a votação, o Lote da turma vira "Obra" na tela da
+  Ana.
+- **Chamar todos**: o Bruno, que fechou a praça, recebe o convite "Todo mundo para a praça!", volta e vai para perto da
+  fonte (a Ana, que estava lá, também vai).
+- **Onde os dados ficam:** tudo no disco do computador da instrutora, nada nos computadores dos alunos.
+
+Leva uns 3 minutos e usa a porta 47123 (ou outra: `PORTA=47130 npm run teste:praca`).
 
 ## Emojis que o Windows 10 desenha (rápido, sem tela)
 

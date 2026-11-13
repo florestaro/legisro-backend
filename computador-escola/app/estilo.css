@@ -2128,3 +2128,141 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .mo-pedido .botao { justify-self: start; }
 .mo-situacao { font-weight: 600; color: #1e6b33; }
 .mo-vazio { font-size: 17px; color: #556; text-align: center; padding: 20px; }
+
+/* ---------- Praça Escola (app/js/apps/praca.js) ----------
+   O mapa é o palco; a conversa fica embaixo dele e o painel da praça ao lado. A cidade tem cores próprias (é um
+   desenho); a moldura usa as cores do Computador Escola. Janela estreita: o painel desce para baixo do mapa. */
+.janela-corpo.pr-corpo { overflow: hidden; background: #e9eef3; }
+.pr-caixa { container-type: inline-size; height: 100%; }
+.pr { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 290px; grid-template-rows: minmax(0, 1fr) auto; gap: 8px; padding: 8px; }
+.pr-mapa { grid-column: 1; grid-row: 1; position: relative; min-height: 300px; overflow: hidden; border-radius: 10px; background: #4f7a37; cursor: pointer; touch-action: manipulation; outline: none; user-select: none; }
+.pr-mapa:focus-visible { box-shadow: 0 0 0 3px var(--azul); }
+.pr-barra { grid-column: 1; grid-row: 2; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: var(--fundo-janela); border: 1px solid var(--borda); border-radius: 10px; padding: 6px; }
+.pr-lado { grid-column: 2; grid-row: 1 / span 2; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+@container (max-width: 780px) {
+  .pr { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(320px, 62cqh) auto auto; overflow-y: auto; }
+  .pr-lado { grid-column: 1; grid-row: 3; overflow: visible; }
+}
+.pr-mundo { position: absolute; left: 0; top: 0; width: 1440px; height: 1200px; transform-origin: 0 0; }
+.pr-mundo.suave { transition: transform .5s cubic-bezier(.3, .7, .2, 1); }
+.pr-mundo canvas { position: absolute; left: 0; top: 0; width: 1440px; height: 1200px; }
+.pr-camada { position: absolute; inset: 0; }
+.pr-rotulo { position: absolute; transform: translate(-50%, -50%) scale(var(--inv, 1)); white-space: nowrap; font: 600 13px/1 var(--fonte); color: #1e2a25; background: rgba(255, 255, 255, .94); padding: 5px 9px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); pointer-events: none; }
+.pr-rotulo.rua { background: rgba(30, 42, 37, .8); color: #fff; font-size: 11px; letter-spacing: .05em; }
+.pr-rotulo.pequeno { font-size: 11.5px; padding: 3px 7px; }
+.pr-rotulo.destaque { box-shadow: 0 0 0 3px #b4502c, 0 2px 8px rgba(0, 0, 0, .35); }
+.pr-mapa.longe .so-perto { display: none; }
+.pr-obj { position: absolute; transform: translate(-50%, -50%); font-size: 30px; line-height: 1; pointer-events: none; }
+.pr-obj.barco { animation: pr-boia 3s ease-in-out infinite alternate; }
+.pr-obj.trem { font-size: 32px; letter-spacing: -5px; }
+@keyframes pr-boia { to { transform: translate(-50%, -50%) translateY(4px) rotate(3deg); } }
+/* Pessoas e moradores */
+.pr-p { position: absolute; left: 0; top: 0; width: 40px; height: 40px; cursor: pointer; }
+.pr-p .sombra { position: absolute; left: 9px; right: 9px; bottom: 1px; height: 8px; border-radius: 50%; background: rgba(0, 0, 0, .28); }
+.pr-p .corpo { position: absolute; inset: -3px 0 3px; display: grid; place-items: center; font-size: 30px; line-height: 1; }
+.pr-p .rosto { display: inline-block; }
+.pr-p.esq .rosto { transform: scaleX(-1); }
+.pr-p.andando .corpo { animation: pr-passo .28s ease-in-out infinite alternate; }
+@keyframes pr-passo { to { transform: translateY(-3px); } }
+.pr-p .nome { position: absolute; left: 50%; top: 100%; transform: translate(-50%, 0) scale(var(--inv, 1)); transform-origin: 50% 0; white-space: nowrap; font: 700 11.5px/1.35 var(--fonte); padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, .94); color: #1e2a25; box-shadow: 0 1px 2px rgba(0, 0, 0, .3); pointer-events: none; }
+.pr-p.morador .nome { background: #fff0cf; }
+.pr-p.golpista .nome { background: #fbe1dd; }
+.pr-p.instrutor .nome { background: #1e2a25; color: #fff; }
+.pr-p.monitor .nome { background: #cfebd9; }
+.pr-p.eu .nome { background: #b4502c; color: #fff; }
+.pr-mapa.longe .pr-p:not(.eu) .nome { display: none; }
+.pr-p.sumiu { opacity: 0; pointer-events: none; transition: opacity .6s; }
+.pr-mao { position: absolute; right: -10px; top: -14px; transform: scale(var(--inv, 1)); font-size: 20px; background: #fff7d6; border: 2px solid #f5b400; border-radius: 50%; width: 30px; height: 30px; display: grid; place-items: center; animation: pr-chama 1s ease-in-out 6 alternate; pointer-events: none; }
+@keyframes pr-chama { to { transform: scale(calc(var(--inv, 1) * 1.15)); } }
+.pr-balao { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, -6px) scale(var(--inv, 1)); transform-origin: 50% 100%; width: max-content; max-width: 220px; background: #fff; color: #1e2a25; font: 14px/1.3 var(--fonte); padding: 6px 10px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0, 0, 0, .28); pointer-events: none; animation: pr-aparece .2s ease-out; z-index: 2; }
+.pr-balao::after { content: ""; position: absolute; left: 50%; top: 100%; margin-left: -6px; border: 6px solid transparent; border-top-color: #fff; }
+.pr-balao.megafone { background: #1e2a25; color: #fff; }
+.pr-balao.megafone::after { border-top-color: #1e2a25; }
+@keyframes pr-aparece { from { opacity: 0; } }
+/* Camadas por cima do mapa */
+.pr-megafone { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 20px); background: #1e2a25; color: #fff; padding: 9px 15px; border-radius: 10px; font-weight: 700; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); z-index: 6; cursor: default; }
+.pr-botao-mapa { position: absolute; left: 10px; bottom: 10px; z-index: 5; border: 0; background: #1e2a25; color: #fff; font-weight: 700; font-size: 14px; padding: 9px 13px; border-radius: 9px; cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); }
+.pr-dica { position: absolute; right: 10px; bottom: 10px; max-width: calc(100% - 230px); background: rgba(255, 255, 255, .94); color: #1e2a25; font-size: 13px; padding: 6px 10px; border-radius: 9px; pointer-events: none; z-index: 4; }
+@container (max-width: 600px) { .pr-dica { display: none; } }
+.pr-aviso-rede { position: absolute; left: 10px; top: 10px; z-index: 6; background: #fff4ce; color: #5c4400; border: 1px solid #f5b400; padding: 7px 11px; border-radius: 9px; font-size: 13.5px; max-width: calc(100% - 20px); }
+.pr-fechada { position: absolute; inset: 0; background: rgba(12, 22, 17, .66); display: grid; place-items: center; z-index: 9; cursor: default; padding: 16px; }
+.pr-fechada-cartao { background: var(--fundo-janela); border-radius: 14px; padding: 18px 22px; text-align: center; max-width: 360px; display: grid; gap: 6px; justify-items: center; }
+.pr-fechada-cartao h3 { margin: 0; font-size: 19px; }
+.pr-fechada-cartao p { margin: 0; color: var(--texto-suave); }
+.pr-dialogo { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); width: min(520px, calc(100% - 20px)); max-height: calc(100% - 24px); overflow: auto; background: var(--fundo-janela); color: var(--texto); border: 1px solid var(--borda); border-radius: 14px; box-shadow: 0 12px 40px rgba(0, 0, 0, .38); padding: 14px 16px; z-index: 8; cursor: default; }
+.pr-dlg-topo { display: flex; gap: 12px; align-items: center; }
+.pr-rosto { width: 50px; height: 50px; border-radius: 50%; display: grid; place-items: center; font-size: 30px; background: var(--fundo-cinza); flex: none; }
+.pr-rosto.morador { background: #fff0cf; } .pr-rosto.golpista { background: #fbe1dd; } .pr-rosto.colega { background: #dde8f6; }
+.pr-rosto.instrutor { background: #e2e7e4; } .pr-rosto.monitor { background: #dceee2; } .pr-rosto.eu { background: #f7e4da; }
+.pr-dlg-topo h3 { margin: 0; font-size: 18px; }
+.pr-dlg-topo p { margin: 2px 0 0; color: var(--texto-suave); font-size: 13px; }
+.pr-dlg-fechar { margin-left: auto; align-self: flex-start; border: 0; background: transparent; color: var(--texto-suave); font-size: 22px; line-height: 1; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+.pr-dlg-fala { margin: 10px 0 0; font-size: 16px; }
+.pr-dlg-lista { margin: 8px 0 0; padding-left: 22px; display: grid; gap: 3px; }
+.pr-dlg-nota { margin: 10px 0 0; font-size: 13.5px; color: var(--texto-suave); background: var(--fundo-cinza); border-radius: 9px; padding: 8px 11px; }
+.pr-dlg-extra { margin-top: 10px; display: grid; gap: 10px; }
+.pr-dlg-opcoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.pr-campo { display: grid; gap: 4px; font-weight: 600; font-size: 14px; }
+.pr-campo input, .pr-digitar input { border: 1px solid var(--borda); border-radius: 8px; padding: 8px 10px; font: inherit; min-width: 0; }
+/* Jogo da velha */
+.pr-mesa-lados { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; font-weight: 600; }
+.pr-mesa-lado { border: 1px solid var(--borda); border-radius: 999px; padding: 4px 12px; background: var(--fundo-cinza); }
+.pr-mesa-lado.vez { border-color: var(--azul); background: var(--azul-claro); }
+.pr-velha { display: grid; grid-template-columns: repeat(3, 62px); gap: 6px; justify-content: center; }
+.pr-casa { width: 62px; height: 62px; border-radius: 11px; border: 1px solid var(--borda); background: var(--fundo-cinza); font-size: 29px; cursor: pointer; display: grid; place-items: center; color: var(--texto); }
+.pr-casa:disabled { cursor: default; color: var(--texto); }
+.pr-casa.linha { background: #dceee2; border-color: #1e8e3e; }
+.pr-velha-status { margin: 0; text-align: center; font-weight: 700; }
+/* Mural */
+.pr-recados { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 200px; overflow-y: auto; }
+.pr-recados li { background: #fff7b8; color: #3a3200; border-radius: 6px; padding: 7px 10px; display: grid; grid-template-columns: 1fr auto; gap: 1px 8px; box-shadow: 0 1px 2px rgba(0, 0, 0, .15); }
+.pr-recados li:nth-child(3n + 2) { background: #d7ecff; color: #0e2d47; }
+.pr-recados li:nth-child(3n) { background: #ffdce4; color: #4a1424; }
+.pr-recados .quem { font-weight: 700; font-size: 12.5px; }
+.pr-recados .apagar { grid-row: span 2; align-self: center; border: 0; background: rgba(255, 255, 255, .6); border-radius: 6px; cursor: pointer; padding: 4px 7px; }
+.pr-recados .texto { overflow-wrap: anywhere; }
+/* Barra da conversa */
+.pr-frases { display: flex; gap: 5px; flex-wrap: wrap; }
+.pr-chip { border: 1px solid var(--borda); background: var(--fundo-cinza); color: var(--texto); font-weight: 600; font-size: 13px; padding: 5px 10px; border-radius: 999px; cursor: pointer; }
+.pr-chip:hover { background: var(--azul-claro); }
+.pr-digitar { display: flex; gap: 6px; flex: 1 1 220px; min-width: 0; }
+.pr-digitar input { flex: 1; }
+.pr-nota { margin: 0; flex: 1 1 220px; color: var(--texto-suave); font-size: 13px; }
+.pr-gestos { display: flex; gap: 5px; }
+.pr-gesto { min-width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--borda); background: var(--fundo-cinza); font-size: 20px; cursor: pointer; padding: 0 6px; }
+.pr-gesto.ligado { background: #fff4ce; border-color: #f5b400; font-size: 13px; font-weight: 700; }
+/* Painel ao lado */
+.pr-cartao { background: var(--fundo-janela); border: 1px solid var(--borda); border-radius: 10px; padding: 11px 12px; display: flex; flex-direction: column; gap: 7px; }
+.pr-cartao h3 { margin: 0; font-size: 15.5px; }
+.pr-cartao p { margin: 0; }
+.pr-cartao.instrutor { border-color: #1e2a25; border-width: 2px; }
+.pr-cartao .pr-digitar { flex: none; }
+.pr-suave { color: var(--texto-suave); font-size: 13px; }
+.pr-perto-topo { display: flex; gap: 10px; align-items: center; }
+.pr-perto-topo strong { display: block; font-size: 15.5px; }
+.pr-botoes { display: flex; flex-wrap: wrap; gap: 6px; }
+.pr-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 210px; overflow-y: auto; font-size: 14px; }
+.pr-log li { padding: 4px 7px; border-radius: 7px; background: var(--fundo-cinza); overflow-wrap: anywhere; }
+.pr-log li.eu { background: #f7e4da; }
+.pr-log li.megafone { background: #1e2a25; color: #fff; }
+.pr-log li.sistema { background: transparent; color: var(--texto-suave); font-size: 13px; padding: 1px 7px; }
+.pr-gente { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; max-height: 190px; overflow-y: auto; }
+.pr-gente li { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.pr-gente .ir { border: 0; background: transparent; color: var(--texto); text-align: left; cursor: pointer; flex: 1; padding: 3px 4px; border-radius: 6px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pr-gente .ir:hover { background: var(--fundo-cinza); }
+.pr-gente .mini { border: 1px solid var(--borda); background: var(--fundo-janela); border-radius: 6px; padding: 2px 7px; font-size: 12.5px; cursor: pointer; }
+.pr-cofre { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pr-cofre span { color: #b4502c; }
+.pr-progresso { height: 9px; border-radius: 999px; background: var(--fundo-cinza); border: 1px solid var(--borda); overflow: hidden; }
+.pr-progresso span { display: block; height: 100%; background: var(--verde); }
+.pr-votos { display: grid; gap: 5px; }
+.pr-voto { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; text-align: left; border: 1px solid var(--borda); background: var(--fundo-janela); color: var(--texto); padding: 7px 9px 11px; border-radius: 8px; cursor: pointer; overflow: hidden; font: inherit; }
+.pr-voto:disabled { cursor: default; }
+.pr-voto .n { color: var(--texto-suave); font-size: 13px; font-variant-numeric: tabular-nums; }
+.pr-voto .barra { position: absolute; left: 9px; right: 9px; bottom: 4px; height: 4px; border-radius: 999px; background: var(--fundo-cinza); }
+.pr-voto .barra::after { content: ""; display: block; height: 100%; width: var(--p); background: #b4502c; border-radius: 999px; }
+.pr-voto.meu { border-color: #b4502c; background: #f7e4da; }
+.pr-voto.venceu { border-color: var(--verde); background: #dceee2; }
+.pr-chave { display: flex; gap: 8px; align-items: center; font-weight: 600; font-size: 14px; cursor: pointer; }
+.pr-chave input { width: 18px; height: 18px; }
+@media (prefers-reduced-motion: reduce) { .pr-mundo.suave { transition: none; } .pr-p.andando .corpo, .pr-obj.barco, .pr-mao { animation: none; } }

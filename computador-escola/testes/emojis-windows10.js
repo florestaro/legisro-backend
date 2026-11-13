@@ -7,8 +7,8 @@ const path = require('path');
 
 const raiz = path.join(__dirname, '..');
 // Sequências com junção (ZWJ) que o Windows 10 desenha como um desenho só. Antes de usar outra, confira no Windows 10.
-const SEQUENCIAS_OK = new Set(['👨‍🏫', '👩‍🏫', '👨‍🎓', '👩‍🎓', '👨‍💼', '👩‍💼', '👨‍💻', '👩‍💻', '👨‍👩‍👧', '🏴‍☠️']
-  .map((s) => s.replace(/️/g, '')));
+const SEQUENCIAS_OK = new Set(['👨‍🏫', '👩‍🏫', '👨‍🎓', '👩‍🎓', '👨‍💼', '👩‍💼', '👨‍💻', '👩‍💻', '👨‍🌾', '👩‍🌾', '👨‍⚕️', '👩‍⚕️', '👨‍👩‍👧', '🏴‍☠️']
+  .map((s) => s.replace(/\uFE0F/g, '')));
 // A troca do avatar antigo (gravado nos dados até a fase 3) precisa citar o emoji antigo.
 const CITACAO_PERMITIDA = { 'src/armazenamento.js': '🧑‍🏫', 'app/js/api.js': '🧑‍🏫' };
 
@@ -39,7 +39,7 @@ for (const arquivo of [...arquivos(path.join(raiz, 'app')), ...arquivos(path.joi
   fs.readFileSync(arquivo, 'utf8').split('\n').forEach((linha, i) => {
     for (const m of linha.matchAll(SEQUENCIA)) {
       total++;
-      const s = m[0].replace(/️/g, '');
+      const s = m[0].replace(/\uFE0F/g, '');
       if (!SEQUENCIAS_OK.has(s) && CITACAO_PERMITIDA[nome] !== m[0]) problemas.push(`${nome}:${i + 1}  ${m[0]}  (sequência que o Windows 10 pode mostrar separada)`);
     }
     for (const ch of linha) {

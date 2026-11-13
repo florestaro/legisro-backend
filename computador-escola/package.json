@@ -13,6 +13,7 @@
     "teste:sala": "node testes/sala-20-alunos.js",
     "teste:fase2": "node testes/sala-fase2.js",
     "teste:fase3": "node testes/sala-fase3.js",
+    "teste:praca": "node testes/sala-praca.js",
     "teste:emojis": "node testes/emojis-windows10.js"
   },
   "dependencies": {
