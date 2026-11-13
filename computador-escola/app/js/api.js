@@ -35,6 +35,9 @@ window.CE = window.CE || {};
   const salaTeste = { pausada: false, mensagem: null, presencas: {} };
   let corridasTeste = null; // a corrida de digitação no navegador de teste (regras em corrida-regras.js)
   const corridas = () => (corridasTeste = corridasTeste || CE.corridaRegras());
+  let gincanasTeste = null; // a gincana no navegador de teste (regras em gincana-regras.js)
+  const gincanas = () => (gincanasTeste = gincanasTeste || CE.gincanaRegras());
+  const guardarResumoGincana = (estado) => { if (estado && estado.fase === 'fim') { const r = gincanas().resumo(); if (r && r.participantes) gravar('gincana-ultima', r); } return estado; };
 
   async function simulado(canal, ...a) {
     try {
@@ -95,12 +98,12 @@ window.CE = window.CE || {};
         'sala:presenca': () => {
           if (!atual) throw new Error('Ninguém entrou no sistema.');
           salaTeste.presencas[atual.id] = { usuario: atual, pc: 'Este computador', atividade: a[0] || {}, em: Date.now() };
-          return { pausada: salaTeste.pausada && atual.papel !== 'instrutor', mensagem: atual.papel !== 'instrutor' ? salaTeste.mensagem : null, corrida: atual.papel !== 'instrutor' ? corridas().convite(atual) : null };
+          return { pausada: salaTeste.pausada && atual.papel !== 'instrutor', mensagem: atual.papel !== 'instrutor' ? salaTeste.mensagem : null, corrida: atual.papel !== 'instrutor' ? corridas().convite(atual) : null, gincana: atual.papel !== 'instrutor' ? gincanas().convite(atual) : null };
         },
         'sala:turma': () => ({ pausada: salaTeste.pausada, mensagem: salaTeste.mensagem, alunos: Object.values(salaTeste.presencas).filter((x) => Date.now() - x.em < 45000).map((x) => ({ ...x, ha: Math.round((Date.now() - x.em) / 1000), ajudaHa: x.atividade.ajuda ? Math.round((Date.now() - x.atividade.ajuda) / 1000) : null })) }),
         'escola:ler': () => {
           const e = ler('escola', {});
-          return { nome: e.nome || '', cidade: e.cidade || '', responsavel: e.responsavel || '', cargo: e.cargo || 'Instrutor(a)', cargas: { n1: 40, n2: 40, n3: 40, n4: 40, n5: 60, cel: 20, cri: 30, digitacao1: 20, digitacao2: 20, digitacao3: 20, digitacao4: 20, ...(e.cargas || {}) }, trilha: e.trilha === 'completa' ? 'completa' : 'essencial', revisao: e.revisao !== false };
+          return { nome: e.nome || '', cidade: e.cidade || '', responsavel: e.responsavel || '', cargo: e.cargo || 'Instrutor(a)', cargas: { n1: 40, n2: 40, n3: 40, n4: 40, n5: 60, cel: 20, cri: 30, digitacao1: 20, digitacao2: 20, digitacao3: 20, digitacao4: 20, ...(e.cargas || {}) }, trilha: e.trilha === 'completa' ? 'completa' : 'essencial', revisao: e.revisao !== false, missao: e.missao && e.missao.id ? e.missao : null };
         },
         'escola:revisao': () => {
           if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.');
@@ -164,6 +167,26 @@ window.CE = window.CE || {};
         'corrida:estado': () => corridas().estado(),
         'corrida:entrar': () => corridas().entrar(atual),
         'corrida:progresso': () => corridas().progresso(atual, a[0]),
+        'gincana:criar': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); return gincanas().criar({ ...(a[0] || {}), por: atual.nome }); },
+        'gincana:comecar': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); return gincanas().comecar(); },
+        'gincana:proxima': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); return guardarResumoGincana(gincanas().proxima()); },
+        'gincana:encerrar': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); return guardarResumoGincana(gincanas().encerrar()); },
+        'gincana:estado': () => gincanas().estado(atual),
+        'gincana:entrar': () => gincanas().entrar(atual),
+        'gincana:responder': () => gincanas().responder(atual, a[0]),
+        'gincana:tarefa': () => gincanas().tarefa(atual, a[0]),
+        'gincana:ultima': () => ler('gincana-ultima', null),
+        'escola:missao': () => {
+          if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.');
+          const id = String((a[0] && a[0].id) || '').slice(0, 40);
+          gravar('escola', { ...ler('escola', {}), missao: id ? { id, semana: String(a[0].semana || '').slice(0, 10), em: Date.now() } : null });
+          return simulado('escola:ler').then((r) => r.valor);
+        },
+        'jornal:enviar': () => { if (!atual) throw new Error('Ninguém entrou no sistema.'); const r = CE.jornalRegras.enviar(ler('jornal', null), atual, a[0]); gravar('jornal', r.jornal); return r.materia; },
+        'jornal:minhas': () => CE.jornalRegras.minhas(ler('jornal', null), atual),
+        'jornal:listar': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); return CE.jornalRegras.normal(ler('jornal', null)); },
+        'jornal:status': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); const j = CE.jornalRegras.mudarStatus(ler('jornal', null), a[0], a[1]); gravar('jornal', j); return j; },
+        'jornal:nova-edicao': () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); const j = CE.jornalRegras.novaEdicao(ler('jornal', null)); gravar('jornal', j); return j; },
         'sala:mensagem': () => (salaTeste.mensagem = String(a[0] || '').trim() ? { id: Date.now(), texto: String(a[0]).trim().slice(0, 300), de: atual.nome } : null),
       }[canal];
       return { ok: true, valor: await valor() };

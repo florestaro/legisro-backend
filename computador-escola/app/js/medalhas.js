@@ -10,6 +10,8 @@ window.CE = window.CE || {};
   };
   const digAprovado = (p, id) => !!(p.digitacao && p.digitacao[id] && p.digitacao[id].aprovado && !p.digitacao[id].dispensado);
   const melhorPpm = (p) => Math.max(0, ...Object.entries(p.digitacao || {}).filter(([k]) => !k.startsWith('_')).map(([, r]) => r.ppm || 0));
+  const licaoFeita = (p, id) => { const l = CE.curso.licao(id); return !!l && feita(l, p); };
+  const missoesCumpridas = (p) => Object.values(p.missoes || {}).filter((r) => r && r.feita).length;
   const exerciciosAprovados = (p) => Object.entries(p.digitacao || {}).filter(([k, r]) => !k.startsWith('_') && r.aprovado && !r.dispensado).length;
 
   CE.MEDALHAS = [
@@ -64,6 +66,27 @@ window.CE = window.CE || {};
     { id: 'dig-profissional', icone: '💼', nome: 'Digitador Profissional', descricao: 'Passou na prova de digitação do nível Profissional (teste de seleção).', ganhou: (p) => digAprovado(p, 'prova-profissional') },
     { id: 'ppm-60', icone: '🚀', nome: '60 palavras por minuto', descricao: 'Digitou a 60 ppm: velocidade de profissional.', ganhou: (p) => melhorPpm(p) >= 60 },
     { id: 'chuva', icone: '🌧️', nome: 'Rei da chuva', descricao: 'Fez 100 pontos na Chuva de palavras.', ganhou: (p) => ((p.digitacao && p.digitacao._jogos && p.digitacao._jogos.chuva) || 0) >= 100 },
+    // Nível 5 — Assistente Administrativo
+    { id: 'n5-atendimento', icone: '🤝', nome: 'Atendimento nota 10', descricao: 'Terminou o módulo de atendimento do Assistente Administrativo.', ganhou: (p) => moduloAprovado(p, 'n5-atendimento') },
+    { id: 'n5-documentos', icone: '📑', nome: 'Arquivista', descricao: 'Terminou o módulo Documentos, protocolo e arquivo.', ganhou: (p) => moduloAprovado(p, 'n5-documentos') },
+    { id: 'n5-financeiro', icone: '💰', nome: 'Tesoureiro', descricao: 'Terminou o módulo Rotinas financeiras.', ganhou: (p) => moduloAprovado(p, 'n5-financeiro') },
+    { id: 'n5-estoque', icone: '📦', nome: 'Controle de estoque', descricao: 'Terminou o módulo Estoque e compras.', ganhou: (p) => moduloAprovado(p, 'n5-estoque') },
+    { id: 'n5-vendas', icone: '🧾', nome: 'Vendedor', descricao: 'Terminou o módulo Vendas e atendimento ao cliente.', ganhou: (p) => moduloAprovado(p, 'n5-vendas') },
+    { id: 'n5-rh', icone: '👔', nome: 'Auxiliar de RH', descricao: 'Terminou o módulo Departamento pessoal.', ganhou: (p) => moduloAprovado(p, 'n5-rh') },
+    { id: 'formado-n5', icone: '🏆', nome: 'Assistente Administrativo', descricao: 'Passou na prova do Assistente Administrativo.', ganhou: (p) => licaoFeita(p, 'prova-n5') },
+    // Cursos livres
+    { id: 'cel-golpes', icone: '📵', nome: 'Celular blindado', descricao: 'Terminou o módulo Golpes no celular.', ganhou: (p) => moduloAprovado(p, 'cel-golpes') },
+    { id: 'formado-cel', icone: '📱', nome: 'Craque do celular', descricao: 'Passou na prova do curso livre de Celular.', ganhou: (p) => licaoFeita(p, 'prova-cel') },
+    { id: 'cri-fotos', icone: '🌅', nome: 'Fotógrafo', descricao: 'Terminou o módulo Edição de fotos.', ganhou: (p) => moduloAprovado(p, 'cri-fotos') },
+    { id: 'cri-vetor', icone: '✒️', nome: 'Designer', descricao: 'Terminou o módulo Desenho vetorial.', ganhou: (p) => moduloAprovado(p, 'cri-vetor') },
+    { id: 'cri-video', icone: '🎬', nome: 'Editor de vídeo', descricao: 'Terminou o módulo Edição de vídeo.', ganhou: (p) => moduloAprovado(p, 'cri-video') },
+    { id: 'formado-cri', icone: '🎨', nome: 'Criador digital', descricao: 'Passou na prova do curso livre de Criação digital.', ganhou: (p) => licaoFeita(p, 'prova-cri') },
+    // Turma: missão da semana, gincana e jornal
+    { id: 'missao-1', icone: '🎯', nome: 'Missão cumprida', descricao: 'Cumpriu uma missão da semana.', ganhou: (p) => missoesCumpridas(p) >= 1 },
+    { id: 'missao-5', icone: '🎖️', nome: 'Cumpridor de missões', descricao: 'Cumpriu 5 missões da semana.', ganhou: (p) => missoesCumpridas(p) >= 5 },
+    { id: 'gincana', icone: '🏁', nome: 'Gincaneiro', descricao: 'Participou de uma gincana da turma até o fim.', ganhou: (p) => Object.keys(p.gincanas || {}).length >= 1 },
+    { id: 'gincana-podio', icone: '🥇', nome: 'Pódio na gincana', descricao: 'Ficou entre os 3 primeiros numa gincana da turma.', ganhou: (p) => Object.values(p.gincanas || {}).some((g) => g && g.lugar <= 3 && g.pontos > 0) },
+    { id: 'reporter', icone: '📰', nome: 'Repórter da turma', descricao: 'Mandou uma matéria para o jornal da turma.', ganhou: (p) => ((p.jornal && p.jornal.enviadas) || 0) >= 1 },
   ];
 
   CE.medalhas = {
@@ -85,7 +108,7 @@ window.CE = window.CE || {};
     },
   };
 
-  ['licao:concluida', 'digitacao:concluida', 'digitacao:jogo', 'jogo:concluido'].forEach((evento) => CE.ouvir(evento, () => CE.medalhas.verificar()));
+  ['licao:concluida', 'digitacao:concluida', 'digitacao:jogo', 'jogo:concluido', 'missao:cumprida', 'gincana:terminou', 'jornal:registrada'].forEach((evento) => CE.ouvir(evento, () => CE.medalhas.verificar()));
   CE.ouvir('golpe:evitado', async () => {
     if (!CE.sessao.usuario) return;
     await CE.sessao.atualizarProgresso((p) => { p.navegador = p.navegador || {}; p.navegador.golpesEvitados = (p.navegador.golpesEvitados || 0) + 1; });

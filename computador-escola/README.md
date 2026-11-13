@@ -6,7 +6,7 @@ conversa e tira dúvidas. **Funciona sem internet.**
 
 ## O que já tem
 
-### Curso de Informática: 4 níveis (um por semestre)
+### Curso de Informática: 5 níveis e 2 cursos livres (239 aulas)
 - **Nível Iniciante completo: 48 aulas em 10 módulos.** Os módulos são: Conhecendo o computador, Mouse, Teclado,
   Janelas e menu Iniciar, Arquivos e pastas, Editor de Texto, Calculadora e Desenho, **Internet**, Segurança básica e a
   Prova do nível.
@@ -52,11 +52,34 @@ conversa e tira dúvidas. **Funciona sem internet.**
   **Agenda** com compromissos, lembretes e contatos, **assinatura de e-mail** e **pastas**), **Hardware e manutenção**
   (o computador por dentro, limpeza e cuidados, problemas comuns e o que fazer primeiro), o **Projeto final "Um dia no
   escritório"** e a Prova do nível.
+- **Nível 5: Assistente Administrativo: 26 aulas em 7 módulos** (baseado no curso de Assistente Administrativo do
+  Senac). Tudo é feito no **Gestão Fácil**, o sistema de uma empresa de treino (um ERP simples, com clientes, estoque,
+  vendas, financeiro, protocolo e RH), guardado para cada aluno. Os módulos são: **Atendimento** (o sistema da empresa,
+  cadastrar cliente respeitando a LGPD, atender o telefone e anotar recado), **Documentos, protocolo e arquivo**
+  (registrar, encaminhar e arquivar; a nota fiscal do protocolo ao financeiro; arquivo digital organizado; digitalizar
+  documento com o celular), **Rotinas financeiras** (dar baixa nas contas a pagar, contas a receber e cobrança educada,
+  fluxo de caixa e relatório, multa e juros de atraso), **Estoque e compras** (entrada de mercadoria com nota fiscal,
+  estoque mínimo e pedido de compra, cotação com 3 fornecedores), **Vendas** (venda com recibo, venda a prazo com
+  boleto, relatório do mês), **Departamento pessoal** (folha de ponto e horas extras, holerite e INSS, documentos da
+  admissão), o **Projeto final "Um dia de assistente administrativo"** e a Prova do nível.
+- **Cursos livres**: andam em paralelo ao curso principal (o aluno escolhe quando fazer), cada um com o seu certificado.
+  - **📱 Celular no dia a dia: 17 aulas em 6 módulos** (abre depois do Nível 1). Um **celular de treino** na tela, com
+    tela de bloqueio, apps e notificações: desbloquear, letra maior, brilho e modo avião, **senha de bloqueio (PIN)**;
+    **Zap** (texto, áudio, foto e passar a foto para o computador; corrente e notícia falsa no grupo); **app do banco e
+    Pix** conferindo o nome, **pagar com QR Code**; **golpes** ("troquei de número", falsa central do banco, links de
+    prêmio e taxa falsa, golpe do código e verificação em duas etapas), que o aluno vive no celular de treino e
+    desmascara; **apps** (instalar com segurança, permissões, atualizações), **mapas e localização**, desafio e prova.
+  - **🎨 Criação digital: 16 aulas em 4 módulos** (abre depois do Nível 2): **Editor de Fotos** (clarear foto escura,
+    girar e cortar para o post, texto e filtro para divulgar, diminuir a foto para mandar, direito de imagem),
+    **Desenho Vetorial** (formas e cores, texto, camadas e alinhamento, cartaz a partir de um modelo, vetor x pixel),
+    **Editor de Vídeo** (montar na linha do tempo, cortar e dividir, título, legenda, transição e música, exportar), o
+    projeto "Campanha de divulgação", desafio e prova.
 - **O aluno só avança quando é aprovado** (70% nas perguntas). O instrutor tem tudo liberado (aulas, níveis de
   digitação, jogos e os programas instaláveis) e pode **liberar aulas fora da sequência** para um aluno ou para a turma
   (veja "Painel do Instrutor" abaixo).
 - **Trilha essencial (o padrão)**, para turmas com pouco tempo (1 hora por semana): o aluno segue só as aulas essenciais
-  (Iniciante 29, Intermediário 36, Avançado 35, em vez de 48, 50 e 48). As outras viram **Reforço (opcional)**: abrem
+  (Iniciante 29, Intermediário 36, Avançado 35, Profissional 24, Assistente Administrativo 19, Celular 12 e Criação
+  digital 11, em vez de 48, 50, 48, 34, 26, 17 e 16). As outras viram **Reforço (opcional)**: abrem
   junto com a aula essencial seguinte, não travam o curso, não são pedidas para o certificado nem para as medalhas, e
   o professor oferece "💪 Treinar mais" no fim da aula. Provas e o que elas cobram são sempre essenciais. Na **trilha
   completa**, todas as aulas são obrigatórias. O instrutor escolhe em **Painel › Progresso da turma › 🧭 Trilha do
@@ -98,8 +121,9 @@ conversa e tira dúvidas. **Funciona sem internet.**
     "Onde a turma trava" e no relatório);
   - **fechou o programa da tarefa** → "Você fechou o …" com o botão para abrir de novo;
   - **no chat**, "não entendi", "como faço?", "onde clico?" respondem sobre a tarefa de agora e mostram como. Sem a
-    IA instalada, o professor tem respostas prontas para cerca de 100 assuntos de todas as matérias (Planilha,
-    Editor, Arquivos, E-mail, Pix e boleto, gov.br, IA, Apresentações, Configurações, Digitação...).
+    IA instalada, o professor tem respostas prontas para cerca de 130 assuntos de todas as matérias (Planilha,
+    Editor, Arquivos, E-mail, Pix e boleto, gov.br, IA, Apresentações, Configurações, Digitação, Celular, Gestão
+    Fácil, Fotos, Vídeo, gincana, missão e jornal...).
 
 ### Curso de Digitação: 144 exercícios em 4 níveis
 - **Iniciante** (39): fileiras do meio, de cima e de baixo, Shift, acentos e cedilha, palavras e frases.
@@ -153,6 +177,12 @@ peças por fora e por dentro do gabinete, manutenção e problemas comuns), **Ge
 botão direito na barra de tarefas: processos, finalizar tarefa, desempenho e inicialização), **Nuvem** (guardar
 arquivos e compartilhar por link), **Agenda** (compromissos com lembrete e contatos), **Jogos do Mouse** (7 jogos: balões, presentes, feira, caixas secretas, caça ao tesouro, pontaria e labirinto, cada um com os níveis Fácil, Médio e Difícil; o nível seguinte só libera quando o aluno vence o anterior; na Pontaria, cada clique mostra a precisão — 100% no centro do alvo — e no fim aparece a média; no Labirinto, o ratinho anda junto com o mouse), **Treino do Teclado**,
 **Desenho** (parecido com o Paint), **Navegador** (abas, favoritos, voltar/avançar e barra de endereço com cadeado),
+**Celular** (um smartphone de treino: bloqueio com PIN, Zap com conversas e golpes de treino, câmera e galeria, app do
+banco com Pix e QR Code, loja de apps com permissões, mapas e ajustes), **Gestão Fácil** (o sistema da empresa de
+treino do Assistente Administrativo), **Editor de Fotos** (girar, espelhar, cortar 1:1, 16:9 e 3:4, brilho, contraste,
+cor, filtros, texto e tamanho), **Desenho Vetorial** (formas, setas, estrelas e textos que não perdem a qualidade,
+camadas, alinhar, modelos de cartaz, logotipo e promoção, exportar PNG), **Editor de Vídeo** (linha do tempo com clipes
+de treino e fotos, cortar, dividir, título, legenda, transição, música e exportar), **Gincana** (veja abaixo),
 Aulas e Painel do Instrutor.
 
 ### Internet de treino (offline)
@@ -166,15 +196,35 @@ verdade?"), o **Emprega Já** (vagas de emprego com filtro e candidatura com cur
 prêmio falso e banco falso), que mostram uma página explicando os sinais de golpe quando o aluno cai na armadilha.
 Os arquivos baixados vão para a pasta **Downloads**.
 
+### Turma: gincana ao vivo, missão da semana e jornal
+- **🏆 Gincana ao vivo** (na rede da sala): o instrutor abre a gincana com perguntas sorteadas das aulas de um nível
+  (5, 8 ou 10) e **tarefas práticas** no meio (abrir a Calculadora, criar uma pasta, deixar o nome em negrito, fazer uma
+  conta na Planilha, trocar o fundo, mandar um e-mail, tirar foto no Celular: o computador do aluno confere sozinho),
+  escolhe **equipes** (2 a 4, montadas sozinhas do mesmo tamanho) e a turma. Os alunos recebem o convite na tela e
+  respondem no computador deles; acertar vale 100 pontos e responder rápido dá até 50 de bônus (na tarefa, quem termina
+  primeiro ganha mais). O placar e o pódio aparecem ao vivo (dá para mostrar no projetor).
+- **🎯 Missão da semana**: um desafio curto que vale a semana toda (mandar um e-mail com anexo, fazer um gráfico,
+  digitar a 30 ppm, concluir 3 aulas, desmascarar um golpe, organizar arquivos, fazer um cartaz ou foto, fazer um Pix
+  conferindo o nome, mandar matéria para o jornal). Muda sozinha toda segunda-feira, ou o instrutor escolhe. Fica no
+  🎯 da barra de tarefas; o computador confere sozinho quando o aluno cumpre e comemora.
+- **📰 Jornal da turma**: o aluno escreve no Editor de Texto (com fotos, se quiser) e clica em **📰 Jornal**. O
+  instrutor lê, aprova ou pede para melhorar e **monta o jornal** para imprimir ou salvar em PDF, com os **destaques da
+  semana** calculados sozinhos (certificados e medalhas da semana, o mais rápido no teclado, quem cumpriu a missão e o
+  pódio da gincana). Ao fechar a edição, as aprovadas viram a edição publicada e começa a próxima. Por segurança, a
+  matéria passa por um filtro: só texto, formatação e fotos (nada de código ou link).
+- Tudo fica no **Painel do Instrutor → 🏁 Gincana, missão e jornal**.
+
 ### Outros
-- **39 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova.
+- **69 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova (também por cumprir missões, ir ao
+  pódio da gincana e mandar matéria para o jornal).
 - **Painel do Instrutor**: cadastro (com a opção "criança"), aula atual de cada aluno, média, exercício de digitação
   atual, melhor velocidade, provas e medalhas. Também:
   - **🧩 Onde a turma trava**: os passos de aula em que mais alunos apertaram "Não entendi", precisaram da dica, erraram
     a pergunta ou saíram da aula no meio (por turma). **▶ Ver** abre a aula naquele passo; **🧹 Zerar contagem** recomeça
     a conta (bom depois de mudar uma aula).
   - **📜 Certificados e relatório**: dados da escola (nome, cidade, quem assina e a carga horária de cada curso);
-    **certificado** de cada nível de Informática (todas as aulas do nível na trilha do aluno aprovadas) e de Digitação (prova do nível),
+    **certificado** de cada nível de Informática, do Assistente Administrativo e dos cursos livres (todas as aulas do
+    curso na trilha do aluno aprovadas) e de Digitação (prova do nível), com 11 certificados no total,
     com número que não muda ao reimprimir, um por um ou todos da turma; **relatório da turma** (frequência em dias e
     horas, aulas aprovadas, digitação, certificados, lista de presença e onde a turma travou) do mês, do mês passado ou
     do curso todo. Tudo dá para imprimir ou **salvar em PDF**, e o relatório também sai em **planilha (CSV)** para o
@@ -254,6 +304,7 @@ Testes automáticos do modo sala de aula (detalhes em `testes/LEIA-ME.md`):
 npm run teste:servidor        # servidor da sala, sem tela (menos de 1 minuto)
 npm run teste:sala            # 1 instrutor + 20 alunos usando o sistema ao mesmo tempo (uns 2 minutos)
 npm run teste:sala -- 5       # o mesmo com 5 alunos
+npm run teste:fase2           # novidades da fase 2: o aluno troca de computador e encontra tudo (uns 3 minutos)
 ```
 
 ## Primeiro uso
@@ -317,6 +368,13 @@ alunos continuam dentro, sem precisar entrar outra vez (uma pausa que estava lig
 aula, salvando documentos e mandando e-mails uns aos outros juntos, com a Sala ao vivo, a pausa e as mensagens chegando
 aos 20 — sem perder nenhuma gravação nem e-mail.
 
+**O aluno usa qualquer computador da sala com o mesmo nome e senha**: tudo o que ele faz fica no computador do
+instrutor, inclusive o Celular de treino (PIN, letra, conversas, banco), a empresa do Gestão Fácil, as fotos, cartazes
+e vídeos salvos, a missão da semana, as matérias do jornal, as medalhas e as gincanas. Testado com o programa de verdade
+(`npm run teste:fase2`): a aluna usa tudo isso no computador 1, entra no computador 2 e encontra tudo igual (o Celular
+pede o PIN criado no outro computador), joga a gincana no computador 2 e vê as medalhas no computador 3; nada fica
+guardado nos computadores dos alunos.
+
 ## Criar aulas sem programar
 No **Painel do Instrutor → 📝 Criar aulas**, o instrutor monta aulas novas com três tipos de passo:
 - **💬 Explicação**: um texto que o Professor Virtual lê em voz alta;
@@ -330,7 +388,6 @@ O botão **▶ Testar** abre a aula para conferir antes.
 
 ## Próximas ideias
 - O aluno falar com o professor pelo microfone (reconhecimento de voz offline com Whisper).
-- Celular simulado (WhatsApp, Pix, gov.br, golpes por mensagem), numa aula própria mais adiante no curso.
 
 ## Organização do código
 ```
@@ -354,13 +411,19 @@ app/js/curso.js          níveis, módulos, trilha essencial (lista REFORCO) e r
 app/js/dificuldades.js   "Não entendi", dicas, erros e saídas de cada passo (para "Onde a turma trava")
 app/js/frequencia.js     frequência automática (dias e minutos de uso)
 app/js/certificados.js   certificados, relatório da turma (páginas e CSV) e a tela de impressão/PDF
-app/js/licoes/           as aulas (n1-*, n2-*, n3-*, n4-profissional.js), os atalhos para escrever aulas (ajudantes.js) e as aulas do professor
+app/js/licoes/           as aulas (n1-*, n2-*, n3-*, n4-profissional.js, n5-administrativo.js e os cursos livres
+                         cel-celular.js e cri-criacao.js), os atalhos para escrever aulas (ajudantes.js) e as aulas do professor
                          (também o teste de nivelamento e a revisão rápida do começo do dia, revisao.js)
 app/js/sala.js           a sala ao vivo do lado do aluno (presença, pausa, mensagens) e a janela "Rede da sala"
 app/js/apps/             os programas (editor, planilha, e-mail, digitação, arquivos...) e o Painel do Instrutor
-                         (painel-instrutor.js; as abas novas ficam em painel-extras.js)
+                         (painel-instrutor.js; as abas novas ficam em painel-extras.js e painel-turma.js); os da fase 2:
+                         celular.js, gestao.js (Gestão Fácil), fotos.js, vetorial.js, video.js e gincana.js
 app/js/planilha/         as fórmulas da planilha
 app/js/navegador/        os sites de treino (sites-gov.js: a Conta Cidadão; sites-ia.js: o vídeo falso)
 app/js/corrida-regras.js as regras da corrida de digitação (usadas pelo servidor da sala e pelo modo navegador)
-testes/                  testes automáticos do modo sala de aula (servidor e turma de 20 alunos)
+app/js/gincana-regras.js as regras da gincana ao vivo (idem)
+app/js/jornal-regras.js  as regras do jornal da turma (idem); jornal.js monta o jornal e filtra as matérias
+app/js/missao.js         a missão da semana (catálogo, semana do ano e conferência automática)
+testes/                  testes automáticos do modo sala de aula (servidor, turma de 20 alunos e as novidades da
+                         fase 2 em 3 computadores)
 ```

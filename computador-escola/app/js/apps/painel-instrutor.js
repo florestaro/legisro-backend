@@ -279,7 +279,7 @@
       async function desenhar() {
         clearInterval(timerSala);
         const abas = CE.el('div', { class: 'painel-abas' },
-          ...[['progresso', '📊 Progresso da turma'], ['sala', '🖥️ Sala ao vivo'], ['trava', '🧩 Onde a turma trava'], ['certificados', '📜 Certificados e relatório'], ['criar', '📝 Criar aulas'], ['alunos', '👥 Alunos']].map(([id, rotulo]) =>
+          ...[['progresso', '📊 Progresso da turma'], ['sala', '🖥️ Sala ao vivo'], ['trava', '🧩 Onde a turma trava'], ['certificados', '📜 Certificados e relatório'], ['turma', '🏁 Gincana, missão e jornal'], ['criar', '📝 Criar aulas'], ['alunos', '👥 Alunos']].map(([id, rotulo]) =>
             CE.el('button', { class: 'chip' + (aba === id ? ' ativo' : ''), 'data-aba': id, onclick: () => { aba = id; desenhar(); } }, rotulo)));
         if (aba === 'sala') {
           corpo.replaceChildren(abas, await salaAoVivo());
@@ -295,10 +295,12 @@
           area.scrollTop = rolagem;
           return;
         }
-        if (aba === 'trava' || aba === 'certificados') {
+        if (aba === 'trava' || aba === 'certificados' || aba === 'turma') {
           const antes = corpo.querySelector('.painel-rolagem.extras');
           const rolagem = antes ? antes.scrollTop : 0;
-          const tela = aba === 'trava' ? await CE.painelExtras.ondeTrava(estadoExtras, desenhar) : await CE.painelExtras.certificadosERelatorio(estadoExtras, desenhar);
+          const tela = aba === 'trava' ? await CE.painelExtras.ondeTrava(estadoExtras, desenhar)
+            : aba === 'turma' ? await CE.painelTurma.tela(estadoExtras, desenhar)
+              : await CE.painelExtras.certificadosERelatorio(estadoExtras, desenhar);
           const area = CE.el('div', { class: 'painel-rolagem extras' }, tela);
           corpo.replaceChildren(abas, area);
           area.scrollTop = rolagem;

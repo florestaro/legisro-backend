@@ -940,6 +940,10 @@
           botao('sumario', '📑 Sumário', 'Criar ou atualizar o sumário (usa os Títulos 1 e 2)', 'texto', sumario),
           botao('substituir', '🔎 Localizar', 'Localizar e substituir palavras (Ctrl+H)', 'texto', dialogoSubstituir),
           botao('pdf', '📕 PDF', 'Salvar uma cópia em PDF', 'texto', exportarPdf),
+          botao('jornal', '📰 Jornal', 'Mandar este texto para o jornal da turma (o professor lê antes de publicar)', 'texto', () => {
+            const titulo = pagina.querySelector('h1, h2, h3');
+            CE.jornal.enviarDoEditor({ titulo: (titulo && titulo.textContent.trim()) || (nomeArquivo || '').replace(/\.[a-z]+$/i, ''), html: pagina.innerHTML });
+          }),
         ),
         CE.el('div', { class: 'ferramentas-grupo' },
           botao('notaRodape', '¹ Nota', 'Nota de rodapé: um numerozinho no texto e a explicação no fim da página', 'texto', notaDeRodape),

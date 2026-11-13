@@ -1931,3 +1931,78 @@ div.gf-cartao { cursor: default; }
 .vd-item.selecionado { border-color: #fff; box-shadow: 0 0 0 2px #0b84ff; }
 .vd-item span { overflow: hidden; text-overflow: ellipsis; }
 .vd-vazio { margin: 6px; color: #aab4c0; }
+
+/* ---------- Dicas pequenas (Fotos, Vídeo, Missão, Painel) ---------- */
+.ft-dica { margin: 0; color: #556; font-size: 13px; line-height: 1.4; }
+
+/* ---------- Gincana ao vivo ---------- */
+.gincana-app { padding: 16px 20px; overflow: auto; }
+.gc-config { display: grid; gap: 10px; max-width: 600px; } .gc-config label { display: grid; gap: 4px; font-weight: 600; } .gc-config h2 { margin: 0; }
+.gc-tarefas { display: grid; gap: 4px; padding: 8px 10px; border: 1px solid #d9e1ea; border-radius: 10px; background: #f8fafc; }
+.gc-ao-vivo { display: grid; gap: 12px; }
+.gc-espera { display: grid; gap: 6px; padding: 18px; border-radius: 12px; background: #eef3fb; text-align: center; font-size: 17px; } .gc-espera h2 { margin: 0; }
+.gc-rodada { display: grid; gap: 10px; padding: 14px 16px; border-radius: 12px; background: #fff; border: 2px solid #c9d8ef; }
+.gc-rodada.tarefa { border-color: #f5b400; background: #fffaf0; }
+.gc-rodada h2 { margin: 0; font-size: 22px; line-height: 1.3; }
+.gc-rodada-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: #445; }
+.gc-relogio { font-size: 22px; font-weight: 700; color: #b3261e; font-variant-numeric: tabular-nums; }
+.gc-opcoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+.gc-opcao { display: flex; gap: 8px; align-items: center; text-align: left; padding: 12px 14px; border-radius: 10px; border: 2px solid #d6e0ee; background: #f7f9fc; font: inherit; font-size: 17px; }
+button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { border-color: #2f6fd1; background: #eef4ff; }
+.gc-opcao b { display: inline-grid; place-items: center; min-width: 30px; height: 30px; border-radius: 50%; background: #1f3a5f; color: #fff; }
+.gc-opcao.escolhida { border-color: #2f6fd1; background: #e5efff; }
+.gc-opcao.certa { border-color: #1e8e3e; background: #e3f6e8; } .gc-opcao.certa b { background: #1e8e3e; }
+.gc-opcao.errada { border-color: #b3261e; background: #fdecea; } .gc-opcao.errada b { background: #b3261e; }
+.gc-opcao[disabled] { color: inherit; opacity: 1; cursor: default; }
+.gc-retorno { margin: 0; font-size: 17px; font-weight: 600; }
+.gc-placar { display: grid; gap: 8px; }
+.gc-equipes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.gc-equipe { display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px; color: #fff; }
+.gc-equipe.vermelha { background: #c62828; } .gc-equipe.azul { background: #1565c0; } .gc-equipe.verde { background: #2e7d32; } .gc-equipe.amarela { background: #f9a825; color: #222; }
+.gc-minha-equipe { font-weight: 700; padding: 6px 12px; border-radius: 16px; justify-self: center; color: #fff; }
+.gc-minha-equipe.vermelha { background: #c62828; } .gc-minha-equipe.azul { background: #1565c0; } .gc-minha-equipe.verde { background: #2e7d32; } .gc-minha-equipe.amarela { background: #f9a825; color: #222; }
+.gc-placar .cor-linha { grid-template-columns: 44px 1fr 110px; }
+.gc-meus-pontos { font-size: 18px; font-weight: 700; padding: 6px 12px; border-radius: 16px; background: #fff7d6; border: 1px solid #f5b400; }
+.gc-fim { display: grid; gap: 10px; text-align: center; } .gc-fim h2 { margin: 0; font-size: 28px; }
+.gc-campea { margin: 0; font-size: 20px; font-weight: 700; color: #8a6d1a; }
+
+/* ---------- Missão da semana ---------- */
+#status-missao.pendente { animation: missao-pulso 2s ease-in-out 5; }
+@keyframes missao-pulso { 0%, 100% { background: transparent; } 50% { background: rgba(255, 200, 0, .45); } }
+.missao-dialogo { max-width: 460px; } .missao-titulo { font-size: 19px; font-weight: 700; margin: 4px 0; }
+[data-missao-situacao="feita"] { color: #1e6b33; font-weight: 700; }
+
+/* ---------- Painel: Gincana, missão e jornal ---------- */
+.painel-turma { display: grid; gap: 14px; align-content: start; }
+.pt-secao { display: grid; gap: 8px; padding: 12px 14px; border: 1px solid #d9e1ea; border-radius: 12px; background: #fff; }
+.pt-secao h3 { margin: 0; color: #1f3a5f; } .pt-secao p { margin: 0; } .pt-secao label { display: grid; gap: 4px; font-weight: 600; }
+.pt-secao .painel-seletor { max-width: 100%; }
+.pt-aviso { padding: 6px 10px; border-radius: 8px; background: #fdecea; color: #8c1d18; font-weight: 600; }
+.pt-ultima { display: grid; gap: 3px; padding: 8px 10px; border-radius: 8px; background: #fff7d6; }
+.pt-materias { display: grid; gap: 8px; }
+.pt-materia { display: grid; gap: 6px; padding: 8px 10px; border-radius: 10px; border: 1px solid #d9e1ea; border-left: 6px solid #f5b400; background: #fbfcfe; }
+.pt-materia.aprovada { border-left-color: #1e8e3e; } .pt-materia.recusada { border-left-color: #b3261e; opacity: .85; }
+.pt-materia-topo { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.pt-materia-topo small { color: #556; } .pt-status { font-size: 13px; white-space: nowrap; }
+.pt-materia-acoes { display: flex; gap: 6px; flex-wrap: wrap; }
+.pt-leitura { padding: 10px 12px; border-radius: 8px; background: #fff; border: 1px dashed #c4cfdc; max-height: 320px; overflow: auto; }
+.pt-leitura img { max-width: 100%; height: auto; }
+.jornal-minhas { display: grid; gap: 2px; padding: 8px 10px; border-radius: 8px; background: #f3f6fa; font-size: 13px; margin: 8px 0; }
+
+/* ---------- Jornal da turma (páginas para imprimir) ---------- */
+.pagina.jornal { padding: 12mm 13mm; display: flex; flex-direction: column; gap: 5mm; font-family: Georgia, "Times New Roman", serif; }
+.jn-cabeca { border-bottom: 3px double #222; padding-bottom: 3mm; text-align: center; }
+.jn-nome { font-size: 40px; font-weight: 700; letter-spacing: .06em; }
+.jn-linha { display: flex; justify-content: space-between; gap: 10px; font-family: Arial, sans-serif; font-size: 12px; color: #333; border-top: 1px solid #222; margin-top: 2mm; padding-top: 1.5mm; }
+.jn-linha.pequena { border-top: none; border-bottom: 1px solid #222; margin: 0; padding: 0 0 1.5mm; }
+.jn-destaques { border: 2px solid #8a6d1a; border-radius: 3mm; padding: 3mm 5mm; background: #fffaf0; font-family: Arial, sans-serif; }
+.jn-destaques h3 { margin: 0 0 2mm; font-size: 17px; color: #8a6d1a; }
+.jn-destaques ul { margin: 0; padding-left: 5mm; display: grid; gap: 1mm; font-size: 13px; } .jn-destaques p { margin: 0; font-size: 13px; }
+.jn-colunas { column-count: 2; column-gap: 8mm; column-rule: 1px solid #ccc; flex: 1; }
+.jn-materia { break-inside: avoid-column; margin-bottom: 5mm; }
+.jn-materia h2 { margin: 0 0 1mm; font-size: 21px; line-height: 1.2; }
+.jn-autor { margin: 0 0 2mm; font-family: Arial, sans-serif; font-size: 11px; font-style: italic; color: #555; }
+.jn-texto { font-size: 13px; line-height: 1.45; text-align: justify; overflow-wrap: anywhere; }
+.jn-texto p { margin: 0 0 2mm; } .jn-texto img { max-width: 100%; height: auto; display: block; margin: 2mm auto; }
+.jn-texto h1, .jn-texto h2, .jn-texto h3 { font-size: 15px; margin: 2mm 0 1mm; }
+.jn-vazio { font-family: Arial, sans-serif; font-size: 14px; color: #555; text-align: center; padding: 10mm; border: 1px dashed #aaa; border-radius: 3mm; }

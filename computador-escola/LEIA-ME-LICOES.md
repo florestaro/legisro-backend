@@ -16,6 +16,12 @@ essencial, que é o padrão). Aula nova entra como essencial; para virar reforç
 lá a prova, nem aula que ensina algo que a prova cobra, nem a única aula essencial de um módulo. Na trilha essencial,
 uma aula só espera a aula **essencial** anterior, e as aulas de reforço abrem junto com a essencial seguinte.
 
+**Níveis e cursos livres.** Os cursos ficam em `NIVEIS_CURSO` (em `app/js/curso.js`): n1 a n5 formam a sequência
+principal. Um **curso livre** tem `paralelo: true` e `requer: 'n1'` (ou outro nível): ele anda em paralelo, numa
+sequência só dele, e a primeira aula abre quando o aluno termina a trilha do nível pedido. Com `certificado: { curso,
+nivel }`, o certificado sai com o nome próprio (ex.: "Celular no dia a dia"); a carga horária fica em `ESCOLA_PADRAO`
+(`src/canais.js`) e em `CARGAS` (`app/js/apps/painel-extras.js`), com o mesmo id do curso.
+
 **Módulo novo no meio do curso.** `CE.adicionarModulo({ ..., antes: 'n2-prova', novoEm: 'AAAA-MM-DD' })` põe o módulo
 antes de outro (por exemplo, antes da prova do nível). Com `novoEm`, quem já tinha passado na prova do nível antes dessa
 data não fica travado: para essa pessoa as aulas novas são opcionais, e o certificado continua valendo
@@ -126,6 +132,17 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `editor:formatado` (avançado) | Estilo, colunas, quebra de página, sumário | `comando` (`estilo`, `colunas`, `quebraPagina`, `sumario`), `valor` (`h1`, `h2`, `abnt`... / nº de colunas), `antesDe` |
 | `editor:cabecalho` / `editor:sumario` / `editor:pdf` | Cabeçalho e rodapé / sumário / PDF | `cabecalho`, `rodape`, `numerar` / `itens`, `acao` (`inserir` ou `atualizar`) / `nome`, `paginas` |
 | `editor:localizado` / `editor:substituido` / `editor:localizar-fechado` | Localizar e substituir | `termo`, `quantidade` / `procurar`, `trocar`, `quantidade` |
+| `celular:desbloqueado` / `celular:app` / `celular:pin` / `celular:letra` / `celular:aviao` / `celular:brilho` | Celular de treino: desbloqueou, abriu um app, criou o PIN, mudou a letra, modo avião, brilho | `comPin` / `app` / `definido`, `digitos` / `tamanho` / `ligado` / `valor` |
+| `celular:conversa` / `celular:mensagem-enviada` / `celular:encaminhou` / `celular:checou` / `celular:foto` / `celular:foto-aberta` / `celular:foto-computador` | Zap (conversa, mensagem, corrente encaminhada ou conferida) e câmera | `conversa`, `texto`, `foto`, `audio`, `boato` / `cena`, `nome` |
+| `celular:pix` / `celular:pix-cancelado` / `celular:qr-lido` / `celular:comprovante` / `celular:banco-entrou` / `celular:limite` | App do banco no celular | `chave`, `nome`, `valor`, `golpe` / `qr` / `ok` |
+| `celular:golpe-evitado` / `celular:golpe-caiu` / `celular:bloqueado` / `celular:ligacao` / `celular:ligou` / `celular:link` / `celular:duas-etapas` | Golpes no celular (o cenário de treino vem de `CE.celular.cenario(nome)`) | `tipo` / `conversa`, `denunciado` / `roteiro`, `acao`, `golpe` / `numero`, `oficial` / `url` / `ativada` |
+| `celular:instalar-pedido` / `celular:instalado` / `celular:instalacao-cancelada` / `celular:permissao` / `celular:atualizado` | Loja de apps, permissões e atualização | `app`, `suspeito` / `permissao`, `permitido` |
+| `gestao:aba` / `gestao:cliente` / `gestao:produto` / `gestao:estoque` / `gestao:item` / `gestao:pedido` / `gestao:venda` / `gestao:recibo` | Gestão Fácil (Assistente Administrativo): cadastros, estoque, compras e vendas | `aba` / `acao`, `nome`, `doc` / `cod`, `quantidade`, `estoque`, `nota` / `numero`, `total`, `pagamento`, `prazo` |
+| `gestao:conta` / `gestao:baixa` / `gestao:fluxo` / `gestao:protocolo` / `gestao:ponto` / `gestao:holerite` / `gestao:admissao` / `gestao:exportado` | Gestão Fácil: financeiro, protocolo e RH | `tipo`, `descricao`, `valor`, `atrasada` / `saldo` / `acao`, `numero`, `setor`, `local` / `funcionario`, `horas`, `extras`, `liquido` / `relatorio` |
+| `fotos:aberta` / `fotos:girar` / `fotos:espelhar` / `fotos:cortar` / `fotos:ajuste` / `fotos:filtro` / `fotos:texto` / `fotos:tamanho` / `fotos:salva` | Editor de Fotos | `nome`, `exemplo` / `giro` / `proporcao` / `tipo`, `valor` / `filtro` / `largura`, `altura`, `kb` |
+| `vetor:pagina` / `vetor:modelo` / `vetor:forma` / `vetor:selecionado` / `vetor:propriedade` / `vetor:ordem` / `vetor:alinhado` / `vetor:duplicado` / `vetor:exportado` | Desenho Vetorial | `pagina`, `modelo` / `tipo`, `total` / `prop`, `valor` / `acao`, `posicao` / `nome`, `formas` |
+| `video:adicionado` / `video:cortado` / `video:dividido` / `video:movido` / `video:legenda` / `video:transicao` / `video:titulo` / `video:musica` / `video:play` / `video:exportado` | Editor de Vídeo | `tipo`, `fonte` / `inicio`, `fim`, `duracao` / `texto` / `transicao` / `faixa` / `nome`, `duracao`, `qualidade`, `legendas`, `titulos` |
+| `missao:cumprida` / `jornal:enviada` / `gincana:entrou` / `gincana:respondeu` / `gincana:tarefa-feita` / `gincana:terminou` | Missão da semana, jornal da turma e gincana | `missao`, `semana` / `titulo`, `edicao` / `equipe` / `opcao` / `tarefa` / `lugar`, `pontos` |
 | `pdf:zoom` / `pdf:impresso` | Leitor de PDF | `zoom` / `nome` |
 | `planilha:classificada` / `planilha:filtro` / `planilha:menu-filtro` / `planilha:filtrada` | Classificar e filtro | `coluna`, `ordem` (`az`, `za`) / `ligado` / `coluna`, `mostrando`, `escondidos`, `visiveis` |
 | `planilha:grafico` / `planilha:grafico-tipo` / `planilha:grafico-movido` / `planilha:condicional` | Gráficos e destaque automático | `tipo`, `intervalo`, `series`, `nomesSeries` / `regra`, `valor`, `cor` |
@@ -194,7 +211,8 @@ opção se o menu estiver aberto e, se não, para o arquivo. Os `data-opcao` apa
 `exibir` › `icones-grandes`, `personalizar`, `maximizar`, `restaurar`, `fechar-janela`, `sugestao`, `fonte`, `inserir`,
 `inserir-linha`, `nova-aba`).
 
-Os códigos dos programas (`app`) são: `aulas`, `editor`, `planilha`, `apresentacoes`, `configuracoes`, `leitor-pdf`, `bloco-notas`, `cronometro`, `jogo-memoria`, `email`, `digitacao`, `arquivos`, `lixeira`, `calculadora`, `computador`, `jogos-mouse`, `teclas`, `desenho`, `navegador`, `instrutor`.
+Os códigos dos programas (`app`) são: `aulas`, `editor`, `planilha`, `apresentacoes`, `configuracoes`, `leitor-pdf`, `bloco-notas`, `cronometro`, `jogo-memoria`, `email`, `digitacao`, `arquivos`, `lixeira`, `calculadora`, `computador`, `jogos-mouse`, `teclas`, `desenho`, `navegador`, `instrutor`,
+`celular`, `gestao`, `fotos`, `vetorial`, `video`, `gincana`.
 
 ## Atalhos para escrever aulas (`CE.L`, em `ajudantes.js`)
 - `info(texto)`, `quiz(pergunta, opcoes, certa)`, `esperar(texto, evento, condicao, extras)`, `abrir(app, nome)`, `fechar(app)`

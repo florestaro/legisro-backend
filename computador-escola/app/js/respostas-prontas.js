@@ -6,6 +6,32 @@
   const ASSUNTOS = [
     { palavras: ['calculadora', 'calcular'],
       resposta: 'Abra a Calculadora com clique duplo no ícone. Clique nos números e nas operações (+, −, ×, ÷) e depois no "=" para ver o resultado.' },
+    // ----- Turma: gincana, missão da semana e jornal -----
+    { palavras: ['gincana'],
+      resposta: 'Gincana: quando o professor abre, aparece "🏆 Gincana!" na sua tela; clique em "Entrar na gincana". Nas perguntas, clique na resposta certa (quanto mais rápido, mais pontos). Nas tarefas, vá fazer no computador: ele confere sozinho.' },
+    { palavras: ['missão da semana', 'missao da semana', 'missão', 'missao'],
+      resposta: 'Missão da semana: clique no 🎯 na barra lá embaixo para ver qual é. Faça o que ela pede (por exemplo, mandar um e-mail com anexo) e o computador confere sozinho. Toda semana tem uma missão nova.' },
+    { palavras: ['jornal', 'jornalzinho', 'mandar matéria', 'mandar materia', 'minha matéria', 'minha materia'],
+      resposta: 'Jornal da turma: escreva no Editor de Texto um título e pelo menos um parágrafo (pode pôr foto) e clique em "📰 Jornal". O professor lê e, se aprovar, a sua matéria sai no jornal da turma com o seu nome.' },
+    // ----- Curso livre: Celular -----
+    { palavras: ['número novo', 'numero novo', 'trocou de número', 'trocou de numero', 'falso parente', 'pedindo dinheiro', 'pedindo pix'],
+      resposta: 'Golpe do "número novo": alguém diz que é seu parente com número novo e pede dinheiro. NÃO faça Pix. Ligue para o número antigo da pessoa e confirme. Depois bloqueie e denuncie o contato.' },
+    { palavras: ['ligaram do banco', 'ligação do banco', 'ligacao do banco', 'central do banco', 'código por sms', 'codigo por sms', 'código que chegou', 'codigo que chegou'],
+      resposta: 'Banco de verdade nunca liga pedindo senha, código ou Pix "de segurança". Desligue e ligue você mesmo para o número que está atrás do cartão. O código que chega por SMS é só seu: nunca passe para ninguém.' },
+    { palavras: ['instalar aplicativo', 'instalar app', 'loja de aplicativos', 'permissão do app', 'permissao do app', 'permissões', 'permissoes'],
+      resposta: 'Instale aplicativos só pela loja oficial. Antes, veja quem fez, as notas e os comentários. Se uma lanterna pede seus contatos ou mensagens, NÃO permita: o aplicativo só deve pedir o que precisa para funcionar.' },
+    { palavras: ['pin do celular', 'senha do celular', 'bloquear o celular', 'tela de bloqueio'],
+      resposta: 'Proteja o celular com um PIN nos Ajustes (4 a 6 números). Nada fácil como 1234 ou a data do aniversário. Assim, quem pegar o seu celular não entra no banco nem nas mensagens.' },
+    // ----- Nível 5: Assistente Administrativo (Gestão Fácil) -----
+    { palavras: ['gestão fácil', 'gestao facil', 'sistema da empresa', 'dar baixa', 'fluxo de caixa', 'holerite', 'protocolo', 'baixa no estoque'],
+      resposta: 'No Gestão Fácil (o sistema da empresa), use o menu da esquerda: Clientes, Estoque, Vendas, Financeiro, Protocolo e RH. Conta paga? Vá em 💰 Financeiro e dê baixa nela. O fluxo de caixa mostra as entradas, as saídas e o saldo.' },
+    // ----- Curso livre: Criação digital -----
+    { palavras: ['editar foto', 'foto escura', 'clarear a foto', 'foto deitada', 'girar a foto', 'cortar a foto', 'filtro na foto', 'filtro da foto'],
+      resposta: 'No Editor de Fotos: abra a foto, clique em "⟳ Girar" se ela estiver deitada, em "✂️ Cortar" para tirar o que sobra e use as barrinhas de Brilho e Contraste para clarear. No fim, clique em "💾 Salvar".' },
+    { palavras: ['desenho vetorial', 'vetorial', 'cartaz', 'logotipo', 'post para'],
+      resposta: 'No Desenho Vetorial, comece por um modelo pronto e troque os textos. Clique numa forma para mudar a cor e o tamanho (do lado direito). Para mandar ou imprimir, clique em "🖼️ Exportar PNG".' },
+    { palavras: ['editar vídeo', 'editar video', 'linha do tempo', 'legenda no vídeo', 'legenda no video', 'transição', 'transicao', 'exportar vídeo', 'exportar video'],
+      resposta: 'No Editor de Vídeo, as partes ficam na linha do tempo (embaixo). Clique numa parte para cortar, pôr legenda ou transição; "✂️ Dividir" corta em duas. Ponha "🔤 Título" e música e, no fim, "💾 Exportar o vídeo".' },
     // ----- Nível 4: Informática Profissional -----
     { palavras: ['travou', 'travado', 'não está respondendo', 'nao esta respondendo', 'gerenciador de tarefas', 'finalizar tarefa', 'ctrl+shift+esc'],
       resposta: 'Programa travado ("Não está respondendo")? Espere um pouco. Se não voltar, aperte Ctrl + Shift + Esc para abrir o Gerenciador de Tarefas, clique no programa e em "Finalizar tarefa". Nunca desligue o computador na tomada.' },

@@ -3,8 +3,11 @@
 // no modo sala de aula, o computador do instrutor guarda uma sessão para cada computador de aluno.
 const os = require('os');
 const criarCorridas = require('../app/js/corrida-regras');
+const criarGincanas = require('../app/js/gincana-regras');
+const jornalRegras = require('../app/js/jornal-regras');
 
-// Chaves que a tela pode usar: "progresso:<id>", "arquivos:<id>" e "email:<id>" (a caixa de e-mail do aluno).
+// Chaves que a tela pode usar: "progresso:<id>", "arquivos:<id>", "email:<id>" (a caixa de e-mail do aluno) e
+// "empresa:<id>" (a empresa de treino do Gestão Fácil).
 // Cada aluno só lê e grava os próprios dados; o instrutor pode ler e gravar os de todos.
 const TIPOS_DE_DADOS = ['progresso', 'arquivos', 'email', 'empresa'];
 
@@ -66,7 +69,7 @@ function criarCanais(dados) {
   const ESCOLA_PADRAO = { nome: '', cidade: '', responsavel: '', cargo: 'Instrutor(a)', cargas: { n1: 40, n2: 40, n3: 40, n4: 40, n5: 60, cel: 20, cri: 30, digitacao1: 20, digitacao2: 20, digitacao3: 20, digitacao4: 20 } };
   const dadosDaEscola = () => {
     const e = dados.ler('escola', {});
-    return { nome: e.nome || '', cidade: e.cidade || '', responsavel: e.responsavel || '', cargo: e.cargo || ESCOLA_PADRAO.cargo, cargas: { ...ESCOLA_PADRAO.cargas, ...(e.cargas || {}) }, trilha: e.trilha === 'completa' ? 'completa' : 'essencial', revisao: e.revisao !== false };
+    return { nome: e.nome || '', cidade: e.cidade || '', responsavel: e.responsavel || '', cargo: e.cargo || ESCOLA_PADRAO.cargo, cargas: { ...ESCOLA_PADRAO.cargas, ...(e.cargas || {}) }, trilha: e.trilha === 'completa' ? 'completa' : 'essencial', revisao: e.revisao !== false, missao: e.missao && e.missao.id ? e.missao : null };
   };
   // A caixa inteira vai pela rede a cada gravação (limite de 25 MB): uma caixa quase cheia não recebe mais nada.
   const LIMITE_CAIXA = 20 * 1024 * 1024;
@@ -81,6 +84,8 @@ function criarCanais(dados) {
   const presencas = new Map(); // id do usuário -> { usuario, pc, atividade, em }
   const sala = { pausada: false, mensagens: [] };
   const corridas = criarCorridas(); // corrida de digitação da turma (só na memória, como a sala ao vivo)
+  const gincanas = criarGincanas(); // gincana ao vivo (na memória; o resultado final fica guardado para o jornal)
+  const guardarResumoGincana = (estado) => { if (estado && estado.fase === 'fim') { const r = gincanas.resumo(); if (r && r.participantes) dados.salvar('gincana-ultima', r); } return estado; };
   // Cada mensagem do instrutor vale por 15 minutos (quem entrar bem depois não vê um aviso velho); as últimas
   // ficam guardadas, para duas mensagens mandadas em seguida chegarem as duas.
   const mensagensAtuais = () => sala.mensagens.filter((m) => Date.now() - m.id < 15 * 60 * 1000);
@@ -306,6 +311,7 @@ function criarCanais(dados) {
       return {
         pausada: sala.pausada && aluno, mensagens: aluno ? mensagensAtuais() : [], mensagem: aluno ? mensagemAtual() : null,
         corrida: aluno ? corridas.convite(s.usuario) : null,
+        gincana: aluno ? gincanas.convite(s.usuario) : null,
       };
     },
     'sala:turma': (s) => {
@@ -339,6 +345,37 @@ function criarCanais(dados) {
     'corrida:estado': (s) => { exigirSessao(s); return corridas.estado(); },
     'corrida:entrar': (s) => { exigirSessao(s); return corridas.entrar(s.usuario); },
     'corrida:progresso': (s, dados) => { exigirSessao(s); return corridas.progresso(s.usuario, dados); },
+
+    // ---------- Gincana ao vivo (regras em app/js/gincana-regras.js) ----------
+    'gincana:criar': (s, opcoes = {}) => { exigirInstrutor(s); return gincanas.criar({ ...opcoes, por: s.usuario.nome }); },
+    'gincana:comecar': (s) => { exigirInstrutor(s); return gincanas.comecar(); },
+    'gincana:proxima': (s) => { exigirInstrutor(s); return guardarResumoGincana(gincanas.proxima()); },
+    'gincana:encerrar': (s) => { exigirInstrutor(s); return guardarResumoGincana(gincanas.encerrar()); },
+    'gincana:estado': (s) => { exigirSessao(s); return gincanas.estado(s.usuario); },
+    'gincana:entrar': (s) => { exigirSessao(s); return gincanas.entrar(s.usuario); },
+    'gincana:responder': (s, d) => { exigirSessao(s); return gincanas.responder(s.usuario, d); },
+    'gincana:tarefa': (s, d) => { exigirSessao(s); return gincanas.tarefa(s.usuario, d); },
+    'gincana:ultima': (s) => { exigirSessao(s); return dados.ler('gincana-ultima', null); },
+
+    // ---------- Missão da semana (o instrutor escolhe; vazio = automática) ----------
+    'escola:missao': (s, missao) => {
+      exigirInstrutor(s);
+      const id = String((missao && missao.id) || '').slice(0, 40);
+      dados.salvar('escola', { ...dados.ler('escola', {}), missao: id ? { id, semana: String(missao.semana || '').slice(0, 10), em: Date.now() } : null });
+      return dadosDaEscola();
+    },
+
+    // ---------- Jornal da turma (regras em app/js/jornal-regras.js) ----------
+    'jornal:enviar': (s, materia) => {
+      exigirSessao(s);
+      const r = jornalRegras.enviar(dados.ler('jornal', null), s.usuario, materia);
+      dados.salvar('jornal', r.jornal);
+      return r.materia;
+    },
+    'jornal:minhas': (s) => { exigirSessao(s); return jornalRegras.minhas(dados.ler('jornal', null), s.usuario); },
+    'jornal:listar': (s) => { exigirInstrutor(s); return jornalRegras.normal(dados.ler('jornal', null)); },
+    'jornal:status': (s, id, status) => { exigirInstrutor(s); const j = jornalRegras.mudarStatus(dados.ler('jornal', null), id, status); dados.salvar('jornal', j); return j; },
+    'jornal:nova-edicao': (s) => { exigirInstrutor(s); const j = jornalRegras.novaEdicao(dados.ler('jornal', null)); dados.salvar('jornal', j); return j; },
   };
 }
 

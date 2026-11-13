@@ -77,6 +77,25 @@ window.CE = window.CE || {};
     CE.voz.falar('O professor abriu uma corrida de digitação! Clique em Entrar na corrida.');
   }
 
+  // Gincana ao vivo: o convite aparece uma vez por gincana (o aluno pode entrar depois pelo menu Iniciar › Gincana).
+  const gincanasVistas = new Map();
+  function convidarParaGincana(convite) {
+    const quem = CE.sessao.usuario && CE.sessao.usuario.id;
+    if (!quem || !convite || convite.entrou || gincanasVistas.get(quem) === convite.id || CE.janelas.estaAberta('gincana')) return;
+    gincanasVistas.set(quem, convite.id);
+    document.querySelectorAll('.gincana-convite').forEach((d) => d.remove());
+    const fundo = CE.el('div', { class: 'dialogo-fundo gincana-convite', 'data-convite-gincana': convite.id },
+      CE.el('div', { class: 'dialogo' },
+        CE.el('h3', {}, `🏆 ${convite.titulo || 'Gincana!'}`),
+        CE.el('p', {}, 'O professor abriu uma gincana: perguntas e tarefas valendo pontos. Vamos jogar?'),
+        CE.el('div', { class: 'dialogo-botoes' },
+          CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Agora não'),
+          CE.el('button', { class: 'botao', 'data-acao': 'entrar-gincana', onclick: () => { fundo.remove(); CE.janelas.abrir('gincana', { entrar: true }); } }, 'Entrar na gincana ▶'))));
+    document.body.append(fundo);
+    CE.emitir('sala:gincana', { id: convite.id });
+    CE.voz.falar('O professor abriu uma gincana! Clique em Entrar na gincana.');
+  }
+
   // Sem resposta do instrutor por uns 20 s (3 tentativas), a pausa sai sozinha: o aluno não fica com a tela travada.
   let falhasSeguidas = 0;
   let geracao = 0; // muda ao entrar e ao sair: resposta de uma presença antiga é ignorada
@@ -91,6 +110,7 @@ window.CE = window.CE || {};
       pausar(!!r.pausada);
       mostrarMensagens(r.mensagens || (r.mensagem ? [r.mensagem] : []));
       if (r.corrida && !document.getElementById('tela-pausa')) convidarParaCorrida(r.corrida);
+      if (r.gincana && !document.getElementById('tela-pausa')) convidarParaGincana(r.gincana);
     } catch (e) {
       if (minha !== geracao) return;
       marcarRede(false, e.message);
@@ -113,7 +133,7 @@ window.CE = window.CE || {};
       timer = setInterval(avisar, 8000);
     },
     // Ao sair: a pausa e a mensagem do instrutor não ficam na frente da tela de entrada.
-    parar() { clearInterval(timer); geracao++; ajudaEm = 0; pausar(false); document.querySelectorAll('.sala-mensagem, .corrida-convite').forEach((d) => d.remove()); },
+    parar() { clearInterval(timer); geracao++; ajudaEm = 0; pausar(false); document.querySelectorAll('.sala-mensagem, .corrida-convite, .gincana-convite').forEach((d) => d.remove()); },
     avisarAgora: avisar,
     // "Não entendi": avisa o instrutor na hora (sem esperar a próxima presença).
     pedirAjuda() { ajudaEm = Date.now(); avisar(); },

@@ -1,6 +1,6 @@
 # Testes da sala de aula
 
-Dois testes automáticos do modo sala de aula em rede. Antes da primeira vez, rode `npm install` na pasta
+Três testes automáticos do modo sala de aula em rede. Antes da primeira vez, rode `npm install` na pasta
 `computador-escola`.
 
 ## Teste do servidor (rápido, sem tela)
@@ -9,7 +9,7 @@ Dois testes automáticos do modo sala de aula em rede. Antes da primeira vez, ro
 npm run teste:servidor
 ```
 
-Liga o servidor da sala sozinho (sem abrir o programa) e confere, pedido por pedido, cerca de 64 situações:
+Liga o servidor da sala sozinho (sem abrir o programa) e confere, pedido por pedido, cerca de 100 situações:
 - o instrutor fecha e abre o programa, e os alunos continuam dentro;
 - um aluno entra em outro computador, é removido pelo instrutor ou tem a senha trocada;
 - 20 alunos entram ao mesmo tempo, e senhas erradas em série esbarram no limite;
@@ -20,6 +20,11 @@ Liga o servidor da sala sozinho (sem abrir o programa) e confere, pedido por ped
   zerar "onde a turma trava" e o "🙋 Não entendi" na Sala ao vivo;
 - a corrida de digitação: o convite chega com a presença, só o instrutor abre e dá a largada, o placar segue as regras
   (quem terminou primeiro, depois quem foi mais longe), e corrida de uma turma não convida as outras;
+- a fase 2: a empresa do Gestão Fácil de cada aluno (o colega não lê); a **gincana** (só o instrutor abre e passa as
+  rodadas, o convite chega com a presença, as equipes ficam do mesmo tamanho, a resposta certa fica escondida até o
+  resultado, a resposta não muda depois de dada, na tarefa quem termina primeiro ganha mais e o resultado fica
+  guardado); a **missão da semana** (só o instrutor troca); o **jornal** (matéria curta é recusada, no máximo 5 esperando
+  por aluno, o aluno não lê as dos outros nem aprova, e fechar a edição publica as aprovadas);
 - um arquivo de dados está estragado.
 
 Leva menos de 1 minuto. Usa uma pasta temporária e a porta 47199 (para usar outra, veja "Outra porta" abaixo).
@@ -60,6 +65,32 @@ Cuidados:
 - com 20 alunos usa uns 6 GB de memória; em computador mais fraco, use menos alunos (`npm run teste:sala -- 5`);
 - tudo roda num computador só, então as respostas ficam mais lentas do que numa sala de verdade, onde cada aluno
   tem o próprio computador.
+
+## Teste das novidades da fase 2 em 3 computadores
+
+```
+npm run teste:fase2
+```
+
+No Linux sem tela: `xvfb-run -a npm run teste:fase2`.
+
+Abre o programa de verdade 4 vezes: 1 computador do instrutor e 3 computadores de aluno. Confere que **o aluno pode
+usar qualquer computador da sala com o mesmo nome e senha** e encontra tudo o que fez:
+- **Computador 1:** a Ana entra, põe letra grande e cria o PIN no **Celular**, cadastra um cliente no **Gestão
+  Fácil**, salva uma foto no **Editor de Fotos** (cumprindo a **missão da semana** escolhida pela instrutora) e manda
+  uma matéria para o **jornal**.
+- **Computador 2:** a Ana entra com o mesmo nome e senha e encontra tudo: a missão cumprida (🎯✅), o Celular com letra
+  grande pedindo o PIN criado no computador 1 (e o PIN abre), o cliente no Gestão Fácil, a foto nos arquivos, a matéria
+  no 📰 Jornal e as medalhas.
+- **Gincana:** a instrutora abre a gincana pelo Painel; o convite aparece na tela da Ana (computador 2) e do Bruno
+  (computador 3); os dois jogam as 6 rodadas (5 perguntas e 1 tarefa) e o pódio aparece nos três computadores.
+- **Computador 3:** a Ana entra e encontra a gincana e as medalhas ganhas no computador 2, o Celular e a missão.
+- **Painel:** a instrutora vê quem cumpriu a missão, aprova a matéria, monta o jornal com os destaques e fecha a
+  edição; a Ana vê a matéria publicada.
+- **Onde os dados ficam:** tudo no disco do computador do instrutor, e nada nos computadores dos alunos (nem no
+  armazenamento do navegador deles).
+
+Leva uns 3 minutos e usa a porta 47123 (ou outra, como no teste com 20 alunos: `PORTA=47130 npm run teste:fase2`).
 
 ## Outra porta
 
