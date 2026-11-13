@@ -53,9 +53,14 @@ button { cursor: pointer; }
 .dialogo p { margin: 0; font-size: 17px; }
 .dialogo-botoes { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
 
-.aviso {
+/* Pilha dos avisos rápidos (CE.avisar): presa acima da barra de tarefas, cresce para cima; o mais novo fica embaixo. */
+.avisos {
   position: fixed; left: 50%; bottom: 70px; transform: translateX(-50%); z-index: 10001;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none;
+}
+.aviso {
   background: #222; color: #fff; padding: 12px 22px; border-radius: 6px; box-shadow: var(--sombra); transition: opacity .4s;
+  text-align: center; pointer-events: auto;
 }
 .aviso.saindo { opacity: 0; }
 

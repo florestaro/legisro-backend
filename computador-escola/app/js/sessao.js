@@ -375,9 +375,20 @@ window.CE = window.CE || {};
     });
   };
 
+  // Avisos rápidos acima da barra de tarefas. Quando chegam vários juntos (por exemplo "Obrigado" e "Nova medalha"),
+  // ficam empilhados, o mais novo embaixo, em vez de um por cima do outro. No máximo 3 na tela: o mais antigo sai antes.
+  // Um aviso igual a outro que ainda está na tela não repete: o de antes sai e o novo fica no lugar.
+  const MAX_AVISOS = 3;
   CE.avisar = function (mensagem) {
+    let pilha = document.getElementById('avisos');
+    if (!pilha) {
+      pilha = CE.el('div', { id: 'avisos', class: 'avisos', role: 'status', 'aria-live': 'polite' });
+      document.body.append(pilha);
+    }
     const aviso = CE.el('div', { class: 'aviso' }, mensagem);
-    document.body.append(aviso);
+    [...pilha.children].filter((a) => a.textContent === aviso.textContent).forEach((a) => a.remove());
+    while (pilha.children.length >= MAX_AVISOS) pilha.firstElementChild.remove();
+    pilha.append(aviso);
     setTimeout(() => aviso.classList.add('saindo'), 2600);
     setTimeout(() => aviso.remove(), 3000);
   };
