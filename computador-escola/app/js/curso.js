@@ -15,7 +15,18 @@ window.CE = window.CE || {};
     { id: 'n2', nome: 'Intermediário', icone: '🌿', descricao: 'Computador para estudo e trabalho' },
     { id: 'n3', nome: 'Avançado', icone: '🌳', descricao: 'Produtividade e autonomia' },
     { id: 'n4', nome: 'Profissional', icone: '💼', descricao: 'Informática para o trabalho (como os cursos de Operador de Computador)' },
+    { id: 'n5', nome: 'Assistente Administrativo', icone: '🗂️', descricao: 'Rotinas de escritório com o sistema da empresa (como o curso do Senac)',
+      certificado: { curso: 'Assistente Administrativo', nivel: 'Nível 5 — Informática aplicada às rotinas de escritório' } },
+    // Cursos livres: correm em paralelo ao curso principal. Abrem quando o aluno termina o nível pedido em "requer"
+    // e não travam o curso principal (nem são travados por ele).
+    { id: 'cel', nome: 'Celular no dia a dia', icone: '📱', paralelo: true, requer: 'n1', descricao: 'Usar o celular com segurança: mensagens, Pix, golpes e configurações',
+      certificado: { curso: 'Celular no Dia a Dia', nivel: 'Curso livre — uso seguro do smartphone' } },
+    { id: 'cri', nome: 'Criação digital', icone: '🎨', paralelo: true, requer: 'n2', descricao: 'Fotos, vídeos e desenho vetorial: cartazes, posts e vídeos curtos',
+      certificado: { curso: 'Criação Digital', nivel: 'Curso livre — fotos, vídeos e desenho vetorial' } },
   ];
+  const nivelDe = (id) => CE.NIVEIS_CURSO.find((n) => n.id === id) || {};
+  // Cada aula pertence a uma "cadeia": a do curso principal (n1 a n5) ou a de um curso livre.
+  const cadeia = (l) => (nivelDe(l.nivel).paralelo ? l.nivel : 'principal');
 
   // Aulas de reforço: treino a mais, desafios de módulo e assuntos que as provas não cobram.
   const REFORCO = new Set([
@@ -33,6 +44,10 @@ window.CE = window.CE || {};
     // Profissional
     'n4-win-inicializar', 'n4-win-desafio', 'n4-ed-formas', 'n4-ed-desafio', 'n4-pl-imprimir', 'n4-pl-desafio', 'n4-ap-desafio',
     'n4-em-pastas', 'n4-ag-desafio', 'n4-hw-desafio',
+    // Assistente Administrativo
+    'n5-at-desafio', 'n5-doc-digitalizar', 'n5-doc-desafio', 'n5-fin-juros', 'n5-fin-desafio', 'n5-est-desafio', 'n5-rh-admissao',
+    // Curso livre Celular
+    'cel-ajustes', 'cel-boato', 'cel-qrcode', 'cel-mapa', 'cel-desafio',
   ]);
   const TRILHAS = { essencial: 'Trilha essencial', completa: 'Trilha completa' };
 
@@ -99,10 +114,22 @@ window.CE = window.CE || {};
         && CE.curso.obrigatoria(l, progresso));
     },
     // A aula obrigatória que vem antes desta (as de reforço não travam ninguém).
+    // Nos cursos livres, a primeira aula depende da última aula do nível pedido (a prova dele).
     anteriorNaTrilha(licao, progresso) {
-      for (let i = CE.LICOES.indexOf(licao) - 1; i >= 0; i--) if (CE.curso.obrigatoria(CE.LICOES[i], progresso)) return CE.LICOES[i];
-      return null;
+      const c = cadeia(licao);
+      for (let i = CE.LICOES.indexOf(licao) - 1; i >= 0; i--) {
+        const x = CE.LICOES[i];
+        if (cadeia(x) === c && CE.curso.obrigatoria(x, progresso)) return x;
+      }
+      const req = c !== 'principal' && nivelDe(licao.nivel).requer;
+      if (!req) return null;
+      const lista = CE.curso.aulasDaTrilha(progresso, { nivel: req });
+      return lista[lista.length - 1] || null;
     },
+    nivel: nivelDe,
+    paralelo: (id) => !!nivelDe(id).paralelo,
+    // "nível Iniciante" ou "curso Celular no dia a dia" (para as frases do professor).
+    rotulo: (id) => { const n = nivelDe(id); return n.paralelo ? `curso ${n.nome}` : `nível ${n.nome}`; },
     liberada(licao, progresso) {
       if (ehInstrutor() || licao.especial || licao.extra) return true;
       if (CE.curso.liberadaPeloInstrutor(licao, progresso)) return true;
@@ -115,8 +142,19 @@ window.CE = window.CE || {};
       const lib = (progresso && progresso.liberadas) || {};
       return !!(lib[licao.id] || lib[`modulo:${licao.modulo}`] || lib[`nivel:${licao.nivel}`]);
     },
+    // A próxima aula: quem está no meio de um curso livre continua nele; senão, segue o curso principal; com o
+    // principal terminado, o primeiro curso livre que já abriu.
     proxima(progresso) {
-      return CE.curso.aulasDaTrilha(progresso).find((l) => !CE.curso.aprovada(l, progresso));
+      const falta = (l) => !CE.curso.aprovada(l, progresso);
+      const lista = CE.curso.aulasDaTrilha(progresso);
+      const r = (l) => (progresso.licoes && progresso.licoes[l.id]) || {};
+      const ultima = CE.LICOES.filter((l) => r(l).em && !r(l).dispensada).sort((a, b) => r(b).em - r(a).em)[0];
+      if (ultima && CE.curso.paralelo(ultima.nivel)) {
+        const seguir = lista.find((l) => l.nivel === ultima.nivel && falta(l));
+        if (seguir && CE.curso.liberada(seguir, progresso)) return seguir;
+      }
+      return lista.find((l) => cadeia(l) === 'principal' && falta(l))
+        || lista.find((l) => falta(l) && CE.curso.liberada(l, progresso));
     },
     // Aula de reforço do mesmo módulo, já aberta e ainda não feita (para oferecer "Treinar mais" ao fim de uma aula).
     reforcoPendente(progresso, licao) {
@@ -142,7 +180,7 @@ window.CE = window.CE || {};
         trilha: CE.curso.trilha(progresso),
         media: notas.length ? Math.round(notas.reduce((a, b) => a + b, 0) / notas.length) : null,
         proxima,
-        nivelAtual: proxima ? CE.NIVEIS_CURSO.find((n) => n.id === proxima.nivel) : CE.NIVEIS_CURSO[0],
+        nivelAtual: proxima ? nivelDe(proxima.nivel) : CE.NIVEIS_CURSO[0],
       };
     },
   };

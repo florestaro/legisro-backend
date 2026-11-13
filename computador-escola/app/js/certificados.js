@@ -18,8 +18,10 @@ window.CE = window.CE || {};
   // ---------- Cursos que dão certificado ----------
   function cursos() {
     const informatica = CE.NIVEIS_CURSO.map((n, i) => {
+      // Os cursos livres e o Assistente Administrativo têm o nome próprio no certificado.
+      const proprio = n.certificado || {};
       return {
-        id: n.id, curso: 'Informática', nivel: `Nível ${i + 1} — ${n.nome}`, icone: n.icone, carga: n.id,
+        id: n.id, curso: proprio.curso || 'Informática', nivel: proprio.nivel || `Nível ${i + 1} — ${n.nome}`, icone: n.icone, carga: n.id,
         conteudo: () => CE.MODULOS.filter((m) => m.nivel === n.id).map((m) => m.titulo),
         situacao(p) {
           const lista = CE.curso.aulasDaTrilha(p, { nivel: n.id });

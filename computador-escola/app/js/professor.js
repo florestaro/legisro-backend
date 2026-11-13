@@ -193,7 +193,7 @@ window.CE = window.CE || {};
         emReforco ? CE.el('span', { class: 'prof-selo reforco' }, 'Reforço (opcional)') : null,
         modoDesafio ? CE.el('span', { class: 'prof-selo desafio-auto', 'data-modo-desafio': '', title: 'Você está indo muito bem: menos ajuda e perguntas mais exigentes' }, '🚀 Desafio') : null),
       posicao ? CE.el('div', { class: 'prof-trilha', 'data-posicao-trilha': `${posicao.numero}/${posicao.total}` },
-        `${posicao.nivel.icone} Aula ${posicao.numero} de ${posicao.total} do nível ${posicao.nivel.nome}`) : null,
+        `${posicao.nivel.icone} Aula ${posicao.numero} de ${posicao.total} do ${CE.curso.rotulo(posicao.nivel.id)}`) : null,
       CE.el('div', { class: 'prof-progresso' },
         CE.el('div', { class: 'prof-progresso-cheio', style: `width:${Math.round((indicePasso / licao.passos.length) * 100)}%` })),
       CE.el('div', { class: 'prof-passo-num' }, `Passo ${indicePasso + 1} de ${licao.passos.length}`),
@@ -583,7 +583,7 @@ window.CE = window.CE || {};
     const conducao = !proxima
       ? 'Você terminou todas as aulas do curso. Parabéns! Peça ao instrutor o seu certificado.'
       : mudouDeNivel
-        ? `Você terminou o nível ${CE.NIVEIS_CURSO.find((n) => n.id === terminada.nivel).nome}! Peça ao instrutor o seu certificado. Quando quiser, clique no botão verde para começar o próximo nível.`
+        ? `Você terminou o ${CE.curso.rotulo(terminada.nivel)}! Peça ao instrutor o seu certificado. ${CE.curso.paralelo(terminada.nivel) ? 'Quando quiser, clique no botão verde para continuar o curso.' : 'Quando quiser, clique no botão verde para começar o próximo nível.'}`
         : 'Quando estiver pronto, clique no botão verde "Próxima aula".';
     // Virou 🚀: o professor avisa que vai exigir mais. (Se voltar ao normal, ele não comenta.)
     const subiu = ritmo && ritmo.depois === 'avancado' && ritmo.antes !== 'avancado' && CE.ritmo.modo(progresso) === 'auto';
@@ -752,7 +752,7 @@ window.CE = window.CE || {};
     $('prof-licao').replaceChildren(CE.el('div', { class: 'prof-cartao' },
       CE.el('p', { class: 'prof-texto' }, texto),
       proxima ? CE.el('div', { class: 'prof-proxima', 'data-proxima': proxima.id },
-        CE.el('small', {}, pos ? `${pos.nivel.icone} Aula ${pos.numero} de ${pos.total} do nível ${pos.nivel.nome}` : 'Aula de hoje'),
+        CE.el('small', {}, pos ? `${pos.nivel.icone} Aula ${pos.numero} de ${pos.total} do ${CE.curso.rotulo(pos.nivel.id)}` : 'Aula de hoje'),
         CE.el('strong', {}, `${proxima.icone} ${proxima.titulo}`),
         proxima.descricao ? CE.el('span', {}, proxima.descricao) : null) : null,
       CE.el('div', { class: 'prof-botoes' },

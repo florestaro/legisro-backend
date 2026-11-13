@@ -21,7 +21,7 @@
           ...CE.NIVEIS_CURSO.map((n) => {
             const aulas = CE.curso.aulasDaTrilha(p, { nivel: n.id });
             const feitas = aulas.filter((l) => CE.curso.aprovada(l, p)).length;
-            return CE.el('button', { class: 'chip' + (aba === n.id ? ' ativo' : ''), 'data-nivel': n.id, onclick: () => { aba = n.id; desenhar(); } },
+            return CE.el('button', { class: 'chip' + (aba === n.id ? ' ativo' : '') + (n.paralelo ? ' curso-livre' : ''), 'data-nivel': n.id, title: n.paralelo ? `Curso livre: abre depois do ${CE.curso.rotulo(n.requer)}` : '', onclick: () => { aba = n.id; desenhar(); } },
               `${n.icone} ${n.nome}${aulas.length ? ` · ${feitas}/${aulas.length}` : ''}`);
           }),
           CE.LICOES_EXTRAS.length ? CE.el('button', { class: 'chip' + (aba === 'professor' ? ' ativo' : ''), 'data-nivel': 'professor', onclick: () => { aba = 'professor'; desenhar(); } },
@@ -115,7 +115,8 @@
           abas,
           destaque,
           CE.el('div', { class: 'aulas-topo' },
-            CE.el('h2', {}, `${nivel.icone} Nível ${nivel.nome}: ${nivel.descricao}`),
+            CE.el('h2', {}, nivel.paralelo ? `${nivel.icone} Curso livre ${nivel.nome}: ${nivel.descricao}` : `${nivel.icone} Nível ${nivel.nome}: ${nivel.descricao}`),
+            nivel.paralelo ? CE.el('p', { class: 'aulas-livre', 'data-curso-livre': nivel.id }, `🆓 Curso livre: corre junto com o curso principal e abre depois do ${CE.curso.rotulo(nivel.requer)}. Faça no seu ritmo: ele não trava as outras aulas.`) : null,
             aulasNivel.length ? CE.el('div', { class: 'aulas-barra', title: `${feitasNivel} de ${aulasNivel.length} aulas` },
               CE.el('div', { class: 'aulas-barra-cheia', style: `width:${Math.round((feitasNivel / aulasNivel.length) * 100)}%` })) : null,
             CE.el('p', {}, aulasNivel.length
