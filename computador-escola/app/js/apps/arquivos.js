@@ -8,6 +8,8 @@
     planilha: { icone: '📊', app: 'planilha', nome: 'Planilha' },
     pdf: { icone: '📕', app: 'leitor-pdf', nome: 'Documento PDF' },
     apresentacao: { icone: '📽️', app: 'apresentacoes', nome: 'Apresentação' },
+    vetor: { icone: '✒️', app: 'vetorial', nome: 'Desenho vetorial' },
+    video: { icone: '🎬', app: 'video', nome: 'Vídeo' },
     zip: { icone: '🗜️', nome: 'Arquivo compactado (ZIP)' },
   };
   const NOME_LOCAL = { pc: 'Meus Documentos', pendrive: 'Pen drive (E:)', lixeira: 'Lixeira' };

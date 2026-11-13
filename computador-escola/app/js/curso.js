@@ -48,6 +48,8 @@ window.CE = window.CE || {};
     'n5-at-desafio', 'n5-doc-digitalizar', 'n5-doc-desafio', 'n5-fin-juros', 'n5-fin-desafio', 'n5-est-desafio', 'n5-rh-admissao',
     // Curso livre Celular
     'cel-ajustes', 'cel-boato', 'cel-qrcode', 'cel-mapa', 'cel-desafio',
+    // Curso livre Criação digital
+    'cri-foto-tamanho', 'cri-foto-direitos', 'cri-vet-pixel', 'cri-vid-titulo', 'cri-desafio',
   ]);
   const TRILHAS = { essencial: 'Trilha essencial', completa: 'Trilha completa' };
 
