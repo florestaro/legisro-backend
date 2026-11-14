@@ -52,12 +52,38 @@
   // Moradores: personagens do computador, sempre no mesmo lugar (o mesmo para todos os alunos).
   const MORADORES = [
     { id: 'rosa', nome: 'Dona Rosa', emoji: '👵', x: 15, y: 11 },
-    { id: 'lucia', nome: 'Dona Lúcia', emoji: '👩‍💼', x: 3, y: 13 },
-    { id: 'raimundo', nome: 'Seu Raimundo', emoji: '👨‍🌾', x: 5, y: 23 },
-    { id: 'cida', nome: 'Enfermeira Cida', emoji: '👩‍⚕️', x: 32, y: 18 },
-    { id: 'bene', nome: 'Seu Bené', emoji: '👴', x: 32, y: 28 },
+    { id: 'lucia', nome: 'Dona Lúcia', emoji: '👩‍💼', x: 3, y: 13, lugar: 'banco' },
+    { id: 'raimundo', nome: 'Seu Raimundo', emoji: '👨‍🌾', x: 5, y: 23, lugar: 'feira' },
+    { id: 'cida', nome: 'Enfermeira Cida', emoji: '👩‍⚕️', x: 32, y: 18, lugar: 'posto' },
+    { id: 'bene', nome: 'Seu Bené', emoji: '👴', x: 32, y: 28, lugar: 'rio' },
     { id: 'oferta', nome: 'Moço da Oferta', emoji: '🕴️', x: 24, y: 17 },
   ];
+  // A cidade cresce com a turma: cada prédio acende quando metade da turma conclui o módulo ligado a ele.
+  // ("artigo" serve para as frases: "a turma acendeu os Correios".)
+  // A Escola e a praça ficam abertas desde o começo.
+  const CIDADE = [
+    { lugar: 'horta', artigo: 'a', modulo: 'n1-computador', titulo: 'Conhecendo o computador' },
+    { lugar: 'estacao', artigo: 'a', modulo: 'n1-teclado', titulo: 'Teclado' },
+    { lugar: 'rio', artigo: 'o', modulo: 'n1-internet', titulo: 'Internet' },
+    { lugar: 'posto', artigo: 'o', modulo: 'n1-seguranca', titulo: 'Segurança básica' },
+    { lugar: 'correios', artigo: 'os', modulo: 'n2-email', titulo: 'E-mail' },
+    { lugar: 'banco', artigo: 'o', modulo: 'n2-servicos', titulo: 'Banco e serviços digitais' },
+    { lugar: 'prefeitura', artigo: 'a', modulo: 'n2-gov', titulo: 'Serviços públicos pela internet (gov.br)' },
+    { lugar: 'feira', artigo: 'a', modulo: 'n3-vendas', titulo: 'Vender pela internet e MEI' },
+    { lugar: 'empregos', artigo: 'a', modulo: 'n3-trabalho', titulo: 'Computador e trabalho' },
+  ];
+  // A casa de cada aluno: fica pronta no primeiro módulo e ganha um enfeite por nível ou curso concluído.
+  const CASA_PRONTA = 'n1-computador';
+  const ENFEITES = [
+    { modulo: 'n1-prova', emoji: '🌻', nome: 'jardim (Iniciante)' },
+    { modulo: 'n2-prova', emoji: '📮', nome: 'caixa de correio (Intermediário)' },
+    { modulo: 'n3-prova', emoji: '🏪', nome: 'lojinha (Avançado)' },
+    { modulo: 'n4-prova', emoji: '💼', nome: 'escritório (Profissional)' },
+    { modulo: 'n5-projeto', emoji: '🗂️', nome: 'arquivo (Assistente Administrativo)' },
+    { modulo: 'cel-final', emoji: '📱', nome: 'antena (Celular)' },
+    { modulo: 'cri-final', emoji: '🎨', nome: 'ateliê (Criação digital)' },
+  ];
+  const MODULOS_DA_CIDADE = [...new Set([...CIDADE.map((c) => c.modulo), CASA_PRONTA, ...ENFEITES.map((e) => e.modulo)])];
   const BANCOS = [[14, 11], [20, 11], [14, 16], [20, 16]];
   const BARRACAS = [[1, 22, '#D9483B'], [3, 22, '#2F7DC0'], [5, 22, '#3B9A57'], [7, 22, '#E2A02A'], [9, 22, '#B65AA8']];
   const IPES = [[12, 8, 'amarelo'], [23, 8, 'roxo'], [12, 17, 'roxo'], [23, 17, 'amarelo']];
@@ -131,6 +157,6 @@
   // Onde a pessoa aparece ao entrar na praça (perto da fonte, cada uma num quadrinho).
   const CHEGADA = [[18, 15], [17, 15], [19, 15], [16, 15], [18, 16], [17, 16], [19, 16], [16, 16], [15, 15], [20, 15], [15, 14], [20, 14]];
 
-  return { T, W, H, chao, bloq, dono, LUGARES, OBJETOS, MORADORES, BANCOS, BARRACAS, IPES, ARVORES, PALMEIRAS, porLugar,
+  return { T, W, H, chao, bloq, dono, LUGARES, OBJETOS, MORADORES, CIDADE, CASA_PRONTA, ENFEITES, MODULOS_DA_CIDADE, BANCOS, BARRACAS, IPES, ARVORES, PALMEIRAS, porLugar,
     andavel, caminho, vizinhos, maisPerto, PRACA, RUAS, RODA, CHEGADA };
 });

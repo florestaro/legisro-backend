@@ -254,27 +254,43 @@ Os arquivos baixados vão para a pasta **Downloads**.
 Um programa da área de trabalho em que a turma se encontra numa **cidade de treino**: cada aluno anda com o seu boneco
 (o avatar do cadastro), conversa com quem está perto, joga com os colegas e entra nos prédios, que levam às partes do
 curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela rede (sem internet).
+- **Tela limpa**: o mapa ocupa a janela toda. No alto, à esquerda, quantos estão na praça ("👥 8 aqui": tocando, aparecem
+  os rostos) e como está a cidade ("🏙️ Cidade 3/9"); à direita, "Ver a cidade inteira". A conversa fica fechada no 💬
+  (a fala aparece no balão em cima do boneco) e os avisos aparecem no alto do mapa e somem sozinhos. Chegou perto de
+  alguém, de uma mesa ou de uma porta, surge um botão em cima do boneco ("💬 Conversar com Dona Rosa").
+- **A cidade cresce com a turma**: começa só com a praça e a escola; os outros 9 lugares ficam em obra (tapume e 🚧) e
+  cada um acende quando **metade da turma** conclui o módulo ligado a ele: horta (Conhecendo o computador), Estação
+  (Teclado), cais do rio (Internet), Posto de Saúde (Segurança básica), Correios (E-mail), Banco (Banco e serviços
+  digitais), Prefeitura (gov.br), Feira (Vender pela internet) e Agência de Empregos (Computador e trabalho). Clicando
+  num prédio em obra, aparece quanto falta ("2 de 4") e se o aluno já fez a parte dele. Os moradores de cada lugar só
+  aparecem com ele aceso, e a turma toda fica sabendo quando um prédio acende (com confete). Cada turma tem a sua
+  cidade; o instrutor vê a da turma que está na praça (ou escolhe outra).
+- **Rua da Turma**: cada aluno tem a sua casa, que começa como terreno 🏗️, fica pronta no primeiro módulo e ganha um
+  enfeite por nível ou curso concluído (🌻 Iniciante, 📮 Intermediário, 🏪 Avançado, 💼 Profissional, 🗂️ Assistente
+  Administrativo, 📱 Celular, 🎨 Criação digital). Na "Sua casa" ficam as medalhas na parede.
 - **Andar**: clicando no chão (treina o mouse) ou com as setas (treina o teclado). "Ver a cidade inteira" mostra o mapa
   todo; clicar num prédio leva o boneco até a porta.
 - **Conversar**: frases prontas ("Bom dia!", "Vamos jogar?"...) ou escrevendo; a fala aparece num balão em cima do
   boneco e, no registro da conversa, só para quem está perto. Gestos: 👋 acenar, 👏 aplaudir e 🙋 pedir ajuda (a mão
   levantada aparece para todos, inclusive para o instrutor e os monitores). Palavrões viram asteriscos.
-- **Prédios**: Escola (as Aulas), Banco Escola (o banco de treino), Correios (o E-mail), Prefeitura (o Cidadão Digital),
-  Agência de Empregos (o Emprega Já), Feira (a Feira Online), Estação Madeira-Mamoré (os textos da nossa terra na
-  Digitação), Posto de Saúde e o cais do Rio Madeira (em breve), e a **Sua casa**, com as medalhas na parede.
+- **Prédios** (acesos): Escola (as Aulas), Banco Escola (o banco de treino), Correios (o E-mail), Prefeitura (o Cidadão
+  Digital), Agência de Empregos (o Emprega Já), Feira (a Feira Online), Estação Madeira-Mamoré (os textos da nossa terra
+  na Digitação), Posto de Saúde e o cais do Rio Madeira (em breve).
 - **Moradores** (personagens do computador, com conversas que ensinam): a Dona Rosa pede ajuda para mandar foto ao neto,
   a Dona Lúcia explica o Pix, o Seu Raimundo desafia no troco da feira, a Enfermeira Cida dá dicas, o Seu Bené conta a
   história da Madeira-Mamoré e o **Moço da Oferta** oferece um golpe (quem percebe ganha medalha).
 - **Mesa do jogo da velha**: dois colegas jogam, cada um no seu computador (ou um aluno contra o computador, enquanto
   ninguém senta do outro lado). A mesa de dominó vem em breve.
 - **Mural de recados** e **votação**: a turma vota no que construir no Lote da turma (quadra, horta ou biblioteca); o
-  **cofre da turma** soma 4 moedas por aula concluída pelos alunos.
-- **O instrutor comanda** (na janela da praça dele): **📣 megafone** (o recado aparece no mapa de todos e é falado em
+  **cofre da turma** soma 4 moedas por aula concluída pelos alunos. Prédios, Rua da Turma e Lote ficam no "🏙️ Cidade".
+- **O instrutor comanda** (4 botões redondos no canto da praça dele): **📣 megafone** (o recado aparece no mapa de todos e é falado em
   voz alta), **chamar todos para a praça** (quem está na praça vai para perto da fonte; quem está fora recebe o convite
   na tela), **fechar e abrir a praça** (por exemplo, só no recreio), **só frases prontas** (bom para crianças),
   **silenciar** um aluno, tirar recados do mural e encerrar a votação.
-- Onde fica cada coisa: quem está onde e a conversa ficam só na memória do computador do instrutor; o mural, a votação
-  e as escolhas do instrutor ficam no disco dele (`praca.json`); as medalhas, no progresso de cada aluno. No modo de
+- Onde fica cada coisa: quem está onde e a conversa ficam só na memória do computador do instrutor; o mural, a votação,
+  as escolhas do instrutor, os módulos que cada aluno concluiu e os prédios acesos de cada turma ficam no disco dele
+  (`praca.json`; o computador do aluno avisa os módulos no login e a cada aula); as medalhas, no progresso de cada
+  aluno. No modo de
   teste pelo navegador, a praça tem **colegas de demonstração** andando e conversando.
 
 ### Outros
@@ -369,7 +385,7 @@ npm run teste:sala            # 1 instrutor + 20 alunos usando o sistema ao mesm
 npm run teste:sala -- 5       # o mesmo com 5 alunos
 npm run teste:fase2           # novidades da fase 2: o aluno troca de computador e encontra tudo (uns 3 minutos)
 npm run teste:fase3           # novidades da fase 3: MEI, anúncio e PDF em outro computador, e a monitoria (uns 3 minutos)
-npm run teste:praca           # a Praça Escola em 3 computadores: andar, conversar, jogar, mural, votação e comandos do instrutor
+npm run teste:praca           # a Praça Escola em 3 computadores: andar, conversar, a cidade que cresce, jogar, mural, votação e comandos do instrutor
 npm run teste:emojis          # todos os emojis aparecem direito no Windows 10 (sem tela, segundos)
 ```
 
@@ -443,7 +459,7 @@ guardado nos computadores dos alunos. Também vale para a fase 3 (`npm run teste
 foto na Feira Online e o formulário em PDF preenchido num computador aparecem no outro, e a monitoria funciona entre
 computadores (o monitor vê o pedido de ajuda do colega, avisa que vai ajudar e o colega recebe o aviso na tela dele).
 E a Praça Escola (`npm run teste:praca`): cada aluno vê o boneco do outro andar, a conversa chega para quem está perto,
-os dois jogam jogo da velha cada um no seu computador, e o megafone, o fechar/abrir, o só frases prontas, o silenciar e
+o módulo que a Ana conclui acende prédios na tela do Bruno, os dois jogam jogo da velha cada um no seu computador, e o megafone, o fechar/abrir, o só frases prontas, o silenciar e
 o chamar todos da instrutora chegam na hora.
 
 ## Criar aulas sem programar

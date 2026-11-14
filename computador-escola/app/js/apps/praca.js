@@ -1,6 +1,10 @@
 // Praça Escola: o encontro virtual da turma pela rede da sala. Cada aluno anda com o seu boneco pela cidade,
 // conversa com quem está perto, joga na praça e entra nos prédios, que levam às partes do curso. O instrutor
 // abre e fecha a praça, fala no megafone e chama todos para perto da fonte.
+// A cidade cresce com a turma: começa só com a praça e a escola, e cada prédio acende quando metade da turma
+// conclui o módulo ligado a ele (praca-mapa.js: CIDADE). Cada aluno tem a sua casa na Rua da Turma, que fica
+// pronta no primeiro módulo e ganha um enfeite por nível ou curso concluído.
+// Tela limpa: o mapa ocupa a janela toda e o resto só aparece por cima dele quando importa.
 // As regras ficam em app/js/praca-regras.js (o computador do instrutor guarda tudo) e o mapa em app/js/praca-mapa.js.
 window.CE = window.CE || {};
 
@@ -11,17 +15,22 @@ window.CE = window.CE || {};
   const SINCRONIA_LONGE = 2000; // janela minimizada: devagar, só para continuar na praça
   const RAIO = 7;               // no registro da conversa entra o que foi dito a até 7 quadrinhos
   const VELOCIDADE = 5;         // quadrinhos por segundo do próprio boneco
+  const AVISO = 6500;           // quanto tempo um aviso fica no alto do mapa
   const sortear = (l) => l[Math.floor(Math.random() * l.length)];
   const distancia = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   const navegar = (url) => () => CE.janelas.abrir('navegador', { url });
   const arred = (v) => Math.round(v * 100) / 100;
+  const NA_CIDADE = Object.fromEntries(M.CIDADE.map((c) => [c.lugar, c]));
+  const nomeDoLugar = (id) => (id === 'rio' ? 'Cais do Rio Madeira' : (M.porLugar[id] || {}).nome || id);
+  const comArtigo = (id) => `${(M.CIDADE.find((c) => c.lugar === id) || { artigo: 'o' }).artigo} ${nomeDoLugar(id)}`;
+  const RUA = ['casa-ana', 'casa-bruno'];
 
   // O que tem em cada lugar e para onde o botão leva.
   const LUGAR = {
     escola: { texto: 'A escola da cidade, com a biblioteca. Daqui saem as aulas do curso.', botao: 'Entrar nas Aulas', abrir: () => CE.janelas.abrir('aulas') },
-    'casa-ana': { texto: 'A casa de um colega da turma.', embreve: 'Em breve dá para visitar a casa dos colegas que deixarem a porta aberta.' },
-    'casa-bruno': { texto: 'A casa de um colega da turma.', embreve: 'Em breve dá para visitar a casa dos colegas que deixarem a porta aberta.' },
-    'sua-casa': { texto: 'A sua casinha na cidade, com as medalhas que você ganhou na parede.' },
+    'casa-ana': { texto: 'Uma casa da Rua da Turma: cada aluno tem a sua.' },
+    'casa-bruno': { texto: 'Uma casa da Rua da Turma: cada aluno tem a sua.' },
+    'sua-casa': { texto: 'A sua casa na Rua da Turma, com as medalhas que você ganhou na parede.' },
     empregos: { texto: 'Vagas de emprego de treino, currículo e entrevista.', botao: 'Ver as vagas (Emprega Já)', abrir: navegar('https://empregaja.com.br') },
     lote: { texto: 'Terreno da turma. Todos votam no que construir aqui; as moedas vêm das aulas concluídas.' },
     banco: { texto: 'O banco de treino: Pix, boleto, cartão e empréstimo, sem dinheiro de verdade.', botao: 'Entrar no Banco Escola', abrir: navegar('https://bancoescola.com.br') },
@@ -29,7 +38,7 @@ window.CE = window.CE || {};
     prefeitura: { texto: 'Serviços públicos de treino: CPF, Carteira de Trabalho, documentos e assinatura.', botao: 'Entrar no Cidadão Digital', abrir: navegar('https://cidadaodigital.org.br') },
     posto: { texto: 'Agendar consulta e ver a carteira de vacinação.', embreve: 'Em breve: o agendamento de consulta de treino, com a Enfermeira Cida explicando cada passo.' },
     feira: { texto: 'Barracas com açaí, farinha d’água, tucumã e castanha.', botao: 'Vender pela internet (Feira Online)', abrir: navegar('https://feiraonline.com.br') },
-    horta: { texto: 'A horta da turma. Ela cresce com as aulas que vocês concluem.' },
+    horta: { texto: 'A horta da turma: foi o primeiro lugar que a turma acendeu, com o módulo Conhecendo o computador.' },
     estacao: { texto: 'A estação da estrada de ferro que ligava Porto Velho a Guajará-Mirim.', botao: 'Digitar textos da nossa terra', abrir: () => CE.janelas.abrir('digitacao') },
     rio: { texto: 'O cais do Rio Madeira, com o Seu Bené pescando.', embreve: 'Em breve: a pescaria de palavras, onde cada peixe é uma palavra para digitar antes que ele fuja.' },
     coreto: { texto: 'O palco da praça: daqui o instrutor conduz o bingo, o quiz e a gincana.' },
@@ -55,6 +64,38 @@ window.CE = window.CE || {};
     await CE.sessao.atualizarProgresso((p) => { p.praca = p.praca || {}; if (!p.praca[id]) { p.praca[id] = Date.now(); nova = true; } }).catch(() => {});
     if (nova) CE.emitir('praca:conquista', { id });
   }
+
+  // ================= A cidade cresce com a turma =================
+  // No login e a cada aula concluída, o computador do aluno conta ao do instrutor quais módulos ele já terminou
+  // (só os que acendem prédios ou enfeitam a casa). Quem não está com a praça aberta recebe um aviso quando a
+  // turma acende um prédio novo.
+  let pracaNaTela = false;
+  let acesosAvisados = null; // { usuario, lista }
+  CE.praca = {
+    modulosConcluidos(progresso) {
+      return M.MODULOS_DA_CIDADE.filter((id) => {
+        const aulas = CE.curso.aulasDaTrilha(progresso, { modulo: id });
+        return aulas.length > 0 && aulas.every((l) => CE.curso.aprovada(l, progresso));
+      });
+    },
+    async informar() {
+      const u = CE.sessao.usuario;
+      if (!u || u.papel === 'instrutor' || !CE.curso) return null;
+      try {
+        await CE.curso.trilhaPronta();
+        const progresso = await CE.sessao.progresso();
+        const r = await CE.api.chamar('praca:modulos', CE.praca.modulosConcluidos(progresso));
+        if (!r || !Array.isArray(r.lugares) || CE.sessao.usuario !== u) return r;
+        const acesos = r.lugares.filter((l) => l.aberto).map((l) => l.lugar);
+        if (acesosAvisados && acesosAvisados.usuario === u.id && !pracaNaTela) {
+          for (const l of acesos.filter((x) => !acesosAvisados.lista.includes(x))) CE.avisar(`🎉 A turma acendeu ${comArtigo(l)} na Praça Escola!`);
+        }
+        acesosAvisados = { usuario: u.id, lista: acesos };
+        return r;
+      } catch { return null; }
+    },
+  };
+  CE.ouvir('licao:concluida', () => { CE.praca.informar(); });
 
   // ================= Desenho da cidade (uma vez, num canvas com o dobro de pontos) =================
   function desenharCidade(tela) {
@@ -232,16 +273,78 @@ window.CE = window.CE || {};
       corpo.classList.add('pr-corpo');
       const usuario = CE.sessao.usuario;
       const souInstrutor = usuario.papel === 'instrutor';
+      pracaNaTela = true;
 
-      // ---------- Montagem da tela ----------
+      // ---------- Montagem da tela: o mapa ocupa tudo; o resto aparece por cima, só quando importa ----------
       const tela = CE.el('canvas', { 'aria-hidden': 'true' });
       const camadaObjetos = CE.el('div', { class: 'pr-camada', 'aria-hidden': 'true' });
       const camadaRotulos = CE.el('div', { class: 'pr-camada', 'aria-hidden': 'true' });
       const camadaGente = CE.el('div', { class: 'pr-camada' });
       const mundo = CE.el('div', { class: 'pr-mundo' }, tela, camadaObjetos, camadaRotulos, camadaGente);
+
+      // No alto, à esquerda: quantos estão na praça (tocando, aparecem os rostos) e como está a cidade.
+      const botaoGente = CE.el('button', { class: 'pr-pilula', type: 'button', 'data-acao': 'gente', 'aria-expanded': 'false', title: 'Quem está na praça agora' }, '👥 1 aqui');
+      const botaoCidade = CE.el('button', { class: 'pr-pilula', type: 'button', 'data-acao': 'cidade', title: 'Como está a cidade da turma' }, `🏙️ Cidade 0/${M.CIDADE.length}`);
+      const listaGente = CE.el('ul', { class: 'pr-gente' });
+      const popGente = CE.el('div', { class: 'pr-pop gente', role: 'dialog', 'aria-label': 'Quem está na praça agora' }, CE.el('h3', {}, 'Na praça agora'), listaGente);
+      popGente.hidden = true;
+      const topoEsq = CE.el('div', { class: 'pr-hud pr-topo-esq' }, botaoGente, botaoCidade, popGente);
+
+      // No alto, à direita: ver a cidade inteira e, para o instrutor, quatro botões pequenos.
+      const mapaIcone = CE.el('span', { 'aria-hidden': 'true' }, '🗺️');
+      const mapaTexto = CE.el('span', { class: 'txt' }, ' Ver a cidade inteira');
+      const botaoMapa = CE.el('button', { class: 'pr-pilula escura', type: 'button', 'data-acao': 'cidade-inteira', 'aria-label': 'Ver a cidade inteira' }, mapaIcone, mapaTexto);
+      const comando = (id, icone, rotulo, onclick) => CE.el('button', { class: 'pr-comando', type: 'button', 'data-acao': id, 'aria-label': rotulo, onclick },
+        CE.el('span', { class: 'icone', 'aria-hidden': 'true' }, icone), CE.el('span', { class: 'rotulo', 'aria-hidden': 'true' }, rotulo));
+      const campoMegafone = CE.el('input', { id: 'pr-campo-megafone', maxlength: '120', autocomplete: 'off', placeholder: 'Ex.: Bingo em 5 minutos!', 'aria-label': 'Recado do megafone' });
+      const popMegafone = CE.el('form', { class: 'pr-pop megafone', onsubmit: (e) => {
+        e.preventDefault();
+        const t = campoMegafone.value.trim();
+        if (!t) return;
+        campoMegafone.value = '';
+        abrirMegafone(false);
+        chamar('praca:megafone', t).then(sincronizar);
+      } }, CE.el('h3', {}, '📣 Megafone'), CE.el('p', { class: 'pr-suave' }, 'Todo mundo na praça vê e ouve o recado.'),
+      CE.el('div', { class: 'pr-digitar' }, campoMegafone, CE.el('button', { class: 'botao', type: 'submit' }, 'Falar')));
+      popMegafone.hidden = true;
+      const btMegafone = comando('megafone', '📣', 'Megafone', () => abrirMegafone(popMegafone.hidden));
+      btMegafone.setAttribute('aria-expanded', 'false');
+      const btChamar = comando('chamar-todos', '⛲', 'Chamar todos para a fonte', () => chamar('praca:chamar').then(sincronizar));
+      const btAbrir = comando('abrir-fechar', '🔒', 'Fechar a praça', () => chamar('praca:configurar', { aberta: !estado.aberta }).then(sincronizar));
+      const btFrases = comando('so-frases', '🔤', 'Só frases prontas', () => chamar('praca:configurar', { soFrases: !estado.soFrases }).then(sincronizar));
+      btFrases.setAttribute('aria-pressed', 'false');
+      const comandos = souInstrutor ? CE.el('div', { class: 'pr-comandos', 'data-pr': 'instrutor' }, btMegafone, btChamar, btAbrir, btFrases, popMegafone) : null;
+      const topoDir = CE.el('div', { class: 'pr-hud pr-topo-dir' }, botaoMapa, comandos);
+
+      // No meio, no alto: o megafone e os avisos da praça (somem sozinhos).
       const megafoneEl = CE.el('div', { class: 'pr-megafone', role: 'status' }); megafoneEl.hidden = true;
+      const avisos = CE.el('ol', { class: 'pr-avisos', 'aria-live': 'polite' });
+      const centro = CE.el('div', { class: 'pr-centro' }, megafoneEl, avisos);
       const avisoRede = CE.el('div', { class: 'pr-aviso-rede', role: 'status' }); avisoRede.hidden = true;
-      const botaoMapa = CE.el('button', { class: 'pr-botao-mapa', type: 'button', 'data-acao': 'cidade-inteira' }, 'Ver a cidade inteira');
+
+      // Embaixo, à esquerda: a conversa (fechada; a fala aparece no balão) e os gestos.
+      const log = CE.el('ol', { class: 'pr-log' });
+      const campoConversa = CE.el('input', { id: 'pr-campo-conversa', maxlength: '80', autocomplete: 'off', placeholder: 'Escreva para quem está perto', 'aria-label': 'Mensagem para quem está perto' });
+      const formConversa = CE.el('form', { class: 'pr-digitar' }, campoConversa, CE.el('button', { class: 'botao', type: 'submit' }, 'Enviar'));
+      const notaConversa = CE.el('p', { class: 'pr-nota' }); notaConversa.hidden = true;
+      const frases = CE.el('div', { class: 'pr-frases', 'aria-label': 'Frases prontas' },
+        CE.pracaRegras.FRASES.map((f) => CE.el('button', { class: 'pr-chip', type: 'button', 'data-frase': f, onclick: () => falar(f) }, f)));
+      const chat = CE.el('div', { class: 'pr-chat', role: 'dialog', 'aria-label': 'Conversa' },
+        CE.el('div', { class: 'pr-chat-topo' }, CE.el('strong', {}, '💬 Conversa'), CE.el('span', { class: 'pr-suave' }, 'Só o que foi dito perto de você'),
+          CE.el('button', { class: 'pr-x', type: 'button', 'aria-label': 'Fechar a conversa', onclick: () => abrirConversa(false) }, '×')),
+        log, frases, formConversa, notaConversa);
+      chat.hidden = true;
+      const naoLidas = CE.el('span', { class: 'pr-nao-lidas', 'aria-hidden': 'true' }); naoLidas.hidden = true;
+      const botaoConversa = CE.el('button', { class: 'pr-redondo', type: 'button', 'data-acao': 'conversa', 'aria-expanded': 'false', 'aria-label': 'Conversa: histórico, frases prontas e escrever', title: 'Conversa' },
+        CE.el('span', { 'aria-hidden': 'true' }, '💬'), naoLidas);
+      const botaoMao = CE.el('button', { class: 'pr-gesto pr-redondo', type: 'button', 'data-gesto': 'ajuda', title: 'Pedir ajuda (levantar a mão)', 'aria-label': 'Pedir ajuda' }, '🙋');
+      const baixo = CE.el('div', { class: 'pr-hud pr-baixo' }, botaoConversa,
+        CE.el('button', { class: 'pr-gesto pr-redondo', type: 'button', 'data-gesto': 'acenar', title: 'Acenar', 'aria-label': 'Acenar', onclick: () => gesto('acenar') }, '👋'),
+        CE.el('button', { class: 'pr-gesto pr-redondo', type: 'button', 'data-gesto': 'aplaudir', title: 'Aplaudir', 'aria-label': 'Aplaudir', onclick: () => gesto('aplaudir') }, '👏'),
+        botaoMao);
+
+      // O que dá para fazer aqui: aparece em cima do boneco quando ele chega perto de alguém, de uma mesa ou de uma porta.
+      const acao = CE.el('button', { class: 'pr-acao', type: 'button', 'data-acao': 'interagir' }); acao.hidden = true;
       const dica = CE.el('div', { class: 'pr-dica' }, 'Clique no chão para andar · setas do teclado · Enter conversa');
       const dialogo = CE.el('div', { class: 'pr-dialogo', role: 'dialog', 'aria-labelledby': 'pr-dialogo-titulo' }); dialogo.hidden = true;
       const fechadaEl = CE.el('div', { class: 'pr-fechada' },
@@ -249,42 +352,22 @@ window.CE = window.CE || {};
           CE.el('h3', {}, 'A praça está fechada agora'), CE.el('p', {}, 'O instrutor abre no recreio, no fim da aula.')));
       fechadaEl.hidden = true;
       const mapa = CE.el('div', { class: 'pr-mapa', tabindex: '0', 'aria-label': 'Mapa da Praça Escola. Clique no chão para andar ou use as setas do teclado; Enter conversa com quem está perto.' },
-        mundo, megafoneEl, avisoRede, botaoMapa, dica, dialogo, fechadaEl);
-      // Clique dentro das janelinhas não é clique no chão (um botão que redesenha a janelinha some antes de o clique
-      // chegar ao mapa, e aí o boneco sairia andando).
-      for (const camada of [dialogo, fechadaEl, megafoneEl, avisoRede]) camada.addEventListener('click', (e) => e.stopPropagation());
-
-      const campoConversa = CE.el('input', { id: 'pr-campo-conversa', maxlength: '80', autocomplete: 'off', placeholder: 'Escreva para quem está perto', 'aria-label': 'Mensagem para quem está perto' });
-      const formConversa = CE.el('form', { class: 'pr-digitar' }, campoConversa, CE.el('button', { class: 'botao', type: 'submit' }, 'Enviar'));
-      const notaConversa = CE.el('p', { class: 'pr-nota' }); notaConversa.hidden = true;
-      const botaoMao = CE.el('button', { class: 'pr-gesto', type: 'button', 'data-gesto': 'ajuda', title: 'Pedir ajuda (levantar a mão)', 'aria-label': 'Pedir ajuda' }, '🙋');
-      const barra = CE.el('div', { class: 'pr-barra' },
-        CE.el('div', { class: 'pr-frases', 'aria-label': 'Frases prontas' }, CE.pracaRegras.FRASES.map((f) => CE.el('button', { class: 'pr-chip', type: 'button', 'data-frase': f, onclick: () => falar(f) }, f))),
-        formConversa, notaConversa,
-        CE.el('div', { class: 'pr-gestos', 'aria-label': 'Gestos' },
-          CE.el('button', { class: 'pr-gesto', type: 'button', 'data-gesto': 'acenar', title: 'Acenar', 'aria-label': 'Acenar', onclick: () => gesto('acenar') }, '👋'),
-          CE.el('button', { class: 'pr-gesto', type: 'button', 'data-gesto': 'aplaudir', title: 'Aplaudir', 'aria-label': 'Aplaudir', onclick: () => gesto('aplaudir') }, '👏'),
-          botaoMao));
-
-      const cartaoInstrutor = CE.el('section', { class: 'pr-cartao instrutor', 'data-pr': 'instrutor' });
-      const cartaoPerto = CE.el('section', { class: 'pr-cartao', 'data-pr': 'perto', 'aria-live': 'polite' }, CE.el('h3', {}, 'Aqui perto'), CE.el('div', {}));
-      const listaGente = CE.el('ul', { class: 'pr-gente' });
-      const cartaoGente = CE.el('section', { class: 'pr-cartao', 'data-pr': 'gente' }, CE.el('h3', {}, 'Na praça agora'), listaGente);
-      const log = CE.el('ol', { class: 'pr-log' });
-      const cartaoConversa = CE.el('section', { class: 'pr-cartao', 'data-pr': 'conversa' }, CE.el('h3', {}, 'Conversa'), CE.el('p', { class: 'pr-suave' }, 'Aparece só o que foi dito perto de você.'), log);
-      const cartaoCofre = CE.el('section', { class: 'pr-cartao', 'data-pr': 'cofre' }, CE.el('h3', {}, 'Cofre da turma'), CE.el('p', { class: 'pr-suave' }, 'Carregando…'));
-      const lado = CE.el('aside', { class: 'pr-lado', 'aria-label': 'Painel da praça' }, souInstrutor ? cartaoInstrutor : null, cartaoPerto, cartaoGente, cartaoConversa, cartaoCofre);
-      corpo.replaceChildren(CE.el('div', { class: 'pr-caixa' }, CE.el('div', { class: 'pr' }, mapa, barra, lado)));
+        mundo, acao, topoEsq, topoDir, centro, avisoRede, chat, baixo, dica, dialogo, fechadaEl);
+      // Clique nos botões e janelinhas não é clique no chão (um botão que redesenha a janelinha some antes de o
+      // clique chegar ao mapa, e aí o boneco sairia andando).
+      for (const camada of [topoEsq, topoDir, centro, avisoRede, chat, baixo, acao, dialogo, fechadaEl]) camada.addEventListener('click', (e) => e.stopPropagation());
+      corpo.replaceChildren(CE.el('div', { class: 'pr-caixa' }, mapa));
       desenharCidade(tela);
 
       // ---------- Rótulos e objetos do mapa ----------
       const rotuloDe = {};
       const rotulo = (texto, x, y, classe) => { const r = CE.el('div', { class: 'pr-rotulo' + (classe ? ' ' + classe : ''), style: `left:${x}px;top:${y}px` }, texto); camadaRotulos.append(r); return r; };
+      const nomeNoRotulo = (L) => (L.id === 'rio' ? 'Rio Madeira' : L.casa ? (L.id === 'sua-casa' && !souInstrutor ? 'Sua casa' : 'Casa') : L.nome);
       for (const L of M.LUGARES) {
         const [x, y, w, h] = L.r;
         const pos = { feira: [5.5 * T, 24.6 * T], rio: [18 * T, 28.5 * T], lote: [33 * T, 1.3 * T] }[L.id]
           || [(x + w / 2) * T, L.telhado ? y * T + (h * T - Math.round(T * 1.1)) / 2 : (y + h / 2) * T];
-        rotuloDe[L.id] = rotulo(`${L.emoji} ${L.id === 'rio' ? 'Rio Madeira' : L.nome}`, pos[0], pos[1], L.casa ? 'pequeno' : '');
+        rotuloDe[L.id] = rotulo(`${L.emoji} ${nomeNoRotulo(L)}`, pos[0], pos[1], L.casa ? 'pequeno' : '');
       }
       rotuloDe.praca = rotulo('⛲ Praça da Turma', 18 * T, 7.5 * T);
       rotuloDe['mesa-velha'] = rotulo('❌ Jogo da velha', 14.5 * T, 12.9 * T, 'pequeno so-perto');
@@ -292,10 +375,11 @@ window.CE = window.CE || {};
       rotuloDe.mural = rotulo('📌 Mural de recados', 22 * T, 8.1 * T, 'pequeno so-perto');
       rotuloDe.coreto = rotulo('🎭 Coreto', 18 * T, 11.4 * T, 'pequeno so-perto');
       rotulo('Cais', 32 * T, 26.5 * T, 'pequeno so-perto');
-      rotulo('RUA DA ESCOLA', 4 * T, 6 * T, 'rua'); rotulo('RUA DA ESCOLA', 31 * T, 6 * T, 'rua'); rotulo('AVENIDA DO RIO', 5 * T, 20 * T, 'rua');
-      const objeto = (txt, x, y, classe) => camadaObjetos.append(CE.el('div', { class: 'pr-obj' + (classe ? ' ' + classe : ''), style: `left:${x}px;top:${y}px` }, txt));
-      objeto('⛵', 27.5 * T, 28.3 * T, 'barco'); objeto('🛶', 8.5 * T, 28 * T, 'barco'); objeto('🚂🚃🚃', 21.7 * T, 25.45 * T, 'trem');
-      objeto('🎣', 33.1 * T, 28.2 * T); objeto('🚧', 32.8 * T, 2.7 * T);
+      rotulo('RUA DA TURMA', 4 * T, 6 * T, 'rua'); rotulo('RUA DA ESCOLA', 31 * T, 6 * T, 'rua'); rotulo('AVENIDA DO RIO', 5 * T, 20 * T, 'rua');
+      const objeto = (txt, x, y, classe) => { const o = CE.el('div', { class: 'pr-obj' + (classe ? ' ' + classe : ''), style: `left:${x}px;top:${y}px` }, txt); camadaObjetos.append(o); return o; };
+      objeto('⛵', 27.5 * T, 28.3 * T, 'barco'); objeto('🛶', 8.5 * T, 28 * T, 'barco');
+      const enfeiteDe = { estacao: [objeto('🚂🚃🚃', 21.7 * T, 25.45 * T, 'trem')], rio: [objeto('🎣', 33.1 * T, 28.2 * T)] };
+      objeto('🚧', 32.8 * T, 2.7 * T);
 
       // ---------- Bonecos ----------
       function boneco(p, classe) {
@@ -321,9 +405,10 @@ window.CE = window.CE || {};
       // Eu: quem anda é este computador; o do instrutor só fica sabendo onde estou.
       const eu = boneco({ id: usuario.id, nome: usuario.nome, emoji: usuario.avatar || '🙂', x: 18, y: 15, caminho: [] }, 'eu' + (souInstrutor ? ' instrutor' : ''));
       eu.nomeEl.textContent = 'Você';
-      // Moradores (iguais em todos os computadores)
+      // Moradores (iguais em todos os computadores). Os que trabalham num prédio só aparecem com ele aceso.
       const moradores = M.MORADORES.map((m) => boneco({ ...m, caminho: [] }, m.id === 'oferta' ? 'golpista' : 'morador'));
       const porMorador = Object.fromEntries(moradores.map((m) => [m.id, m]));
+      const presente = (m) => !m.el.classList.contains('sumiu') && !m.el.classList.contains('fora');
       // Os outros: vêm do computador do instrutor
       const outros = new Map();
 
@@ -334,7 +419,11 @@ window.CE = window.CE || {};
         const cw = mapa.clientWidth, ch = mapa.clientHeight;
         if (!cw || !ch) return;
         const MW = W * T, MH = H * T;
-        if (!perto) { cam.s = Math.min(cw / MW, ch / MH); cam.x = (cw - MW * cam.s) / 2; cam.y = (ch - MH * cam.s) / 2; }
+        if (!perto) {
+          // A cidade inteira cabe entre os botões de cima e os de baixo (nada fica escondido atrás deles).
+          const cima = Math.min(58, ch * 0.1), baixo = Math.min(62, ch * 0.1), livre = Math.max(80, ch - cima - baixo);
+          cam.s = Math.min(cw / MW, livre / MH); cam.x = (cw - MW * cam.s) / 2; cam.y = cima + (livre - MH * cam.s) / 2;
+        }
         else {
           cam.s = Math.max(0.7, Math.min(1.15, Math.min(cw / (15 * T), ch / (11 * T))));
           const px = (eu.x + 0.5) * T * cam.s, py = (eu.y + 0.5) * T * cam.s;
@@ -344,15 +433,22 @@ window.CE = window.CE || {};
         mundo.style.transform = `translate(${cam.x}px, ${cam.y}px) scale(${cam.s})`;
         mundo.style.setProperty('--inv', String(1 / cam.s));
       }
+      let andouUmaVez = false;
+      function mostrarDica() {
+        dica.textContent = perto ? 'Clique no chão para andar · setas do teclado · Enter conversa' : 'Clique num prédio para ir até ele.';
+        dica.hidden = perto && andouUmaVez;
+      }
       function mudarZoom(paraPerto) {
         perto = paraPerto;
         mapa.classList.toggle('longe', !perto);
-        botaoMapa.textContent = perto ? 'Ver a cidade inteira' : 'Voltar para perto';
-        dica.textContent = perto ? 'Clique no chão para andar · setas do teclado · Enter conversa' : 'Clique num prédio para ir até ele.';
+        mapaIcone.textContent = perto ? '🗺️' : '🔍';
+        mapaTexto.textContent = perto ? ' Ver a cidade inteira' : ' Voltar para perto';
+        botaoMapa.setAttribute('aria-label', mapaTexto.textContent.trim());
+        mostrarDica();
         mundo.classList.add('suave'); setTimeout(() => mundo.classList.remove('suave'), 520);
         enquadrar();
       }
-      botaoMapa.addEventListener('click', (e) => { e.stopPropagation(); mudarZoom(!perto); });
+      botaoMapa.addEventListener('click', () => mudarZoom(!perto));
 
       // ---------- Andar ----------
       let seta = null;
@@ -361,13 +457,14 @@ window.CE = window.CE || {};
         const c = M.caminho(de, metas);
         if (c == null) { CE.avisar('Por ali não dá para passar.'); return false; }
         eu.caminho = c; eu.aoChegar = aoChegar || null;
+        if (c.length && !andouUmaVez) { andouUmaVez = true; mostrarDica(); }
         if (!c.length && aoChegar) { eu.aoChegar = null; aoChegar(); }
         return true;
       }
       function mover(dt) {
         if (!eu.caminho.length && seta && !bloqueado()) {
           const [x, y] = M.maisPerto(eu.x, eu.y), nx = x + seta[0], ny = y + seta[1];
-          if (M.andavel(nx, ny)) eu.caminho.push([nx, ny]);
+          if (M.andavel(nx, ny)) { eu.caminho.push([nx, ny]); if (!andouUmaVez) { andouUmaVez = true; mostrarDica(); } }
         }
         if (!eu.caminho.length) {
           if (eu.andando) { eu.andando = false; eu.el.classList.remove('andando'); const f = eu.aoChegar; eu.aoChegar = null; if (f) f(); }
@@ -397,21 +494,86 @@ window.CE = window.CE || {};
       // ---------- Estado que vem do computador do instrutor ----------
       let desde = 0, versaoVista = -1, chamadaVista = undefined, primeira = true, emCurso = false, fechouJanela = false;
       let estado = { aberta: true, soFrases: false, silenciado: false, silenciados: [] };
-      let mesa = null, votacao = null, mural = null;
+      let mesa = null, votacao = null;
       const conversa = [];
-      function registrar(item) {
+      let semLer = 0;
+      function registrar(item, conta) {
         conversa.push(item); if (conversa.length > 40) conversa.shift();
         log.replaceChildren(...conversa.map((c) => CE.el('li', { class: c.classe || '' }, c.quem ? CE.el('strong', {}, `${c.emoji || ''} ${c.quem}: `) : null, c.texto)));
         log.scrollTop = log.scrollHeight;
+        if (conta && chat.hidden) { semLer++; naoLidas.textContent = semLer > 9 ? '9+' : String(semLer); naoLidas.hidden = false; }
       }
       const sistema = (texto) => registrar({ classe: 'sistema', texto });
       const bloqueado = () => !estado.aberta && !souInstrutor;
+      // Os avisos do alto do mapa: no máximo três, e cada um some sozinho.
+      function avisarNoMapa(texto, classe) {
+        const item = CE.el('li', { class: classe || '' }, texto);
+        avisos.append(item);
+        while (avisos.children.length > 3) avisos.firstElementChild.remove();
+        setTimeout(() => { item.classList.add('saindo'); setTimeout(() => item.remove(), 600); }, AVISO);
+      }
+
+      // ---------- A cidade da turma: prédios em obra, acesos e a casa de cada um ----------
+      let turmaEscolhida;            // o instrutor pode olhar a cidade de outra turma
+      let turmaDaCidade = null, acesos = null, minhaCasa = null, infoCidade = null, abaCidade = 'predios';
+      const aceso = (id) => !!acesos && acesos.has(id);
+      const obras = {};
+      function obra(id, sim, animar) {
+        const L = M.porLugar[id];
+        if (sim && !obras[id]) {
+          const [x, y, w, h] = L.r;
+          obras[id] = CE.el('div', { class: 'pr-obra', 'data-obra': id, style: `left:${x * T}px;top:${y * T}px;width:${w * T}px;height:${h * T}px` },
+            CE.el('span', { class: 'placa' }, '🏗️'));
+          camadaObjetos.append(obras[id]);
+        } else if (!sim && obras[id]) {
+          const o = obras[id];
+          delete obras[id];
+          if (animar) { o.classList.add('abrindo'); setTimeout(() => o.remove(), 1000); } else o.remove();
+        }
+      }
+      function mostrarPredio(id, ligado, animar) {
+        const L = M.porLugar[id];
+        obra(id, !ligado, animar);
+        if (rotuloDe[id]) { rotuloDe[id].textContent = `${ligado ? L.emoji : '🚧'} ${nomeNoRotulo(L)}`; rotuloDe[id].classList.toggle('obra', !ligado); }
+        for (const m of moradores) if (m.lugar === id) m.el.classList.toggle('fora', !ligado);
+        for (const o of enfeiteDe[id] || []) o.hidden = !ligado;
+      }
+      // Até a primeira resposta do instrutor, a cidade começa pequena (só a praça e a escola).
+      for (const c of M.CIDADE) mostrarPredio(c.lugar, false, false);
+      function aplicarCidade(c) {
+        const lista = new Set(c.abertos || []);
+        const mesma = turmaDaCidade === c.turma && !!acesos;
+        const novos = mesma ? [...lista].filter((l) => !acesos.has(l)) : [];
+        const mudou = !mesma || novos.length || [...acesos].some((l) => !lista.has(l));
+        turmaDaCidade = c.turma; acesos = lista;
+        if (!mudou) return;
+        for (const C of M.CIDADE) mostrarPredio(C.lugar, lista.has(C.lugar), novos.includes(C.lugar));
+        botaoCidade.textContent = `🏙️ Cidade ${M.CIDADE.filter((C) => lista.has(C.lugar)).length}/${M.CIDADE.length}`;
+        if (novos.length) CE.comemorar('grande');
+        if (!dialogo.hidden && dialogo.dataset.tipo === 'cidade') abrirCidade();
+        verPerto(true);
+      }
+      // A casa: terreno até o primeiro módulo; depois, casa com um enfeite por nível ou curso concluído.
+      function aplicarCasa(x) {
+        if (souInstrutor) return;
+        const nova = { casa: !!x.casa, enfeites: x.enfeites || '' };
+        const antes = minhaCasa;
+        if (antes && antes.casa === nova.casa && antes.enfeites === nova.enfeites) return;
+        minhaCasa = nova;
+        rotuloDe['sua-casa'].textContent = nova.casa ? `🏠 Sua casa${nova.enfeites ? ' ' + nova.enfeites : ''}` : '🏗️ Seu terreno';
+        obra('sua-casa', !nova.casa, !!antes);
+        if (antes && !antes.casa && nova.casa) { CE.comemorar('pequena'); avisarNoMapa('🏠 A sua casa ficou pronta na Rua da Turma!', 'cidade'); }
+        else if (antes && nova.enfeites.length > antes.enfeites.length) avisarNoMapa('✨ A sua casa ganhou um enfeite novo!', 'cidade');
+        verPerto(true);
+      }
 
       async function sincronizar() {
         if (emCurso || fechouJanela) return;
         emCurso = true;
         try {
-          const r = await CE.api.chamar('praca:sincronizar', { x: arred(eu.x), y: arred(eu.y), esq: !!eu.esq, andando: !!eu.andando }, desde);
+          const eu0 = { x: arred(eu.x), y: arred(eu.y), esq: !!eu.esq, andando: !!eu.andando };
+          if (souInstrutor && typeof turmaEscolhida === 'string') eu0.turma = turmaEscolhida;
+          const r = await CE.api.chamar('praca:sincronizar', eu0, desde);
           if (fechouJanela) return;
           avisoRede.hidden = true;
           receber(r);
@@ -422,6 +584,7 @@ window.CE = window.CE || {};
       }
       function receber(r) {
         if (r.novo) { eu.x = r.eu.x; eu.y = r.eu.y; eu.caminho = []; posicionar(eu); enquadrar(); }
+        if (r.cidade) aplicarCidade(r.cidade);
         // Pessoas
         const vistos = new Set();
         for (const x of r.pessoas) {
@@ -429,7 +592,7 @@ window.CE = window.CE || {};
           vistos.add(x.id);
           let o = outros.get(x.id);
           if (!o) { o = boneco({ id: x.id, nome: nomeDe(x), emoji: x.avatar, x: x.x, y: x.y }, classeDe(x)); outros.set(x.id, o); }
-          Object.assign(o, { alvoX: x.x, alvoY: x.y, esqRede: x.esq, andandoRede: x.andando, papel: x.papel, monitor: x.monitor, bot: x.bot, mao: x.mao, nomeReal: x.nome, turma: x.turma });
+          Object.assign(o, { alvoX: x.x, alvoY: x.y, esqRede: x.esq, andandoRede: x.andando, papel: x.papel, monitor: x.monitor, bot: x.bot, mao: x.mao, nomeReal: x.nome, turma: x.turma, casa: x.casa, enfeites: x.enfeites });
           if (o.rostoEl.textContent !== x.avatar) o.rostoEl.textContent = x.avatar;
           if (o.nomeEl.textContent !== nomeDe(x)) { o.nomeEl.textContent = nomeDe(x); o.el.title = x.nome; }
           o.el.className = `pr-p ${classeDe(x)}` + (o.el.classList.contains('andando') ? ' andando' : '') + (o.el.classList.contains('esq') ? ' esq' : '');
@@ -439,7 +602,9 @@ window.CE = window.CE || {};
         const minha = r.pessoas.find((x) => x.id === usuario.id);
         marcarMao(eu, minha && minha.mao);
         botaoMao.classList.toggle('ligado', !!(minha && minha.mao));
-        botaoMao.textContent = minha && minha.mao ? '🙋 Baixar a mão' : '🙋';
+        botaoMao.title = minha && minha.mao ? 'Baixar a mão' : 'Pedir ajuda (levantar a mão)';
+        botaoMao.setAttribute('aria-label', botaoMao.title);
+        if (minha) aplicarCasa(minha);
         // Conversa e avisos
         for (const ev of r.eventos) tratarEvento(ev, r.agora - ev.em > 10000);
         desde = r.ultimo;
@@ -447,12 +612,12 @@ window.CE = window.CE || {};
         const mudouConfig = estado.aberta !== r.aberta || estado.soFrases !== r.soFrases || estado.silenciado !== r.silenciado;
         estado = { aberta: r.aberta, soFrases: r.soFrases, silenciado: r.silenciado, silenciados: r.silenciados || [] };
         fechadaEl.hidden = !bloqueado();
-        if (bloqueado()) { eu.caminho = []; fecharDialogo(); }
-        formConversa.hidden = estado.soFrases && !souInstrutor || estado.silenciado;
+        if (bloqueado()) { eu.caminho = []; fecharDialogo(); abrirConversa(false); }
+        formConversa.hidden = (estado.soFrases && !souInstrutor) || estado.silenciado;
         notaConversa.hidden = !formConversa.hidden;
         notaConversa.textContent = estado.silenciado ? 'O instrutor pediu para você ficar só ouvindo por enquanto.' : 'Agora a conversa é só com as frases prontas (o instrutor escolheu).';
-        barra.querySelectorAll('.pr-chip, .pr-gesto').forEach((b) => { b.disabled = estado.silenciado || bloqueado(); });
-        if (mudouConfig && souInstrutor) desenharInstrutor();
+        for (const b of mapa.querySelectorAll('.pr-chip, .pr-gesto')) b.disabled = estado.silenciado || bloqueado();
+        if (mudouConfig) desenharInstrutor();
         // "Todo mundo para a praça": cada um vai para um lugar em volta da fonte.
         if (r.chamada && r.chamada.id !== chamadaVista && (chamadaVista !== undefined || r.agora - r.chamada.em < 15000)) {
           const ids = r.pessoas.filter((x) => !x.bot).map((x) => x.id).sort();
@@ -479,27 +644,37 @@ window.CE = window.CE || {};
       function pessoaDoEvento(de) { return de.id === usuario.id ? eu : outros.get(de.id); }
       function tratarEvento(ev, velho) {
         const p = ev.de ? pessoaDoEvento(ev.de) : null;
-        const perto = ev.de && (ev.de.id === usuario.id || souInstrutor || ev.x == null || Math.hypot(ev.x - eu.x, ev.y - eu.y) <= RAIO);
+        const pertinho = ev.de && (ev.de.id === usuario.id || souInstrutor || ev.x == null || Math.hypot(ev.x - eu.x, ev.y - eu.y) <= RAIO);
         if (ev.tipo === 'fala') {
           if (!velho) balao(p, ev.texto);
-          if (perto) registrar({ quem: ev.de.id === usuario.id ? 'Você' : ev.de.nome, emoji: ev.de.avatar, texto: ev.texto, classe: ev.de.id === usuario.id ? 'eu' : '' });
+          if (pertinho) registrar({ quem: ev.de.id === usuario.id ? 'Você' : ev.de.nome, emoji: ev.de.avatar, texto: ev.texto, classe: ev.de.id === usuario.id ? 'eu' : '' }, ev.de.id !== usuario.id && !velho);
         } else if (ev.tipo === 'gesto') {
           const emoji = { acenar: '👋', aplaudir: '👏👏👏', ajuda: '🙋 Preciso de ajuda!' }[ev.gesto] || '';
           if (!velho) balao(p, emoji);
-          if (ev.gesto === 'ajuda' && ev.de.id !== usuario.id && (perto || souInstrutor)) registrar({ classe: 'sistema', texto: `🙋 ${ev.de.nome} pediu ajuda.` });
+          if (ev.gesto === 'ajuda' && ev.de.id !== usuario.id && (pertinho || souInstrutor)) {
+            registrar({ classe: 'sistema', texto: `🙋 ${ev.de.nome} pediu ajuda.` });
+            if (!velho) avisarNoMapa(`🙋 ${ev.de.nome} pediu ajuda.`);
+          }
         } else if (ev.tipo === 'megafone') {
           registrar({ classe: 'megafone', quem: `📣 ${ev.de.nome}`, texto: ev.texto });
           if (!velho) {
             megafoneEl.textContent = `📣 ${ev.de.nome}: ${ev.texto}`; megafoneEl.hidden = false;
-            clearTimeout(megafoneEl.timer); megafoneEl.timer = setTimeout(() => { megafoneEl.hidden = true; }, 6500);
+            clearTimeout(megafoneEl.timer); megafoneEl.timer = setTimeout(() => { megafoneEl.hidden = true; }, AVISO);
             if (p) balao(p, ev.texto, 'megafone');
             if (CE.voz && ev.de.id !== usuario.id) CE.voz.falar(ev.texto);
           }
         } else if (ev.tipo === 'recado') {
-          if (perto) registrar({ classe: 'sistema', texto: `📌 ${ev.de.id === usuario.id ? 'Você' : ev.de.nome} pregou no mural: “${ev.texto}”` });
+          if (pertinho) registrar({ classe: 'sistema', texto: `📌 ${ev.de.id === usuario.id ? 'Você' : ev.de.nome} pregou no mural: “${ev.texto}”` });
         } else if (ev.tipo === 'sistema') {
           sistema(ev.texto);
+          if (!velho) avisarNoMapa(ev.texto);
           if (!velho && ev.vitoria === usuario.id) conquista('velha');
+        } else if (ev.tipo === 'cidade') {
+          // Cada turma tem a sua cidade: o aviso vale para quem é da turma (e para o instrutor).
+          if (souInstrutor || ev.turma === turmaDaCidade) {
+            registrar({ classe: 'cidade', texto: ev.texto });
+            if (!velho) avisarNoMapa(ev.texto, 'cidade');
+          }
         }
       }
 
@@ -519,52 +694,94 @@ window.CE = window.CE || {};
         if (r) sincronizar();
       }
       botaoMao.addEventListener('click', () => gesto(botaoMao.classList.contains('ligado') ? 'baixar' : 'ajuda'));
+      function abrirConversa(abrir) {
+        if (abrir && bloqueado()) return;
+        chat.hidden = !abrir;
+        botaoConversa.setAttribute('aria-expanded', String(abrir));
+        botaoConversa.classList.toggle('ligado', abrir);
+        if (abrir) {
+          semLer = 0; naoLidas.hidden = true;
+          log.scrollTop = log.scrollHeight;
+          if (!formConversa.hidden) campoConversa.focus({ preventScroll: true });
+        }
+      }
+      botaoConversa.addEventListener('click', () => abrirConversa(chat.hidden));
+      function abrirGente(abrir) {
+        popGente.hidden = !abrir;
+        botaoGente.setAttribute('aria-expanded', String(abrir));
+        if (abrir) { chaveGente = ''; desenharGente(); }
+      }
+      botaoGente.addEventListener('click', () => { abrirMegafone(false); abrirGente(popGente.hidden); });
+      botaoCidade.addEventListener('click', () => { fecharPopups(); abrirCidade('predios'); });
+      function abrirMegafone(abrir) {
+        if (!souInstrutor) return;
+        popMegafone.hidden = !abrir;
+        btMegafone.setAttribute('aria-expanded', String(abrir));
+        btMegafone.classList.toggle('ligado', abrir);
+        if (abrir) { abrirGente(false); campoMegafone.focus({ preventScroll: true }); }
+      }
+      function fecharPopups() { abrirGente(false); abrirMegafone(false); }
 
+      // Os botões do instrutor mostram o que está valendo agora.
       function desenharInstrutor() {
         if (!souInstrutor) return;
-        const megafone = CE.el('input', { id: 'pr-campo-megafone', maxlength: '120', autocomplete: 'off', placeholder: 'Ex.: Bingo em 5 minutos!', 'aria-label': 'Recado do megafone' });
-        const soFrases = CE.el('input', { type: 'checkbox', id: 'pr-so-frases' }); soFrases.checked = estado.soFrases;
-        soFrases.addEventListener('change', () => chamar('praca:configurar', { soFrases: soFrases.checked }).then(sincronizar));
-        cartaoInstrutor.replaceChildren(
-          CE.el('h3', {}, '👨‍🏫 Comandos do instrutor'),
-          CE.el('div', { class: 'pr-botoes' },
-            CE.el('button', { class: 'botao', type: 'button', 'data-acao': 'chamar-todos', onclick: () => chamar('praca:chamar').then(sincronizar) }, 'Chamar todos para a praça'),
-            CE.el('button', { class: 'botao secundario', type: 'button', 'data-acao': 'abrir-fechar', onclick: () => chamar('praca:configurar', { aberta: !estado.aberta }).then(sincronizar) }, estado.aberta ? 'Fechar a praça' : 'Abrir a praça')),
-          CE.el('form', { class: 'pr-digitar', onsubmit: (e) => { e.preventDefault(); const t = megafone.value.trim(); if (!t) return; megafone.value = ''; chamar('praca:megafone', t).then(sincronizar); } },
-            megafone, CE.el('button', { class: 'botao', type: 'submit' }, '📣 Falar')),
-          CE.el('label', { class: 'pr-chave', for: 'pr-so-frases' }, soFrases, 'Só frases prontas na conversa'),
-          CE.el('p', { class: 'pr-suave' }, estado.aberta ? 'A praça está aberta para a turma.' : 'A praça está fechada para os alunos.'));
+        const rotuloAbrir = estado.aberta ? 'Fechar a praça' : 'Abrir a praça';
+        btAbrir.querySelector('.icone').textContent = estado.aberta ? '🔒' : '🔓';
+        btAbrir.querySelector('.rotulo').textContent = rotuloAbrir;
+        btAbrir.setAttribute('aria-label', rotuloAbrir);
+        btAbrir.classList.toggle('ligado', !estado.aberta);
+        const rotuloFrases = estado.soFrases ? 'Liberar a conversa' : 'Só frases prontas';
+        btFrases.querySelector('.rotulo').textContent = rotuloFrases;
+        btFrases.setAttribute('aria-label', rotuloFrases);
+        btFrases.setAttribute('aria-pressed', String(!!estado.soFrases));
+        btFrases.classList.toggle('ligado', !!estado.soFrases);
       }
       desenharInstrutor();
 
+      // Quem está na praça: um número no canto; tocando nele, aparecem os rostos.
+      let chaveGente = '';
       function desenharGente() {
         const lista = [...outros.values()].sort((a, b) => (b.mao ? 1 : 0) - (a.mao ? 1 : 0) || String(a.nomeReal).localeCompare(String(b.nomeReal)));
+        const maos = lista.filter((o) => o.mao).length;
+        botaoGente.textContent = `👥 ${lista.length + 1} aqui${maos ? ` · 🙋 ${maos}` : ''}`;
+        botaoGente.classList.toggle('alerta', maos > 0);
+        const chave = lista.map((o) => [o.id, o.mao ? 1 : 0, o.nomeEl.textContent, o.rostoEl.textContent, estado.silenciados.includes(o.id) ? 1 : 0].join(':')).join('|');
+        if (chave === chaveGente) return;
+        chaveGente = chave;
         if (!lista.length) { listaGente.replaceChildren(CE.el('li', { class: 'pr-suave' }, 'Só você por enquanto. Quando os colegas abrirem a Praça Escola, eles aparecem aqui.')); return; }
         listaGente.replaceChildren(...lista.map((o) => CE.el('li', { 'data-gente': o.id },
-          CE.el('button', { class: 'ir', type: 'button', title: 'Ir até ' + o.nomeReal, onclick: () => chegarPerto(o) }, `${o.mao ? '🙋 ' : ''}${o.rostoEl.textContent} ${o.nomeEl.textContent}`),
+          CE.el('button', { class: 'ir', type: 'button', title: 'Ir até ' + o.nomeReal, onclick: () => { abrirGente(false); chegarPerto(o); } },
+            CE.el('span', { class: 'pr-rosto mini ' + classeDe(o), 'aria-hidden': 'true' }, o.rostoEl.textContent),
+            CE.el('span', { class: 'quem' }, `${o.mao ? '🙋 ' : ''}${o.nomeEl.textContent}`)),
           souInstrutor && o.papel !== 'instrutor' && !o.bot
             ? CE.el('button', { class: 'mini', type: 'button', 'data-silenciar': o.id, onclick: () => chamar('praca:silenciar', o.id, !estado.silenciados.includes(o.id)).then(sincronizar) }, estado.silenciados.includes(o.id) ? 'Deixar falar' : 'Silenciar')
             : null)));
       }
 
-      // ---------- Cofre da turma e votação ----------
+      // ---------- Cofre da turma e votação (no Lote da turma) ----------
       async function carregarCofre() {
         const r = await CE.api.chamar('praca:votacao').catch(() => null);
         if (r) { votacao = r; desenharCofre(); }
+        return r;
       }
       function desenharCofre() {
         const v = votacao;
+        const vencedor = v.vencedor && v.opcoes.find((o) => o.id === v.vencedor);
+        if (rotuloDe.lote) rotuloDe.lote.textContent = vencedor ? `🚧 Obra: ${vencedor.nome}` : '🚧 Lote da turma';
+        if (!dialogo.hidden && dialogo.dataset.tipo === 'cidade' && abaCidade === 'lote') desenharCidadeDialogo();
+      }
+      function conteudoLote() {
+        const v = votacao;
+        if (!v) return [CE.el('p', { class: 'pr-suave' }, 'Carregando…')];
         const c = v.cofre || { aulas: 0, moedas: 0, meta: 1500 };
         const total = v.total || 1;
         const vencedor = v.vencedor && v.opcoes.find((o) => o.id === v.vencedor);
-        if (rotuloDe.lote) rotuloDe.lote.textContent = vencedor ? `🚧 Obra: ${vencedor.nome}` : '🚧 Lote da turma';
-        cartaoCofre.replaceChildren(
-          CE.el('h3', {}, 'Cofre da turma'),
-          CE.el('p', { class: 'pr-cofre' }, CE.el('span', {}, c.moedas.toLocaleString('pt-BR')), ' moedas'),
+        return [
+          CE.el('p', { class: 'pr-cofre' }, '💰 ', CE.el('span', {}, c.moedas.toLocaleString('pt-BR')), ` de ${c.meta.toLocaleString('pt-BR')} moedas no cofre`),
           CE.el('div', { class: 'pr-progresso', role: 'progressbar', 'aria-label': 'Cofre da turma', 'aria-valuemin': '0', 'aria-valuemax': String(c.meta), 'aria-valuenow': String(Math.min(c.moedas, c.meta)) },
             CE.el('span', { style: `width:${Math.min(100, (c.moedas / c.meta) * 100).toFixed(1)}%` })),
-          CE.el('p', { class: 'pr-suave' }, `Cada aula concluída rende 4 moedas (${c.aulas} aulas da turma até agora). A obra escolhida custa ${c.meta.toLocaleString('pt-BR')}.`),
-          CE.el('h3', {}, vencedor ? 'A turma escolheu' : 'O que construir no Lote da turma?'),
+          CE.el('p', { class: 'pr-suave' }, `Cada aula concluída rende 4 moedas (${c.aulas} aulas da turma até agora).`),
+          CE.el('h4', {}, vencedor ? 'A turma escolheu' : 'O que construir no Lote da turma?'),
           CE.el('div', { class: 'pr-votos' }, v.opcoes.map((o) => CE.el('button', {
             class: 'pr-voto' + (v.meu === o.id ? ' meu' : '') + (v.vencedor === o.id ? ' venceu' : ''), type: 'button', 'data-voto': o.id,
             'aria-pressed': String(v.meu === o.id), disabled: v.encerrada,
@@ -572,12 +789,113 @@ window.CE = window.CE || {};
           }, CE.el('span', {}, `${o.emoji} ${o.nome}`), CE.el('span', { class: 'n' }, `${o.votos} voto${o.votos === 1 ? '' : 's'}`), CE.el('span', { class: 'barra', style: `--p:${Math.round((o.votos / total) * 100)}%` })))),
           souInstrutor ? CE.el('div', { class: 'pr-botoes' }, v.encerrada
             ? CE.el('button', { class: 'botao secundario', type: 'button', 'data-acao': 'nova-votacao', onclick: async () => { const r = await chamar('praca:nova-votacao'); if (r) { votacao = r; desenharCofre(); } } }, 'Nova votação')
-            : CE.el('button', { class: 'botao secundario', type: 'button', 'data-acao': 'encerrar-votacao', onclick: async () => { const r = await chamar('praca:encerrar-votacao'); if (r) { votacao = r; desenharCofre(); } } }, 'Encerrar a votação')) : null);
+            : CE.el('button', { class: 'botao secundario', type: 'button', 'data-acao': 'encerrar-votacao', onclick: async () => { const r = await chamar('praca:encerrar-votacao'); if (r) { votacao = r; desenharCofre(); } } }, 'Encerrar a votação')) : null,
+        ];
       }
-      function mostrarCofre() { cartaoCofre.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); cartaoCofre.animate([{ boxShadow: '0 0 0 3px #b4502c' }, { boxShadow: '0 0 0 0 transparent' }], 1600); }
+
+      // ---------- A cidade da turma (prédios, Rua da Turma e Lote) ----------
+      async function abrirCidade(aba) {
+        if (aba) abaCidade = aba;
+        const r = await chamar('praca:cidade', souInstrutor ? turmaEscolhida : undefined);
+        if (!r || fechouJanela) return;
+        infoCidade = r;
+        if (abaCidade === 'lote' && !votacao) await carregarCofre();
+        desenharCidadeDialogo();
+      }
+      function barrinha(feitos, precisa) {
+        return CE.el('span', { class: 'pr-mini-barra', 'aria-hidden': 'true' }, CE.el('span', { style: `width:${Math.min(100, (feitos / Math.max(1, precisa)) * 100).toFixed(0)}%` }));
+      }
+      function desenharCidadeDialogo() {
+        const r = infoCidade;
+        if (!r) return;
+        const acesas = r.lugares.filter((l) => l.aberto).length;
+        const abas = CE.el('div', { class: 'pr-abas', role: 'tablist', 'aria-label': 'Partes da cidade' },
+          [['predios', `🏗️ Prédios ${acesas}/${r.lugares.length}`], ['rua', '🏠 Rua da Turma'], ['lote', '🚧 Lote da turma']].map(([id, texto]) => CE.el('button', {
+            class: 'pr-aba', type: 'button', role: 'tab', 'data-aba': id, 'aria-selected': String(abaCidade === id),
+            onclick: () => { abaCidade = id; if (id === 'lote' && !votacao) carregarCofre().then(desenharCidadeDialogo); else desenharCidadeDialogo(); },
+          }, texto)));
+        let conteudo;
+        if (abaCidade === 'rua') {
+          const prontas = r.rua.filter((a) => a.casa).length;
+          conteudo = [
+            CE.el('p', { class: 'pr-suave' }, r.rua.length ? `${prontas} de ${r.rua.length} casas prontas. A casa fica pronta no primeiro módulo e ganha um enfeite por nível ou curso concluído.` : 'Ainda não há alunos nesta turma.'),
+            CE.el('div', { class: 'pr-rua' }, r.rua.map((a) => CE.el('div', { class: 'pr-morada' + (a.id === usuario.id ? ' eu' : ''), 'data-morada': a.id },
+              CE.el('span', { class: 'casa', 'aria-hidden': 'true' }, a.casa ? '🏠' : '🏗️'),
+              CE.el('strong', {}, `${a.avatar || '🙂'} ${a.id === usuario.id ? 'Você' : a.nome}`),
+              CE.el('span', { class: 'enfeites' }, a.casa ? (a.enfeites || 'casa pronta') : 'terreno')))),
+            CE.el('p', { class: 'pr-suave pr-legenda' }, M.ENFEITES.map((e) => `${e.emoji} ${e.nome}`).join(' · ')),
+          ];
+        } else if (abaCidade === 'lote') conteudo = conteudoLote();
+        else {
+          conteudo = [CE.el('ul', { class: 'pr-predios' }, r.lugares.map((l) => {
+            const L = M.porLugar[l.lugar];
+            const falta = Math.max(0, r.precisa - l.feitos);
+            return CE.el('li', {}, CE.el('button', {
+              class: 'pr-predio' + (l.aberto ? '' : ' obra'), type: 'button', 'data-predio': l.lugar, title: 'Ir até ' + L.nome,
+              onclick: () => { fecharDialogo(); if (!perto) mudarZoom(true); chegarAoLugar(L); },
+            },
+            CE.el('span', { class: 'ic', 'aria-hidden': 'true' }, l.aberto ? L.emoji : '🚧'),
+            CE.el('span', { class: 'nome' }, nomeDoLugar(l.lugar)),
+            CE.el('span', { class: 'estado' }, l.aberto ? '✅ Aceso' : `${l.feitos} de ${r.precisa}`),
+            CE.el('span', { class: 'sub' }, l.aberto ? `Módulo ${l.titulo}` : [barrinha(l.feitos, r.precisa), `${l.titulo}: falta${falta === 1 ? '' : 'm'} ${falta}`],
+              !souInstrutor && l.euFiz ? CE.el('span', { class: 'pr-fiz' }, ' · ✓ você já fez') : null)));
+          }))];
+        }
+        let seletor = null;
+        if (souInstrutor && r.turmas && r.turmas.length > 1) {
+          const sel = CE.el('select', { 'aria-label': 'Turma', onchange: () => { turmaEscolhida = sel.value; abrirCidade(); sincronizar(); } },
+            r.turmas.map((t) => CE.el('option', { value: t }, t || 'Sem turma')));
+          sel.value = r.turma;
+          seletor = CE.el('label', { class: 'pr-campo linha' }, 'Ver a turma', sel);
+        }
+        abrirDialogo({
+          tipo: 'cidade', rosto: '🏙️', titulo: 'A cidade da turma',
+          subtitulo: `${r.turma ? 'Turma ' + r.turma : 'Sem turma'} · ${r.alunos} aluno${r.alunos === 1 ? '' : 's'} · cada prédio acende quando ${r.precisa} concluírem o módulo dele`,
+          extra: [seletor, abas, ...conteudo].filter(Boolean), opcoes: [{ rotulo: 'Fechar' }], foco: `[data-aba="${abaCidade}"]`,
+        });
+      }
+      // Prédio em obra: quanto falta e o que cada um pode fazer.
+      async function abrirObra(L) {
+        const C = NA_CIDADE[L.id];
+        const r = await chamar('praca:cidade', souInstrutor ? turmaEscolhida : undefined);
+        if (!r || fechouJanela) return;
+        infoCidade = r;
+        const l = r.lugares.find((x) => x.lugar === L.id) || { feitos: 0 };
+        if (l.aberto) { aplicarCidade({ turma: r.turma, abertos: r.lugares.filter((x) => x.aberto).map((x) => x.lugar) }); return abrirLugar(L); }
+        const falta = Math.max(0, r.precisa - l.feitos);
+        abrirDialogo({
+          tipo: 'obra', rosto: '🚧', titulo: `${nomeDoLugar(L.id)}: em obra`, subtitulo: 'A cidade cresce com a turma',
+          fala: `Este lugar acende quando metade da turma (${r.precisa} ${r.precisa === 1 ? 'aluno' : 'alunos'}) concluir o módulo “${C.titulo}”.`,
+          extra: [
+            CE.el('div', { class: 'pr-obra-conta' }, barrinha(l.feitos, r.precisa), CE.el('strong', {}, `${l.feitos} de ${r.precisa}`), CE.el('span', { class: 'pr-suave' }, falta ? `falta${falta === 1 ? '' : 'm'} ${falta}` : 'quase lá!')),
+            souInstrutor ? null : CE.el('p', { class: 'pr-suave' }, l.euFiz ? '✓ Você já concluiu este módulo. Agora é ajudar os colegas!' : 'Você ainda não concluiu este módulo: cada aula sua ajuda a acender o prédio.'),
+          ].filter(Boolean),
+          opcoes: souInstrutor
+            ? [{ rotulo: 'Ver a cidade da turma', principal: true, fica: true, acao: () => abrirCidade('predios') }, { rotulo: 'Fechar' }]
+            : [{ rotulo: 'Ir para as Aulas', principal: true, id: 'aulas', acao: () => CE.janelas.abrir('aulas') }, { rotulo: 'Ver a cidade', fica: true, acao: () => abrirCidade('predios') }, { rotulo: 'Fechar' }],
+        });
+      }
+      // Sua casa: o terreno, a casa pronta, os enfeites e as medalhas na parede.
+      function abrirCasa() {
+        CE.sessao.progresso().catch(() => ({})).then((p) => {
+          const casa = minhaCasa || { casa: false, enfeites: '' };
+          if (!casa.casa) {
+            return abrirDialogo({ tipo: 'lugar', rosto: '🏗️', papelCor: 'eu', titulo: 'Seu terreno', subtitulo: 'Na Rua da Turma',
+              fala: 'Aqui vai ser a sua casa! Ela fica pronta quando você concluir o módulo “Conhecendo o computador”.',
+              opcoes: [{ rotulo: 'Ir para as Aulas', principal: true, id: 'aulas', acao: () => CE.janelas.abrir('aulas') }, { rotulo: 'Ver a Rua da Turma', fica: true, acao: () => abrirCidade('rua') }, { rotulo: 'Fechar' }] });
+          }
+          const minhas = (CE.MEDALHAS || []).filter((m) => p.medalhas && p.medalhas[m.id]);
+          abrirDialogo({ tipo: 'lugar', rosto: '🏠', papelCor: 'eu', titulo: 'Sua casa', subtitulo: 'Na Rua da Turma', fala: LUGAR['sua-casa'].texto,
+            extra: [
+              minhas.length ? CE.el('p', { 'data-parede': String(minhas.length) }, `Na parede: ${minhas.slice(-12).map((m) => `${m.icone} ${m.nome}`).join(' · ')}${minhas.length > 12 ? ` e mais ${minhas.length - 12}` : ''}.`) : CE.el('p', { 'data-parede': '0' }, 'A parede ainda está vazia: as medalhas aparecem aqui conforme você ganha.'),
+              CE.el('ul', { class: 'pr-enfeites' }, M.ENFEITES.map((e) => CE.el('li', { class: casa.enfeites.includes(e.emoji) ? 'tem' : '' }, `${e.emoji} ${e.nome}`, CE.el('span', {}, casa.enfeites.includes(e.emoji) ? ' ✓' : ''))))],
+            nota: 'Cada nível ou curso que você termina dá um enfeite novo para a casa.',
+            opcoes: [{ rotulo: 'Ver todas as medalhas (Aulas)', principal: true, acao: () => CE.janelas.abrir('aulas') }, { rotulo: 'Ver a Rua da Turma', fica: true, acao: () => abrirCidade('rua') }, { rotulo: 'Fechar' }] });
+        });
+      }
 
       // ---------- Diálogos ----------
-      function abrirDialogo({ tipo, rosto, papelCor, titulo, subtitulo, fala, lista, nota, campo, extra, opcoes }) {
+      function abrirDialogo({ tipo, rosto, papelCor, titulo, subtitulo, fala, lista, nota, campo, extra, opcoes, foco }) {
         const botoes = (opcoes || [{ rotulo: 'Fechar' }]).map((op) => CE.el('button', {
           class: 'botao' + (op.principal ? '' : ' secundario'), type: 'button', 'data-opcao': op.id || null,
           onclick: () => { if (op.acao) op.acao(); if (!op.fica) fecharDialogo(); },
@@ -596,10 +914,17 @@ window.CE = window.CE || {};
           CE.el('div', { class: 'pr-dlg-opcoes' }, botoes),
         ].filter(Boolean));
         dialogo.hidden = false;
-        const foco = dialogo.querySelector('input:not([type="checkbox"])') || botoes[0];
-        if (foco) foco.focus({ preventScroll: true });
+        mapa.classList.add('com-dialogo');
+        fecharPopups();
+        const alvo = (foco && dialogo.querySelector(foco)) || dialogo.querySelector('input:not([type="checkbox"])') || botoes[0];
+        if (alvo) alvo.focus({ preventScroll: true });
       }
-      function fecharDialogo() { if (dialogo.hidden) return; dialogo.hidden = true; dialogo.dataset.tipo = ''; mapa.focus({ preventScroll: true }); }
+      function fecharDialogo() {
+        if (dialogo.hidden) return;
+        dialogo.hidden = true; dialogo.dataset.tipo = '';
+        mapa.classList.remove('com-dialogo');
+        mapa.focus({ preventScroll: true });
+      }
 
       // Conversas dos moradores: cada passo é [rótulo, próximo passo ou null, principal?, ação].
       const DIALOGOS = {
@@ -664,10 +989,11 @@ window.CE = window.CE || {};
       }
       function abrirPessoa(o) {
         const tipo = classeDe(o);
+        const casa = o.papel === 'instrutor' ? '' : o.casa ? ` · 🏠${o.enfeites ? ' ' + o.enfeites : ''}` : ' · 🏗️ terreno';
         abrirDialogo({
           tipo: 'pessoa', rosto: o.rostoEl.textContent, papelCor: tipo, titulo: o.nomeReal,
-          subtitulo: o.papel === 'instrutor' ? 'Instrutor da turma' : o.monitor ? 'Monitor(a) da turma' : `Colega da turma${o.turma ? ' · ' + o.turma : ''}${o.bot ? ' (de demonstração)' : ''}`,
-          fala: o.mao ? `${o.nomeReal} levantou a mão: pediu ajuda.` : 'Diga alguma coisa: quem está perto vê no balão e na conversa.',
+          subtitulo: (o.papel === 'instrutor' ? 'Instrutor da turma' : o.monitor ? 'Monitor(a) da turma' : `Colega da turma${o.turma ? ' · ' + o.turma : ''}${o.bot ? ' (de demonstração)' : ''}`) + casa,
+          fala: o.mao ? `${o.nomeReal} levantou a mão: pediu ajuda.` : 'Diga alguma coisa: quem está perto vê no balão.',
           opcoes: [
             { rotulo: `Dizer oi para ${o.nomeReal}`, principal: true, acao: () => falar(`Oi, ${o.nomeReal}! 👋`) },
             { rotulo: 'Chamar para jogar', acao: () => falar(`${o.nomeReal}, vamos jogar jogo da velha?`) },
@@ -679,8 +1005,12 @@ window.CE = window.CE || {};
       // ---------- Lugares ----------
       function abrirLugar(L) {
         const info = LUGAR[L.id] || {};
+        if (NA_CIDADE[L.id] && !aceso(L.id)) return abrirObra(L);
         if (L.id === 'mesa-velha') return abrirMesa();
         if (L.id === 'mural') return abrirMural();
+        if (L.id === 'lote') return abrirCidade('lote');
+        if (RUA.includes(L.id) || (L.id === 'sua-casa' && souInstrutor)) return abrirCidade('rua');
+        if (L.id === 'sua-casa') return abrirCasa();
         if (L.id === 'coreto') {
           return abrirDialogo({ tipo: 'lugar', rosto: '🎭', titulo: 'Coreto', subtitulo: 'O palco da praça', fala: info.texto,
             nota: souInstrutor ? null : 'Quando o instrutor abre uma gincana ou uma corrida de digitação, o convite aparece na sua tela.',
@@ -692,25 +1022,11 @@ window.CE = window.CE || {};
           return abrirDialogo({ tipo: 'lugar', rosto: '⛲', titulo: 'Fonte', subtitulo: 'No meio da praça', fala: info.texto,
             opcoes: [{ rotulo: 'Jogar uma moedinha e fazer um pedido', principal: true, acao: () => falar('✨ Fiz um pedido na fonte!') }, { rotulo: 'Fechar' }] });
         }
-        if (L.id === 'sua-casa') {
-          CE.sessao.progresso().catch(() => ({})).then((p) => {
-            const minhas = (CE.MEDALHAS || []).filter((m) => p.medalhas && p.medalhas[m.id]);
-            abrirDialogo({ tipo: 'lugar', rosto: '🏠', papelCor: 'eu', titulo: 'Sua casa', subtitulo: 'Na Rua da Escola', fala: info.texto,
-              extra: minhas.length ? CE.el('p', { 'data-parede': String(minhas.length) }, `Na parede: ${minhas.slice(-12).map((m) => `${m.icone} ${m.nome}`).join(' · ')}${minhas.length > 12 ? ` e mais ${minhas.length - 12}` : ''}.`) : CE.el('p', { 'data-parede': '0' }, 'A parede ainda está vazia: as medalhas aparecem aqui conforme você ganha.'),
-              nota: 'Em breve: arrumar os móveis arrastando com o mouse.',
-              opcoes: [{ rotulo: 'Ver todas as medalhas (Aulas)', principal: true, acao: () => CE.janelas.abrir('aulas') }, { rotulo: 'Fechar' }] });
-          });
-          return;
-        }
-        if (L.id === 'lote' || L.id === 'horta') {
-          return abrirDialogo({ tipo: 'lugar', rosto: L.emoji, titulo: L.nome, subtitulo: 'Lugar da turma', fala: info.texto,
-            opcoes: [{ rotulo: 'Ver o cofre e a votação', principal: true, acao: mostrarCofre }, { rotulo: 'Fechar' }] });
-        }
         const opcoes = [];
         if (info.botao) opcoes.push({ rotulo: info.botao, principal: true, id: 'entrar', acao: () => { info.abrir(); CE.emitir('praca:entrou-lugar', { lugar: L.id }); } });
-        if (L.morador) opcoes.push({ rotulo: `Falar com ${porMorador[L.morador].nome}`, principal: !info.botao, acao: () => chegarPerto(porMorador[L.morador]) });
+        if (L.morador && presente(porMorador[L.morador])) opcoes.push({ rotulo: `Falar com ${porMorador[L.morador].nome}`, principal: !info.botao, acao: () => chegarPerto(porMorador[L.morador]) });
         opcoes.push({ rotulo: 'Fechar' });
-        abrirDialogo({ tipo: 'lugar', rosto: L.emoji, titulo: L.nome, subtitulo: L.area ? 'Lugar da cidade' : L.casa ? 'Casa' : 'Prédio da cidade', fala: info.texto, nota: info.embreve || null, opcoes });
+        abrirDialogo({ tipo: 'lugar', rosto: L.emoji, titulo: L.nome, subtitulo: L.area ? 'Lugar da cidade' : 'Prédio da cidade', fala: info.texto, nota: info.embreve || null, opcoes });
       }
 
       // ---------- Mesa do jogo da velha ----------
@@ -770,7 +1086,6 @@ window.CE = window.CE || {};
       async function abrirMural() {
         const r = await CE.api.chamar('praca:mural').catch((e) => { CE.avisar(e.message); return null; });
         if (!r) return;
-        mural = r;
         const lista = r.recados.length
           ? CE.el('ul', { class: 'pr-recados' }, r.recados.map((x) => CE.el('li', { 'data-recado': String(x.id) },
             CE.el('span', { class: 'quem' }, `${x.de.avatar} ${x.de.nome}`),
@@ -790,7 +1105,7 @@ window.CE = window.CE || {};
       // ---------- Perto de quê? ----------
       function oQueEstaPerto() {
         let achado = null, menor = 1.6;
-        for (const m of moradores) { if (m.el.classList.contains('sumiu')) continue; const d = distancia(m, eu); if (d < menor) { menor = d; achado = { morador: m }; } }
+        for (const m of moradores) { if (!presente(m)) continue; const d = distancia(m, eu); if (d < menor) { menor = d; achado = { morador: m }; } }
         for (const o of outros.values()) { const d = distancia(o, eu); if (d < menor) { menor = d; achado = { pessoa: o }; } }
         if (achado) return achado;
         const [x, y] = M.maisPerto(eu.x, eu.y);
@@ -803,27 +1118,40 @@ window.CE = window.CE || {};
         if (a.pessoa) return abrirPessoa(a.pessoa);
         if (a.lugar) return abrirLugar(a.lugar);
       }
-      let pertoAtual = null;
+      // O texto do botão que aparece em cima do boneco.
+      function textoDaAcao(a) {
+        if (a.morador) return `💬 Conversar com ${a.morador.nome}`;
+        if (a.pessoa) return `💬 Falar com ${a.pessoa.nomeReal}`;
+        const L = a.lugar;
+        if (NA_CIDADE[L.id] && !aceso(L.id)) return `🚧 Ver a obra: ${nomeDoLugar(L.id)}`;
+        const fixo = { 'mesa-velha': '❌ Jogar jogo da velha', 'mesa-domino': '🎲 Ver a mesa de dominó', mural: '📌 Ler o mural', coreto: '🎭 Ver o coreto', fonte: '⛲ Ver a fonte', lote: '🚧 Ver o Lote da turma', 'casa-ana': '🏠 Ver a Rua da Turma', 'casa-bruno': '🏠 Ver a Rua da Turma' }[L.id];
+        if (fixo) return fixo;
+        if (L.id === 'sua-casa') return souInstrutor ? '🏠 Ver a Rua da Turma' : minhaCasa && minhaCasa.casa ? '🏠 Entrar na sua casa' : '🏗️ Ver o seu terreno';
+        return `${L.emoji} ${L.telhado ? 'Entrar: ' : 'Ver: '}${nomeDoLugar(L.id)}`;
+      }
+      let pertoAtual = null, pertoAlvo = null;
       function verPerto(forcar) {
         const a = oQueEstaPerto();
         const chave = a ? (a.morador ? 'm' + a.morador.id : a.pessoa ? 'p' + a.pessoa.id : 'l' + a.lugar.id) : '';
         if (chave === pertoAtual && !forcar) return;
-        pertoAtual = chave;
-        const alvo = cartaoPerto.lastElementChild;
-        if (!a) { alvo.replaceChildren(CE.el('p', { class: 'pr-suave' }, 'Chegue perto de alguém, de uma mesa ou da porta de um prédio para ver o que dá para fazer.')); return; }
-        if (a.morador) {
-          const m = a.morador;
-          alvo.replaceChildren(CE.el('div', { class: 'pr-perto-topo' }, CE.el('span', { class: 'pr-rosto ' + (m.id === 'oferta' ? 'golpista' : 'morador'), 'aria-hidden': 'true' }, m.emoji), CE.el('div', {}, CE.el('strong', {}, m.nome), CE.el('span', { class: 'pr-suave' }, FICHA[m.id].papel))),
-            CE.el('p', {}, FICHA[m.id].faz), CE.el('button', { class: 'botao', type: 'button', 'data-acao': 'conversar', onclick: () => interagir(a) }, 'Conversar'));
-        } else if (a.pessoa) {
-          const o = a.pessoa;
-          alvo.replaceChildren(CE.el('div', { class: 'pr-perto-topo' }, CE.el('span', { class: 'pr-rosto ' + classeDe(o), 'aria-hidden': 'true' }, o.rostoEl.textContent), CE.el('div', {}, CE.el('strong', {}, o.nomeReal), CE.el('span', { class: 'pr-suave' }, o.papel === 'instrutor' ? 'Instrutor da turma' : o.monitor ? 'Monitor(a) da turma' : 'Colega da turma'))),
-            CE.el('button', { class: 'botao', type: 'button', 'data-acao': 'conversar', onclick: () => interagir(a) }, 'Conversar'));
-        } else {
-          const L = a.lugar, info = LUGAR[L.id] || {};
-          alvo.replaceChildren(CE.el('div', { class: 'pr-perto-topo' }, CE.el('span', { class: 'pr-rosto', 'aria-hidden': 'true' }, L.emoji), CE.el('div', {}, CE.el('strong', {}, L.nome), CE.el('span', { class: 'pr-suave' }, info.texto || ''))),
-            CE.el('button', { class: 'botao', type: 'button', 'data-acao': 'ver-lugar', onclick: () => interagir(a) }, L.id === 'mesa-velha' ? 'Jogar' : L.telhado ? 'Entrar' : 'Ver'));
-        }
+        pertoAtual = chave; pertoAlvo = a;
+        acao.hidden = !a;
+        if (a) { acao.replaceChildren(CE.el('span', {}, textoDaAcao(a)), CE.el('kbd', {}, 'Enter')); posicionarAcao(); }
+      }
+      acao.addEventListener('click', () => { if (pertoAlvo) interagir(pertoAlvo); });
+      // Em cima da cabeça (acima do balão, se o boneco estiver falando); perto da beirada de cima, vai para baixo.
+      function posicionarAcao() {
+        if (acao.hidden) return;
+        const mostrar = perto && dialogo.hidden && !bloqueado();
+        acao.classList.toggle('escondida', !mostrar);
+        if (!mostrar) return;
+        const cw = mapa.clientWidth, meia = acao.offsetWidth / 2, alto = acao.offsetHeight;
+        const x = Math.max(meia + 8, Math.min(cw - meia - 8, cam.x + (eu.x + 0.5) * T * cam.s));
+        let y = cam.y + (eu.y * T - 8) * cam.s - (eu.balaoEl ? eu.balaoEl.offsetHeight + 12 : 0);
+        const embaixo = y - alto < 58;
+        if (embaixo) y = cam.y + ((eu.y + 1) * T + 24) * cam.s;
+        acao.classList.toggle('embaixo', embaixo);
+        acao.style.transform = `translate(${Math.round(x - meia)}px, ${Math.round(embaixo ? y : y - alto)}px)`;
       }
       function chegarPerto(alvo) {
         if (bloqueado()) return;
@@ -842,7 +1170,8 @@ window.CE = window.CE || {};
 
       // ---------- Clique e teclado ----------
       mapa.addEventListener('click', (e) => {
-        if (bloqueado() || e.target.closest('.pr-dialogo, .pr-fechada, .pr-botao-mapa, .pr-megafone')) return;
+        fecharPopups();
+        if (bloqueado()) return;
         const pessoaEl = e.target.closest('.pr-p');
         if (pessoaEl && pessoaEl.dataset.pessoa !== usuario.id) {
           const alvo = porMorador[pessoaEl.dataset.pessoa] || outros.get(pessoaEl.dataset.pessoa);
@@ -859,11 +1188,15 @@ window.CE = window.CE || {};
       const SETAS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
       const teclaDesce = (e) => {
         if (!janela.estaAtiva || !janela.estaAtiva()) { if (!mapa.contains(document.activeElement) && document.activeElement !== mapa) return; }
-        if (e.key === 'Escape' && !dialogo.hidden) { fecharDialogo(); return; }
+        if (e.key === 'Escape') {
+          if (!dialogo.hidden) { fecharDialogo(); return; }
+          if (!popGente.hidden || !popMegafone.hidden) { fecharPopups(); mapa.focus({ preventScroll: true }); return; }
+          if (!chat.hidden) { abrirConversa(false); mapa.focus({ preventScroll: true }); return; }
+        }
         if (e.target.closest('input, textarea, select') || !dialogo.hidden || bloqueado()) return;
         if (!mapa.contains(document.activeElement) && document.activeElement !== mapa) return;
         if (SETAS[e.key]) { e.preventDefault(); seta = SETAS[e.key]; eu.aoChegar = null; if (eu.caminho.length > 1) eu.caminho.length = 1; return; }
-        if (e.key === 'Enter' || e.key === 'e' || e.key === 'E') { const a = oQueEstaPerto(); if (a) { e.preventDefault(); interagir(a); } }
+        if ((e.key === 'Enter' || e.key === 'e' || e.key === 'E') && e.target === mapa) { const a = oQueEstaPerto(); if (a) { e.preventDefault(); interagir(a); } }
       };
       const teclaSobe = (e) => { if (SETAS[e.key] && seta === SETAS[e.key]) seta = null; };
       document.addEventListener('keydown', teclaDesce);
@@ -881,20 +1214,24 @@ window.CE = window.CE || {};
         moverOutros(dt);
         if (perto) enquadrar();
         if (agora - ultimoPerto > 200) { ultimoPerto = agora; verPerto(); }
+        posicionarAcao();
         const minimizada = janela.elemento ? janela.elemento.classList.contains('minimizada') : corpo.closest('.janela') && corpo.closest('.janela').classList.contains('minimizada');
         if (agora - ultimaSincronia > (minimizada ? SINCRONIA_LONGE : SINCRONIA)) { ultimaSincronia = agora; sincronizar(); }
         quadroId = requestAnimationFrame(quadro);
       }
       sistema('Você chegou na Praça Escola. Clique no chão para andar e chegue perto das pessoas para conversar.');
       verPerto(true);
+      mostrarDica();
       enquadrar();
       sincronizar();
+      CE.praca.informar();
       quadroId = requestAnimationFrame(quadro);
 
       return {
         receber() { mudarZoom(true); },
         aoFechar() {
           fechouJanela = true;
+          pracaNaTela = false;
           cancelAnimationFrame(quadroId);
           aoRedimensionar.disconnect();
           document.removeEventListener('keydown', teclaDesce);

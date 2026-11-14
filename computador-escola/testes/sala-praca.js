@@ -1,6 +1,7 @@
 // Teste da Praça Escola na rede da sala, com o programa de verdade: 1 computador da instrutora (servidor) e
 // 2 computadores de aluno. Confere que:
 //  • cada aluno vê o boneco do outro andando, a conversa chega para quem está perto e o 🙋 aparece para todos;
+//  • a cidade cresce com a turma: o módulo que a Ana conclui acende prédios na tela do Bruno e a casa dela fica pronta;
 //  • os dois jogam jogo da velha um contra o outro, cada um no seu computador, e quem ganha leva a medalha;
 //  • o mural e a votação ficam guardados no computador da instrutora;
 //  • a instrutora fala no megafone, deixa só frases prontas, silencia, fecha e abre a praça e chama todos (quem
@@ -100,7 +101,8 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
   const andou = await ate(async () => { const agora = await ondeEsta(p2, idAna); return antes && agora && antes.x - agora.x >= 2; }, 6000);
   ok(andou, `PC 2 vê a Ana andar para a esquerda (${antes && antes.x.toFixed(1)} → ${((await ondeEsta(p2, idAna)) || {}).x?.toFixed(1)})`);
   await p1.screenshot({ path: foto('praca-01-pc1.png') });
-  // Conversa por perto
+  // Conversa por perto (a fala aparece no balão; o histórico e as frases prontas ficam no 💬)
+  await p1.click(Z('[data-acao="conversa"]'));
   await p1.click(Z('.pr-chip[data-frase="Bom dia!"]'));
   ok(await ate(async () => /Ana Souza: Bom dia!/.test(await p2.textContent(Z('.pr-log')))), 'PC 2: o "Bom dia!" da Ana chega na conversa do Bruno (estão perto)');
   // Mão levantada
@@ -109,6 +111,28 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
   ok(/Bruno Lima pediu ajuda/.test(await p1.textContent(Z('.pr-log'))), 'PC 1: a conversa avisa que o Bruno pediu ajuda');
   await p2.click(Z('.pr-gesto[data-gesto="ajuda"]'));
   ok(await ate(async () => !(await p1.$(Z(`.pr-p[data-pessoa="${idBruno}"] .pr-mao`)))), 'o Bruno baixa a mão e o 🙋 some no PC 1');
+  await p1.click(Z('[data-acao="conversa"]'));
+
+  // ================= A cidade cresce com a turma =================
+  ok(await ate(async () => (await p2.textContent(Z('[data-acao="cidade"]'))).includes('0/9')), 'turma nova: a cidade começa pequena (0 de 9 prédios acesos)');
+  ok(!!(await p2.$(Z('.pr-obra[data-obra="horta"]'))) && /Seu terreno/.test(await p1.$$eval(Z('.pr-rotulo'), (l) => l.map((e) => e.textContent).join('|'))), 'PC 2: a horta está em obra; PC 1: a casa da Ana ainda é um terreno');
+  // A Ana conclui dois módulos (como se tivesse feito as aulas): na turma de 2, ela sozinha já é a metade.
+  const concluir = (p, modulo) => p.evaluate(async (m) => {
+    const pr = await CE.sessao.progresso();
+    const aulas = CE.curso.aulasDaTrilha(pr, { modulo: m });
+    await CE.sessao.atualizarProgresso((x) => { x.licoes = x.licoes || {}; for (const l of aulas) x.licoes[l.id] = { concluida: true, nota: 100, em: Date.now() }; });
+    CE.emitir('licao:concluida', { licao: aulas[aulas.length - 1].id, nota: 100 });
+  }, modulo);
+  await concluir(p1, 'n1-computador'); await concluir(p1, 'n1-teclado');
+  ok(await ate(async () => !(await p2.$(Z('.pr-obra[data-obra="horta"]'))) && !(await p2.$(Z('.pr-obra[data-obra="estacao"]'))), 15000), 'a Ana conclui dois módulos: a horta e a estação acendem na tela do Bruno');
+  ok(await ate(async () => /acendeu a Horta comunitária/.test(await p2.textContent(Z('.pr-log')))), 'PC 2: o Bruno fica sabendo que a turma acendeu a horta');
+  ok(await ate(async () => /Sua casa/.test(await p1.$$eval(Z('.pr-rotulo'), (l) => l.map((e) => e.textContent).join('|')))), 'PC 1: o terreno da Ana vira "Sua casa"');
+  const discoCidade = lerDisco('praca.json', {});
+  ok(((discoCidade.abertos || {})['Manhã'] || []).includes('horta') && ((discoCidade.modulos || {})[idAna] || {}).lista.includes('n1-teclado'), 'disco da instrutora: os módulos da Ana e os prédios acesos da turma Manhã');
+  await p2.click(Z('[data-acao="cidade"]')); await p2.click(Z('[data-aba="rua"]'));
+  ok(await ate(async () => /🏠/.test(await p2.textContent(Z(`.pr-morada[data-morada="${idAna}"]`))) && /terreno/.test(await p2.textContent(Z(`.pr-morada[data-morada="${idBruno}"]`)))), 'Rua da Turma no PC 2: a casa da Ana está pronta e a do Bruno ainda é terreno');
+  await p2.screenshot({ path: foto('praca-01b-rua-da-turma.png') });
+  await p2.click(Z('.pr-dlg-fechar'));
 
   // ================= Jogo da velha entre os dois computadores =================
   const mesa = (p, ...a) => p.evaluate((a) => CE.api.chamar('praca:mesa', ...a).then((m) => m, (e) => ({ erro: e.message })), a);
@@ -123,6 +147,8 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
   // ================= A instrutora entra na praça =================
   await A.evaluate(() => CE.janelas.abrir('praca'));
   ok(await ate(async () => !!(await A.$(Z(`.pr-gente [data-gente="${idAna}"]`))) && !!(await A.$(Z(`.pr-gente [data-gente="${idBruno}"]`)))), 'instrutora: "Na praça agora" mostra a Ana e o Bruno');
+  ok(await ate(async () => (await A.textContent(Z('[data-acao="cidade"]'))).includes('2/9')), 'instrutora: vê a cidade da turma que está na praça (Manhã, 2 de 9)');
+  await A.click(Z('[data-acao="megafone"]'));
   await A.fill(Z('#pr-campo-megafone'), 'Bingo em 5 minutos!'); await A.press(Z('#pr-campo-megafone'), 'Enter');
   ok(await ate(async () => /Bingo em 5 minutos!/.test(await p1.textContent(Z('.pr-megafone'))) && /Bingo em 5 minutos!/.test(await p2.textContent(Z('.pr-megafone')))), 'megafone: o recado da instrutora aparece no mapa dos dois alunos');
   await p2.screenshot({ path: foto('praca-02-megafone.png') });
@@ -130,25 +156,30 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
   await p1.evaluate(() => CE.api.chamar('praca:recado', 'Quem vai no bingo?'));
   ok((lerDisco('praca.json', {}).recados || []).some((r) => r.texto === 'Quem vai no bingo?' && r.de.id === idAna), 'disco da instrutora: o recado da Ana no mural');
   ok((await p2.evaluate(() => CE.api.chamar('praca:mural'))).recados.some((r) => r.texto === 'Quem vai no bingo?'), 'PC 2: o Bruno lê o recado da Ana no mural');
-  await p1.click(Z('.pr-voto[data-voto="biblioteca"]')); await p2.click(Z('.pr-voto[data-voto="biblioteca"]')); await espera(800);
+  for (const p of [p1, p2]) { await p.click(Z('[data-acao="cidade"]')); await p.click(Z('[data-aba="lote"]')); await p.click(Z('.pr-voto[data-voto="biblioteca"]')); }
+  await espera(800);
   const votacao = await A.evaluate(() => CE.api.chamar('praca:votacao'));
   ok(votacao.total === 2 && votacao.opcoes.find((o) => o.id === 'biblioteca').votos === 2, 'votação: os dois votos chegam no computador da instrutora');
-  await A.click(Z('[data-acao="encerrar-votacao"]'));
+  await A.click(Z('[data-acao="cidade"]')); await A.click(Z('[data-aba="lote"]')); await A.click(Z('[data-acao="encerrar-votacao"]'));
   ok(await ate(async () => (await p1.$$eval(Z('.pr-rotulo'), (l) => l.map((e) => e.textContent).join('|'))).includes('Obra: Biblioteca nova')), 'encerrada a votação: o Lote da turma vira "Obra: Biblioteca nova" na tela da Ana');
+  for (const p of [A, p1, p2]) await p.click(Z('.pr-dlg-fechar'));
+  const campoEscondido = (p) => p.$eval(Z('.pr-chat .pr-digitar'), (e) => e.hidden);
   // Só frases prontas
-  await A.check(Z('#pr-so-frases'));
-  ok(await ate(async () => p1.isHidden(Z('.pr-barra .pr-digitar'))), 'só frases prontas: o campo de escrever some no computador da Ana');
+  await A.click(Z('[data-acao="so-frases"]'));
+  ok(await ate(async () => campoEscondido(p1)), 'só frases prontas: o campo de escrever some no computador da Ana');
   const livre = await p1.evaluate(() => CE.api.chamar('praca:falar', 'texto livre qualquer').then(() => 'aceitou', (e) => e.message));
   ok(/frases prontas/.test(livre), 'só frases prontas: texto livre é recusado pelo computador da instrutora');
-  await A.uncheck(Z('#pr-so-frases'));
-  ok(await ate(async () => p1.isVisible(Z('.pr-barra .pr-digitar'))), 'conversa livre de novo: o campo volta');
-  // Silenciar
+  await A.click(Z('[data-acao="so-frases"]'));
+  ok(await ate(async () => !(await campoEscondido(p1))), 'conversa livre de novo: o campo volta');
+  // Silenciar (na lista de quem está na praça, que abre no "👥")
+  await A.click(Z('[data-acao="gente"]'));
   await A.click(Z(`[data-silenciar="${idAna}"]`));
   ok(await ate(async () => /só ouvindo/.test(await p1.textContent(Z('.pr-nota')))), 'silenciada: a Ana vê que está só ouvindo');
   const calada = await p1.evaluate(() => CE.api.chamar('praca:falar', 'Bom dia!').then(() => 'aceitou', (e) => e.message));
   ok(/ouvindo/.test(calada), 'silenciada: a fala da Ana é recusada');
   await A.click(Z(`[data-silenciar="${idAna}"]`));
-  ok(await ate(async () => p1.isVisible(Z('.pr-barra .pr-digitar'))), 'a instrutora deixa a Ana falar de novo');
+  ok(await ate(async () => !(await campoEscondido(p1))), 'a instrutora deixa a Ana falar de novo');
+  await A.click(Z('[data-acao="gente"]'));
   // Fechar e abrir
   await A.click(Z('[data-acao="abrir-fechar"]'));
   ok(await ate(async () => (await p1.isVisible(Z('.pr-fechada'))) && (await p2.isVisible(Z('.pr-fechada')))), 'praça fechada: os dois alunos veem o aviso de praça fechada');

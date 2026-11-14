@@ -224,6 +224,7 @@ window.CE = window.CE || {};
     if (CE.celular) CE.celular.carregar();
     if (CE.missao) CE.missao.carregar();
     if (CE.monitoria) CE.monitoria.carregar();
+    if (CE.praca) CE.praca.informar(); // a cidade da Praça Escola cresce com os módulos que o aluno conclui
     atualizarStatusIA();
     CE.professor.iniciar();
   };

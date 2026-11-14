@@ -93,7 +93,8 @@ function criarCanais(dados) {
     if (!p || !p.monitor) throw new Error('Só os monitores da turma veem os pedidos de ajuda.');
   };
   // Praça Escola: quem está onde e a conversa ficam na memória; o mural, a votação e as escolhas do instrutor, no disco.
-  const praca = criarPraca({ ler: () => dados.ler('praca', null), salvar: (v) => dados.salvar('praca', v) });
+  // A lista de alunos serve para a cidade que cresce: cada prédio acende quando metade da turma conclui o módulo dele.
+  const praca = criarPraca({ ler: () => dados.ler('praca', null), salvar: (v) => dados.salvar('praca', v), alunos: () => dados.listarUsuarios() });
   const monitores = new Map(); // id -> { sim, em }: quem é monitor (lido do progresso no máximo a cada 30 s)
   function ehMonitor(u) {
     const c = monitores.get(u.id);
@@ -464,6 +465,9 @@ function criarCanais(dados) {
     'praca:encerrar-votacao': (s) => { exigirInstrutor(s); return comCofre(praca.encerrarVotacao(s.usuario)); },
     'praca:nova-votacao': (s) => { exigirInstrutor(s); return comCofre(praca.novaVotacao(s.usuario)); },
     'praca:mesa': (s, acao, casa) => { exigirSessao(s); return praca.mesa(s.usuario, acao, casa); },
+    // O computador do aluno avisa os módulos que ele já concluiu (no login e a cada aula); a cidade da turma cresce.
+    'praca:modulos': (s, lista) => { exigirSessao(s); return praca.informarModulos(s.usuario, lista); },
+    'praca:cidade': (s, turma) => { exigirSessao(s); return praca.cidade(s.usuario, turma); },
 
     'jornal:enviar': (s, materia) => {
       exigirSessao(s);

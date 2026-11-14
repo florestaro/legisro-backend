@@ -374,6 +374,35 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   ok(!convites[0] && convites[1] && convites[1].id, 'praça: "chamar todos" convida quem está fora (quem já está na praça não recebe)');
   await pedir('praca:sair', [], tT7);
   ok(!(await pedir('praca:sincronizar', [{}, 0], tp)).valor.pessoas.some((x) => x.id === turma[7].id), 'praça: quem fecha a praça sai da lista na hora');
+  // A cidade cresce com a turma: os módulos que cada aluno conclui acendem os prédios da turma dele.
+  const cid0 = (await pedir('praca:cidade', ['Outra turma'], tT7)).valor;
+  ok(cid0.turma === '' && cid0.alunos >= 20 && cid0.precisa === Math.ceil(cid0.alunos / 2) && cid0.lugares.length === 9 && cid0.lugares.every((l) => !l.aberto),
+    `praça: a cidade começa pequena (${cid0.alunos} alunos; cada prédio acende com ${cid0.precisa}) e o aluno não espia a cidade de outra turma`);
+  const inf7 = (await pedir('praca:modulos', [['n1-computador', 'nao-existe', 'n1-computador']], tT7)).valor;
+  ok(JSON.stringify(((dados.ler('praca', {}).modulos || {})[turma[7].id] || {}).lista) === '["n1-computador"]' && inf7.casa && inf7.lugares.find((l) => l.lugar === 'horta').euFiz,
+    'praça: o módulo concluído fica no disco do instrutor (só os da cidade, sem repetir) e a casa do aluno fica pronta');
+  const desdeCidade = (await pedir('praca:sincronizar', [{}, 0], tp)).valor.ultimo;
+  // Outros alunos da turma entram (cada um no seu computador) e informam o mesmo módulo.
+  const outrosAlunos = [];
+  for (const u of turma.filter((x, k) => k !== 7 && k !== 8)) {
+    if (outrosAlunos.length >= cid0.precisa - 1) break;
+    const s = await entrar(u);
+    if (s.ok) outrosAlunos.push(s.token);
+  }
+  const informes = [];
+  for (const tk of outrosAlunos.slice(0, -1)) informes.push(await pedir('praca:modulos', [['n1-computador']], tk));
+  ok(informes.every((r) => r.ok), 'praça: cada aluno informa os módulos dele' + (informes.some((r) => !r.ok) ? ': ' + informes.find((r) => !r.ok).erro : ''));
+  ok(!(dados.ler('praca', {}).abertos || {})[''], `praça: com ${cid0.precisa - 1} alunos no módulo, a horta ainda está em obra`);
+  await pedir('praca:modulos', [['n1-computador']], outrosAlunos[outrosAlunos.length - 1]);
+  const evCidade = (await pedir('praca:sincronizar', [{}, desdeCidade], tp)).valor.eventos.filter((e) => e.tipo === 'cidade');
+  ok(((dados.ler('praca', {}).abertos || {})[''] || []).join() === 'horta' && evCidade.length === 1 && /acendeu a Horta comunitária/.test(evCidade[0].texto),
+    'praça: metade da turma concluiu o módulo: a horta acende, fica no disco e a praça inteira fica sabendo');
+  ok((await pedir('praca:sincronizar', [{}, 0], tT8)).valor.cidade.abertos.includes('horta'), 'praça: o computador do aluno recebe os prédios acesos da turma dele');
+  await pedir('praca:sair', [], tT8);
+  await pedir('praca:modulos', [[]], tT7);
+  ok((await pedir('praca:cidade', [], tT7)).valor.lugares.find((l) => l.lugar === 'horta').aberto, 'praça: prédio aceso continua aceso (mesmo se a lista de um aluno mudar)');
+  await pedir('praca:modulos', [['n1-computador']], tp);
+  ok(!(dados.ler('praca', {}).modulos || {})[prof.valor.id], 'praça: o instrutor não entra na conta da cidade');
   // 9) Arquivo de usuários estragado: usa a cópia de reserva
   const antes = dados.listarUsuarios().length;
   fs.writeFileSync(path.join(PASTA, 'usuarios.json'), '{ estragado');

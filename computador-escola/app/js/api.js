@@ -39,7 +39,7 @@ window.CE = window.CE || {};
   const gincanas = () => (gincanasTeste = gincanasTeste || CE.gincanaRegras());
   // Praça Escola no navegador de teste: com colegas de demonstração andando e conversando (regras em praca-regras.js).
   let pracaTeste = null;
-  const praca = () => (pracaTeste = pracaTeste || CE.pracaRegras({ ler: () => ler('praca', null), salvar: (v) => gravar('praca', v), demonstracao: true }));
+  const praca = () => (pracaTeste = pracaTeste || CE.pracaRegras({ ler: () => ler('praca', null), salvar: (v) => gravar('praca', v), demonstracao: true, alunos: () => ler('usuarios', []) }));
   const progressoAtual = () => (atual && ler('progresso:' + atual.id, null)) || {};
   // Cofre: as aulas concluídas de quem usa este navegador, mais as dos colegas de demonstração.
   const cofreTeste = () => { const aulas = 300 + Object.values(progressoAtual().licoes || {}).filter((r) => r && r.concluida && !r.dispensada).length; return { aulas, moedas: aulas * 4, meta: 1500 }; };
@@ -235,6 +235,8 @@ window.CE = window.CE || {};
         'praca:encerrar-votacao': () => ({ ...praca().encerrarVotacao(atual), cofre: cofreTeste() }),
         'praca:nova-votacao': () => ({ ...praca().novaVotacao(atual), cofre: cofreTeste() }),
         'praca:mesa': () => praca().mesa(atual, a[0], a[1]),
+        'praca:modulos': () => { if (!atual) throw new Error('Ninguém entrou no sistema.'); return praca().informarModulos(atual, a[0]); },
+        'praca:cidade': () => { if (!atual) throw new Error('Ninguém entrou no sistema.'); return praca().cidade(atual, a[0]); },
         'sala:mensagem': () => (salaTeste.mensagem = String(a[0] || '').trim() ? { id: Date.now(), texto: String(a[0]).trim().slice(0, 300), de: atual.nome } : null),
       }[canal];
       return { ok: true, valor: await valor() };

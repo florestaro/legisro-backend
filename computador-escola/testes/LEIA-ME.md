@@ -125,10 +125,15 @@ npm run teste:praca
 Abre o programa de verdade em 3 computadores (a instrutora e dois alunos, a Ana e o Bruno, que é monitor) e confere:
 - **Os dois na praça**: cada um vê o boneco do outro; a Ana anda com as setas e o computador do Bruno vê ela andar; o
   "Bom dia!" da Ana chega na conversa do Bruno (estão perto); o 🙋 do Bruno aparece em cima dele no computador da Ana.
+- **A cidade cresce com a turma**: a cidade começa sem prédios acesos; a Ana conclui dois módulos (na turma de 2, ela já
+  é a metade) e a horta e a estação acendem na tela do Bruno, que fica sabendo pela conversa; o terreno da Ana vira
+  "Sua casa" e, na Rua da Turma, a casa dela aparece pronta e a do Bruno ainda é terreno (tudo guardado no disco da
+  instrutora).
 - **Jogo da velha** entre os dois computadores: cada um joga na sua vez, a conversa conta quem ganhou e a vencedora
   ganha a medalha (guardada no computador da instrutora).
-- **A instrutora na praça**: vê os dois em "Na praça agora", fala no megafone (aparece no mapa dos dois), liga "só
-  frases prontas" (o campo de escrever some e texto livre é recusado), silencia e libera a Ana, fecha e abre a praça.
+- **A instrutora na praça**: vê os dois em "Na praça agora" e a cidade da turma deles, fala no megafone (aparece no
+  mapa dos dois), liga "só frases prontas" (o campo de escrever some e texto livre é recusado), silencia e libera a Ana,
+  fecha e abre a praça.
 - **Mural e votação** guardados no computador da instrutora; encerrada a votação, o Lote da turma vira "Obra" na tela da
   Ana.
 - **Chamar todos**: o Bruno, que fechou a praça, recebe o convite "Todo mundo para a praça!", volta e vai para perto da

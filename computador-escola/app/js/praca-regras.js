@@ -48,7 +48,7 @@
     return j;
   }
 
-  function criarPraca({ ler = () => null, salvar = () => {}, relogio = () => Date.now(), demonstracao = false } = {}) {
+  function criarPraca({ ler = () => null, salvar = () => {}, relogio = () => Date.now(), demonstracao = false, alunos = () => [] } = {}) {
     // O que fica no disco do instrutor só é lido quando alguém usa a praça pela primeira vez: o programa monta os
     // canais antes de saber em que pasta ficam os dados.
     let lido = null;
@@ -65,6 +65,7 @@
     let chamada = null;
     const ultimaFala = new Map(), ultimoRecado = new Map();
     let mesa = { X: null, O: null, tab: tabuleiroNovo(), vez: 'X', vencedor: null, linha: null, jogadaEm: 0 };
+    let avaliouDemo = false;
 
     function normal(g) {
       g = g && typeof g === 'object' ? g : {};
@@ -74,6 +75,9 @@
         silenciados: Array.isArray(g.silenciados) ? g.silenciados.map(String) : [],
         recados: Array.isArray(g.recados) ? g.recados.slice(0, MAX_RECADOS) : [],
         votacao: v, versao: Number(g.versao) || 1,
+        // A cidade que cresce: os módulos que cada aluno concluiu (o computador dele avisa) e os prédios já acesos.
+        modulos: g.modulos && typeof g.modulos === 'object' ? g.modulos : {},
+        abertos: g.abertos && typeof g.abertos === 'object' ? g.abertos : {},
       };
     }
     function gravar() {
@@ -91,7 +95,70 @@
     const publica = (p, agora) => ({
       id: p.id, nome: p.nome, avatar: p.avatar, papel: p.papel, turma: p.turma, monitor: !!p.monitor,
       x: p.x, y: p.y, esq: !!p.esq, andando: !!p.andando, mao: !!(p.mao && agora - p.mao < MAO), bot: !!p.bot,
+      ...casaDe(p.id),
     });
+
+    // ---------- A cidade cresce com a turma ----------
+    // Cada prédio acende quando metade da turma conclui o módulo ligado a ele (praca-mapa.js: CIDADE). Uma vez aceso,
+    // fica aceso. A casa de cada aluno fica pronta no primeiro módulo e ganha um enfeite por nível ou curso concluído.
+    const MODULOS_DEMO = {
+      'demo-ana': ['n1-computador', 'n1-teclado', 'n1-internet', 'n1-seguranca', 'n1-prova', 'n2-email'],
+      'demo-carla': ['n1-computador', 'n1-teclado', 'n1-internet', 'n1-seguranca'],
+      'demo-davi': ['n1-computador', 'n1-teclado', 'n1-internet'],
+      'demo-bruno': ['n1-computador', 'n1-teclado', 'n1-internet'],
+      'demo-fatima': ['n1-computador', 'n1-teclado'],
+      'demo-jorge': ['n1-computador'],
+      'demo-lia': ['n1-computador', 'n1-teclado', 'n1-internet', 'n1-seguranca', 'n1-prova', 'n2-email', 'n2-servicos', 'n2-gov', 'n2-prova', 'cel-final'],
+    };
+    // No modo de teste no navegador, quem usa a praça e os colegas de demonstração são uma turma só.
+    const turmaDe = (u) => (demonstracao ? 'Demonstração' : String((u && u.turma) || ''));
+    let cacheAlunos = null, cacheAlunosEm = 0;
+    function todosAlunos() {
+      if (!cacheAlunos || relogio() - cacheAlunosEm > 5000) {
+        let lista = [];
+        try { lista = (alunos() || []).filter((a) => a && a.papel !== 'instrutor').map((a) => ({ id: String(a.id), nome: texto(a.nome, 40), avatar: texto(a.avatar, 16) || '🙂', turma: turmaDe(a) })); } catch { /* sem lista */ }
+        if (demonstracao) lista = lista.concat(bots.map((b) => ({ id: b.id, nome: b.nome, avatar: b.avatar, turma: b.turma })));
+        cacheAlunos = lista; cacheAlunosEm = relogio();
+      }
+      return cacheAlunos;
+    }
+    const listaDe = (id) => (dados().modulos[id] && dados().modulos[id].lista) || (demonstracao && MODULOS_DEMO[id]) || [];
+    function casaDe(id) {
+      const l = listaDe(id);
+      return { casa: l.includes(mapa.CASA_PRONTA), enfeites: mapa.ENFEITES.filter((e) => l.includes(e.modulo)).map((e) => e.emoji).join('') };
+    }
+    function contar(turma) {
+      const daTurma = todosAlunos().filter((a) => a.turma === turma);
+      const precisa = Math.max(1, Math.ceil(daTurma.length / 2));
+      const lugares = mapa.CIDADE.map((c) => ({ ...c, feitos: daTurma.filter((a) => listaDe(a.id).includes(c.modulo)).length }));
+      return { daTurma, precisa, lugares };
+    }
+    // Acende o que chegou lá; com "anunciar", a praça inteira fica sabendo.
+    function avaliar(turma, anunciar) {
+      const { daTurma, precisa, lugares } = contar(turma);
+      const abertos = dados().abertos[turma] || [];
+      const novos = daTurma.length ? lugares.filter((l) => l.feitos >= precisa && !abertos.includes(l.lugar)) : [];
+      if (novos.length) {
+        dados().abertos[turma] = [...abertos, ...novos.map((l) => l.lugar)];
+        gravar();
+        if (anunciar) {
+          for (const l of novos) {
+            evento({ tipo: 'cidade', lugar: l.lugar, turma, texto: `🎉 A turma${turma ? ' ' + turma : ''} acendeu ${l.artigo} ${l.lugar === 'rio' ? 'Cais do Rio Madeira' : (mapa.porLugar[l.lugar] || {}).nome}! Metade da turma já concluiu o módulo ${l.titulo}.` });
+          }
+        }
+      }
+      return dados().abertos[turma] || [];
+    }
+    // O instrutor vê a turma que está na praça agora (ou a que ele escolher).
+    function turmaPadrao() {
+      const conta = new Map();
+      for (const p of pessoas.values()) if (p.papel !== 'instrutor') conta.set(turmaDe(p), (conta.get(turmaDe(p)) || 0) + 1);
+      const maior = [...conta].sort((a, b) => b[1] - a[1])[0];
+      if (maior) return maior[0];
+      const primeiro = todosAlunos()[0];
+      return primeiro ? primeiro.turma : '';
+    }
+    const turmaVista = (usuario, pedida) => (ehInstrutor(usuario) && !demonstracao ? (typeof pedida === 'string' ? pedida : turmaPadrao()) : turmaDe(usuario));
     const mesaPublica = () => ({ X: mesa.X, O: mesa.O, tab: mesa.tab.slice(), vez: mesa.vez, vencedor: mesa.vencedor, linha: mesa.linha });
     function precisaDe(usuario) {
       const p = pessoas.get(usuario.id);
@@ -232,8 +299,11 @@
         Object.assign(p, { nome: texto(usuario.nome, 40), avatar: texto(usuario.avatar, 16) || '🙂', papel: usuario.papel, turma: usuario.turma || '', monitor: !!(extra && extra.monitor), em: agora });
         if (p.mao && agora - p.mao > MAO) p.mao = 0;
         const d = Number(desde) || 0;
+        const turma = turmaVista(usuario, eu && eu.turma);
+        if (demonstracao && !avaliouDemo) { avaliouDemo = true; avaliar('Demonstração', false); }
         return {
           agora, novo, eu: { x: p.x, y: p.y },
+          cidade: { turma, abertos: (dados().abertos[turma] || []).slice() },
           aberta: dados().aberta, soFrases: dados().soFrases, silenciado: dados().silenciados.includes(usuario.id),
           silenciados: ehInstrutor(usuario) ? dados().silenciados.slice() : undefined,
           chamada: chamada && agora - chamada.em < CONVITE ? { id: chamada.id, em: chamada.em } : null,
@@ -243,6 +313,35 @@
         };
       },
       sair(usuario) { pessoas.delete(usuario.id); levantar(usuario.id); return true; },
+      // O computador do aluno avisa os módulos que ele concluiu (só os que importam para a cidade).
+      informarModulos(usuario, lista) {
+        if (ehInstrutor(usuario)) return this.cidade(usuario);
+        const validos = [...new Set((Array.isArray(lista) ? lista : []).map(String))].filter((m) => mapa.MODULOS_DA_CIDADE.includes(m)).sort();
+        const antes = dados().modulos[usuario.id];
+        const turma = turmaDe(usuario);
+        if (!antes || antes.turma !== turma || (antes.lista || []).join() !== validos.join()) {
+          dados().modulos[usuario.id] = { turma, lista: validos, em: relogio() };
+          gravar();
+        }
+        avaliar(turma, true);
+        return this.cidade(usuario);
+      },
+      // Como está a cidade da turma: o que já acendeu e quanto falta para cada prédio.
+      cidade(usuario, pedida) {
+        const turma = turmaVista(usuario, pedida);
+        const abertos = avaliar(turma, true);
+        const { daTurma, precisa, lugares } = contar(turma);
+        const meus = listaDe(usuario.id);
+        return {
+          turma, alunos: daTurma.length, precisa,
+          turmas: ehInstrutor(usuario) ? [...new Set(todosAlunos().map((a) => a.turma))].sort() : undefined,
+          lugares: lugares.map((l) => ({ lugar: l.lugar, modulo: l.modulo, titulo: l.titulo, feitos: l.feitos, aberto: abertos.includes(l.lugar), euFiz: meus.includes(l.modulo) })),
+          // A Rua da Turma: o terreno de cada aluno, que vira casa e ganha enfeites com os cursos que ele termina.
+          rua: daTurma.map((a) => ({ id: a.id, nome: a.nome, avatar: a.avatar, ...casaDe(a.id) }))
+            .sort((a, b) => (b.id === usuario.id) - (a.id === usuario.id) || String(a.nome).localeCompare(String(b.nome), 'pt-BR')),
+          ...casaDe(usuario.id),
+        };
+      },
       falar(usuario, t0) {
         const p = precisaDe(usuario);
         podeFalar(usuario);
