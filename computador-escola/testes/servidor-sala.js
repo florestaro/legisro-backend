@@ -403,6 +403,30 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   ok((await pedir('praca:cidade', [], tT7)).valor.lugares.find((l) => l.lugar === 'horta').aberto, 'praça: prédio aceso continua aceso (mesmo se a lista de um aluno mudar)');
   await pedir('praca:modulos', [['n1-computador']], tp);
   ok(!(dados.ler('praca', {}).modulos || {})[prof.valor.id], 'praça: o instrutor não entra na conta da cidade');
+  // O que cada prédio faz (tarefa do dia e desafio da semana) e a novela da cidade.
+  const textos = require('../app/js/praca-novela');
+  const th = textos.tarefaDoDia('horta', Date.now());
+  const certaHorta = th.tipo === 'digitar' ? (th.numero ? String(th.resposta) : th.modelo) : th.certa;
+  const tarefaHoje = (await pedir('praca:tarefa', ['horta'], tT7)).valor;
+  ok(tarefaHoje.aceso && tarefaHoje.tarefa && tarefaHoje.tarefa.certa === undefined && tarefaHoje.tarefa.resposta === undefined, 'praça: a tarefa do dia da horta acesa vai para a tela sem a resposta');
+  ok(/em obra/.test((await pedir('praca:fazer-tarefa', ['banco', 0], tT7)).erro || ''), 'praça: lugar em obra ainda não tem tarefa');
+  const f1 = (await pedir('praca:fazer-tarefa', ['horta', certaHorta], tT7)).valor;
+  const f2 = (await pedir('praca:fazer-tarefa', ['horta', certaHorta], tT7)).valor;
+  ok(f1.certo && f1.contou && !f2.contou && f1.semana.feitas === 1 && ((dados.ler('praca', {}).feitas || {})[turma[7].id] || {}).horta !== undefined, 'praça: a tarefa do dia conta uma vez por dia e fica no disco do instrutor');
+  for (const tk of outrosAlunos) await pedir('praca:fazer-tarefa', ['horta', certaHorta], tk);
+  const cofreDepois = (await pedir('praca:votacao', [], tT7)).valor.cofre;
+  const sincSelo = (await pedir('praca:sincronizar', [{}, 0], tT7)).valor;
+  ok(sincSelo.cidade.selos.includes('horta') && cofreDepois.bonus === 40 && cofreDepois.moedas === cofreDepois.aulas * 4 + 40, 'praça: metade da turma fez a tarefa da horta na semana: a horta ganha a ⭐ e o cofre, 40 moedas');
+  ok(!(await pedir('praca:abrir-capitulo', ['barco'], tT7)).ok && !(await pedir('praca:revelar-final', [], tT7)).ok, 'praça: aluno não abre capítulo da novela nem revela o final');
+  const cap = (await pedir('praca:abrir-capitulo', ['barco', ''], tp)).valor;
+  ok(cap.atual && cap.atual.id === 'barco' && cap.atual.pistas.every((x) => x.tarefa && x.tarefa.certa === undefined), 'praça: o instrutor abre o capítulo e as pistas vão para a tela sem a resposta');
+  ok(/ainda não juntou/.test((await pedir('praca:revelar-final', [''], tp)).erro || ''), 'praça: o final só sai quando a turma junta as pistas');
+  const errou = (await pedir('praca:resolver-pista', ['barco-bilhete', 0], tT7)).valor;
+  const acertou = (await pedir('praca:resolver-pista', ['barco-bilhete', 1], tT7)).valor;
+  const repetiu = (await pedir('praca:resolver-pista', ['barco-bilhete', 1], tT7)).valor;
+  ok(!errou.certo && acertou.certo && acertou.contou && !repetiu.contou && acertou.novela.atual.total === 1 && (dados.ler('praca', {}).novela[''].achados['barco-bilhete'] || []).length === 1,
+    'praça: pista errada não conta; a certa conta uma vez só e fica no disco do instrutor');
+  await pedir('praca:sair', [], tT7);
   // 9) Arquivo de usuários estragado: usa a cópia de reserva
   const antes = dados.listarUsuarios().length;
   fs.writeFileSync(path.join(PASTA, 'usuarios.json'), '{ estragado');

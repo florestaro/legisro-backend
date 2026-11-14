@@ -98,6 +98,8 @@ window.CE = window.CE || {};
     { id: 'praca-caixa', icone: '🧺', nome: 'Caixa da feira', descricao: 'Deu o troco certo para o Seu Raimundo, na feira da Praça Escola.', ganhou: (p) => !!(p.praca && p.praca.caixa) },
     { id: 'praca-olho-vivo', icone: '👀', nome: 'Olho vivo', descricao: 'Percebeu o golpe do Moço da Oferta, na Praça Escola.', ganhou: (p) => !!(p.praca && p.praca.olhoVivo) },
     { id: 'praca-velha', icone: '❌', nome: 'Bom de jogo', descricao: 'Ganhou uma partida de jogo da velha na Praça Escola.', ganhou: (p) => !!(p.praca && p.praca.velha) },
+    { id: 'praca-detetive', icone: '🔎', nome: 'Detetive da novela', descricao: 'Achou pistas e ajudou a turma a desvendar um capítulo da novela da Praça Escola.', ganhou: (p) => !!(p.praca && p.praca.detetive) },
+    { id: 'praca-mao-na-massa', icone: '🧰', nome: 'Mão na massa', descricao: 'Fez 10 tarefas do dia nos prédios da Praça Escola.', ganhou: (p) => !!(p.praca && Number(p.praca.tarefas) >= 10) },
   ];
 
   CE.medalhas = {

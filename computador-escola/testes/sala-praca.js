@@ -2,6 +2,8 @@
 // 2 computadores de aluno. Confere que:
 //  • cada aluno vê o boneco do outro andando, a conversa chega para quem está perto e o 🙋 aparece para todos;
 //  • a cidade cresce com a turma: o módulo que a Ana conclui acende prédios na tela do Bruno e a casa dela fica pronta;
+//  • cada prédio aceso tem a tarefa do dia (conta uma vez por dia para cada aluno) e a novela da cidade funciona entre
+//    os computadores: a instrutora abre o capítulo, os dois acham as pistas e o final aparece na tela de todos;
 //  • os dois jogam jogo da velha um contra o outro, cada um no seu computador, e quem ganha leva a medalha;
 //  • o mural e a votação ficam guardados no computador da instrutora;
 //  • a instrutora fala no megafone, deixa só frases prontas, silencia, fecha e abre a praça e chama todos (quem
@@ -134,6 +136,28 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
   await p2.screenshot({ path: foto('praca-01b-rua-da-turma.png') });
   await p2.click(Z('.pr-dlg-fechar'));
 
+  // ================= O que cada prédio faz: a tarefa do dia =================
+  // (o teste lê a resposta de hoje do mesmo arquivo de textos que o programa usa)
+  const tarefa = (p, lugar) => p.evaluate((l) => { const t = CE.pracaNovela.tarefaDoDia(l, Date.now()); return CE.api.chamar('praca:fazer-tarefa', l, t.tipo === 'digitar' ? (t.numero ? String(t.resposta) : t.modelo) : t.certa); }, lugar);
+  const t1 = await tarefa(p1, 'horta'), t1b = await tarefa(p1, 'horta'), t2 = await tarefa(p2, 'horta');
+  ok(t1.certo && t1.contou && !t1b.contou && t2.contou && t2.semana.feitas === 2, 'tarefa do dia na horta: conta uma vez por dia para cada aluno (2 na semana da turma)');
+  const emObra = await p1.evaluate(() => CE.api.chamar('praca:fazer-tarefa', 'banco', 0).then(() => 'aceitou', (e) => e.message));
+  ok(/em obra/.test(emObra), 'o Banco ainda está em obra: a tarefa dele começa quando a turma acender o prédio');
+
+  // ================= A novela da cidade =================
+  const capitulo = await A.evaluate(() => CE.api.chamar('praca:abrir-capitulo', 'barco', 'Manhã'));
+  ok(capitulo.atual && capitulo.atual.id === 'barco' && capitulo.atual.meta === 3, 'a instrutora abre o capítulo "O barco do Seu Bené sumiu" para a turma Manhã');
+  ok(await ate(async () => /Novo capítulo/.test(await p2.textContent(Z('.pr-log'))) && await p2.isVisible(Z('[data-acao="novela"]'))), 'PC 2: o Bruno fica sabendo do capítulo novo e aparece a pílula 🔎 Novela');
+  ok(await ate(async () => (await p1.$$(Z('.pr-marca-pista'))).length === 3), 'PC 1: as 3 pistas aparecem marcadas com 🔎 no mapa da Ana');
+  const pista = (p, id) => p.evaluate((i) => { const t = CE.pracaNovela.porPista[i].tarefa; return CE.api.chamar('praca:resolver-pista', i, t.tipo === 'digitar' ? t.modelo : t.certa); }, id);
+  const errada = await p1.evaluate(() => CE.api.chamar('praca:resolver-pista', 'barco-bilhete', 0));
+  ok(!errada.certo && !errada.contou, 'pista com resposta errada não conta');
+  await pista(p1, 'barco-bilhete'); await pista(p1, 'barco-email');
+  const ultimaPista = await pista(p2, 'barco-telegrama');
+  ok(ultimaPista.contou && ultimaPista.novela.atual.resolvido, 'a Ana acha duas pistas e o Bruno a última: o mistério está resolvido');
+  ok(await ate(async () => /juntou todas as pistas/.test(await p1.textContent(Z('.pr-log')))), 'PC 1: a Ana fica sabendo que a turma juntou as pistas');
+  ok(await ate(async () => !(await p1.$(Z('.pr-marca-pista[data-marca="rio"]')))), 'PC 1: a 🔎 some dos lugares em que a Ana já achou a pista');
+
   // ================= Jogo da velha entre os dois computadores =================
   const mesa = (p, ...a) => p.evaluate((a) => CE.api.chamar('praca:mesa', ...a).then((m) => m, (e) => ({ erro: e.message })), a);
   await mesa(p1, 'sentar'); const m2 = await mesa(p2, 'sentar');
@@ -148,6 +172,15 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
   await A.evaluate(() => CE.janelas.abrir('praca'));
   ok(await ate(async () => !!(await A.$(Z(`.pr-gente [data-gente="${idAna}"]`))) && !!(await A.$(Z(`.pr-gente [data-gente="${idBruno}"]`)))), 'instrutora: "Na praça agora" mostra a Ana e o Bruno');
   ok(await ate(async () => (await A.textContent(Z('[data-acao="cidade"]'))).includes('2/9')), 'instrutora: vê a cidade da turma que está na praça (Manhã, 2 de 9)');
+  // O final da novela: a instrutora revela no coreto e ele aparece na tela dos dois alunos.
+  await A.click(Z('[data-acao="novela"]'));
+  await A.click(Z('[data-opcao="revelar-final"]'));
+  ok(await ate(async () => (await p1.isVisible(Z('.pr-final'))) && (await p2.isVisible(Z('.pr-final'))) && /o Zeca levou para consertar o motor/.test(await p2.textContent(Z('.pr-final')))), 'a instrutora revela o final no coreto: ele aparece na tela da Ana e do Bruno');
+  await p2.screenshot({ path: foto('praca-01c-final-da-novela.png') });
+  ok(await A.isVisible(Z('.pr-final')), 'na tela da instrutora o final também aparece (bom para mostrar no projetor)');
+  for (const p of [A, p1, p2]) await p.click(Z('[data-acao="fechar-final"]'));
+  ok(await ate(() => Promise.resolve(!!((lerDisco(`progresso-${idAna}.json`, {}).medalhas || {})['praca-detetive'])), 10000), 'disco da instrutora: a Ana ganhou a medalha 🔎 Detetive da novela');
+  ok(((lerDisco('praca.json', {}).novela || {})['Manhã'] || {}).revelado === true, 'disco da instrutora: o capítulo revelado fica guardado');
   await A.click(Z('[data-acao="megafone"]'));
   await A.fill(Z('#pr-campo-megafone'), 'Bingo em 5 minutos!'); await A.press(Z('#pr-campo-megafone'), 'Enter');
   ok(await ate(async () => /Bingo em 5 minutos!/.test(await p1.textContent(Z('.pr-megafone'))) && /Bingo em 5 minutos!/.test(await p2.textContent(Z('.pr-megafone')))), 'megafone: o recado da instrutora aparece no mapa dos dois alunos');

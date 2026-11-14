@@ -274,27 +274,40 @@ curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela red
   boneco e, no registro da conversa, só para quem está perto. Gestos: 👋 acenar, 👏 aplaudir e 🙋 pedir ajuda (a mão
   levantada aparece para todos, inclusive para o instrutor e os monitores). Palavrões viram asteriscos.
 - **Prédios** (acesos): Escola (as Aulas), Banco Escola (o banco de treino), Correios (o E-mail), Prefeitura (o Cidadão
-  Digital), Agência de Empregos (o Emprega Já), Feira (a Feira Online), Estação Madeira-Mamoré (os textos da nossa terra
-  na Digitação), Posto de Saúde e o cais do Rio Madeira (em breve).
+  Digital), Agência de Empregos (o Emprega Já), Feira (a Feira Online) e Estação Madeira-Mamoré (os textos da nossa
+  terra na Digitação).
+- **O que cada lugar faz**: cada lugar aceso tem uma **tarefa do dia** rapidinha, ligada ao curso, que muda todo dia
+  (leitura na biblioteca da Escola, cuidar da horta, telegrama da Estação, pescaria de palavras no cais, SMS falso no
+  Posto, separar as cartas nos Correios, detetive do extrato no Banco, ficha da Prefeitura, caixa da Feira e balcão de
+  vagas na Agência). Cada aluno faz uma por dia em cada lugar (pode treinar de novo, mas só a primeira conta). No
+  **desafio da semana**, quando metade da turma faz a tarefa de um lugar, ele ganha a ⭐ no mapa e o cofre ganha 40
+  moedas. Errou? Aparece "Ainda não" e dá para tentar de novo; acertou, vem a explicação.
+- **A novela da cidade**, no coreto: o instrutor abre um capítulo por semana (são 4: "O barco do Seu Bené sumiu", "O
+  golpe na feira", "A carta sem remetente" e "O apagão na estação"). As pistas ficam nos lugares marcados com 🔎 no mapa
+  (até nos prédios em obra, pregadas no tapume), e cada pista é uma tarefa no computador. A turma resolve junta: o
+  mistério está desvendado quando todas as pistas foram achadas e a turma juntou tantas pistas quanto o número de
+  alunos. Aí o instrutor revela o final no coreto, e ele aparece na tela de todos, falado em voz alta, com a moral da
+  história. Quem ajudou ganha a medalha 🔎 Detetive da novela.
 - **Moradores** (personagens do computador, com conversas que ensinam): a Dona Rosa pede ajuda para mandar foto ao neto,
   a Dona Lúcia explica o Pix, o Seu Raimundo desafia no troco da feira, a Enfermeira Cida dá dicas, o Seu Bené conta a
   história da Madeira-Mamoré e o **Moço da Oferta** oferece um golpe (quem percebe ganha medalha).
 - **Mesa do jogo da velha**: dois colegas jogam, cada um no seu computador (ou um aluno contra o computador, enquanto
   ninguém senta do outro lado). A mesa de dominó vem em breve.
 - **Mural de recados** e **votação**: a turma vota no que construir no Lote da turma (quadra, horta ou biblioteca); o
-  **cofre da turma** soma 4 moedas por aula concluída pelos alunos. Prédios, Rua da Turma e Lote ficam no "🏙️ Cidade".
+  **cofre da turma** soma 4 moedas por aula concluída pelos alunos (e 40 por desafio da semana). Prédios, Rua da Turma e
+  Lote ficam no "🏙️ Cidade".
 - **O instrutor comanda** (4 botões redondos no canto da praça dele): **📣 megafone** (o recado aparece no mapa de todos e é falado em
   voz alta), **chamar todos para a praça** (quem está na praça vai para perto da fonte; quem está fora recebe o convite
   na tela), **fechar e abrir a praça** (por exemplo, só no recreio), **só frases prontas** (bom para crianças),
   **silenciar** um aluno, tirar recados do mural e encerrar a votação.
 - Onde fica cada coisa: quem está onde e a conversa ficam só na memória do computador do instrutor; o mural, a votação,
-  as escolhas do instrutor, os módulos que cada aluno concluiu e os prédios acesos de cada turma ficam no disco dele
-  (`praca.json`; o computador do aluno avisa os módulos no login e a cada aula); as medalhas, no progresso de cada
-  aluno. No modo de
+  as escolhas do instrutor, os módulos que cada aluno concluiu, os prédios acesos, as tarefas feitas e a novela de cada
+  turma ficam no disco dele (`praca.json`; o computador do aluno avisa os módulos no login e a cada aula; as respostas
+  das tarefas e das pistas são conferidas no computador do instrutor); as medalhas, no progresso de cada aluno. No modo de
   teste pelo navegador, a praça tem **colegas de demonstração** andando e conversando.
 
 ### Outros
-- **79 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova (também por cumprir missões, ir ao
+- **81 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova (também por cumprir missões, ir ao
   pódio da gincana, mandar matéria para o jornal, ajudar colegas como monitor e conquistas na Praça Escola).
 - **Painel do Instrutor**: cadastro (com a opção "criança"), aula atual de cada aluno, média, exercício de digitação
   atual, melhor velocidade, provas e medalhas. Também:
@@ -385,7 +398,7 @@ npm run teste:sala            # 1 instrutor + 20 alunos usando o sistema ao mesm
 npm run teste:sala -- 5       # o mesmo com 5 alunos
 npm run teste:fase2           # novidades da fase 2: o aluno troca de computador e encontra tudo (uns 3 minutos)
 npm run teste:fase3           # novidades da fase 3: MEI, anúncio e PDF em outro computador, e a monitoria (uns 3 minutos)
-npm run teste:praca           # a Praça Escola em 3 computadores: andar, conversar, a cidade que cresce, jogar, mural, votação e comandos do instrutor
+npm run teste:praca           # a Praça Escola em 3 computadores: andar, conversar, a cidade que cresce, tarefas, novela, jogar, mural, votação e comandos do instrutor
 npm run teste:emojis          # todos os emojis aparecem direito no Windows 10 (sem tela, segundos)
 ```
 
@@ -459,7 +472,8 @@ guardado nos computadores dos alunos. Também vale para a fase 3 (`npm run teste
 foto na Feira Online e o formulário em PDF preenchido num computador aparecem no outro, e a monitoria funciona entre
 computadores (o monitor vê o pedido de ajuda do colega, avisa que vai ajudar e o colega recebe o aviso na tela dele).
 E a Praça Escola (`npm run teste:praca`): cada aluno vê o boneco do outro andar, a conversa chega para quem está perto,
-o módulo que a Ana conclui acende prédios na tela do Bruno, os dois jogam jogo da velha cada um no seu computador, e o megafone, o fechar/abrir, o só frases prontas, o silenciar e
+o módulo que a Ana conclui acende prédios na tela do Bruno, a tarefa do dia conta uma vez por dia para cada um, os dois
+acham as pistas da novela e o final revelado pela instrutora aparece na tela de todos, os dois jogam jogo da velha cada um no seu computador, e o megafone, o fechar/abrir, o só frases prontas, o silenciar e
 o chamar todos da instrutora chegam na hora.
 
 ## Criar aulas sem programar
@@ -513,7 +527,8 @@ app/js/gincana-regras.js as regras da gincana ao vivo (idem)
 app/js/jornal-regras.js  as regras do jornal da turma (idem); jornal.js monta o jornal e filtra as matérias
 app/js/missao.js         a missão da semana (banco de missões por nível, semana do ano e conferência automática)
 app/js/monitoria.js      a monitoria (o botão 💁 e a janela dos pedidos de ajuda)
-app/js/praca-mapa.js     o mapa da Praça Escola (prédios, praça, caminhos); praca-regras.js: as regras (quem está onde,
+app/js/praca-mapa.js     o mapa da Praça Escola (prédios, praça, caminhos); praca-novela.js: a tarefa do dia de cada
+                         lugar e os capítulos da novela (textos e respostas); praca-regras.js: as regras (quem está onde,
                          conversa, mural, votação, mesa de jogo, comandos do instrutor, colegas de demonstração), usadas
                          pelo servidor da sala e pelo modo navegador; apps/praca.js: a janela da praça
 testes/                  testes automáticos do modo sala de aula (servidor, turma de 20 alunos, as novidades das

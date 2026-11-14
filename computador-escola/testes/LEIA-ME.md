@@ -129,6 +129,12 @@ Abre o programa de verdade em 3 computadores (a instrutora e dois alunos, a Ana 
   é a metade) e a horta e a estação acendem na tela do Bruno, que fica sabendo pela conversa; o terreno da Ana vira
   "Sua casa" e, na Rua da Turma, a casa dela aparece pronta e a do Bruno ainda é terreno (tudo guardado no disco da
   instrutora).
+- **O que cada prédio faz**: a tarefa do dia da horta conta uma vez por dia para cada aluno (a segunda vez é só treino) e
+  o Banco, ainda em obra, não tem tarefa.
+- **A novela da cidade**: a instrutora abre o capítulo "O barco do Seu Bené sumiu"; o Bruno fica sabendo e vê a pílula
+  da novela, a Ana vê as 3 pistas marcadas com 🔎; resposta errada não conta; a Ana acha duas pistas e o Bruno a última,
+  e o mistério está resolvido. Mais tarde a instrutora revela o final no coreto: ele aparece na tela dos dois e a Ana
+  ganha a medalha 🔎 Detetive da novela (tudo guardado no disco da instrutora).
 - **Jogo da velha** entre os dois computadores: cada um joga na sua vez, a conversa conta quem ganhou e a vencedora
   ganha a medalha (guardada no computador da instrutora).
 - **A instrutora na praça**: vê os dois em "Na praça agora" e a cidade da turma deles, fala no megafone (aparece no

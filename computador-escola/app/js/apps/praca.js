@@ -10,6 +10,7 @@ window.CE = window.CE || {};
 
 (function () {
   const M = CE.pracaMapa;
+  const NOV = CE.pracaNovela;
   const { T, W, H } = M;
   const SINCRONIA = 450;        // conversa com o computador do instrutor duas vezes por segundo
   const SINCRONIA_LONGE = 2000; // janela minimizada: devagar, só para continuar na praça
@@ -36,12 +37,12 @@ window.CE = window.CE || {};
     banco: { texto: 'O banco de treino: Pix, boleto, cartão e empréstimo, sem dinheiro de verdade.', botao: 'Entrar no Banco Escola', abrir: navegar('https://bancoescola.com.br') },
     correios: { texto: 'Mande uma carta para um colega: ela chega no E-mail dele.', botao: 'Escrever uma carta (E-mail)', abrir: () => CE.janelas.abrir('email') },
     prefeitura: { texto: 'Serviços públicos de treino: CPF, Carteira de Trabalho, documentos e assinatura.', botao: 'Entrar no Cidadão Digital', abrir: navegar('https://cidadaodigital.org.br') },
-    posto: { texto: 'Agendar consulta e ver a carteira de vacinação.', embreve: 'Em breve: o agendamento de consulta de treino, com a Enfermeira Cida explicando cada passo.' },
+    posto: { texto: 'Agendar consulta, ver a carteira de vacinação e aprender a reconhecer mensagem falsa de saúde.' },
     feira: { texto: 'Barracas com açaí, farinha d’água, tucumã e castanha.', botao: 'Vender pela internet (Feira Online)', abrir: navegar('https://feiraonline.com.br') },
     horta: { texto: 'A horta da turma: foi o primeiro lugar que a turma acendeu, com o módulo Conhecendo o computador.' },
     estacao: { texto: 'A estação da estrada de ferro que ligava Porto Velho a Guajará-Mirim.', botao: 'Digitar textos da nossa terra', abrir: () => CE.janelas.abrir('digitacao') },
-    rio: { texto: 'O cais do Rio Madeira, com o Seu Bené pescando.', embreve: 'Em breve: a pescaria de palavras, onde cada peixe é uma palavra para digitar antes que ele fuja.' },
-    coreto: { texto: 'O palco da praça: daqui o instrutor conduz o bingo, o quiz e a gincana.' },
+    rio: { texto: 'O cais do Rio Madeira, com o Seu Bené pescando. Aqui tem a pescaria de palavras: o peixe só fica com quem digita o nome certinho.' },
+    coreto: { texto: 'O palco da praça: aqui sai a novela da cidade, e daqui o instrutor conduz a gincana e a corrida de digitação.' },
     fonte: { texto: 'O ponto de encontro da turma. Quando o instrutor chama todos, a turma se junta aqui.' },
     'mesa-velha': { texto: 'Mesa do jogo da velha: dois colegas jogam, cada um no seu computador.' },
     'mesa-domino': { texto: 'Mesa de dominó.', embreve: 'Em breve: dominó para até 4 colegas, cada um no seu computador.' },
@@ -63,6 +64,13 @@ window.CE = window.CE || {};
     let nova = false;
     await CE.sessao.atualizarProgresso((p) => { p.praca = p.praca || {}; if (!p.praca[id]) { p.praca[id] = Date.now(); nova = true; } }).catch(() => {});
     if (nova) CE.emitir('praca:conquista', { id });
+  }
+  // Cada tarefa do dia feita conta para a medalha 🧰 Mão na massa (10 tarefas).
+  async function contarTarefa() {
+    if (!CE.sessao.usuario) return;
+    let total = 0;
+    await CE.sessao.atualizarProgresso((p) => { p.praca = p.praca || {}; p.praca.tarefas = total = (Number(p.praca.tarefas) || 0) + 1; }).catch(() => {});
+    if (total >= 10) CE.emitir('praca:conquista', { id: 'tarefas' });
   }
 
   // ================= A cidade cresce com a turma =================
@@ -285,10 +293,12 @@ window.CE = window.CE || {};
       // No alto, à esquerda: quantos estão na praça (tocando, aparecem os rostos) e como está a cidade.
       const botaoGente = CE.el('button', { class: 'pr-pilula', type: 'button', 'data-acao': 'gente', 'aria-expanded': 'false', title: 'Quem está na praça agora' }, '👥 1 aqui');
       const botaoCidade = CE.el('button', { class: 'pr-pilula', type: 'button', 'data-acao': 'cidade', title: 'Como está a cidade da turma' }, `🏙️ Cidade 0/${M.CIDADE.length}`);
+      const botaoNovela = CE.el('button', { class: 'pr-pilula novela', type: 'button', 'data-acao': 'novela', title: 'A novela da cidade: as pistas e o final' }, '🔎 Novela');
+      botaoNovela.hidden = true;
       const listaGente = CE.el('ul', { class: 'pr-gente' });
       const popGente = CE.el('div', { class: 'pr-pop gente', role: 'dialog', 'aria-label': 'Quem está na praça agora' }, CE.el('h3', {}, 'Na praça agora'), listaGente);
       popGente.hidden = true;
-      const topoEsq = CE.el('div', { class: 'pr-hud pr-topo-esq' }, botaoGente, botaoCidade, popGente);
+      const topoEsq = CE.el('div', { class: 'pr-hud pr-topo-esq' }, botaoGente, botaoCidade, botaoNovela, popGente);
 
       // No alto, à direita: ver a cidade inteira e, para o instrutor, quatro botões pequenos.
       const mapaIcone = CE.el('span', { 'aria-hidden': 'true' }, '🗺️');
@@ -351,11 +361,13 @@ window.CE = window.CE || {};
         CE.el('div', { class: 'pr-fechada-cartao' }, CE.el('span', { style: 'font-size: 34px', 'aria-hidden': 'true' }, '🔒'),
           CE.el('h3', {}, 'A praça está fechada agora'), CE.el('p', {}, 'O instrutor abre no recreio, no fim da aula.')));
       fechadaEl.hidden = true;
+      // O final do capítulo da novela, revelado pelo instrutor no coreto: aparece para todos ao mesmo tempo.
+      const finalEl = CE.el('div', { class: 'pr-final', role: 'dialog', 'aria-label': 'O final do capítulo' }); finalEl.hidden = true;
       const mapa = CE.el('div', { class: 'pr-mapa', tabindex: '0', 'aria-label': 'Mapa da Praça Escola. Clique no chão para andar ou use as setas do teclado; Enter conversa com quem está perto.' },
-        mundo, acao, topoEsq, topoDir, centro, avisoRede, chat, baixo, dica, dialogo, fechadaEl);
+        mundo, acao, topoEsq, topoDir, centro, avisoRede, chat, baixo, dica, dialogo, finalEl, fechadaEl);
       // Clique nos botões e janelinhas não é clique no chão (um botão que redesenha a janelinha some antes de o
       // clique chegar ao mapa, e aí o boneco sairia andando).
-      for (const camada of [topoEsq, topoDir, centro, avisoRede, chat, baixo, acao, dialogo, fechadaEl]) camada.addEventListener('click', (e) => e.stopPropagation());
+      for (const camada of [topoEsq, topoDir, centro, avisoRede, chat, baixo, acao, dialogo, finalEl, fechadaEl]) camada.addEventListener('click', (e) => e.stopPropagation());
       corpo.replaceChildren(CE.el('div', { class: 'pr-caixa' }, mapa));
       desenharCidade(tela);
 
@@ -517,6 +529,14 @@ window.CE = window.CE || {};
       let turmaEscolhida;            // o instrutor pode olhar a cidade de outra turma
       let turmaDaCidade = null, acesos = null, minhaCasa = null, infoCidade = null, abaCidade = 'predios';
       const aceso = (id) => !!acesos && acesos.has(id);
+      let selos = new Set();
+      function atualizarRotulo(id) {
+        const L = M.porLugar[id], r = rotuloDe[id];
+        if (!L || !r || L.casa || id === 'lote') return;
+        const ligado = !NA_CIDADE[id] || aceso(id);
+        r.textContent = `${ligado ? L.emoji : '🚧'} ${nomeNoRotulo(L)}${selos.has(id) ? ' ⭐' : ''}`;
+        r.classList.toggle('obra', !ligado);
+      }
       const obras = {};
       function obra(id, sim, animar) {
         const L = M.porLugar[id];
@@ -534,13 +554,20 @@ window.CE = window.CE || {};
       function mostrarPredio(id, ligado, animar) {
         const L = M.porLugar[id];
         obra(id, !ligado, animar);
-        if (rotuloDe[id]) { rotuloDe[id].textContent = `${ligado ? L.emoji : '🚧'} ${nomeNoRotulo(L)}`; rotuloDe[id].classList.toggle('obra', !ligado); }
+        atualizarRotulo(id);
         for (const m of moradores) if (m.lugar === id) m.el.classList.toggle('fora', !ligado);
         for (const o of enfeiteDe[id] || []) o.hidden = !ligado;
       }
       // Até a primeira resposta do instrutor, a cidade começa pequena (só a praça e a escola).
       for (const c of M.CIDADE) mostrarPredio(c.lugar, false, false);
       function aplicarCidade(c) {
+        // A ⭐ dos lugares em que a turma completou o desafio da semana.
+        const novosSelos = new Set(c.selos || []);
+        if ([...novosSelos].sort().join() !== [...selos].sort().join()) {
+          const todos = new Set([...selos, ...novosSelos]);
+          selos = novosSelos;
+          for (const id of todos) atualizarRotulo(id);
+        }
         const lista = new Set(c.abertos || []);
         const mesma = turmaDaCidade === c.turma && !!acesos;
         const novos = mesma ? [...lista].filter((l) => !acesos.has(l)) : [];
@@ -567,6 +594,42 @@ window.CE = window.CE || {};
         verPerto(true);
       }
 
+      // A novela: a pílula com as pistas da turma, a 🔎 em cima dos lugares com pista que eu ainda não achei e a
+      // medalha de quem ajudou (também para quem não estava na praça quando o final saiu).
+      let novela = null, chaveNovela = '', infoNovela = null, detetiveDado = false;
+      const marcas = {};
+      function aplicarNovela(n) {
+        novela = n;
+        const chave = n ? [n.id, n.total, n.meta, n.resolvido, n.revelado, n.faltam.map((p) => p.id).join('.')].join('|') : '';
+        if (chave === chaveNovela) return;
+        chaveNovela = chave;
+        botaoNovela.hidden = !n;
+        if (n) botaoNovela.textContent = n.revelado ? '📖 Novela: o final saiu' : n.resolvido ? '🎉 Novela: pistas completas' : `🔎 Novela ${Math.min(n.total, n.meta)}/${n.meta}`;
+        const lugares = new Set(n && !n.revelado ? n.faltam.map((p) => p.lugar) : []);
+        for (const id of Object.keys(marcas)) if (!lugares.has(id)) { marcas[id].remove(); delete marcas[id]; }
+        for (const id of lugares) {
+          if (marcas[id] || !rotuloDe[id]) continue;
+          const r = rotuloDe[id];
+          marcas[id] = CE.el('div', { class: 'pr-marca-pista', 'data-marca': id, style: `left:${r.style.left};top:calc(${r.style.top} - 30px)` }, '🔎');
+          camadaRotulos.append(marcas[id]);
+        }
+        if (n && n.revelado && n.participei && !detetiveDado && !souInstrutor) { detetiveDado = true; conquista('detetive'); }
+        if (!dialogo.hidden && dialogo.dataset.tipo === 'novela') abrirNovela();
+        verPerto(true);
+      }
+      const pistaAqui = (lugar) => (novela && !novela.revelado ? novela.faltam.find((p) => p.lugar === lugar) : null);
+      function mostrarFinal(ev) {
+        finalEl.replaceChildren(CE.el('div', { class: 'pr-fechada-cartao pr-final-cartao' },
+          CE.el('span', { class: 'pr-final-emoji', 'aria-hidden': 'true' }, ev.emoji || '📖'),
+          CE.el('h3', {}, `O final de “${ev.titulo}”`), CE.el('p', {}, ev.texto),
+          ev.moral ? CE.el('p', { class: 'pr-suave' }, `Moral da história: ${ev.moral}`) : null,
+          CE.el('button', { class: 'botao', type: 'button', 'data-acao': 'fechar-final', onclick: () => { finalEl.hidden = true; mapa.focus({ preventScroll: true }); } }, 'Que história!')));
+        finalEl.hidden = false;
+        CE.comemorar('grande');
+        if (CE.voz) CE.voz.falar(`${ev.texto} ${ev.moral || ''}`);
+        if ((ev.participantes || []).includes(usuario.id)) { detetiveDado = true; conquista('detetive'); }
+      }
+
       async function sincronizar() {
         if (emCurso || fechouJanela) return;
         emCurso = true;
@@ -585,6 +648,7 @@ window.CE = window.CE || {};
       function receber(r) {
         if (r.novo) { eu.x = r.eu.x; eu.y = r.eu.y; eu.caminho = []; posicionar(eu); enquadrar(); }
         if (r.cidade) aplicarCidade(r.cidade);
+        if (r.novela !== undefined) aplicarNovela(r.novela);
         // Pessoas
         const vistos = new Set();
         for (const x of r.pessoas) {
@@ -669,11 +733,16 @@ window.CE = window.CE || {};
           sistema(ev.texto);
           if (!velho) avisarNoMapa(ev.texto);
           if (!velho && ev.vitoria === usuario.id) conquista('velha');
-        } else if (ev.tipo === 'cidade') {
-          // Cada turma tem a sua cidade: o aviso vale para quem é da turma (e para o instrutor).
+        } else if (ev.tipo === 'cidade' || ev.tipo === 'desafio' || ev.tipo === 'novela') {
+          // Cada turma tem a sua cidade e a sua novela: o aviso vale para quem é da turma (e para o instrutor).
           if (souInstrutor || ev.turma === turmaDaCidade) {
             registrar({ classe: 'cidade', texto: ev.texto });
             if (!velho) avisarNoMapa(ev.texto, 'cidade');
+          }
+        } else if (ev.tipo === 'final') {
+          if (souInstrutor || ev.turma === turmaDaCidade) {
+            registrar({ classe: 'cidade', texto: `📖 O final de “${ev.titulo}”: ${ev.texto}` });
+            if (!velho) mostrarFinal(ev);
           }
         }
       }
@@ -713,6 +782,7 @@ window.CE = window.CE || {};
       }
       botaoGente.addEventListener('click', () => { abrirMegafone(false); abrirGente(popGente.hidden); });
       botaoCidade.addEventListener('click', () => { fecharPopups(); abrirCidade('predios'); });
+      botaoNovela.addEventListener('click', () => { fecharPopups(); abrirNovela(); });
       function abrirMegafone(abrir) {
         if (!souInstrutor) return;
         popMegafone.hidden = !abrir;
@@ -869,6 +939,7 @@ window.CE = window.CE || {};
           extra: [
             CE.el('div', { class: 'pr-obra-conta' }, barrinha(l.feitos, r.precisa), CE.el('strong', {}, `${l.feitos} de ${r.precisa}`), CE.el('span', { class: 'pr-suave' }, falta ? `falta${falta === 1 ? '' : 'm'} ${falta}` : 'quase lá!')),
             souInstrutor ? null : CE.el('p', { class: 'pr-suave' }, l.euFiz ? '✓ Você já concluiu este módulo. Agora é ajudar os colegas!' : 'Você ainda não concluiu este módulo: cada aula sua ajuda a acender o prédio.'),
+            pistaAqui(L.id) ? linhaPista(pistaAqui(L.id), 'Uma pista da novela está pregada no tapume da obra.') : null,
           ].filter(Boolean),
           opcoes: souInstrutor
             ? [{ rotulo: 'Ver a cidade da turma', principal: true, fica: true, acao: () => abrirCidade('predios') }, { rotulo: 'Fechar' }]
@@ -897,7 +968,7 @@ window.CE = window.CE || {};
       // ---------- Diálogos ----------
       function abrirDialogo({ tipo, rosto, papelCor, titulo, subtitulo, fala, lista, nota, campo, extra, opcoes, foco }) {
         const botoes = (opcoes || [{ rotulo: 'Fechar' }]).map((op) => CE.el('button', {
-          class: 'botao' + (op.principal ? '' : ' secundario'), type: 'button', 'data-opcao': op.id || null,
+          class: 'botao' + (op.principal ? '' : ' secundario'), type: 'button', 'data-opcao': op.id || null, disabled: !!op.desligado,
           onclick: () => { if (op.acao) op.acao(); if (!op.fica) fecharDialogo(); },
         }, op.rotulo));
         dialogo.dataset.tipo = tipo || '';
@@ -1011,13 +1082,7 @@ window.CE = window.CE || {};
         if (L.id === 'lote') return abrirCidade('lote');
         if (RUA.includes(L.id) || (L.id === 'sua-casa' && souInstrutor)) return abrirCidade('rua');
         if (L.id === 'sua-casa') return abrirCasa();
-        if (L.id === 'coreto') {
-          return abrirDialogo({ tipo: 'lugar', rosto: '🎭', titulo: 'Coreto', subtitulo: 'O palco da praça', fala: info.texto,
-            nota: souInstrutor ? null : 'Quando o instrutor abre uma gincana ou uma corrida de digitação, o convite aparece na sua tela.',
-            opcoes: souInstrutor
-              ? [{ rotulo: 'Abrir a gincana', principal: true, acao: () => CE.janelas.abrir('gincana') }, { rotulo: 'Abrir a corrida de digitação', acao: () => CE.janelas.abrir('corrida') }, { rotulo: 'Fechar' }]
-              : [{ rotulo: 'Fechar' }] });
-        }
+        if (L.id === 'coreto') return abrirNovela();
         if (L.id === 'fonte') {
           return abrirDialogo({ tipo: 'lugar', rosto: '⛲', titulo: 'Fonte', subtitulo: 'No meio da praça', fala: info.texto,
             opcoes: [{ rotulo: 'Jogar uma moedinha e fazer um pedido', principal: true, acao: () => falar('✨ Fiz um pedido na fonte!') }, { rotulo: 'Fechar' }] });
@@ -1026,7 +1091,138 @@ window.CE = window.CE || {};
         if (info.botao) opcoes.push({ rotulo: info.botao, principal: true, id: 'entrar', acao: () => { info.abrir(); CE.emitir('praca:entrou-lugar', { lugar: L.id }); } });
         if (L.morador && presente(porMorador[L.morador])) opcoes.push({ rotulo: `Falar com ${porMorador[L.morador].nome}`, principal: !info.botao, acao: () => chegarPerto(porMorador[L.morador]) });
         opcoes.push({ rotulo: 'Fechar' });
-        abrirDialogo({ tipo: 'lugar', rosto: L.emoji, titulo: L.nome, subtitulo: L.area ? 'Lugar da cidade' : 'Prédio da cidade', fala: info.texto, nota: info.embreve || null, opcoes });
+        const mostrar = (funcoes) => abrirDialogo({ tipo: 'lugar', rosto: L.emoji, titulo: L.nome + (selos.has(L.id) ? ' ⭐' : ''), subtitulo: L.area ? 'Lugar da cidade' : 'Prédio da cidade', fala: info.texto, nota: info.embreve || null, extra: funcoes, opcoes });
+        if (!NOV.temTarefa(L.id)) return mostrar(pistaAqui(L.id) ? [linhaPista(pistaAqui(L.id))] : null);
+        // O que o lugar faz: a tarefa do dia, o desafio da turma na semana e, se tiver, a pista da novela.
+        chamar('praca:tarefa', L.id).then((t) => {
+          if (!t || fechouJanela) return;
+          mostrar([linhaTarefa(L, t), linhaDesafio(t), pistaAqui(L.id) ? linhaPista(pistaAqui(L.id)) : null].filter(Boolean));
+        });
+      }
+      function linhaTarefa(L, t) {
+        return CE.el('div', { class: 'pr-funcao', 'data-funcao': 'tarefa' },
+          CE.el('span', { class: 'ic', 'aria-hidden': 'true' }, '📝'),
+          CE.el('div', { class: 'txt' }, CE.el('strong', {}, `Tarefa do dia: ${t.titulo}`),
+            CE.el('span', { class: 'pr-suave' }, souInstrutor ? 'Veja como é a tarefa que a turma faz aqui hoje.' : t.feitaHoje ? '✓ Você já fez hoje. Amanhã tem outra.' : 'Rapidinha, ligada ao curso. Vale para o desafio da turma.')),
+          CE.el('button', { class: 'botao' + (t.feitaHoje || souInstrutor ? ' secundario' : ''), type: 'button', 'data-opcao': 'tarefa', onclick: () => abrirTarefa(L) }, t.feitaHoje || souInstrutor ? 'Ver' : 'Fazer'));
+      }
+      function linhaDesafio(t) {
+        const { feitas, meta, selo } = t.semana;
+        return CE.el('div', { class: 'pr-funcao', 'data-funcao': 'desafio' },
+          CE.el('span', { class: 'ic', 'aria-hidden': 'true' }, '⭐'),
+          CE.el('div', { class: 'txt' }, CE.el('strong', {}, 'Desafio da turma nesta semana'),
+            CE.el('span', { class: 'pr-suave linha' }, barrinha(Math.min(feitas, meta), meta), selo ? `Completo! A turma ganhou a ⭐ e ${40} moedas no cofre.` : `${feitas} de ${meta} tarefas feitas pela turma`)));
+      }
+      function linhaPista(p, texto) {
+        return CE.el('div', { class: 'pr-funcao pista', 'data-funcao': 'pista' },
+          CE.el('span', { class: 'ic', 'aria-hidden': 'true' }, '🔎'),
+          CE.el('div', { class: 'txt' }, CE.el('strong', {}, `Pista da novela: ${p.titulo}`), CE.el('span', { class: 'pr-suave' }, texto || 'Uma pista do capítulo está aqui.')),
+          CE.el('button', { class: 'botao', type: 'button', 'data-opcao': 'pista', onclick: () => abrirPista(p.id) }, 'Investigar'));
+      }
+
+      // ---------- Tarefas (do dia e pistas da novela): escolher, achar no papel ou digitar ----------
+      function mostrarTarefa({ tipo, rosto, titulo, subtitulo, t, enviar, depois }) {
+        const aviso = CE.el('p', { class: 'pr-erro', role: 'status' }); aviso.hidden = true;
+        let enviando = false;
+        async function responder(resposta, botao) {
+          if (enviando) return;
+          enviando = true;
+          const r = await enviar(resposta).finally(() => { enviando = false; });
+          if (!r || fechouJanela) return;
+          if (!r.certo) {
+            aviso.textContent = t.tipo === 'digitar' ? (t.numero ? 'Ainda não. Faça a conta de novo, com calma.' : 'Ainda não. Confira letra por letra: maiúsculas, acentos e pontuação.') : 'Ainda não. Leia de novo com calma e tente outra resposta.';
+            aviso.hidden = false;
+            if (botao) { botao.disabled = true; botao.classList.add('errada'); }
+            const campo = dialogo.querySelector('#pr-campo-resposta');
+            if (campo) campo.focus();
+            return;
+          }
+          depois(r);
+        }
+        let corpo;
+        if (t.tipo === 'escolha') corpo = [CE.el('div', { class: 'pr-respostas' }, t.opcoes.map((o, i) => { const b = CE.el('button', { class: 'pr-resposta', type: 'button', 'data-resposta': String(i), onclick: () => responder(i, b) }, o); return b; }))];
+        else if (t.tipo === 'lista') corpo = [CE.el('ol', { class: 'pr-papel' }, t.itens.map((o, i) => { const b = CE.el('button', { type: 'button', 'data-resposta': String(i), onclick: () => responder(i, b) }, o); return CE.el('li', {}, b); }))];
+        else {
+          const campo = CE.el('input', { id: 'pr-campo-resposta', autocomplete: 'off', spellcheck: 'false', inputmode: t.numero ? 'decimal' : 'text', placeholder: t.numero ? 'Ex.: 5,00' : 'Digite aqui', 'aria-label': 'Sua resposta' });
+          corpo = [t.numero ? null : CE.el('p', { class: 'pr-modelo' }, t.modelo),
+            CE.el('form', { class: 'pr-digitar', onsubmit: (e) => { e.preventDefault(); if (campo.value.trim()) responder(campo.value); } }, campo, CE.el('button', { class: 'botao', type: 'submit', 'data-opcao': 'conferir' }, 'Conferir'))].filter(Boolean);
+        }
+        abrirDialogo({ tipo, rosto, titulo, subtitulo, fala: t.pergunta, extra: [...corpo, aviso], opcoes: [{ rotulo: 'Fechar' }] });
+      }
+      function mostrarAcerto({ tipo, titulo, subtitulo, explica, nota, voltar }) {
+        abrirDialogo({ tipo, rosto: '✅', papelCor: 'certo', titulo, subtitulo, fala: explica, nota,
+          opcoes: [voltar ? { rotulo: voltar.rotulo, principal: true, fica: true, id: 'continuar', acao: voltar.acao } : null, { rotulo: 'Fechar', principal: !voltar }].filter(Boolean) });
+      }
+      async function abrirTarefa(L) {
+        const info = await chamar('praca:tarefa', L.id);
+        if (!info || fechouJanela) return;
+        mostrarTarefa({
+          tipo: 'tarefa', rosto: '📝', titulo: `Tarefa do dia: ${info.titulo}`, subtitulo: nomeDoLugar(L.id), t: info.tarefa,
+          enviar: (resposta) => chamar('praca:fazer-tarefa', L.id, resposta),
+          depois: (r) => {
+            if (r.contou) contarTarefa();
+            mostrarAcerto({ tipo: 'tarefa', titulo: 'Certo!', subtitulo: `Tarefa do dia: ${info.titulo}`, explica: r.explica,
+              nota: souInstrutor ? 'Instrutor: a resposta não conta para a turma.' : r.contou ? `Valeu para o desafio da turma: ${r.semana.feitas} de ${r.semana.meta} nesta semana.` : 'Você já tinha feito esta tarefa hoje: esta foi só de treino.',
+              voltar: { rotulo: `Voltar para ${nomeDoLugar(L.id)}`, acao: () => abrirLugar(L) } });
+            if (r.contou) sincronizar();
+          },
+        });
+      }
+      async function abrirPista(id) {
+        const n = await chamar('praca:novela', souInstrutor ? turmaEscolhida : undefined);
+        const p = n && n.atual && n.atual.pistas.find((x) => x.id === id);
+        if (!p || fechouJanela) return;
+        mostrarTarefa({
+          tipo: 'pista', rosto: '🔎', titulo: `Pista: ${p.titulo}`, subtitulo: `${n.atual.emoji} ${n.atual.titulo} · ${nomeDoLugar(p.lugar)}`, t: p.tarefa,
+          enviar: (resposta) => chamar('praca:resolver-pista', id, resposta),
+          depois: (r) => {
+            const a = r.novela.atual;
+            mostrarAcerto({ tipo: 'pista', titulo: 'Pista guardada!', subtitulo: `${a.emoji} ${a.titulo}`, explica: r.explica,
+              nota: souInstrutor ? 'Instrutor: a resposta não conta para a turma.' : r.contou ? `A turma já juntou ${Math.min(a.total, a.meta)} de ${a.meta} pistas.${a.resolvido ? ' Todas as pistas foram achadas: o final sai no coreto!' : ''}` : 'Você já tinha achado esta pista.',
+              voltar: { rotulo: 'Ver a novela', acao: () => abrirNovela() } });
+            sincronizar();
+          },
+        });
+      }
+
+      // ---------- O coreto: a novela da cidade ----------
+      async function abrirNovela() {
+        const r = await chamar('praca:novela', souInstrutor ? turmaEscolhida : undefined);
+        if (!r || fechouJanela) return;
+        infoNovela = r;
+        desenharNovela();
+      }
+      function desenharNovela() {
+        const r = infoNovela, a = r.atual;
+        const partes = [];
+        if (!a) partes.push(CE.el('p', {}, souInstrutor ? 'Abra o primeiro capítulo: as pistas aparecem nos lugares do mapa (com 🔎) e a turma investiga junta. Um capítulo por semana funciona bem.' : 'A novela ainda não começou. O instrutor abre o capítulo aqui no coreto.'));
+        else {
+          partes.push(CE.el('h4', {}, `${a.emoji} ${a.titulo}`), CE.el('p', {}, a.abertura));
+          partes.push(CE.el('ul', { class: 'pr-pistas' }, a.pistas.map((p) => CE.el('li', { class: p.euAchei ? 'achei' : '', 'data-pista': p.id },
+            CE.el('span', { class: 'ic', 'aria-hidden': 'true' }, p.euAchei ? '✅' : '🔎'),
+            CE.el('div', { class: 'txt' }, CE.el('strong', {}, p.titulo), CE.el('span', { class: 'pr-suave' }, `${nomeDoLugar(p.lugar)} · achada por ${p.achados} ${p.achados === 1 ? 'pessoa' : 'pessoas'}${p.euAchei ? ' (você também)' : ''}`)),
+            a.revelado ? null : CE.el('button', { class: 'botao secundario', type: 'button', 'data-ir-pista': p.id, onclick: () => { fecharDialogo(); if (!perto) mudarZoom(true); chegarAoLugar(M.porLugar[p.lugar]); } }, 'Ir até lá')))));
+          partes.push(CE.el('div', { class: 'pr-obra-conta' }, barrinha(Math.min(a.total, a.meta), a.meta), CE.el('strong', {}, `${Math.min(a.total, a.meta)} de ${a.meta} pistas`), CE.el('span', { class: 'pr-suave' }, 'juntadas pela turma')));
+          if (a.revelado) partes.push(CE.el('div', { class: 'pr-final-texto' }, CE.el('strong', {}, '📖 O final'), CE.el('p', {}, a.final), CE.el('p', { class: 'pr-suave' }, `Moral da história: ${a.moral}`)));
+          else if (a.resolvido) partes.push(CE.el('p', { class: 'pr-pronto' }, souInstrutor ? '🎉 A turma juntou as pistas! Revele o final para todos.' : '🎉 A turma juntou as pistas! O instrutor revela o final aqui no coreto.'));
+        }
+        if (souInstrutor) {
+          partes.push(CE.el('h4', {}, 'Capítulos'), CE.el('ul', { class: 'pr-capitulos' }, r.capitulos.map((c) => CE.el('li', {},
+            CE.el('span', {}, `${c.emoji} ${c.titulo}${c.feito ? ' ✓' : ''}${c.atual ? ' (aberto agora)' : ''}`),
+            c.atual && !(a && a.revelado) ? null : CE.el('button', { class: 'botao secundario', type: 'button', 'data-capitulo': c.id, onclick: async () => {
+              const x = await chamar('praca:abrir-capitulo', c.id, turmaEscolhida);
+              if (x) { infoNovela = x; desenharNovela(); sincronizar(); }
+            } }, 'Abrir')))));
+        }
+        const opcoes = [];
+        if (souInstrutor && a && !a.revelado) opcoes.push({ rotulo: '📖 Revelar o final', principal: true, fica: true, id: 'revelar-final', desligado: !a.resolvido, acao: async () => {
+          const x = await chamar('praca:revelar-final', turmaEscolhida);
+          if (x) { infoNovela = x; fecharDialogo(); sincronizar(); }
+        } });
+        if (souInstrutor) opcoes.push({ rotulo: 'Abrir a gincana', id: 'gincana', acao: () => CE.janelas.abrir('gincana') }, { rotulo: 'Corrida de digitação', id: 'corrida', acao: () => CE.janelas.abrir('corrida') });
+        opcoes.push({ rotulo: 'Fechar' });
+        abrirDialogo({ tipo: 'novela', rosto: '🎭', titulo: 'A novela da cidade', subtitulo: `No coreto da praça${r.turma ? ' · turma ' + r.turma : ''}`, extra: partes,
+          nota: souInstrutor ? null : 'Quando o instrutor abre uma gincana ou uma corrida de digitação, o convite também aparece na sua tela.', opcoes });
       }
 
       // ---------- Mesa do jogo da velha ----------
@@ -1122,9 +1318,11 @@ window.CE = window.CE || {};
       function textoDaAcao(a) {
         if (a.morador) return `💬 Conversar com ${a.morador.nome}`;
         if (a.pessoa) return `💬 Falar com ${a.pessoa.nomeReal}`;
-        const L = a.lugar;
+        return textoDoLugar(a.lugar) + (pistaAqui(a.lugar.id) ? ' · 🔎 pista' : '');
+      }
+      function textoDoLugar(L) {
         if (NA_CIDADE[L.id] && !aceso(L.id)) return `🚧 Ver a obra: ${nomeDoLugar(L.id)}`;
-        const fixo = { 'mesa-velha': '❌ Jogar jogo da velha', 'mesa-domino': '🎲 Ver a mesa de dominó', mural: '📌 Ler o mural', coreto: '🎭 Ver o coreto', fonte: '⛲ Ver a fonte', lote: '🚧 Ver o Lote da turma', 'casa-ana': '🏠 Ver a Rua da Turma', 'casa-bruno': '🏠 Ver a Rua da Turma' }[L.id];
+        const fixo = { 'mesa-velha': '❌ Jogar jogo da velha', 'mesa-domino': '🎲 Ver a mesa de dominó', mural: '📌 Ler o mural', coreto: '🎭 Ver a novela no coreto', fonte: '⛲ Ver a fonte', lote: '🚧 Ver o Lote da turma', 'casa-ana': '🏠 Ver a Rua da Turma', 'casa-bruno': '🏠 Ver a Rua da Turma' }[L.id];
         if (fixo) return fixo;
         if (L.id === 'sua-casa') return souInstrutor ? '🏠 Ver a Rua da Turma' : minhaCasa && minhaCasa.casa ? '🏠 Entrar na sua casa' : '🏗️ Ver o seu terreno';
         return `${L.emoji} ${L.telhado ? 'Entrar: ' : 'Ver: '}${nomeDoLugar(L.id)}`;
@@ -1189,6 +1387,7 @@ window.CE = window.CE || {};
       const teclaDesce = (e) => {
         if (!janela.estaAtiva || !janela.estaAtiva()) { if (!mapa.contains(document.activeElement) && document.activeElement !== mapa) return; }
         if (e.key === 'Escape') {
+          if (!finalEl.hidden) { finalEl.hidden = true; mapa.focus({ preventScroll: true }); return; }
           if (!dialogo.hidden) { fecharDialogo(); return; }
           if (!popGente.hidden || !popMegafone.hidden) { fecharPopups(); mapa.focus({ preventScroll: true }); return; }
           if (!chat.hidden) { abrirConversa(false); mapa.focus({ preventScroll: true }); return; }

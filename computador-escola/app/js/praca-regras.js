@@ -3,10 +3,11 @@
 // Cada computador avisa onde está o boneco do aluno (umas duas vezes por segundo, com a praça aberta na tela)
 // e recebe de volta quem está na praça, o que foi dito e o que o instrutor mudou. Quem está onde e a conversa
 // ficam só na memória; o mural, a votação e as escolhas do instrutor ficam guardados no disco do instrutor.
+// A tarefa do dia de cada prédio e a novela da cidade (textos e respostas em praca-novela.js) também ficam aqui.
 (function (raiz, fabrica) {
-  if (typeof module === 'object' && module.exports) module.exports = fabrica(require('./praca-mapa'));
-  else { raiz.CE = raiz.CE || {}; raiz.CE.pracaRegras = fabrica(raiz.CE.pracaMapa); }
-})(typeof self !== 'undefined' ? self : this, function (mapa) {
+  if (typeof module === 'object' && module.exports) module.exports = fabrica(require('./praca-mapa'), require('./praca-novela'));
+  else { raiz.CE = raiz.CE || {}; raiz.CE.pracaRegras = fabrica(raiz.CE.pracaMapa, raiz.CE.pracaNovela); }
+})(typeof self !== 'undefined' ? self : this, function (mapa, nov) {
   const FRASES = ['Oi, pessoal! 👋', 'Bom dia!', 'Boa tarde!', 'Vamos jogar?', 'Obrigado!', 'Preciso de ajuda', 'Parabéns! 👏', 'Até amanhã!'];
   const SAIU = 15000;          // sem notícias do computador por 15 s: a pessoa saiu da praça
   const MAO = 90000;           // a mão levantada (🙋) abaixa sozinha depois de um minuto e meio
@@ -15,6 +16,8 @@
   const ESPERA_FALA = 1000;    // entre uma fala e outra da mesma pessoa
   const ESPERA_RECADO = 20000; // entre um recado e outro no mural
   const CONVITE = 3 * 60000;   // o "venham para a praça" do instrutor vale por 3 minutos
+  const BONUS_DESAFIO = 40;    // moedas para o cofre quando a turma completa o desafio da semana de um lugar
+  const PISTA_BOT = 45000;     // no modo de teste, um colega de demonstração acha uma pista a cada 45 s
   const OPCOES = [
     { id: 'quadra', emoji: '🏀', nome: 'Quadra de esportes' },
     { id: 'horta', emoji: '🥬', nome: 'Aumentar a horta' },
@@ -56,6 +59,9 @@
       if (!lido) {
         lido = normal(ler());
         if (demonstracao && !Object.keys(lido.votacao.votos).length) Object.assign(lido.votacao.votos, { 'demo-ana': 'biblioteca', 'demo-carla': 'quadra', 'demo-davi': 'quadra', 'demo-fatima': 'horta', 'demo-jorge': 'biblioteca', 'demo-lia': 'biblioteca' });
+        // No modo de teste, a turma de demonstração já começou o primeiro capítulo e algumas tarefas da semana.
+        if (demonstracao && !lido.novela['Demonstração']) lido.novela['Demonstração'] = { atual: 'barco', abertoEm: relogio(), achados: { 'barco-bilhete': ['demo-ana', 'demo-carla'], 'barco-email': ['demo-lia'] }, resolvido: false, revelado: false, feitos: [] };
+        if (demonstracao && !lido.tarefas['Demonstração']) lido.tarefas['Demonstração'] = { semana: nov.semana(relogio()), conta: { horta: 3, estacao: 2, escola: 1 }, selos: [] };
       }
       return lido;
     };
@@ -78,6 +84,12 @@
         // A cidade que cresce: os módulos que cada aluno concluiu (o computador dele avisa) e os prédios já acesos.
         modulos: g.modulos && typeof g.modulos === 'object' ? g.modulos : {},
         abertos: g.abertos && typeof g.abertos === 'object' ? g.abertos : {},
+        // A tarefa do dia de cada lugar: quem fez hoje (por aluno) e o desafio da semana (por turma).
+        feitas: g.feitas && typeof g.feitas === 'object' ? g.feitas : {},
+        tarefas: g.tarefas && typeof g.tarefas === 'object' ? g.tarefas : {},
+        bonus: Number(g.bonus) || 0,
+        // A novela da cidade de cada turma: o capítulo aberto, quem achou cada pista e os capítulos já revelados.
+        novela: g.novela && typeof g.novela === 'object' ? g.novela : {},
       };
     }
     function gravar() {
@@ -111,7 +123,10 @@
       'demo-lia': ['n1-computador', 'n1-teclado', 'n1-internet', 'n1-seguranca', 'n1-prova', 'n2-email', 'n2-servicos', 'n2-gov', 'n2-prova', 'cel-final'],
     };
     // No modo de teste no navegador, quem usa a praça e os colegas de demonstração são uma turma só.
-    const turmaDe = (u) => (demonstracao ? 'Demonstração' : String((u && u.turma) || ''));
+    // (um nome de turma que é também nome interno de objeto, como "constructor", ganha um prefixo)
+    const RESERVADOS = ['__proto__', 'constructor', 'prototype', 'hasOwnProperty', 'toString', 'valueOf'];
+    const seguro = (t) => (RESERVADOS.includes(t) ? `turma ${t}` : t);
+    const turmaDe = (u) => (demonstracao ? 'Demonstração' : seguro(String((u && u.turma) || '')));
     let cacheAlunos = null, cacheAlunosEm = 0;
     function todosAlunos() {
       if (!cacheAlunos || relogio() - cacheAlunosEm > 5000) {
@@ -158,7 +173,63 @@
       const primeiro = todosAlunos()[0];
       return primeiro ? primeiro.turma : '';
     }
-    const turmaVista = (usuario, pedida) => (ehInstrutor(usuario) && !demonstracao ? (typeof pedida === 'string' ? pedida : turmaPadrao()) : turmaDe(usuario));
+    const turmaVista = (usuario, pedida) => (ehInstrutor(usuario) && !demonstracao ? (typeof pedida === 'string' ? seguro(pedida) : turmaPadrao()) : turmaDe(usuario));
+    const alunosDa = (turma) => todosAlunos().filter((a) => a.turma === turma).length;
+
+    // ---------- O que cada lugar faz: a tarefa do dia e o desafio da semana ----------
+    // Cada aluno faz a tarefa de cada lugar uma vez por dia (pode treinar de novo, mas só a primeira conta). Quando
+    // metade da turma fez a tarefa de um lugar na semana, o lugar ganha a ⭐ e o cofre ganha moedas.
+    const EM = { o: 'no', a: 'na', os: 'nos', as: 'nas' };
+    const artigoDe = (lugar) => (mapa.CIDADE.find((c) => c.lugar === lugar) || { artigo: lugar === 'escola' ? 'a' : 'o' }).artigo;
+    const nomeDe = (lugar) => (lugar === 'rio' ? 'Cais do Rio Madeira' : (mapa.porLugar[lugar] || {}).nome || lugar);
+    const noLugar = (lugar) => `${EM[artigoDe(lugar)] || 'em'} ${nomeDe(lugar)}`;
+    const lugarAceso = (turma, lugar) => !mapa.CIDADE.some((c) => c.lugar === lugar) || (dados().abertos[turma] || []).includes(lugar);
+    const metaTarefa = (turma) => Math.max(3, Math.ceil(alunosDa(turma) / 2));
+    function semanaDa(turma) {
+      const s = nov.semana(relogio());
+      let t = dados().tarefas[turma];
+      if (!t || t.semana !== s) t = dados().tarefas[turma] = { semana: s, conta: {}, selos: [] };
+      return t;
+    }
+    function infoTarefa(usuario, turma, lugar) {
+      const L = nov.TAREFAS[lugar];
+      const sem = semanaDa(turma);
+      return {
+        lugar, titulo: L.titulo, tarefa: nov.publica(nov.tarefaDoDia(lugar, relogio())), aceso: lugarAceso(turma, lugar),
+        feitaHoje: ((dados().feitas[usuario.id] || {})[lugar]) === nov.dia(relogio()),
+        semana: { feitas: sem.conta[lugar] || 0, meta: metaTarefa(turma), selo: sem.selos.includes(lugar) },
+      };
+    }
+
+    // ---------- A novela da cidade ----------
+    // O instrutor abre um capítulo; as pistas ficam nos lugares do mapa e cada pista é uma tarefa. O mistério está
+    // resolvido quando todas as pistas foram achadas e a turma juntou tantas pistas quanto o número de alunos (cada
+    // aluno acha cada pista uma vez). Aí o instrutor revela o final no coreto.
+    const metaNovela = (turma) => Math.max(3, alunosDa(turma));
+    function contarNovela(n) {
+      const cap = nov.porCapitulo[n.atual];
+      const quantos = (p) => (n.achados[p.id] || []).length;
+      return { cap, total: cap.pistas.reduce((s, p) => s + quantos(p), 0), todas: cap.pistas.every((p) => quantos(p) > 0) };
+    }
+    function conferirNovela(turma, n) {
+      if (n.resolvido) return;
+      const { cap, total, todas } = contarNovela(n);
+      if (todas && total >= metaNovela(turma)) {
+        n.resolvido = true;
+        evento({ tipo: 'novela', turma, texto: `🔎 A turma juntou todas as pistas de “${cap.titulo}”! O final vai ser revelado no coreto.` });
+      }
+    }
+    // O pouco que vai em toda sincronização: onde ainda tem pista para mim e se o final já saiu.
+    function resumoNovela(usuario, turma) {
+      const n = dados().novela[turma];
+      if (!n || !n.atual || !nov.porCapitulo[n.atual]) return null;
+      const { cap, total } = contarNovela(n);
+      const achei = (p) => (n.achados[p.id] || []).includes(usuario.id);
+      return {
+        id: cap.id, total, meta: metaNovela(turma), resolvido: !!n.resolvido, revelado: !!n.revelado, participei: cap.pistas.some(achei),
+        faltam: cap.pistas.filter((p) => !achei(p)).map((p) => ({ id: p.id, lugar: p.lugar, titulo: p.titulo })),
+      };
+    }
     const mesaPublica = () => ({ X: mesa.X, O: mesa.O, tab: mesa.tab.slice(), vez: mesa.vez, vencedor: mesa.vencedor, linha: mesa.linha });
     function precisaDe(usuario) {
       const p = pessoas.get(usuario.id);
@@ -201,7 +272,7 @@
     // ---------- Colegas de demonstração (só no modo de teste no navegador) ----------
     const bots = [];
     const pendentes = []; // falas dos colegas de demonstração que saem daqui a pouco
-    let ultimoMovimento = relogio(), ultimaConversaBot = 0;
+    let ultimoMovimento = relogio(), ultimaConversaBot = 0, ultimaPistaBot = relogio();
     const FALAS_BOT = {
       colega: ['Bom dia, turma!', 'Alguém viu a missão da semana?', 'Terminei a aula de planilha! 📊', 'Vamos no bingo hoje?', 'Que calor, hein! ☀️', 'Quem me ensina a mandar e-mail?'],
       'demo-lia': ['Precisa de ajuda? Aperte 🙋!', 'Hoje já ajudei 2 colegas 💁'],
@@ -253,6 +324,21 @@
         }
         b.proxima = agora + (b.parado ? 9000 + Math.random() * 9000 : 2500 + Math.random() * 4500);
       }
+      // Os colegas de demonstração também investigam: de tempos em tempos um deles acha uma pista do capítulo.
+      const nDemo = dados().novela['Demonstração'];
+      if (nDemo && nDemo.atual && !nDemo.resolvido && agora - ultimaPistaBot > PISTA_BOT) {
+        ultimaPistaBot = agora;
+        const cap = nov.porCapitulo[nDemo.atual];
+        const opcoes = [];
+        for (const p of cap.pistas) for (const b of bots) if (!(nDemo.achados[p.id] || []).includes(b.id)) opcoes.push([p, b]);
+        if (opcoes.length) {
+          const [p, b] = sortear(opcoes);
+          (nDemo.achados[p.id] = nDemo.achados[p.id] || []).push(b.id);
+          evento({ tipo: 'novela', turma: 'Demonstração', texto: `🔎 ${b.nome} achou a pista “${p.titulo}” (${noLugar(p.lugar)}).` });
+          conferirNovela('Demonstração', nDemo);
+          gravar();
+        }
+      }
       // O Bruno joga quando é a vez dele (e devolve a revanche).
       const bruno = pessoas.get('demo-bruno');
       if (bruno && mesa.O && mesa.O.id === bruno.id && mesa.X && !mesa.vencedor && mesa.vez === 'O' && agora - mesa.jogadaEm > 700) {
@@ -303,7 +389,8 @@
         if (demonstracao && !avaliouDemo) { avaliouDemo = true; avaliar('Demonstração', false); }
         return {
           agora, novo, eu: { x: p.x, y: p.y },
-          cidade: { turma, abertos: (dados().abertos[turma] || []).slice() },
+          cidade: { turma, abertos: (dados().abertos[turma] || []).slice(), selos: semanaDa(turma).selos.slice() },
+          novela: resumoNovela(usuario, turma),
           aberta: dados().aberta, soFrases: dados().soFrases, silenciado: dados().silenciados.includes(usuario.id),
           silenciados: ehInstrutor(usuario) ? dados().silenciados.slice() : undefined,
           chamada: chamada && agora - chamada.em < CONVITE ? { id: chamada.id, em: chamada.em } : null,
@@ -342,6 +429,106 @@
           ...casaDe(usuario.id),
         };
       },
+      // ---------- Tarefa do dia ----------
+      tarefa(usuario, lugar) {
+        if (!nov.temTarefa(lugar)) throw new Error('Este lugar não tem tarefa.');
+        return infoTarefa(usuario, turmaVista(usuario), lugar);
+      },
+      fazerTarefa(usuario, lugar, resposta) {
+        if (!nov.temTarefa(lugar)) throw new Error('Este lugar não tem tarefa.');
+        const turma = turmaVista(usuario);
+        if (!ehInstrutor(usuario) && !lugarAceso(turma, lugar)) throw new Error('Este lugar ainda está em obra: a tarefa dele começa quando a turma acender o prédio.');
+        const t = nov.tarefaDoDia(lugar, relogio());
+        const certo = nov.conferir(t, resposta);
+        let contou = false;
+        if (certo && !ehInstrutor(usuario)) {
+          const hoje = nov.dia(relogio());
+          const minhas = dados().feitas[usuario.id] = dados().feitas[usuario.id] || {};
+          if (minhas[lugar] !== hoje) {
+            minhas[lugar] = hoje; contou = true;
+            const sem = semanaDa(turma);
+            sem.conta[lugar] = (sem.conta[lugar] || 0) + 1;
+            if (sem.conta[lugar] >= metaTarefa(turma) && !sem.selos.includes(lugar)) {
+              sem.selos.push(lugar);
+              dados().bonus += BONUS_DESAFIO;
+              evento({ tipo: 'desafio', lugar, turma, texto: `⭐ A turma${turma ? ' ' + turma : ''} completou o desafio da semana ${noLugar(lugar)}: +${BONUS_DESAFIO} moedas no cofre!` });
+            }
+            gravar();
+          }
+        }
+        return { certo, explica: certo ? t.explica : null, contou, ...infoTarefa(usuario, turma, lugar) };
+      },
+      // Moedas que os desafios da semana já deram ao cofre (somadas às das aulas).
+      bonus() { return dados().bonus || 0; },
+
+      // ---------- Novela da cidade ----------
+      novela(usuario, pedida) {
+        const turma = turmaVista(usuario, pedida);
+        const n = dados().novela[turma];
+        const feitos = (n && n.feitos) || [];
+        let atual = null;
+        if (n && n.atual && nov.porCapitulo[n.atual]) {
+          const { cap, total } = contarNovela(n);
+          const achei = (p) => (n.achados[p.id] || []).includes(usuario.id);
+          atual = {
+            id: cap.id, emoji: cap.emoji, titulo: cap.titulo, abertura: cap.abertura, total, meta: metaNovela(turma),
+            resolvido: !!n.resolvido, revelado: !!n.revelado, participei: cap.pistas.some(achei),
+            final: n.revelado ? cap.final : null, moral: n.revelado ? cap.moral : null,
+            pistas: cap.pistas.map((p) => ({ id: p.id, lugar: p.lugar, titulo: p.titulo, achados: (n.achados[p.id] || []).length, euAchei: achei(p), tarefa: nov.publica(p.tarefa) })),
+          };
+        }
+        return {
+          turma, atual,
+          capitulos: nov.CAPITULOS.map((c) => ({ id: c.id, emoji: c.emoji, titulo: c.titulo, feito: feitos.includes(c.id), atual: !!(atual && atual.id === c.id) })),
+          turmas: ehInstrutor(usuario) ? [...new Set(todosAlunos().map((a) => a.turma))].sort() : undefined,
+        };
+      },
+      abrirCapitulo(usuario, id, pedida) {
+        exigirInstrutor(usuario);
+        const cap = nov.porCapitulo[id];
+        if (!cap) throw new Error('Capítulo desconhecido.');
+        const turma = turmaVista(usuario, pedida);
+        const antes = dados().novela[turma] || {};
+        dados().novela[turma] = { atual: id, abertoEm: relogio(), achados: {}, resolvido: false, revelado: false, feitos: antes.feitos || [] };
+        gravar();
+        evento({ tipo: 'novela', turma, texto: `📖 Novo capítulo da novela da cidade: “${cap.titulo}”. As pistas estão nos lugares marcados com 🔎.` });
+        return this.novela(usuario, turma);
+      },
+      resolverPista(usuario, pistaId, resposta) {
+        const p = nov.porPista[pistaId];
+        if (!p) throw new Error('Pista desconhecida.');
+        const turma = turmaVista(usuario);
+        const n = dados().novela[turma];
+        if (!n || n.atual !== p.capitulo) throw new Error('Esta pista não é do capítulo de agora.');
+        const certo = nov.conferir(p.tarefa, resposta);
+        let contou = false;
+        if (certo && !ehInstrutor(usuario)) {
+          const lista = n.achados[p.id] = n.achados[p.id] || [];
+          if (!lista.includes(usuario.id)) {
+            lista.push(usuario.id); contou = true;
+            conferirNovela(turma, n);
+            gravar();
+          }
+        }
+        return { certo, explica: certo ? p.tarefa.explica : null, contou, novela: this.novela(usuario) };
+      },
+      revelarFinal(usuario, pedida) {
+        exigirInstrutor(usuario);
+        const turma = turmaVista(usuario, pedida);
+        const n = dados().novela[turma];
+        if (!n || !n.atual) throw new Error('Nenhum capítulo está aberto.');
+        if (!n.resolvido) throw new Error('A turma ainda não juntou as pistas deste capítulo.');
+        if (!n.revelado) {
+          const cap = nov.porCapitulo[n.atual];
+          n.revelado = true;
+          n.feitos = [...new Set([...(n.feitos || []), cap.id])];
+          gravar();
+          const participantes = [...new Set(cap.pistas.flatMap((p) => n.achados[p.id] || []))];
+          evento({ tipo: 'final', turma, emoji: cap.emoji, titulo: cap.titulo, texto: cap.final, moral: cap.moral, participantes });
+        }
+        return this.novela(usuario, turma);
+      },
+
       falar(usuario, t0) {
         const p = precisaDe(usuario);
         podeFalar(usuario);

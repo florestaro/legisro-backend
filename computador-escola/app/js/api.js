@@ -42,7 +42,7 @@ window.CE = window.CE || {};
   const praca = () => (pracaTeste = pracaTeste || CE.pracaRegras({ ler: () => ler('praca', null), salvar: (v) => gravar('praca', v), demonstracao: true, alunos: () => ler('usuarios', []) }));
   const progressoAtual = () => (atual && ler('progresso:' + atual.id, null)) || {};
   // Cofre: as aulas concluídas de quem usa este navegador, mais as dos colegas de demonstração.
-  const cofreTeste = () => { const aulas = 300 + Object.values(progressoAtual().licoes || {}).filter((r) => r && r.concluida && !r.dispensada).length; return { aulas, moedas: aulas * 4, meta: 1500 }; };
+  const cofreTeste = () => { const aulas = 300 + Object.values(progressoAtual().licoes || {}).filter((r) => r && r.concluida && !r.dispensada).length; const bonus = praca().bonus(); return { aulas, bonus, moedas: aulas * 4 + bonus, meta: 1500 }; };
   const guardarResumoGincana = (estado) => { if (estado && estado.fase === 'fim') { const r = gincanas().resumo(); if (r && r.participantes) gravar('gincana-ultima', r); } return estado; };
 
   async function simulado(canal, ...a) {
@@ -237,6 +237,12 @@ window.CE = window.CE || {};
         'praca:mesa': () => praca().mesa(atual, a[0], a[1]),
         'praca:modulos': () => { if (!atual) throw new Error('Ninguém entrou no sistema.'); return praca().informarModulos(atual, a[0]); },
         'praca:cidade': () => { if (!atual) throw new Error('Ninguém entrou no sistema.'); return praca().cidade(atual, a[0]); },
+        'praca:tarefa': () => praca().tarefa(atual, a[0]),
+        'praca:fazer-tarefa': () => praca().fazerTarefa(atual, a[0], a[1]),
+        'praca:novela': () => praca().novela(atual, a[0]),
+        'praca:abrir-capitulo': () => praca().abrirCapitulo(atual, a[0], a[1]),
+        'praca:resolver-pista': () => praca().resolverPista(atual, a[0], a[1]),
+        'praca:revelar-final': () => praca().revelarFinal(atual, a[0]),
         'sala:mensagem': () => (salaTeste.mensagem = String(a[0] || '').trim() ? { id: Date.now(), texto: String(a[0]).trim().slice(0, 300), de: atual.nome } : null),
       }[canal];
       return { ok: true, valor: await valor() };

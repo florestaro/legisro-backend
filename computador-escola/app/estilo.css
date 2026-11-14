@@ -2255,7 +2255,7 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .pr-dica { position: absolute; right: 10px; bottom: 10px; max-width: calc(100% - 250px); background: rgba(255, 255, 255, .94); color: #1e2a25; font-size: 13px; padding: 7px 11px; border-radius: 9px; pointer-events: none; z-index: 4; }
 @container (max-width: 640px) { .pr-dica { display: none; } .pr-topo-esq { max-width: calc(100% - 76px); } .pr-topo-dir .pr-pilula .txt { display: none; } }
 .pr-aviso-rede { position: absolute; left: 10px; top: 62px; z-index: 6; background: #fff4ce; color: #5c4400; border: 1px solid #f5b400; padding: 7px 11px; border-radius: 9px; font-size: 13.5px; max-width: calc(100% - 20px); }
-.pr-fechada { position: absolute; inset: 0; background: rgba(12, 22, 17, .66); display: grid; place-items: center; z-index: 9; cursor: default; padding: 16px; }
+.pr-fechada, .pr-final { position: absolute; inset: 0; background: rgba(12, 22, 17, .66); display: grid; place-items: center; z-index: 9; cursor: default; padding: 16px; }
 .pr-fechada-cartao { background: var(--fundo-janela); border-radius: 14px; padding: 18px 22px; text-align: center; max-width: 360px; display: grid; gap: 6px; justify-items: center; }
 .pr-fechada-cartao h3 { margin: 0; font-size: 19px; }
 .pr-fechada-cartao p { margin: 0; color: var(--texto-suave); }
@@ -2333,4 +2333,38 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .pr-recados .quem { font-weight: 700; font-size: 12.5px; }
 .pr-recados .apagar { grid-row: span 2; align-self: center; border: 0; background: rgba(255, 255, 255, .6); border-radius: 6px; cursor: pointer; padding: 4px 7px; }
 .pr-recados .texto { overflow-wrap: anywhere; }
-@media (prefers-reduced-motion: reduce) { .pr-mundo.suave, .pr-obra { transition: none; } .pr-p.andando .corpo, .pr-obj.barco, .pr-mao, .pr-acao, .pr-avisos li { animation: none; } }
+/* O que cada prédio faz: tarefa do dia, desafio da semana e pista da novela */
+.pr-funcao { display: flex; align-items: center; gap: 10px; border: 1px solid var(--borda); border-radius: 10px; padding: 8px 10px; background: var(--fundo-janela); }
+.pr-funcao .ic { font-size: 22px; flex: none; width: 28px; text-align: center; }
+.pr-funcao .txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.pr-funcao .linha { display: flex; align-items: center; gap: 8px; }
+.pr-funcao .botao { flex: none; }
+.pr-funcao.pista { border-color: #b4502c; background: #fbf1eb; }
+.pr-respostas { display: grid; gap: 6px; }
+.pr-resposta { text-align: left; border: 1px solid var(--borda); background: var(--fundo-janela); color: var(--texto); border-radius: 10px; padding: 10px 12px; font: inherit; cursor: pointer; }
+.pr-resposta:hover:not(:disabled), .pr-papel button:hover:not(:disabled) { border-color: var(--azul); background: var(--azul-claro); }
+.pr-papel { list-style: none; margin: 0; padding: 8px; display: grid; gap: 4px; background: #fffdf3; border: 1px solid #e3d9b8; border-radius: 6px; box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+.pr-papel button { width: 100%; text-align: left; border: 1px dashed transparent; border-bottom-color: #e3d9b8; background: transparent; color: #2b2615; font: 14px/1.35 "Consolas", "Courier New", monospace; padding: 7px 8px; border-radius: 6px; cursor: pointer; }
+.pr-resposta.errada, .pr-papel button.errada { border-color: #c42b1c; background: #fde7e9; color: #6b1a12; cursor: default; }
+.pr-modelo { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--fundo-cinza); font: 600 17px/1.4 var(--fonte); letter-spacing: .01em; user-select: none; }
+.pr-erro { margin: 0; color: #a1260f; font-weight: 600; }
+.pr-rosto.certo { background: #dceee2; }
+/* A novela no coreto */
+.pr-pistas, .pr-capitulos { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.pr-pistas li { display: flex; align-items: center; gap: 10px; border: 1px solid var(--borda); border-radius: 9px; padding: 7px 10px; }
+.pr-pistas li.achei { background: #eef7f0; border-color: #b9dcc3; }
+.pr-pistas .ic { font-size: 20px; flex: none; }
+.pr-pistas .txt { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.pr-capitulos li { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; }
+.pr-final-texto { display: grid; gap: 4px; background: #fff7e0; border: 1px solid #f0d58a; border-radius: 10px; padding: 10px 12px; }
+.pr-pronto { margin: 0; font-weight: 700; color: #1e7a3a; }
+.pr-final { z-index: 10; }
+.pr-final-cartao { max-width: 460px; text-align: left; justify-items: start; }
+.pr-final-cartao p { color: var(--texto); font-size: 16px; line-height: 1.45; }
+.pr-final-cartao p.pr-suave { color: var(--texto-suave); font-size: 13.5px; }
+.pr-final-cartao .botao { justify-self: end; }
+.pr-final-emoji { font-size: 40px; justify-self: center; }
+.pr-pilula.novela { background: #fff4e5; box-shadow: 0 0 0 2px #e2a02a, 0 2px 8px rgba(0, 0, 0, .28); }
+.pr-marca-pista { position: absolute; transform: translate(-50%, -50%) scale(var(--inv, 1)); font-size: 22px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: #fff4e5; border: 2px solid #e2a02a; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); pointer-events: none; animation: pr-pista 1.2s ease-in-out infinite alternate; }
+@keyframes pr-pista { to { transform: translate(-50%, calc(-50% - 5px)) scale(var(--inv, 1)); } }
+@media (prefers-reduced-motion: reduce) { .pr-mundo.suave, .pr-obra { transition: none; } .pr-p.andando .corpo, .pr-obj.barco, .pr-mao, .pr-acao, .pr-avisos li, .pr-marca-pista { animation: none; } }

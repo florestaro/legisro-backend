@@ -112,7 +112,8 @@ function criarCanais(dados) {
       const p = dados.ler(`progresso-${u.id}`, null);
       aulas += Object.values((p && p.licoes) || {}).filter((r) => r && r.concluida && !r.dispensada).length;
     }
-    return { aulas, moedas: aulas * 4, meta: 1500 };
+    const bonus = praca.bonus(); // os desafios da semana completados nos prédios da Praça Escola
+    return { aulas, bonus, moedas: aulas * 4 + bonus, meta: 1500 };
   }
   const comCofre = (v) => ({ ...v, cofre: cofreDaTurma() });
   const guardarResumoGincana = (estado) => { if (estado && estado.fase === 'fim') { const r = gincanas.resumo(); if (r && r.participantes) dados.salvar('gincana-ultima', r); } return estado; };
@@ -468,6 +469,13 @@ function criarCanais(dados) {
     // O computador do aluno avisa os módulos que ele já concluiu (no login e a cada aula); a cidade da turma cresce.
     'praca:modulos': (s, lista) => { exigirSessao(s); return praca.informarModulos(s.usuario, lista); },
     'praca:cidade': (s, turma) => { exigirSessao(s); return praca.cidade(s.usuario, turma); },
+    // O que cada prédio faz (tarefa do dia e desafio da semana) e a novela da cidade.
+    'praca:tarefa': (s, lugar) => { exigirSessao(s); return praca.tarefa(s.usuario, lugar); },
+    'praca:fazer-tarefa': (s, lugar, resposta) => { exigirSessao(s); return praca.fazerTarefa(s.usuario, lugar, resposta); },
+    'praca:novela': (s, turma) => { exigirSessao(s); return praca.novela(s.usuario, turma); },
+    'praca:abrir-capitulo': (s, id, turma) => { exigirInstrutor(s); return praca.abrirCapitulo(s.usuario, id, turma); },
+    'praca:resolver-pista': (s, id, resposta) => { exigirSessao(s); return praca.resolverPista(s.usuario, id, resposta); },
+    'praca:revelar-final': (s, turma) => { exigirInstrutor(s); return praca.revelarFinal(s.usuario, turma); },
 
     'jornal:enviar': (s, materia) => {
       exigirSessao(s);
