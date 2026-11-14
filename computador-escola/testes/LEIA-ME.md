@@ -137,8 +137,9 @@ Abre o programa de verdade em 3 computadores (a instrutora e dois alunos, a Ana 
   ganha a medalha 🔎 Detetive da novela (tudo guardado no disco da instrutora).
 - **Evento urgente**: com o Bruno fora da praça, a instrutora dispara o incêndio na lata de lixo; o alarme aparece na tela
   da Ana e o Bruno recebe o pedido de ajuda e vai para a praça. Longe da fonte não dá para encher o balde, e o número
-  errado não ajuda; os dois ligam para o 193, respondem a pergunta e levam água até o fogo apagar. Os dois ganham a
-  medalha 🚒 Brigada da praça.
+  errado não ajuda; a Ana liga 193 (os Bombeiros vêm de caminhão) e o Bruno responde a pergunta. Enquanto o fogo se
+  espalha, os dois enchem o balde e jogam foco por foco; o do poste de luz fica com os Bombeiros. O fogo apaga na tela
+  dos dois e os dois ganham a medalha 🚒 Brigada da praça.
 - **Moedas**: as da Ana vieram das aulas, do final da novela e do incêndio (no disco da instrutora); a instrutora vê as
   moedas de cada aluno na Rua da Turma, o Bruno vê só as dele, e o saldo aparece no 💰 da barra de tarefas.
 - **Hora da Praça e eventos especiais**: com o horário das aulas guardado, a instrutora testa a Hora da Praça; o Bruno,
@@ -157,6 +158,21 @@ Abre o programa de verdade em 3 computadores (a instrutora e dois alunos, a Ana 
 - **Onde os dados ficam:** tudo no disco do computador da instrutora, nada nos computadores dos alunos.
 
 Leva uns 3 minutos e usa a porta 47123 (ou outra: `PORTA=47130 npm run teste:praca`).
+
+## Eventos urgentes no mapa (rápido, sem tela e sem rede)
+
+```
+npm run teste:perigos
+```
+
+Confere as regras dos eventos urgentes da Praça Escola com um relógio de mentira (leva 1 segundo): o fogo começa na lata
+de lixo, pula para o poste de luz e se espalha; água no poste é recusada; o balde só vai no foco do lado do boneco; o 193
+traz os Bombeiros, que apagam o poste; só com balde, sem Bombeiros, o poste continua pegando fogo. Na enchente, a água
+começa na feira e não dá para andar nela; a areia está na obra (a praia alagou); cada saco faz a água descer; o 199 traz
+o caminhão de areia; sem sacos, a água volta a subir; encerrado o evento, o mapa volta ao normal. Na chuva forte, as
+árvores caem na rua sem nunca fechar o caminho para um lugar; longe da árvore não dá para avisar; o aviso chama a equipe
+da Defesa Civil, que tira a árvore e abre a rua; árvore sem aviso deixa o temporal mais perigoso. E, no modo de teste,
+os colegas de demonstração andam até a fonte, carregam o balde e jogam água nos focos.
 
 ## Emojis que o Windows 10 desenha (rápido, sem tela)
 

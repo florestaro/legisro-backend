@@ -225,6 +225,14 @@ window.CE = window.CE || {};
       if (tipo === 'velha') { g.beginPath(); g.moveTo(cx - 3, cy - 8); g.lineTo(cx - 3, cy + 8); g.moveTo(cx + 3, cy - 8); g.lineTo(cx + 3, cy + 8); g.moveTo(cx - 8, cy - 3); g.lineTo(cx + 8, cy - 3); g.moveTo(cx - 8, cy + 3); g.lineTo(cx + 8, cy + 3); g.stroke(); }
       else { g.fillStyle = '#FFFFFF'; g.fillRect(cx - 9, cy - 3, 8, 5); g.fillRect(cx, cy - 3, 8, 5); g.fillRect(cx - 4, cy + 3, 5, 8); }
     }
+    // Poste de luz (na calçada da praça, perto da lata de lixo)
+    {
+      const cx = M.POSTE[0] * T + T / 2, cy = M.POSTE[1] * T + T / 2;
+      g.fillStyle = 'rgba(0, 0, 0, .22)'; g.beginPath(); g.ellipse(cx + 4, cy + 6, 9, 5, 0, 0, Math.PI * 2); g.fill();
+      circulo(cx, cy, 7, '#5B6168'); circulo(cx, cy, 4, '#8A9199');
+      g.strokeStyle = '#5B6168'; g.lineWidth = 3; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx - 11, cy - 9); g.stroke();
+      circulo(cx - 12, cy - 10, 6, '#F6E27A'); circulo(cx - 12, cy - 10, 2.5, '#FFFBE0');
+    }
     const mx = 21 * T, my = 8 * T;
     g.fillStyle = 'rgba(0, 0, 0, .2)'; g.fillRect(mx + 7, my + 9, 2 * T - 10, 26);
     g.fillStyle = '#8A5A35'; g.fillRect(mx + 4, my + 5, 2 * T - 8, 26);
@@ -467,8 +475,11 @@ window.CE = window.CE || {};
         if (!cw || !ch) return;
         const MW = W * T, MH = H * T;
         if (!perto) {
-          // A cidade inteira cabe entre os botões de cima e os de baixo (nada fica escondido atrás deles).
-          const cima = Math.min(58, ch * 0.1), baixo = Math.min(62, ch * 0.1), livre = Math.max(80, ch - cima - baixo);
+          // A cidade inteira cabe entre os botões de cima e os de baixo (nada fica escondido atrás deles) e, num
+          // evento, abaixo do alarme (a parte de cima da cidade, com o Lote da turma, não fica escondida).
+          const topoMapa = mapa.getBoundingClientRect().top;
+          const faixa = [emergEl, especialEl].filter((el) => !el.hidden).reduce((m, el) => Math.max(m, el.getBoundingClientRect().bottom - topoMapa + 8), 0);
+          const cima = Math.max(Math.min(58, ch * 0.1), Math.min(faixa, ch * 0.45)), baixo = Math.min(62, ch * 0.1), livre = Math.max(80, ch - cima - baixo);
           cam.s = Math.min(cw / MW, livre / MH); cam.x = (cw - MW * cam.s) / 2; cam.y = cima + (livre - MH * cam.s) / 2;
         }
         else {
@@ -655,36 +666,179 @@ window.CE = window.CE || {};
       const pistaAqui = (lugar) => (novela && !novela.revelado ? novela.faltam.find((p) => p.lugar === lugar) : null);
 
       // ---------- Evento urgente ----------
-      let emerg = null, chaveEmerg = '', relogioEmerg = 0;
+      let emerg = null, chaveEmerg = '', relogioEmerg = 0, chaveBloqueios = '', relampago = null;
       const emergAtiva = () => !!(emerg && emerg.status === 'ativo');
       const defEmerg = () => (emerg ? EMERG[emerg.tipo] : null);
-      const visual = {}; // elementos do mapa do evento (fogo, água, marcas de onde pegar e levar)
-      const CENTRO_ZONA = { fonte: [18, 12.2], lixeira: [22.5, 14.4], areia: [18.5, 26.5], barreira: [20.5, 21.5], feira: [5.5, 23.2], estacao: [23.5, 24.6] };
+      const visual = {};   // elementos do mapa do evento (marcas de onde pegar e levar, água, sacos, caminhões)
+      const focosEl = {};  // incêndio: um elemento por foco de fogo
+      const quedasEl = {}; // chuva forte: as árvores caídas (tronco, toco, placa e fio)
+      const CENTRO_ZONA = { fonte: [18, 12.2], lixeira: [22.5, 14.4], areia: [18.5, 26.5], barreira: [20.5, 21.5], feira: [5.5, 23.2], estacao: [23.5, 24.6], obra: [32.9, 4.4], caminhao: [15, 18.3] };
+      const emNome = (nome) => nome.replace(/^o /, 'no ').replace(/^a /, 'na ').replace(/^os /, 'nos ').replace(/^as /, 'nas ');
+      const agoraEmerg = () => (emerg ? emerg.agora + (performance.now() - relogioEmerg) : 0);
+      const fontesDoEvento = () => (emerg.tipo === 'rio' ? emerg.fontes || ['obra'] : [defEmerg().levar.pegar]);
+      const focosAcesos = () => (emerg && emerg.focos ? emerg.focos.filter((f) => f.forca > 0) : []);
+      // O foco de fogo ao alcance do boneco (o que não é o poste vem primeiro).
+      function focoPerto(x, y, raio = M.PERTO_DO_FOCO + 0.2) {
+        const d = (f) => Math.hypot(f.x - x, f.y - y);
+        return focosAcesos().filter((f) => d(f) <= raio).sort((a, b) => (a.eletrico - b.eletrico) || d(a) - d(b))[0] || null;
+      }
+      const distQueda = (q, x, y) => Math.min(...[...q.tiles, q.arvore].map(([a, b]) => Math.hypot(a - x, b - y)));
+      function quedaPerto(x, y, raio = 2.6) {
+        return ((emerg && emerg.quedas) || []).filter((q) => distQueda(q, x, y) <= raio).sort((a, b) => (a.avisada - b.avisada) || distQueda(a, x, y) - distQueda(b, x, y))[0] || null;
+      }
       function marcaAjuda(zona, emoji, texto) {
         const [x, y] = CENTRO_ZONA[zona];
         return CE.el('div', { class: 'pr-marca-ajuda', 'data-zona': zona, style: `left:${x * T}px;top:${y * T}px` }, CE.el('span', { class: 'ic' }, emoji), CE.el('span', { class: 'txt' }, texto));
       }
+      function tirarQueda(id, animar) {
+        const q = quedasEl[id];
+        if (!q) return;
+        delete quedasEl[id];
+        q.toco.remove(); q.placa.remove(); if (q.fio) q.fio.remove();
+        if (animar) { q.arvore.classList.add('saindo'); setTimeout(() => q.arvore.remove(), 700); } else q.arvore.remove();
+      }
       function limparVisual() {
         for (const k of Object.keys(visual)) { visual[k].remove(); delete visual[k]; }
+        for (const k of Object.keys(focosEl)) { focosEl[k].remove(); delete focosEl[k]; }
+        for (const k of Object.keys(quedasEl)) tirarQueda(k, false);
+        if (relampago) { clearInterval(relampago); relampago = null; }
         chuvaEl.hidden = true;
-        mapa.classList.remove('emergencia');
+        mapa.classList.remove('emergencia', 'relampago');
+        delete mapa.dataset.evento;
+      }
+      // O mapa muda com o evento (árvore caída, fio no chão, caminhão, água): quem estava ali sai, e o caminho desvia.
+      function conferirMeuLugar() {
+        if (!M.andavel(Math.round(eu.x), Math.round(eu.y))) {
+          [eu.x, eu.y] = M.maisPerto(eu.x, eu.y);
+          eu.caminho = []; eu.aoChegar = null;
+          posicionar(eu);
+          balao(eu, emerg && emerg.tipo === 'rio' ? '🌊 Ufa! Saí da água a tempo.' : '😮 Ufa! Essa foi por pouco.');
+          return;
+        }
+        if (eu.caminho.length && eu.caminho.some(([x, y]) => !M.andavel(x, y))) {
+          const c = M.caminho(M.maisPerto(eu.x, eu.y), [eu.caminho[eu.caminho.length - 1]]);
+          if (c) eu.caminho = c;
+          else { eu.caminho = []; eu.aoChegar = null; balao(eu, 'Por ali fechou! Vou por outro lado.'); }
+        }
       }
       function desenharVisual() {
         const e = emerg, d = defEmerg();
-        if (!e || e.status !== 'ativo') { limparVisual(); return; }
-        mapa.classList.add('emergencia');
-        if (!visual.pegar) {
-          visual.pegar = marcaAjuda(d.levar.pegar, d.levar.levando, d.levar.pegarTexto.replace(/^\S+\s/, ''));
-          visual.entregar = marcaAjuda(d.levar.entregar, e.tipo === 'incendio' ? '🔥' : e.tipo === 'rio' ? '🧱' : '🏠', d.levar.entregarTexto.replace(/^\S+\s/, ''));
-          camadaRotulos.append(visual.pegar, visual.entregar);
-          if (e.tipo === 'incendio') { visual.fogo = CE.el('div', { class: 'pr-fogo', style: `left:${22.5 * T}px;top:${15.2 * T}px` }, '🔥'); camadaObjetos.append(visual.fogo); }
-          if (e.tipo === 'rio') { visual.agua = CE.el('div', { class: 'pr-enchente' }); visual.sacos = CE.el('div', { class: 'pr-sacos', style: `left:${11 * T}px;top:${21 * T}px;width:${20 * T}px` }); camadaObjetos.append(visual.agua, visual.sacos); }
+        if (!e || e.status !== 'ativo') {
+          // A enchente acabou: a água volta devagar para o rio.
+          if (visual.agua) { const ag = visual.agua; delete visual.agua; ag.classList.add('baixando'); ag.style.top = `${27 * T}px`; ag.style.height = `${0.3 * T}px`; setTimeout(() => ag.remove(), 1400); }
+          limparVisual();
+          return;
         }
-        if (visual.fogo) visual.fogo.style.fontSize = `${Math.round(24 + e.perigo * 0.5)}px`;
-        if (visual.agua) { const topo = 27 - (e.perigo / 100) * 6; visual.agua.style.top = `${topo * T}px`; visual.agua.style.height = `${(27.2 - topo) * T}px`; }
-        if (visual.sacos) visual.sacos.textContent = '🟫'.repeat(Math.max(0, Math.min(20, Math.round((50 - Math.min(50, e.perigo)) / 2.5))));
-        chuvaEl.hidden = e.tipo !== 'chuva';
-        if (e.tipo === 'chuva') chuvaEl.style.opacity = String(0.35 + e.perigo / 160);
+        mapa.classList.add('emergencia');
+        mapa.dataset.evento = e.tipo;
+        // Onde pegar a ajuda (e, fora do incêndio, onde levar): plaquinhas no mapa.
+        const fontes = fontesDoEvento();
+        for (const z of ['fonte', 'areia', 'obra', 'caminhao', 'feira']) {
+          const k = 'pegar-' + z, quer = fontes.includes(z);
+          const texto = { obra: 'Areia da obra', caminhao: 'Areia da Defesa Civil', areia: 'Areia da praia' }[z] || d.levar.pegarTexto.replace(/^\S+\s/, '');
+          if (quer && !visual[k]) { visual[k] = marcaAjuda(z, d.levar.levando, texto); camadaRotulos.append(visual[k]); }
+          if (!quer && visual[k]) { visual[k].remove(); delete visual[k]; }
+        }
+        if (e.tipo !== 'incendio' && !visual.entregar) {
+          visual.entregar = marcaAjuda(d.levar.entregar, e.tipo === 'rio' ? '🧱' : '🏠', d.levar.entregarTexto.replace(/^\S+\s/, ''));
+          camadaRotulos.append(visual.entregar);
+        }
+        if (e.tipo === 'incendio') desenharFogo(e);
+        if (e.tipo === 'rio') desenharEnchente(e);
+        if (e.tipo === 'chuva') desenharTemporal(e);
+      }
+      // Incêndio: cada foco cresce (ou diminui) com a força; o apagado fica com fumaça e a marca do queimado.
+      function desenharFogo(e) {
+        const vistos = new Set();
+        for (const f of e.focos || []) {
+          vistos.add(f.id);
+          let el = focosEl[f.id];
+          if (!el) {
+            el = CE.el('div', { class: 'pr-foco' + (f.eletrico ? ' eletrico' : ''), 'data-foco': f.id, title: f.nome, style: `left:${(f.x + 0.5) * T}px;top:${(f.y + 0.5) * T}px` },
+              CE.el('span', { class: 'queimado', 'aria-hidden': 'true' }), CE.el('span', { class: 'chama', 'aria-hidden': 'true' }, '🔥'),
+              f.eletrico ? CE.el('span', { class: 'faisca', 'aria-hidden': 'true' }, '⚡') : null, CE.el('span', { class: 'fumaca', 'aria-hidden': 'true' }, '💨'));
+            focosEl[f.id] = el;
+            camadaObjetos.append(el);
+          }
+          el.classList.toggle('apagado', f.forca <= 0);
+          el.style.setProperty('--forca', String(Math.max(0, Math.min(3, f.forca))));
+        }
+        for (const id of Object.keys(focosEl)) if (!vistos.has(id)) { focosEl[id].remove(); delete focosEl[id]; }
+        // O caminhão dos Bombeiros desce a rua até a praça; chegando, joga água no foco da vez.
+        const b = e.bombeiros;
+        if (b && !visual.bombeiros) {
+          const falta = Math.max(0, b.chega - e.agora);
+          visual.bombeiros = CE.el('div', { class: 'pr-veiculo bombeiros', style: `left:${26.5 * T}px;top:${(b.chegou ? 15 : 5.5) * T}px` }, CE.el('span', { 'aria-hidden': 'true' }, '🚒'));
+          camadaObjetos.append(visual.bombeiros);
+          if (!b.chegou) requestAnimationFrame(() => requestAnimationFrame(() => { if (visual.bombeiros) { visual.bombeiros.style.transition = `top ${falta}ms linear`; visual.bombeiros.style.top = `${15 * T}px`; } }));
+        }
+        if (visual.bombeiros) visual.bombeiros.classList.toggle('chegou', !!(b && b.chegou));
+        const alvo = b && b.chegou && b.alvo ? (e.focos || []).find((f) => f.id === b.alvo && f.forca > 0) : null;
+        if (!alvo) { if (visual.jato) { visual.jato.remove(); delete visual.jato; } return; }
+        const x0 = 26.5 * T, y0 = 15 * T, x1 = (alvo.x + 0.5) * T, y1 = (alvo.y + 0.5) * T;
+        if (!visual.jato) { visual.jato = CE.el('div', { class: 'pr-jato', 'aria-hidden': 'true' }); camadaObjetos.append(visual.jato); }
+        visual.jato.style.cssText = `left:${x0}px;top:${y0}px;width:${Math.hypot(x1 - x0, y1 - y0)}px;transform:rotate(${Math.atan2(y1 - y0, x1 - x0)}rad)`;
+      }
+      // Enchente: a água sobe (e desce) fileira por fileira; os sacos aparecem na barreira; o caminhão vem pela avenida.
+      function desenharEnchente(e) {
+        if (!visual.agua) {
+          visual.agua = CE.el('div', { class: 'pr-enchente', 'aria-hidden': 'true' }, CE.el('span', { class: 'onda' }));
+          visual.sacos = CE.el('div', { class: 'pr-sacos', 'aria-hidden': 'true', style: `left:${11 * T}px;top:${21 * T}px;width:${20 * T}px` });
+          camadaObjetos.append(visual.agua, visual.sacos);
+        }
+        const topo = Number.isFinite(e.agua) ? e.agua : 27;
+        visual.agua.style.top = `${topo * T}px`;
+        visual.agua.style.height = `${(27.3 - topo) * T}px`;
+        visual.agua.classList.toggle('passou', topo < 21.5);
+        const n = Math.max(0, e.sacos || 0);
+        visual.sacos.replaceChildren(...[CE.el('span', { class: 'fileira' }, '🟫'.repeat(Math.min(20, n))),
+          n > 20 ? CE.el('span', { class: 'fileira de-cima' }, '🟫'.repeat(Math.min(20, n - 20))) : null].filter(Boolean));
+        const c = e.caminhao;
+        if (c && !visual.caminhao) {
+          const falta = Math.max(0, c.chega - e.agora);
+          visual.caminhao = CE.el('div', { class: 'pr-veiculo defesa', style: `left:${(c.chegou ? 15 : -1) * T}px;top:${19.5 * T}px` },
+            CE.el('span', { class: 'monte', 'aria-hidden': 'true' }), CE.el('span', { class: 'carro', 'aria-hidden': 'true' }, '🚚'));
+          camadaObjetos.append(visual.caminhao);
+          if (!c.chegou) requestAnimationFrame(() => requestAnimationFrame(() => { if (visual.caminhao) { visual.caminhao.style.transition = `left ${falta}ms linear`; visual.caminhao.style.left = `${15 * T}px`; } }));
+        }
+        if (visual.caminhao) visual.caminhao.classList.toggle('chegou', !!(c && c.chegou));
+      }
+      // Chuva forte: a chuva engrossa, relâmpagos e as árvores caídas (com a placa do aviso e a equipe da Defesa Civil).
+      function desenharTemporal(e) {
+        chuvaEl.hidden = false;
+        chuvaEl.style.opacity = String(0.35 + e.perigo / 160);
+        if (!relampago) {
+          relampago = setInterval(() => {
+            if (!emergAtiva() || emerg.tipo !== 'chuva' || Math.random() > 0.5) return;
+            mapa.classList.remove('relampago'); void mapa.offsetWidth; mapa.classList.add('relampago');
+          }, 5000);
+        }
+        const vistas = new Set();
+        for (const q of e.quedas || []) {
+          vistas.add(q.id);
+          if (!quedasEl[q.id]) quedasEl[q.id] = criarArvoreCaida(q);
+          const el = quedasEl[q.id];
+          el.arvore.classList.toggle('avisada', !!q.avisada);
+          el.arvore.classList.toggle('equipe', !!q.equipe);
+          el.placa.classList.toggle('avisada', !!q.avisada);
+          el.placa.textContent = q.equipe ? '👷 A Defesa Civil está tirando' : q.avisada ? `📞 Defesa Civil avisada${q.por ? ' por ' + q.por : ''}` : '⚠️ Avise a Defesa Civil (199)';
+        }
+        for (const id of Object.keys(quedasEl)) if (!vistas.has(id)) tirarQueda(id, true);
+      }
+      function criarArvoreCaida(q) {
+        const [ax, ay] = q.arvore, [x2, y2] = q.tiles[1];
+        const ang = Math.atan2(y2 - ay, x2 - ax);
+        const cx = (ax + x2) / 2 + 0.5, cy = (ay + y2) / 2 + 0.5;
+        const chao = q.ipe ? '#7DB050' : ({ grama: '#8DBE5A', areia: '#E9D49F', calcada: '#D9D1C0', terra: '#C47A48', praca: '#ECDFC0' }[M.chao[ay][ax]] || '#8DBE5A');
+        const arvore = CE.el('div', { class: 'pr-arvore-caida' + (q.palmeira ? ' palmeira' : ''), 'data-queda': q.id, style: `left:${cx * T}px;top:${cy * T}px;--ang:${ang}rad` },
+          CE.el('span', { class: 'tronco' }), CE.el('span', { class: 'folhas', 'aria-hidden': 'true' }, '🍃🍂🍃'), CE.el('span', { class: 'copa', 'aria-hidden': 'true' }, q.palmeira ? '🌴' : '🌳'),
+          CE.el('span', { class: 'equipe', 'aria-hidden': 'true' }, '👷'));
+        const toco = CE.el('div', { class: 'pr-toco', style: `left:${ax * T}px;top:${ay * T}px;background:${chao}` });
+        const placa = CE.el('div', { class: 'pr-placa-queda', style: `left:${cx * T}px;top:${(cy - 0.55) * T}px` });
+        const fio = q.fio ? CE.el('div', { class: 'pr-fio', 'data-fio': q.id, style: `left:${(q.fio[0] + 0.5) * T}px;top:${(q.fio[1] + 0.5) * T}px` }, CE.el('span', { 'aria-hidden': 'true' }, '⚡')) : null;
+        camadaObjetos.append(toco, arvore, ...(fio ? [fio] : []));
+        camadaRotulos.append(placa);
+        return { arvore, toco, placa, fio };
       }
       function desenharAlarme() {
         const e = emerg, d = defEmerg();
@@ -703,12 +857,35 @@ window.CE = window.CE || {};
           CE.el('div', { class: 'perigo' }, CE.el('span', {}, `${d.emoji} ${d.perigo}`),
             CE.el('span', { class: 'barra', role: 'progressbar', 'aria-label': d.perigo, 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(e.perigo) }, CE.el('span', { style: `width:${e.perigo}%` })),
             CE.el('strong', {}, `${e.perigo}%`)),
+          infoDoMapa(e),
           CE.el('div', { class: 'botoes' },
             CE.el('button', { class: 'pr-emerg-botao' + (e.ligou ? ' feito' : ''), type: 'button', 'data-emerg': 'ligar', onclick: () => abrirLigar() }, `${e.ligou ? '✅' : '📞'} ${d.ligar.titulo}`),
             CE.el('button', { class: 'pr-emerg-botao' + (e.respondeu ? ' feito' : ''), type: 'button', 'data-emerg': 'pergunta', onclick: () => abrirPergunta() }, `${e.respondeu ? '✅' : '❓'} ${d.pergunta.titulo}`),
             CE.el('button', { class: 'pr-emerg-botao', type: 'button', 'data-emerg': 'como', onclick: () => comoAjudar() }, 'ℹ️ Como ajudar')),
           e.carregando ? CE.el('p', { class: 'carregando' }, `Você está levando ${d.levar.levando}: ${d.levar.entregarTexto.replace(/^\S+\s/, '').toLowerCase()}!`) : null,
         ].filter(Boolean));
+      }
+      // O que está acontecendo no mapa, em poucas palavras (focos, água, sacos, árvores, socorro chegando).
+      function infoDoMapa(e) {
+        const chips = [];
+        const relogio = (chega) => CE.el('strong', { 'data-relogio-socorro': String(chega) }, mmss(chega - agoraEmerg()));
+        if (e.tipo === 'incendio') {
+          const acesos = (e.focos || []).filter((f) => f.forca > 0);
+          chips.push([`🔥 ${acesos.length} foco${acesos.length === 1 ? '' : 's'} de fogo`]);
+          if (acesos.some((f) => f.eletrico)) chips.push(['⚡ Poste: só os Bombeiros (193)']);
+          if (e.bombeiros) chips.push(e.bombeiros.chegou ? ['🚒 Bombeiros na praça'] : ['🚒 Bombeiros chegam em ', relogio(e.bombeiros.chega)]);
+        } else if (e.tipo === 'rio') {
+          const a = Number.isFinite(e.agua) ? e.agua : 27;
+          chips.push([a >= 26.5 ? '🌊 O rio voltou ao normal' : a >= 24.5 ? '🌊 Água na praia e nos trilhos' : a >= 21.8 ? '🌊 Água na feira e na estação' : a >= 20.8 ? '🌊 Água na barreira!' : '🌊 Água na avenida!']);
+          chips.push([`🧱 ${e.sacos || 0} saco${e.sacos === 1 ? '' : 's'} na barreira`]);
+          if (e.caminhao) chips.push(e.caminhao.chegou ? ['🚚 Areia da Defesa Civil na avenida'] : ['🚚 Defesa Civil chega em ', relogio(e.caminhao.chega)]);
+        } else if (e.tipo === 'chuva') {
+          const q = e.quedas || [];
+          const sem = q.filter((x) => !x.avisada).length;
+          chips.push([q.length ? `🌳 ${q.length} árvore${q.length === 1 ? '' : 's'} na rua${sem ? ` (${sem} sem aviso)` : ''}` : '🌳 Cuidado com as árvores']);
+          if (q.some((x) => x.fio)) chips.push(['⚡ Fio caído: longe!']);
+        }
+        return CE.el('div', { class: 'mapa' }, chips.map((c) => CE.el('span', { class: 'chip' }, ...c)));
       }
       // Só o relógio anda a cada segundo (o resto muda quando chega notícia do instrutor).
       // ---------- Evento especial (conduzido pelo Professor Virtual) ----------
@@ -870,6 +1047,7 @@ window.CE = window.CE || {};
       function andarRelogio() {
         andarRelogioEspecial();
         if (!emergAtiva()) return;
+        for (const s of emergEl.querySelectorAll('[data-relogio-socorro]')) s.textContent = mmss(Number(s.dataset.relogioSocorro) - agoraEmerg());
         const r = emergEl.querySelector('[data-relogio]');
         if (!r) return;
         const resta = Math.max(0, Math.ceil((emerg.fim - (emerg.agora + (performance.now() - relogioEmerg))) / 1000));
@@ -879,7 +1057,12 @@ window.CE = window.CE || {};
         const antes = emerg;
         emerg = e;
         relogioEmerg = performance.now();
-        const chave = e ? [e.id, e.status, e.perigo, e.carregando, e.ligou, e.respondeu].join('|') : '';
+        const bl = e && e.status === 'ativo' && e.bloqueios ? e.bloqueios : null;
+        const chaveBl = bl ? JSON.stringify(bl) : '';
+        if (chaveBl !== chaveBloqueios) { chaveBloqueios = chaveBl; M.definirBloqueios(bl ? bl.tiles : [], bl ? bl.agua : null); conferirMeuLugar(); }
+        const chave = e ? [e.id, e.status, e.perigo, e.carregando, e.ligou, e.respondeu, (e.focos || []).map((f) => f.id + ':' + f.forca).join(','),
+          e.bombeiros ? `${e.bombeiros.chegou}${e.bombeiros.alvo}` : '', e.agua, e.sacos, e.caminhao ? e.caminhao.chegou : '', (e.fontes || []).join(),
+          (e.quedas || []).map((q) => q.id + (q.avisada ? 'a' : '') + (q.equipe ? 'e' : '')).join(',')].join('|') : '';
         if (chave === chaveEmerg) return;
         chaveEmerg = chave;
         if (!e && antes) limparVisual();
@@ -900,16 +1083,60 @@ window.CE = window.CE || {};
         if (!r || fechouJanela) return null;
         aplicarEmergencia(r.emergencia);
         const d = r.emergencia ? EMERG[r.emergencia.tipo] : null;
-        if (d && acao === 'pegar') balao(eu, `${d.levar.levando} Peguei! Agora: ${d.levar.entregarTexto.replace(/^\S+\s/, '').toLowerCase()}.`);
+        if (d && acao === 'pegar') balao(eu, `${d.levar.levando} Peguei! Agora: ${r.emergencia.tipo === 'incendio' ? 'jogar no fogo' : d.levar.entregarTexto.replace(/^\S+\s/, '').toLowerCase()}.`);
         if (d && acao === 'entregar') balao(eu, `${d.levar.entregarTexto.split(' ')[0]} Feito!`);
+        if (d && acao === 'avisar') balao(eu, '📞 Avisei a Defesa Civil! A equipe já vem.');
         return r;
       }
+      // O que dá para fazer no evento onde o boneco está (o botão em cima dele).
       function zonaDaAcao() {
         if (!emergAtiva()) return null;
-        const d = defEmerg();
-        if (!emerg.carregando && M.pertoDaZona(d.levar.pegar, eu.x, eu.y, 1.3)) return 'pegar';
-        if (emerg.carregando && M.pertoDaZona(d.levar.entregar, eu.x, eu.y, 1.3)) return 'entregar';
+        const d = defEmerg(), x = eu.x, y = eu.y;
+        if (emerg.tipo === 'chuva') { const q = quedaPerto(x, y); if (q && !q.avisada) return { emergencia: 'avisar', queda: q }; }
+        if (!emerg.carregando && fontesDoEvento().some((z) => M.pertoDaZona(z, x, y, 1.3))) return { emergencia: 'pegar' };
+        if (emerg.tipo === 'incendio') {
+          const f = focoPerto(x, y);
+          if (f) return { emergencia: f.eletrico ? 'poste' : emerg.carregando ? 'entregar' : 'balde', foco: f };
+          return null;
+        }
+        if (emerg.carregando && M.pertoDaZona(d.levar.entregar, x, y, emerg.tipo === 'rio' ? 2 : 1.3)) return { emergencia: 'entregar' };
         return null;
+      }
+      // Clique no mapa durante o evento: no fogo, na árvore caída, no fio, na água, no caminhão, na barreira.
+      function cliqueNoEvento(x, y) {
+        const e = emerg;
+        if (e.tipo === 'incendio') {
+          const d = (f) => Math.hypot(f.x - x, f.y - y);
+          const f = focosAcesos().filter((g) => d(g) <= 1.1).sort((a, b) => d(a) - d(b))[0];
+          if (!f) return false;
+          if (f.eletrico) { balao(eu, '⚡ Fogo no poste: água, não! Isso é com os Bombeiros (193).'); return true; }
+          irPara(M.pertoDoPonto(f.x, f.y), () => { if (!emergAtiva()) return; if (emerg.carregando) acaoEmerg('entregar', { foco: f.id }); else balao(eu, 'Primeiro, encho o balde na fonte! 💧'); });
+          return true;
+        }
+        if (e.tipo === 'chuva') {
+          const quedas = e.quedas || [];
+          if (quedas.some((q) => q.fio && q.fio[0] === x && q.fio[1] === y)) { balao(eu, '⚡ Fio caído! Não chego perto: a Defesa Civil resolve.'); return true; }
+          const q = quedas.find((g) => [...g.tiles, g.arvore].some(([a, b]) => a === x && b === y));
+          if (!q) return false;
+          const alvos = q.tiles.flatMap(([a, b]) => M.pertoDoPonto(a, b, 2.4)).filter(([a, b]) => !(q.fio && Math.hypot(a - q.fio[0], b - q.fio[1]) < 1.5));
+          irPara(alvos, () => {
+            const v = emergAtiva() && (emerg.quedas || []).find((g) => g.id === q.id);
+            if (v && !v.avisada) acaoEmerg('avisar', { queda: q.id }); else if (v) balao(eu, 'A Defesa Civil já está vindo! 👷');
+          });
+          return true;
+        }
+        if (e.tipo === 'rio') {
+          if (Number.isFinite(e.agua) && y >= Math.ceil(e.agua) && y < 27 && M.andavelFixo(x, y)) { balao(eu, '🌊 Na água da enchente, não! A correnteza arrasta.'); return true; }
+          if (e.caminhao && e.caminhao.chegou && M.CAMINHAO_AREIA.some(([a, b]) => a === x && b === y)) {
+            irPara(M.ZONAS.caminhao, () => { if (emergAtiva() && !emerg.carregando) acaoEmerg('pegar'); });
+            return true;
+          }
+          if (e.carregando && y >= 19 && y <= 22 && x >= 11 && x <= 30) {
+            irPara(M.ZONAS.barreira.flatMap(([a, b]) => [[a, b], [a, b - 1], [a, b - 2]]), () => { if (emergAtiva() && emerg.carregando) acaoEmerg('entregar'); });
+            return true;
+          }
+        }
+        return false;
       }
       // Ligar (ou mandar o CEP) e a pergunta: do jeito das tarefas, de qualquer lugar do mapa.
       function abrirLigar() {
@@ -937,7 +1164,7 @@ window.CE = window.CE || {};
         if (!emergAtiva()) return;
         const d = defEmerg();
         abrirDialogo({ tipo: 'emergencia', rosto: d.emoji, titulo: 'Como ajudar', subtitulo: `🚨 ${d.titulo}`, fala: d.alerta,
-          lista: [`${d.levar.pegarTexto} (vá até lá: o lugar está marcado no mapa).`, `${d.levar.entregarTexto} (leve até o lugar marcado e aperte o botão em cima do boneco).`, `${d.ligar.titulo}: o botão 📞 no alarme.`, `${d.pergunta.titulo}: o botão ❓ no alarme.`],
+          lista: [...(d.como || [`${d.levar.pegarTexto} (vá até lá: o lugar está marcado no mapa).`, `${d.levar.entregarTexto} (leve até o lugar marcado e aperte o botão em cima do boneco).`]), `${d.ligar.titulo}: o botão 📞 no alarme.`, `${d.pergunta.titulo}: o botão ❓ no alarme.`],
           nota: 'Cada ajuda baixa o perigo. Se chegar a zero antes do tempo acabar, a turma vence e todo mundo que ajudou ganha moedas.',
           opcoes: [{ rotulo: 'Entendi!', principal: true }] });
       }
@@ -1006,6 +1233,7 @@ window.CE = window.CE || {};
           if (o.nomeEl.textContent !== nomeDe(x)) { o.nomeEl.textContent = nomeDe(x); o.el.title = x.nome; }
           o.el.className = `pr-p ${classeDe(x)}` + (o.el.classList.contains('andando') ? ' andando' : '') + (o.el.classList.contains('esq') ? ' esq' : '');
           marcarMao(o, x.mao);
+          marcarCarga(o, x.carga || null);
         }
         for (const [id, o] of outros) if (!vistos.has(id)) { o.el.remove(); outros.delete(id); }
         const minha = r.pessoas.find((x) => x.id === usuario.id);
@@ -1111,6 +1339,9 @@ window.CE = window.CE || {};
         } else if (ev.tipo === 'bingo-ganhou') {
           if (ev.de && ev.de.id === usuario.id) CE.carteira.ganhar('bingo', 'Ganhou o bingo do coreto!', `bingo:${ev.idEspecial}`);
           if (!velho) CE.comemorar('grande');
+        } else if (ev.tipo === 'emergencia-mapa') {
+          registrar({ classe: 'sistema', texto: ev.texto });
+          if (!velho) avisarNoMapa(ev.texto, 'urgente');
         } else if (ev.tipo === 'emergencia-ajuda') {
           registrar({ classe: 'sistema', texto: ev.texto });
         } else if (ev.tipo === 'emergencia-fim') {
@@ -1471,6 +1702,7 @@ window.CE = window.CE || {};
       function abrirLugar(L) {
         if (emergAtiva()) {
           const d = defEmerg();
+          if (emerg.tipo === 'rio' && L.id === 'lote') return emerg.carregando ? balao(eu, 'Já estou com o saco! Agora: pôr na barreira.') : acaoEmerg('pegar');
           if (d.levar.pegar === L.id) return emerg.carregando ? balao(eu, `Já peguei! Agora: ${d.levar.entregarTexto.replace(/^\S+\s/, '').toLowerCase()}.`) : acaoEmerg('pegar');
           if (d.levar.entregar === L.id) return emerg.carregando ? acaoEmerg('entregar') : balao(eu, `Primeiro: ${d.levar.pegarTexto.replace(/^\S+\s/, '').toLowerCase()}!`);
         }
@@ -1711,14 +1943,21 @@ window.CE = window.CE || {};
         return null;
       }
       function interagir(a) {
-        if (a.emergencia) return acaoEmerg(a.emergencia);
+        if (a.emergencia === 'poste') return balao(eu, '⚡ Água no poste, não! Água conduz eletricidade. Liguem 193: os Bombeiros desligam a energia.');
+        if (a.emergencia === 'balde') return balao(eu, 'Primeiro, encho o balde na fonte! 💧');
+        if (a.emergencia) return acaoEmerg(a.emergencia, { ...(a.foco ? { foco: a.foco.id } : {}), ...(a.queda ? { queda: a.queda.id } : {}) });
         if (a.morador) return abrirNo(a.morador.id, 'inicio');
         if (a.pessoa) return abrirPessoa(a.pessoa);
         if (a.lugar) return abrirLugar(a.lugar);
       }
       // O texto do botão que aparece em cima do boneco.
       function textoDaAcao(a) {
-        if (a.emergencia) { const d = defEmerg(); return a.emergencia === 'pegar' ? d.levar.pegarTexto : d.levar.entregarTexto; }
+        if (a.emergencia) {
+          const d = defEmerg();
+          if (a.emergencia === 'pegar') return d.levar.pegarTexto;
+          if (a.emergencia === 'entregar') return a.foco ? `💦 Jogar água ${emNome(a.foco.nome)}` : d.levar.entregarTexto;
+          return { poste: '⚡ Fogo no poste: água, não!', balde: '💧 Primeiro, encha o balde na fonte', avisar: '📞 Avisar a Defesa Civil (199)' }[a.emergencia];
+        }
         if (a.morador) return `💬 Conversar com ${a.morador.nome}`;
         if (a.pessoa) return `💬 Falar com ${a.pessoa.nomeReal}`;
         return textoDoLugar(a.lugar) + (pistaAqui(a.lugar.id) ? ' · 🔎 pista' : '');
@@ -1733,8 +1972,8 @@ window.CE = window.CE || {};
       let pertoAtual = null, pertoAlvo = null;
       function verPerto(forcar) {
         const z = zonaDaAcao();
-        const a = z ? { emergencia: z } : oQueEstaPerto();
-        const chave = a ? (a.emergencia ? 'e' + a.emergencia + emerg.tipo : a.morador ? 'm' + a.morador.id : a.pessoa ? 'p' + a.pessoa.id : 'l' + a.lugar.id) : '';
+        const a = z || oQueEstaPerto();
+        const chave = a ? (a.emergencia ? 'e' + a.emergencia + emerg.tipo + (a.foco ? a.foco.id : '') + (a.queda ? a.queda.id : '') : a.morador ? 'm' + a.morador.id : a.pessoa ? 'p' + a.pessoa.id : 'l' + a.lugar.id) : '';
         if (chave === pertoAtual && !forcar) return;
         pertoAtual = chave; pertoAlvo = a;
         acao.hidden = !a;
@@ -1783,6 +2022,7 @@ window.CE = window.CE || {};
         const r = mapa.getBoundingClientRect();
         const x = Math.floor((e.clientX - r.left - cam.x) / cam.s / T), y = Math.floor((e.clientY - r.top - cam.y) / cam.s / T);
         if (x < 0 || y < 0 || x >= W || y >= H) return;
+        if (emergAtiva() && cliqueNoEvento(x, y)) return;
         const L = M.dono[y][x] && M.porLugar[M.dono[y][x]];
         if (L) { if (!perto) { for (const rt of Object.values(rotuloDe)) rt.classList.remove('destaque'); if (rotuloDe[L.id]) rotuloDe[L.id].classList.add('destaque'); } return chegarAoLugar(L); }
         if (M.andavel(x, y)) irPara([[x, y]]);
@@ -1807,6 +2047,8 @@ window.CE = window.CE || {};
       document.addEventListener('keyup', teclaSobe);
       mapa.addEventListener('blur', () => { seta = null; });
       const aoRedimensionar = new ResizeObserver(() => enquadrar());
+      // O alarme do evento (e a faixa do evento especial) muda de tamanho: a cidade inteira se ajusta embaixo dele.
+      aoRedimensionar.observe(emergEl); aoRedimensionar.observe(especialEl);
       aoRedimensionar.observe(mapa);
 
       // ---------- Laço ----------
@@ -1835,6 +2077,8 @@ window.CE = window.CE || {};
         receber() { mudarZoom(true); },
         aoFechar() {
           fechouJanela = true;
+          limparVisual();
+          M.definirBloqueios([], null);
           pracaNaTela = false;
           pararMoedas();
           cancelAnimationFrame(quadroId);

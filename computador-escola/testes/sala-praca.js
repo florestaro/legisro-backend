@@ -166,7 +166,7 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
   await p2.evaluate(() => CE.janelas.fecharTodas());
   await espera(1500);
   const inicio = await A.evaluate(() => CE.api.chamar('praca:emergencia-iniciar', 'incendio'));
-  ok(inicio && inicio.status === 'ativo' && inicio.perigo >= 45, 'a instrutora dispara o incêndio na lata de lixo');
+  ok(inicio && inicio.status === 'ativo' && inicio.focos.length === 1 && inicio.focos[0].id === 'lixeira', 'a instrutora dispara o incêndio na lata de lixo');
   ok(await ate(async () => (await p1.isVisible(Z('.pr-emerg'))) && /Incêndio/.test(await p1.textContent(Z('.pr-emerg')))), 'PC 1: o alarme do incêndio aparece na tela da Ana');
   const pedidoDeAjuda = await p2.waitForSelector('.praca-convite.emergencia [data-acao="ir-para-praca"]', { timeout: 20000 }).then(() => true).catch(() => false);
   ok(pedidoDeAjuda && /Incêndio/.test(await p2.textContent('.praca-convite')), 'PC 2: o Bruno, fora da praça, recebe o pedido de ajuda "🚨 Incêndio na lata de lixo!"');
@@ -177,13 +177,22 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
   ok(/mais perto/.test(longeDaFonte.erro || ''), 'longe da fonte não dá para encher o balde (o computador da instrutora confere onde o boneco está)');
   const errado = await ajuda(p1, 'ligar', { resposta: '190' });
   ok(errado.certo === false, 'ligar para o número errado não ajuda');
-  await ajuda(p1, 'ligar', { resposta: '193' }); await ajuda(p2, 'pergunta', { resposta: 0 });
-  for (let k = 0; k < 12; k++) {
-    const p = k % 2 ? p2 : p1;
+  const ligou = await ajuda(p1, 'ligar', { resposta: '193' }); await ajuda(p2, 'pergunta', { resposta: 0 });
+  ok(ligou.emergencia && ligou.emergencia.bombeiros, 'a Ana ligou 193: os Bombeiros vêm de caminhão');
+  // Cada um enche o balde e joga num foco aceso (o do poste é com os Bombeiros), até o fogo apagar.
+  const MAPA = require('../app/js/praca-mapa.js');
+  let r = ligou, vez = 0;
+  const limite = Date.now() + 70000;
+  while (r && r.emergencia && r.emergencia.status === 'ativo' && Date.now() < limite) {
+    const p = vez++ % 2 ? p2 : p1;
     await ajuda(p, 'pegar', { x: 16, y: 13 }); await espera(1300);
-    const r = await ajuda(p, 'entregar', { x: 21, y: 15 });
-    if (r.emergencia && r.emergencia.status !== 'ativo') break;
+    const f = (r.emergencia.focos || []).find((x) => x.forca > 0 && !x.eletrico);
+    if (!f) { await espera(1000); r = await ajuda(p, 'pegar', { x: 16, y: 13 }); continue; }
+    const [x, y] = MAPA.pertoDoPonto(f.x, f.y)[0];
+    const novo = await ajuda(p, 'entregar', { x, y, foco: f.id });
+    r = novo.emergencia ? novo : await ajuda(p, 'pegar', { x: 16, y: 13 });
   }
+  ok(r && r.emergencia && r.emergencia.status === 'salvo', `os dois apagaram foco por foco (e os Bombeiros o poste): ${r && r.emergencia && r.emergencia.status}`);
   ok(await ate(async () => /O fogo apagou!/.test(await p1.textContent(Z('.pr-emerg'))) && /O fogo apagou!/.test(await p2.textContent(Z('.pr-emerg')))), 'a turma apagou o fogo: o resultado aparece na tela dos dois');
   await p1.screenshot({ path: foto('praca-01d-incendio-apagado.png') });
   ok(await ate(() => Promise.resolve(['praca-brigada'].every((m) => ((lerDisco(`progresso-${idAna}.json`, {}).medalhas || {})[m]) && ((lerDisco(`progresso-${idBruno}.json`, {}).medalhas || {})[m]))), 10000), 'disco da instrutora: a Ana e o Bruno ganharam a medalha 🚒 Brigada da praça');

@@ -91,6 +91,8 @@
   const ARVORES = [[0, 0], [7, 0], [11, 0], [24, 0], [29, 0], [35, 0], [4, 2], [8, 2], [12, 2], [23, 2], [30, 2], [35, 2],
     [0, 9], [0, 16], [35, 10], [35, 16], [11, 23], [17, 23], [29, 23], [34, 23]];
   const PALMEIRAS = [[3, 26], [15, 26], [26, 26]];
+  // O poste de luz na calçada da praça, perto da lata de lixo (no incêndio, o fogo pode chegar nele: água, não!).
+  const POSTE = [24, 14];
 
   const porLugar = {};
   for (const L of [...LUGARES, ...OBJETOS]) {
@@ -103,28 +105,85 @@
   for (const [x, y] of BANCOS) bloqueia(x, y, 2, 1, null);
   for (const [x, y] of BARRACAS) bloqueia(x, y, 1, 1, 'feira');
   for (const [x, y] of [...IPES, ...ARVORES, ...PALMEIRAS]) bloqueia(x, y, 1, 1, null);
+  bloqueia(POSTE[0], POSTE[1], 1, 1, null);
   for (const m of MORADORES) bloq[m.y][m.x] = true;
   for (let y = 27; y < H; y++) for (let x = 0; x < W; x++) if (chao[y][x] === 'agua') dono[y][x] = 'rio';
   // A feira se usa por dentro: qualquer chão de terra dela serve de entrada.
   porLugar.feira.entradas = [];
   for (let y = 22; y <= 24; y++) for (let x = 0; x <= 10; x++) if (!bloq[y][x]) porLugar.feira.entradas.push([x, y]);
+  // O monte de areia da obra, no Lote da turma (na enchente, a praia alaga primeiro).
+  porLugar.lote.entradas = porLugar.lote.entradas.slice();
 
-  const andavel = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !bloq[y][x] && chao[y][x] !== 'agua';
+  const andavelFixo = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !bloq[y][x] && chao[y][x] !== 'agua';
+  // Nos eventos urgentes o mapa muda: árvore caída e fio no chão fecham a rua, e a enchente cobre as fileiras de baixo.
+  let fechados = new Set(), aguaDesde = H;
+  const livre = (x, y) => y < aguaDesde && !fechados.has(y * W + x);
+  const andavel = (x, y) => andavelFixo(x, y) && livre(x, y);
+  // tiles: [[x, y], ...] que ficam fechados; linhaAgua: da fileira linhaAgua para baixo está alagado (H = nada).
+  function definirBloqueios(tiles, linhaAgua) {
+    fechados = new Set((tiles || []).filter((c) => Array.isArray(c)).map(([x, y]) => y * W + x));
+    aguaDesde = Number.isFinite(linhaAgua) ? Math.max(0, Math.min(H, Math.ceil(linhaAgua))) : H;
+  }
   // Os lugares dos eventos urgentes: onde se pega a ajuda (água, areia, mercadoria) e onde se leva.
+  // O caminhão da Defesa Civil para na Avenida do Rio com a areia (quando alguém liga 199 na enchente) e o dos
+  // Bombeiros para na rua do lado da praça (quando alguém liga 193 no incêndio).
+  const CAMINHAO_AREIA = [[14, 19], [15, 19]], CAMINHAO_BOMBEIROS = [[26, 14], [26, 15]];
   const ZONAS = {
     fonte: porLugar.fonte.entradas, lixeira: porLugar.lixeira.entradas,
-    areia: [], barreira: [],
+    areia: [], barreira: [], obra: porLugar.lote.entradas, caminhao: [],
     feira: porLugar.feira.entradas, estacao: porLugar.estacao.entradas,
   };
   for (let x = 0; x < W; x++) {
-    if (chao[26][x] === 'areia' && andavel(x, 26)) ZONAS.areia.push([x, 26]);
-    if (x >= 11 && x <= 30 && andavel(x, 21)) ZONAS.barreira.push([x, 21]);
+    if (chao[26][x] === 'areia' && andavelFixo(x, 26)) ZONAS.areia.push([x, 26]);
+    if (x >= 11 && x <= 30 && andavelFixo(x, 21)) ZONAS.barreira.push([x, 21]);
   }
+  for (const [x, y] of [[13, 19], [16, 19], [14, 18], [15, 18], [14, 20], [15, 20]]) if (andavelFixo(x, y)) ZONAS.caminhao.push([x, y]);
   const pertoDaZona = (zona, x, y, raio = 1.3) => (Object.prototype.hasOwnProperty.call(ZONAS, zona) ? ZONAS[zona] : []).some(([a, b]) => Math.hypot(a - x, b - y) <= raio);
+
+  // Incêndio: o que pode pegar fogo na praça (x, y: o meio da coisa, em quadrinhos). O fogo começa na lata de lixo
+  // e vai pulando para o que está perto; o poste de luz é elétrico (água, não: só os Bombeiros).
+  const INFLAMAVEIS = [
+    { id: 'lixeira', nome: 'a lata de lixo', x: 22, y: 15 },
+    { id: 'poste', nome: 'o poste de luz', x: POSTE[0], y: POSTE[1], eletrico: true },
+    { id: 'banco-se', nome: 'o banco', x: 20.5, y: 16 }, { id: 'banco-ne', nome: 'o banco', x: 20.5, y: 11 },
+    { id: 'banco-so', nome: 'o banco', x: 14.5, y: 16 }, { id: 'banco-no', nome: 'o banco', x: 14.5, y: 11 },
+    { id: 'mesa-domino', nome: 'a mesa de dominó', x: 21, y: 13 }, { id: 'mesa-velha', nome: 'a mesa do jogo da velha', x: 14, y: 13 },
+    { id: 'mural', nome: 'o mural de recados', x: 21.5, y: 8 },
+    { id: 'ipe-se', nome: 'o ipê', x: 23, y: 17 }, { id: 'ipe-ne', nome: 'o ipê', x: 23, y: 8 },
+    { id: 'ipe-so', nome: 'o ipê', x: 12, y: 17 }, { id: 'ipe-no', nome: 'o ipê', x: 12, y: 8 },
+    { id: 'coreto-e', nome: 'o coreto', x: 16.5, y: 10 }, { id: 'coreto-d', nome: 'o coreto', x: 18.5, y: 10 },
+  ];
+  // De onde se joga água (ou se avisa): um quadrinho andável a até 1,8 quadrinho da coisa.
+  const PERTO_DO_FOCO = 1.8;
+  const pertoDoPonto = (px, py, raio = PERTO_DO_FOCO) => {
+    const lista = [];
+    for (let y = Math.floor(py - raio); y <= Math.ceil(py + raio); y++) for (let x = Math.floor(px - raio); x <= Math.ceil(px + raio); x++) {
+      if (andavel(x, y) && Math.hypot(x - px, y - py) <= raio) lista.push([x, y]);
+    }
+    return lista;
+  };
+
+  // Chuva forte: as árvores que podem cair e para que lado (o tronco ocupa os 2 quadrinhos andáveis daquele lado).
+  // Não cai em porta de prédio nem em entrada de lugar.
+  const entradaDeLugar = new Set();
+  for (const L of [...LUGARES, ...OBJETOS]) for (const [x, y] of L.entradas || []) entradaDeLugar.add(y * W + x);
+  const QUEDAS = [];
+  for (const [x, y] of [...ARVORES, ...IPES, ...PALMEIRAS]) {
+    for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+      const tiles = [[x + dx, y + dy], [x + 2 * dx, y + 2 * dy]];
+      if (!tiles.every(([a, b]) => andavelFixo(a, b) && !entradaDeLugar.has(b * W + a))) continue;
+      const fio = [x + 3 * dx, y + 3 * dy];
+      const naRua = tiles.filter(([a, b]) => chao[b][a] === 'rua' || chao[b][a] === 'calcada').length;
+      QUEDAS.push({ id: `${x}-${y}-${dx}${dy}`, arvore: [x, y], ipe: IPES.some(([a, b]) => a === x && b === y), palmeira: PALMEIRAS.some(([a, b]) => a === x && b === y),
+        tiles, fio: andavelFixo(fio[0], fio[1]) && !entradaDeLugar.has(fio[1] * W + fio[0]) ? fio : null, naRua });
+    }
+  }
   // Caminho mais curto (pelos quadrinhos, sem diagonal) até um dos destinos. [] = já está lá; null = não dá.
-  function caminho(de, metas) {
-    const alvos = new Set(metas.filter(([x, y]) => andavel(x, y)).map(([x, y]) => y * W + x));
-    if (!alvos.size || !andavel(de[0], de[1])) return null;
+  // extra: quadrinhos fechados a mais (para conferir, antes de uma árvore cair, se ainda dá para chegar em tudo).
+  function caminho(de, metas, extra) {
+    const pode = extra ? (x, y) => andavel(x, y) && !extra.has(y * W + x) : andavel;
+    const alvos = new Set(metas.filter(([x, y]) => pode(x, y)).map(([x, y]) => y * W + x));
+    if (!alvos.size || !pode(de[0], de[1])) return null;
     const ini = de[1] * W + de[0];
     if (alvos.has(ini)) return [];
     const veio = new Int32Array(W * H).fill(-2); veio[ini] = -1;
@@ -133,7 +192,7 @@
       const c = fila[i], cx = c % W, cy = (c / W) | 0;
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const nx = cx + dx, ny = cy + dy;
-        if (!andavel(nx, ny)) continue;
+        if (!pode(nx, ny)) continue;
         const n = ny * W + nx;
         if (veio[n] !== -2) continue;
         veio[n] = c;
@@ -157,9 +216,27 @@
     return [18, 15];
   }
 
+  // Todos os lugares continuam alcançáveis (a partir da praça) com estes quadrinhos fechados a mais?
+  function tudoAlcancavel(extra) {
+    const ini = [18, 16];
+    const visto = new Uint8Array(W * H);
+    const pode = (x, y) => andavel(x, y) && !extra.has(y * W + x);
+    if (!pode(ini[0], ini[1])) return false;
+    const fila = [ini[1] * W + ini[0]]; visto[fila[0]] = 1;
+    for (let i = 0; i < fila.length; i++) {
+      const c = fila[i], cx = c % W, cy = (c / W) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = cx + dx, ny = cy + dy;
+        if (!pode(nx, ny) || visto[ny * W + nx]) continue;
+        visto[ny * W + nx] = 1; fila.push(ny * W + nx);
+      }
+    }
+    return [...LUGARES, ...OBJETOS].every((L) => !(L.entradas || []).some(([x, y]) => andavel(x, y)) || L.entradas.some(([x, y]) => visto[y * W + x]));
+  }
+
   const PRACA = [], RUAS = [];
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    if (!andavel(x, y)) continue;
+    if (!andavelFixo(x, y)) continue;
     if (x >= 11 && x <= 24 && y >= 7 && y <= 18) PRACA.push([x, y]);
     if (chao[y][x] === 'calcada' || chao[y][x] === 'rua') RUAS.push([x, y]);
   }
@@ -169,6 +246,7 @@
   // Onde a pessoa aparece ao entrar na praça (perto da fonte, cada uma num quadrinho).
   const CHEGADA = [[18, 15], [17, 15], [19, 15], [16, 15], [18, 16], [17, 16], [19, 16], [16, 16], [15, 15], [20, 15], [15, 14], [20, 14]];
 
-  return { T, W, H, chao, bloq, dono, LUGARES, OBJETOS, MORADORES, CIDADE, CASA_PRONTA, ENFEITES, MODULOS_DA_CIDADE, BANCOS, BARRACAS, IPES, ARVORES, PALMEIRAS, porLugar,
-    andavel, caminho, vizinhos, maisPerto, PRACA, RUAS, RODA, CHEGADA, ZONAS, pertoDaZona };
+  return { T, W, H, chao, bloq, dono, LUGARES, OBJETOS, MORADORES, CIDADE, CASA_PRONTA, ENFEITES, MODULOS_DA_CIDADE, BANCOS, BARRACAS, IPES, ARVORES, PALMEIRAS, POSTE, porLugar,
+    andavel, andavelFixo, definirBloqueios, caminho, vizinhos, maisPerto, tudoAlcancavel, PRACA, RUAS, RODA, CHEGADA, ZONAS, pertoDaZona,
+    INFLAMAVEIS, PERTO_DO_FOCO, pertoDoPonto, QUEDAS, CAMINHAO_AREIA, CAMINHAO_BOMBEIROS };
 });

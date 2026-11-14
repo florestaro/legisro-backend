@@ -2409,11 +2409,64 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .pr-mapa.emergencia .pr-acao.urgente { background: #b3261e; }
 .pr-mapa.emergencia .pr-acao.urgente::after { border-top-color: #b3261e; }
 .pr-mapa.emergencia .pr-acao.urgente.embaixo::after { border-top-color: transparent; border-bottom-color: #b3261e; }
-.pr-fogo { position: absolute; transform: translate(-50%, -80%); line-height: 1; pointer-events: none; filter: drop-shadow(0 0 8px rgba(255, 120, 0, .9)); animation: pr-fogo .35s ease-in-out infinite alternate; transition: font-size .4s; }
-@keyframes pr-fogo { to { transform: translate(-50%, -84%) scale(1.08, .95); } }
 .pr-obj.lixeira { font-size: 26px; }
-.pr-enchente { position: absolute; left: 0; width: 1440px; pointer-events: none; background: linear-gradient(180deg, rgba(80, 150, 210, .55), rgba(60, 110, 170, .75)); border-top: 4px solid rgba(220, 240, 255, .8); transition: top .5s, height .5s; }
-.pr-sacos { position: absolute; transform: translateY(-60%); font-size: 26px; letter-spacing: 6px; white-space: nowrap; overflow: hidden; pointer-events: none; }
+.pr-enchente { position: absolute; left: 0; width: 1440px; pointer-events: none; background: linear-gradient(180deg, rgba(80, 150, 210, .6), rgba(50, 100, 160, .8)); border-top: 3px solid rgba(220, 240, 255, .85); transition: top 1s ease-out, height 1s ease-out; }
+.pr-enchente .onda { position: absolute; left: 0; right: 0; top: -9px; height: 12px; background: radial-gradient(circle at 10px 14px, rgba(225, 242, 255, .9) 7px, transparent 8px) 0 0 / 20px 12px repeat-x; animation: pr-onda 1.4s linear infinite; }
+@keyframes pr-onda { to { background-position: 20px 0; } }
+.pr-enchente.passou { background: linear-gradient(180deg, rgba(70, 135, 200, .66), rgba(45, 95, 155, .82)); }
+.pr-enchente.baixando { transition: top 1.3s ease-in, height 1.3s ease-in; }
+.pr-sacos { position: absolute; transform: translateY(-60%); font-size: 26px; letter-spacing: 6px; white-space: nowrap; overflow: hidden; pointer-events: none; z-index: 1; }
+.pr-sacos .fileira { display: block; }
+.pr-sacos .fileira.de-cima { margin-top: -20px; filter: brightness(.85); }
+/* Incêndio: os focos de fogo (crescem com a força), o queimado, a fumaça e o poste elétrico */
+.pr-foco { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 2; --forca: 1; }
+.pr-foco::before { content: ''; position: absolute; left: 0; top: 0; width: calc(36px + var(--forca) * 22px); height: calc(36px + var(--forca) * 22px); transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, rgba(255, 150, 20, .5), rgba(255, 70, 0, 0) 70%); animation: pr-brilho .7s ease-in-out infinite alternate; }
+.pr-foco .chama { position: absolute; left: 0; top: 0; font-size: 30px; line-height: 1; transform: translate(-50%, -78%) scale(calc(.45 + var(--forca) * .33)); transform-origin: 50% 90%; filter: drop-shadow(0 0 8px rgba(255, 120, 0, .9)); animation: pr-chama-foco .32s ease-in-out infinite alternate; transition: transform .5s; }
+@keyframes pr-chama-foco { to { transform: translate(-50%, -82%) scale(calc((.45 + var(--forca) * .33) * 1.08), calc((.45 + var(--forca) * .33) * .94)); } }
+@keyframes pr-brilho { to { opacity: .55; } }
+.pr-foco .queimado { position: absolute; left: 0; top: 0; width: 38px; height: 28px; transform: translate(-50%, -40%); border-radius: 50%; background: radial-gradient(ellipse, rgba(35, 22, 12, .65), rgba(35, 22, 12, 0) 70%); opacity: calc(var(--forca) * .22); }
+.pr-foco .fumaca { position: absolute; left: 0; top: 0; font-size: 26px; line-height: 1; opacity: 0; transform: translate(-50%, -60%); }
+.pr-foco .faisca { position: absolute; left: 6px; top: -38px; font-size: 18px; line-height: 1; animation: pr-faisca .4s steps(2) infinite; }
+@keyframes pr-faisca { 50% { opacity: .2; transform: translate(4px, -3px) scale(1.2); } }
+.pr-foco.eletrico::before { background: radial-gradient(circle, rgba(255, 235, 80, .65), rgba(255, 170, 0, 0) 70%); }
+.pr-foco.apagado::before, .pr-foco.apagado .chama, .pr-foco.apagado .faisca { display: none; }
+.pr-foco.apagado .queimado { opacity: .75; }
+.pr-foco.apagado .fumaca { animation: pr-fumaca 3.2s ease-out forwards; }
+@keyframes pr-fumaca { 0% { opacity: .95; transform: translate(-50%, -60%) scale(.8); } 100% { opacity: 0; transform: translate(-50%, -190%) scale(1.6); } }
+/* Os caminhões do socorro: Bombeiros (descem a rua até a praça) e Defesa Civil (vêm pela avenida com a areia) */
+.pr-veiculo { position: absolute; transform: translate(-50%, -50%); font-size: 42px; line-height: 1; pointer-events: none; z-index: 3; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .35)); }
+.pr-veiculo:not(.chegou) { animation: pr-sirene .5s ease-in-out infinite alternate; }
+@keyframes pr-sirene { to { filter: drop-shadow(0 0 10px rgba(255, 40, 40, .95)); } }
+.pr-veiculo.defesa .carro { display: inline-block; transform: scaleX(-1); }
+.pr-veiculo.defesa .monte { position: absolute; left: -30px; top: 12px; width: 34px; height: 20px; border-radius: 50% 50% 6px 6px; background: radial-gradient(circle at 40% 30%, #e2b77c, #b98249 70%); box-shadow: 0 2px 3px rgba(0, 0, 0, .3); }
+.pr-veiculo.defesa:not(.chegou) .monte { display: none; }
+.pr-jato { position: absolute; height: 7px; margin-top: -3.5px; transform-origin: 0 50%; border-radius: 4px; pointer-events: none; z-index: 2; background: repeating-linear-gradient(90deg, rgba(110, 185, 255, .95) 0 12px, rgba(215, 240, 255, .7) 12px 18px); background-size: 36px 7px; animation: pr-jato .3s linear infinite; }
+@keyframes pr-jato { to { background-position: 36px 0; } }
+/* Chuva forte: as árvores caídas (tronco, copa e a equipe da Defesa Civil), o toco, a placa do aviso, o fio caído e o relâmpago */
+.pr-arvore-caida { position: absolute; width: 96px; height: 40px; transform: translate(-50%, -50%) rotate(var(--ang)); pointer-events: none; z-index: 2; animation: pr-cai .55s ease-in; }
+.pr-arvore-caida .tronco { position: absolute; left: 2px; right: 24px; top: 50%; height: 11px; margin-top: -5.5px; border-radius: 6px; background: linear-gradient(180deg, #91603a, #5c3a1f); box-shadow: 0 3px 3px rgba(0, 0, 0, .3); }
+.pr-arvore-caida .copa { position: absolute; right: -12px; top: 50%; font-size: 44px; line-height: 1; transform: translateY(-50%) rotate(112deg); filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .3)); }
+.pr-arvore-caida .folhas { position: absolute; left: 18px; top: -6px; font-size: 15px; line-height: 1; letter-spacing: 9px; opacity: .9; }
+.pr-arvore-caida .equipe { position: absolute; left: 34%; top: -26px; font-size: 26px; line-height: 1; display: none; transform: rotate(calc(-1 * var(--ang))); }
+.pr-arvore-caida.equipe .equipe { display: block; animation: pr-serra .35s ease-in-out infinite alternate; }
+@keyframes pr-serra { to { margin-top: 3px; } }
+.pr-arvore-caida.saindo { opacity: 0; transition: opacity .6s; }
+@keyframes pr-cai { from { opacity: 0; transform: translate(-50%, -50%) rotate(var(--ang)) scale(1.3); } 60% { opacity: 1; } }
+.pr-toco { position: absolute; width: 40px; height: 40px; pointer-events: none; z-index: 1; }
+.pr-toco::after { content: ''; position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: radial-gradient(circle, #d3a46a 30%, #7a4e2a 33%, #7a4e2a 62%, #5c3a1f 65%); box-shadow: 0 2px 2px rgba(0, 0, 0, .3); }
+.pr-placa-queda { position: absolute; transform: translate(-50%, -100%) scale(var(--inv, 1)); transform-origin: 50% 100%; background: #ffd84d; color: #3a2a00; border: 2px solid #b38600; border-radius: 999px; padding: 3px 9px; font: 700 12px/1 var(--fonte); white-space: nowrap; pointer-events: none; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); animation: pr-pista 1s ease-in-out infinite alternate; }
+.pr-placa-queda.avisada { background: #e3f1ff; color: #123a66; border-color: #2f6fb3; animation: none; }
+.pr-fio { position: absolute; transform: translate(-50%, -50%); width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-size: 22px; background: radial-gradient(circle, rgba(255, 230, 80, .8), rgba(255, 200, 0, 0) 70%); pointer-events: none; z-index: 2; animation: pr-fio .5s steps(2) infinite; }
+@keyframes pr-fio { 50% { filter: brightness(1.7); transform: translate(-50%, -50%) scale(1.15); } }
+.pr-mapa.relampago::after { content: ''; position: absolute; inset: 0; z-index: 4; pointer-events: none; background: rgba(255, 255, 255, .7); opacity: 0; animation: pr-relampago .45s ease-out; }
+@keyframes pr-relampago { 10% { opacity: 1; } 30% { opacity: .15; } 45% { opacity: .8; } 100% { opacity: 0; } }
+.pr-avisos li.urgente { background: #b3261e; color: #fff; }
+.pr-emerg .mapa { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Na cidade inteira o alarme fica compacto (a cidade cabe embaixo dele): sem o resumo do mapa, botões menores. */
+.pr-mapa.longe .pr-emerg { gap: 5px; padding: 8px 12px; }
+.pr-mapa.longe .pr-emerg .mapa, .pr-mapa.longe .pr-emerg .carregando { display: none; }
+.pr-mapa.longe .pr-emerg-botao { padding: 5px 9px; font-size: 12.5px; }
+.pr-emerg .mapa .chip { background: rgba(0, 0, 0, .22); padding: 4px 9px; border-radius: 999px; font-weight: 700; font-size: 13px; }
 .pr-chuva { position: absolute; inset: 0; z-index: 3; pointer-events: none; background: repeating-linear-gradient(105deg, rgba(200, 220, 255, .0) 0 14px, rgba(200, 220, 255, .45) 14px 16px), rgba(20, 35, 60, .35); background-size: 40px 40px, auto; animation: pr-chove .45s linear infinite; }
 @keyframes pr-chove { to { background-position: -10px 40px, 0 0; } }
 .pr-marca-ajuda { position: absolute; transform: translate(-50%, -100%) scale(var(--inv, 1)); transform-origin: 50% 100%; display: flex; align-items: center; gap: 5px; background: #fff; color: #7a1712; border: 2px solid #b3261e; border-radius: 999px; padding: 3px 9px 3px 5px; font: 700 12.5px/1 var(--fonte); white-space: nowrap; pointer-events: none; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); animation: pr-pista 1s ease-in-out infinite alternate; }
@@ -2458,4 +2511,4 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .pr-loja-item .linha { display: flex; align-items: center; gap: 8px; }
 .cart-dica { margin: 0; font-size: 13px; color: var(--texto-suave); background: var(--fundo-cinza); border-radius: 9px; padding: 8px 10px; }
 .cart-extrato .valor.gasto { color: #a1260f; }
-@media (prefers-reduced-motion: reduce) { .pr-mundo.suave, .pr-obra { transition: none; } .pr-p.andando .corpo, .pr-obj.barco, .pr-mao, .pr-acao, .pr-avisos li, .pr-marca-pista, .pr-marca-ajuda, .pr-emerg, .pr-mapa.alarme, .pr-fogo, .pr-chuva, .pr-pilula.moedas.ganhou, .pr-fogos span, .pr-bau, .pr-bingo-num.ainda { animation: none; } .pr-fogos span { opacity: .8; } }
+@media (prefers-reduced-motion: reduce) { .pr-mundo.suave, .pr-obra { transition: none; } .pr-p.andando .corpo, .pr-obj.barco, .pr-mao, .pr-acao, .pr-avisos li, .pr-marca-pista, .pr-marca-ajuda, .pr-emerg, .pr-mapa.alarme, .pr-chuva, .pr-foco::before, .pr-foco .chama, .pr-foco .faisca, .pr-veiculo, .pr-jato, .pr-enchente .onda, .pr-arvore-caida, .pr-arvore-caida.equipe .equipe, .pr-placa-queda, .pr-fio, .pr-mapa.relampago::after, .pr-pilula.moedas.ganhou, .pr-fogos span, .pr-bau, .pr-bingo-num.ainda { animation: none; } .pr-fogos span { opacity: .8; } }

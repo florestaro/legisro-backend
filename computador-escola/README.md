@@ -290,12 +290,26 @@ curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela red
   história. Quem ajudou ganha a medalha 🔎 Detetive da novela.
 - **Eventos urgentes** (o instrutor aperta 🚨 e escolhe): **incêndio na lata de lixo**, **o Rio Madeira transbordando**
   ou **chuva forte com alerta da Defesa Civil**. Toca o alarme na tela de todos (quem está fora da praça recebe o pedido
-  de ajuda), aparece o relógio de 3 minutos e a barra do perigo, que cresce sozinha. Cada um ajuda do seu jeito: leva a
-  ajuda andando pelo mapa (água da fonte para o fogo, sacos de areia da praia para a barreira, mercadoria da feira para
-  a estação), liga para o número certo (193 Bombeiros, 199 Defesa Civil, ou o CEP para o 40199) e responde o que fazer.
+  de ajuda), aparece o relógio de 3 minutos e a barra do perigo. **O mapa acompanha o evento:**
+  - 🔥 **o fogo se alastra**: começa na lata de lixo e pula para o banco, as mesas, o mural, o coreto e os ipês (cada foco
+    cresce, e fogo grande cresce mais rápido). Cada um enche o balde na fonte e joga num foco (clicando no fogo). O fogo
+    chega no **poste de luz** ⚡ (novo, do lado da lata de lixo): ali água não pode, e quem liga 193 chama os
+    **Bombeiros**, que descem a rua de caminhão 🚒, desligam a energia, apagam o poste e depois ajudam com a mangueira.
+    Afastar os curiosos faz o fogo demorar mais para pular. Sem ninguém ajudando, o fogo toma a praça em uns 2 minutos;
+  - 🌊 **o rio sobe para dentro da cidade**, fileira por fileira: já começa cobrindo a praia, os trilhos e a feira, e
+    vem para a calçada e a avenida (ninguém anda na água; quem estava lá sai correndo). A areia está no monte da obra (Lote
+    da turma) e, depois de ligar 199, num caminhão da Defesa Civil 🚚 que chega pela avenida, do lado da barreira. Cada
+    saco na barreira faz a água descer; a praia volta a ter areia quando a água baixa;
+  - 🌧️ **na chuva forte, árvores caem na rua** (uma a cada 15 segundos), fecham o caminho (o boneco desvia por outro) e às
+    vezes derrubam um **fio** ⚡ (ninguém chega perto). Quem chega perto da árvore (sem encostar) avisa a Defesa Civil
+    (199); a equipe 👷 vem e tira a árvore. Árvore sem aviso deixa o temporal mais perigoso. Relâmpagos e a chuva
+    engrossam com o perigo, e a mercadoria da feira vai para a estação.
+
+  Também vale ligar para o número certo (193 Bombeiros, 199 Defesa Civil, ou o CEP para o 40199) e responder o que fazer.
   Se o perigo zerar a tempo, a turma vence: confete, a lição do dia e, para quem ajudou, moedas e a medalha 🚒 Brigada
-  da praça. O computador do instrutor confere cada ajuda (até se o boneco está perto do lugar certo). No modo de teste,
-  os colegas de demonstração ajudam também.
+  da praça. O computador do instrutor confere cada ajuda (até se o boneco está perto do foco, da árvore ou da barreira),
+  e todos veem quem está carregando o balde, o saco ou a mercadoria. No modo de teste, três colegas de demonstração
+  ajudam andando pelo mapa (devagar: quem faz a diferença é você).
 - **Eventos especiais comprados com moedas** (no 💰 da praça ou no coreto): a turma junta moedas numa vaquinha e, quando o
   valor chega, o **Professor Virtual conduz o evento** no coreto, sem precisar do instrutor: 🎆 **festa com fogos** (100
   moedas; as palmas 👏 animam a festa), 🎁 **caça ao tesouro** (150; 8 baús pela cidade, quem chega primeiro ganha 5
@@ -428,6 +442,7 @@ npm run teste:sala -- 5       # o mesmo com 5 alunos
 npm run teste:fase2           # novidades da fase 2: o aluno troca de computador e encontra tudo (uns 3 minutos)
 npm run teste:fase3           # novidades da fase 3: MEI, anúncio e PDF em outro computador, e a monitoria (uns 3 minutos)
 npm run teste:praca           # a Praça Escola em 3 computadores: andar, conversar, a cidade que cresce, tarefas, novela, eventos urgentes e especiais, Hora da Praça, moedas, jogar, mural, votação e comandos do instrutor
+npm run teste:perigos         # os eventos urgentes no mapa, sem tela e sem rede (1 segundo): o fogo pulando e os Bombeiros, a enchente subindo e a areia, as árvores caindo e a Defesa Civil
 npm run teste:emojis          # todos os emojis aparecem direito no Windows 10 (sem tela, segundos)
 ```
 

@@ -22,7 +22,6 @@
   const PERIGO_INICIAL = 50, CRESCE = 0.3;  // % e % por segundo
   const ESPERA_ENTREGA = 1200;  // entre duas entregas da mesma pessoa
   const MOSTRA_FIM = 15000;     // o resultado do evento fica na tela por 15 s
-  const AJUDA_BOT = 5000;       // no modo de teste, um colega de demonstração ajuda a cada 5 s
   // Eventos especiais (comprados com moedas) e Hora da Praça.
   const CONTAGEM = 20000;       // o evento especial começa 20 s depois de comprado (dá tempo de ir para o coreto)
   const FIM_ESPECIAL = 15000;   // o resultado fica na tela por 15 s
@@ -137,6 +136,7 @@
     const publica = (p, agora) => ({
       id: p.id, nome: p.nome, avatar: p.avatar, papel: p.papel, turma: p.turma, monitor: !!p.monitor,
       x: p.x, y: p.y, esq: !!p.esq, andando: !!p.andando, mao: !!(p.mao && agora - p.mao < MAO), bot: !!p.bot,
+      carga: emerg && emerg.status === 'ativo' && emerg.carregando[p.id] ? nov.EMERGENCIAS[emerg.tipo].levar.levando : null,
       ...casaDe(p.id),
     });
 
@@ -308,14 +308,199 @@
     // Ficam só na memória. O instrutor dispara; o perigo cresce sozinho e cada ajuda o diminui. Se o perigo zerar, a
     // turma venceu; se chegar a 100% ou o tempo acabar, desta vez a cidade sofreu (e a turma tenta de novo outro dia).
     // Cada ajuda vale mais quando a turma é pequena: com 20 alunos na praça, cada um ajuda um pouco.
+    // O mapa acompanha o evento: no incêndio, o fogo pula de coisa em coisa e cada balde vai num foco (o poste de luz
+    // só os Bombeiros apagam); na enchente, a água sobe fileira por fileira; na chuva forte, árvores caem na rua.
     let emerg = null;
     const unidade = () => 15 / emerg.pessoas;
+    const LIMITE_FOGO = 18, FORCA_MAX = 3;       // a soma da força dos focos que vale 100% de perigo; o máximo de cada foco
+    const ESPALHA = 12000, PRIMEIRO_PULO = 8000; // o fogo pula para outra coisa a cada 12 s (o primeiro pulo em 8 s)
+    const SOCORRO = 15000;                       // os Bombeiros (193) e a Defesa Civil (199) chegam 15 s depois da ligação
+    const JATO = 6000, AGUA_BOMBEIROS = 0.5;     // depois de apagar o poste, os Bombeiros jogam água num foco a cada 6 s
+    const QUEDA_PRIMEIRA = 8000, QUEDA = 15000, MAX_QUEDAS = 5;  // chuva forte: uma árvore cai a cada 15 s
+    const EQUIPE_CHEGA = 7000, EQUIPE_TIRA = 7000;              // a equipe da Defesa Civil chega 7 s depois do aviso
+    const PERIGO_ARVORE = 0.15;                  // % por segundo a mais para cada árvore caída que ninguém avisou
+    const FILEIRAS_ENCHENTE = 9;                 // com 100% de perigo, a água sobe 9 fileiras (até a calçada da praça)
+    const VALE_BOT = 0.2;                        // a ajuda de um colega de demonstração vale só um pouco (quem faz a diferença é você)
+    const linhaDaAgua = (perigo) => 27 - (perigo / 100) * FILEIRAS_ENCHENTE;
+    const em = (nome) => nome.replace(/^o /, 'no ').replace(/^a /, 'na ').replace(/^os /, 'nos ').replace(/^as /, 'nas ');
+    const focosAcesos = () => emerg.focos.filter((f) => f.forca > 0);
+
+    // O que o evento fecha no mapa: árvore caída, fio no chão, os caminhões e (na enchente) as fileiras alagadas.
+    function bloqueiosDoEvento() {
+      if (!emerg || emerg.status !== 'ativo') return { tiles: [], agua: null };
+      const tiles = [];
+      for (const q of emerg.quedas) if (!q.removida) { tiles.push(...q.tiles); if (q.fio) tiles.push(q.fio); }
+      if (emerg.bombeiros && emerg.bombeiros.chegou) tiles.push(...mapa.CAMINHAO_BOMBEIROS);
+      if (emerg.caminhao && emerg.caminhao.chegou) tiles.push(...mapa.CAMINHAO_AREIA);
+      return { tiles, agua: emerg.tipo === 'rio' ? linhaDaAgua(emerg.perigo) : null };
+    }
+    // (o nível da água vai arredondado, igual ao que os computadores dos alunos recebem)
+    const aplicarBloqueios = () => { const b = bloqueiosDoEvento(); mapa.definirBloqueios(b.tiles, b.agua == null ? null : Math.round(b.agua * 100) / 100); };
+    // Onde se pega a ajuda: na enchente, a praia alaga primeiro (a areia vem da obra e, depois do 199, do caminhão).
+    const fontesDeAreia = () => ['obra', ...(emerg.caminhao && emerg.caminhao.chegou ? ['caminhao'] : []), ...(Math.ceil(linhaDaAgua(emerg.perigo)) > 26 ? ['areia'] : [])];
+    const fontesDe = (def) => (emerg.tipo === 'rio' ? fontesDeAreia() : [def.levar.pegar]);
+
+    // ----- Incêndio: os focos de fogo (a soma da força deles é o perigo) -----
+    function recalcularFogo() {
+      emerg.perigo = Math.min(100, (focosAcesos().reduce((s, f) => s + f.forca, 0) * 100) / LIMITE_FOGO);
+    }
+    function apagarUmPouco(f, quanto, agora) {
+      f.forca = Math.max(0, f.forca - quanto);
+      if (f.forca < 0.05) { f.forca = 0; f.apagouEm = agora; }
+      recalcularFogo();
+    }
+    // Para onde o fogo pula: o poste, se estiver perto; se não, uma das coisas mais perto que ainda não queimaram.
+    function proximoAQueimar(o) {
+      const ja = new Set(emerg.focos.map((f) => f.id));
+      const dist = (c) => Math.hypot(c.x - o.x, c.y - o.y);
+      const livres = mapa.INFLAMAVEIS.filter((c) => !ja.has(c.id));
+      const poste = livres.find((c) => c.eletrico && dist(c) <= 3.2);
+      if (poste) return poste;
+      const perto = livres.filter((c) => !c.eletrico && dist(c) <= 5.5).sort((a, b) => dist(a) - dist(b)).slice(0, 3);
+      return perto.length ? sortear(perto) : null;
+    }
+    // O fogo pula de um foco para a coisa do lado, levando um pouco da força (o total só muda quando o perigo muda).
+    function pularFogo(agora, origem, leva) {
+      const origens = origem ? [origem] : focosAcesos().filter((f) => !f.eletrico).sort((a, b) => b.forca - a.forca);
+      for (const o of origens) {
+        const c = proximoAQueimar(o);
+        if (!c) continue;
+        const passa = Math.min(c.eletrico ? 1 : leva, Math.max(0, o.forca - 0.5));
+        const f = { id: c.id, nome: c.nome, x: c.x, y: c.y, eletrico: !!c.eletrico, forca: passa, desde: agora, apagouEm: 0 };
+        o.forca -= passa;
+        emerg.focos.push(f);
+        evento({ tipo: 'emergencia-mapa', emergencia: 'incendio', texto: c.eletrico ? `⚡ O fogo chegou ${em(c.nome)}! Água no poste, não: isso é com os Bombeiros (193).` : `🔥 O fogo pulou para ${c.nome}!` });
+        return f;
+      }
+      return null;
+    }
+    // O fogo cresce nos focos acesos (o do poste não cresce); quando todos estão no máximo, pula para outra coisa.
+    function crescerFogo(quanto, agora) {
+      let resto = quanto;
+      for (let volta = 0; volta < 6 && resto > 1e-9; volta++) {
+        const abertos = focosAcesos().filter((f) => !f.eletrico && f.forca < FORCA_MAX);
+        if (!abertos.length) {
+          const f = pularFogo(agora, null, 0);
+          if (!f) break;
+          const add = Math.min(resto, (f.eletrico ? 1 : FORCA_MAX) - f.forca);
+          f.forca += add; resto -= add;
+          continue;
+        }
+        const parte = resto / abertos.length;
+        for (const f of abertos) { const add = Math.min(parte, FORCA_MAX - f.forca); f.forca += add; resto -= add; }
+      }
+      recalcularFogo();
+    }
+    function atualizarFogo(agora, dt) {
+      // Cada foco aceso cresce sozinho (emerg.cresce de força por segundo): fogo grande cresce mais rápido.
+      crescerFogo(emerg.cresce * dt * focosAcesos().filter((f) => !f.eletrico).length, agora);
+      if (agora >= emerg.pulaEm) {
+        emerg.pulaEm = agora + ESPALHA;
+        const origem = sortear(focosAcesos().filter((f) => !f.eletrico && f.forca >= 1));
+        if (origem) pularFogo(agora, origem, 0.6);
+      }
+      const b = emerg.bombeiros;
+      if (b && !b.chegou && agora >= b.chegaEm) {
+        b.chegou = true; b.jatoEm = b.chegaEm + 1500;
+        evento({ tipo: 'emergencia-mapa', emergencia: 'incendio', texto: '🚒 Os Bombeiros chegaram! Primeiro eles cuidam do poste; a turma continua com os baldes.' });
+      }
+      while (b && b.chegou && agora >= b.jatoEm) {
+        b.jatoEm += JATO;
+        const acesos = focosAcesos();
+        if (!acesos.length) break;
+        const poste = acesos.find((f) => f.eletrico);
+        const alvo = poste || acesos.sort((x, y) => y.forca - x.forca)[0];
+        b.alvo = alvo.id;
+        apagarUmPouco(alvo, poste ? 99 : AGUA_BOMBEIROS, agora);
+        if (poste) evento({ tipo: 'emergencia-mapa', emergencia: 'incendio', texto: '⚡ Os Bombeiros desligaram a energia e apagaram o fogo do poste.' });
+      }
+      // A mangueira já fica apontada para o próximo fogo (o poste primeiro, depois o maior).
+      if (b && b.chegou) {
+        const acesos = focosAcesos();
+        const prox = acesos.find((f) => f.eletrico) || acesos.sort((x, y) => y.forca - x.forca)[0];
+        b.alvo = prox ? prox.id : null;
+      }
+      recalcularFogo();
+    }
+    // O balde vai no foco escolhido (ou no mais perto, se não disse qual), desde que o boneco esteja do lado dele.
+    function focoParaAgua(id, x, y) {
+      const dist = (f) => Math.hypot(f.x - x, f.y - y);
+      const alcance = mapa.PERTO_DO_FOCO + 0.4;
+      const acesos = focosAcesos();
+      if (id) { const f = acesos.find((g) => g.id === id); return f && dist(f) <= alcance ? f : null; }
+      return acesos.filter((f) => dist(f) <= alcance).sort((a, b) => (a.eletrico - b.eletrico) || dist(a) - dist(b))[0] || null;
+    }
+
+    // ----- Chuva forte: as árvores que caem na rua -----
+    const distDaQueda = (q, x, y) => Math.min(...[...q.tiles, q.arvore].map(([a, b]) => Math.hypot(a - x, b - y)));
+    function derrubarArvore(agora) {
+      aplicarBloqueios();
+      const usadas = new Set(emerg.quedas.map((q) => q.arvore.join(',')));
+      let candidatas = mapa.QUEDAS.filter((c) => !usadas.has(c.arvore.join(',')) && c.tiles.every(([x, y]) => mapa.andavel(x, y)));
+      for (let tentativa = 0; tentativa < 12 && candidatas.length; tentativa++) {
+        // As que caem na rua (ou na calçada) têm mais chance; e nunca pode fechar o caminho para um lugar.
+        let sorte = Math.random() * candidatas.reduce((s, c) => s + (c.naRua ? 3 : 1), 0), c = candidatas[candidatas.length - 1];
+        for (const x of candidatas) { sorte -= x.naRua ? 3 : 1; if (sorte <= 0) { c = x; break; } }
+        candidatas = candidatas.filter((x) => x !== c);
+        const fio = c.fio && Math.random() < 0.35 && mapa.andavel(c.fio[0], c.fio[1]) ? c.fio : null;
+        if (!mapa.tudoAlcancavel(new Set([...c.tiles, ...(fio ? [fio] : [])].map(([x, y]) => y * mapa.W + x)))) continue;
+        const q = { id: `${c.id}-${agora}`, arvore: c.arvore, tiles: c.tiles, fio, ipe: c.ipe, palmeira: c.palmeira, onde: ondeFica(c.tiles[0][0], c.tiles[0][1]),
+          caiuEm: agora, avisadaEm: 0, por: null, equipe: false, removida: false };
+        emerg.quedas.push(q);
+        evento({ tipo: 'emergencia-mapa', emergencia: 'chuva', texto: `🌳 Uma árvore caiu ${q.onde}!${fio ? ' ⚡ E derrubou um fio: ninguém chega perto!' : ''} Avisem a Defesa Civil (199).` });
+        aplicarBloqueios();
+        return q;
+      }
+      return null;
+    }
+    function atualizarQuedas(agora) {
+      for (const q of emerg.quedas) {
+        if (q.removida || !q.avisadaEm) continue;
+        if (!q.equipe && agora >= q.avisadaEm + EQUIPE_CHEGA) q.equipe = true;
+        if (agora >= q.avisadaEm + EQUIPE_CHEGA + EQUIPE_TIRA) {
+          q.removida = true;
+          evento({ tipo: 'emergencia-mapa', emergencia: 'chuva', texto: `👷 A Defesa Civil tirou a árvore caída ${q.onde}.` });
+        }
+      }
+      if (agora >= emerg.quedaEm) {
+        emerg.quedaEm = agora + QUEDA;
+        if (emerg.quedas.filter((q) => !q.removida).length < MAX_QUEDAS) derrubarArvore(agora);
+      }
+    }
+    function avisarQueda(q, p, agora) {
+      q.avisadaEm = agora; q.por = p.nome;
+      evento({ tipo: 'emergencia-ajuda', de: quem(p), texto: `📞 ${p.nome} avisou a Defesa Civil (199): árvore caída ${q.onde}.` });
+    }
+
+    // ----- O socorro: Bombeiros (193) no incêndio e o caminhão de areia da Defesa Civil (199) na enchente -----
+    function chamarSocorro(agora) {
+      if (emerg.tipo === 'incendio' && !emerg.bombeiros) {
+        emerg.bombeiros = { chegaEm: agora + SOCORRO, chegou: false, jatoEm: 0, alvo: null };
+        evento({ tipo: 'emergencia-mapa', emergencia: 'incendio', texto: '🚒 Os Bombeiros estão a caminho: chegam em 15 segundos!' });
+      }
+      if (emerg.tipo === 'rio' && !emerg.caminhao) {
+        emerg.caminhao = { chegaEm: agora + SOCORRO, chegou: false };
+        evento({ tipo: 'emergencia-mapa', emergencia: 'rio', texto: '🚚 A Defesa Civil está trazendo areia para a Avenida do Rio: chega em 15 segundos!' });
+      }
+    }
+
     function atualizarEmergencia(agora) {
       if (!emerg || emerg.status !== 'ativo') return;
       const dt = Math.max(0, (agora - emerg.atualizadoEm) / 1000);
       emerg.atualizadoEm = agora;
-      emerg.perigo = Math.min(100, emerg.perigo + CRESCE * dt);
+      if (emerg.tipo === 'incendio') atualizarFogo(agora, dt);
+      else {
+        const semAviso = emerg.tipo === 'chuva' ? emerg.quedas.filter((q) => !q.removida && !q.avisadaEm).length : 0;
+        emerg.perigo = Math.min(100, emerg.perigo + (emerg.cresce + PERIGO_ARVORE * semAviso) * dt);
+        if (emerg.tipo === 'chuva') atualizarQuedas(agora);
+        if (emerg.tipo === 'rio' && emerg.caminhao && !emerg.caminhao.chegou && agora >= emerg.caminhao.chegaEm) {
+          emerg.caminhao.chegou = true;
+          evento({ tipo: 'emergencia-mapa', emergencia: 'rio', texto: '🚚 A Defesa Civil chegou com areia na Avenida do Rio: agora a areia está do lado da barreira!' });
+        }
+      }
       if (emerg.perigo >= 100 || agora >= emerg.fim) terminarEmergencia(false, agora);
+      else if (emerg.perigo <= 0) terminarEmergencia(true, agora);
+      aplicarBloqueios();
     }
     function terminarEmergencia(salvo, agora) {
       const def = nov.EMERGENCIAS[emerg.tipo];
@@ -324,31 +509,62 @@
       if (salvo) emerg.perigo = 0;
       const participantes = Object.keys(emerg.ajudas).filter((id) => emerg.ajudas[id].aluno);
       evento({ tipo: 'emergencia-fim', emergencia: emerg.tipo, idEmergencia: emerg.id, salvo, participantes, texto: `${salvo ? def.salvo : def.perdido} ${def.licao}` });
+      aplicarBloqueios();
     }
-    function ajudar(quem, quanto) {
-      emerg.perigo = Math.max(0, emerg.perigo - quanto);
+    // Uma ajuda: no incêndio, a água vai no foco (ou no maior, se a ajuda não foi num foco); nos outros, o perigo baixa.
+    function ajudar(quem, quanto, foco) {
+      const agora = relogio();
+      if (emerg.tipo === 'incendio') {
+        const alvo = foco || focosAcesos().filter((f) => !f.eletrico).sort((a, b) => b.forca - a.forca)[0];
+        if (alvo) apagarUmPouco(alvo, (quanto * LIMITE_FOGO) / 100, agora);
+      } else emerg.perigo = Math.max(0, emerg.perigo - quanto);
       const a = emerg.ajudas[quem.id] = emerg.ajudas[quem.id] || { nome: quem.nome, vezes: 0, aluno: quem.papel !== 'instrutor' };
       a.vezes++;
-      if (emerg.perigo <= 0) terminarEmergencia(true, relogio());
+      if (emerg.perigo <= 0) terminarEmergencia(true, agora);
     }
     function abrirEmergencia(tipo, agora) {
       const def = nov.EMERGENCIAS[tipo];
       const alunosNaPraca = [...pessoas.values()].filter((x) => x.papel !== 'instrutor').length;
       emerg = {
-        id: Math.max(agora, emerg ? emerg.id + 1 : 0), tipo, inicio: agora, fim: agora + def.duracao, atualizadoEm: agora, perigo: PERIGO_INICIAL,
+        id: Math.max(agora, emerg ? emerg.id + 1 : 0), tipo, inicio: agora, fim: agora + def.duracao, atualizadoEm: agora,
+        perigo: Number.isFinite(def.inicio) ? def.inicio : PERIGO_INICIAL, cresce: Number.isFinite(def.cresce) ? def.cresce : CRESCE,
         pessoas: Math.max(2, alunosNaPraca), ajudas: {}, carregando: {}, ultimaEntrega: {}, ligou: new Set(), respondeu: new Set(), status: 'ativo', terminouEm: 0,
+        focos: [], pulaEm: agora + PRIMEIRO_PULO, bombeiros: null, caminhao: null, sacos: 0, quedas: [], quedaEm: agora + QUEDA_PRIMEIRA,
       };
+      if (tipo === 'incendio') {
+        // Começa na lata de lixo; se o perigo inicial for maior que o máximo dela, o fogo já pulou para o lado.
+        const c = mapa.INFLAMAVEIS[0], total = (emerg.perigo * LIMITE_FOGO) / 100;
+        emerg.focos.push({ id: c.id, nome: c.nome, x: c.x, y: c.y, eletrico: false, forca: Math.min(FORCA_MAX, total), desde: agora, apagouEm: 0 });
+        if (total > FORCA_MAX) crescerFogo(total - FORCA_MAX, agora);
+        recalcularFogo();
+      }
       if (!dados().aberta) { dados().aberta = true; gravar(); }
       evento({ tipo: 'emergencia', emergencia: tipo, idEmergencia: emerg.id, texto: `🚨 ${def.titulo} ${def.alerta}` });
+      aplicarBloqueios();
     }
     function resumoEmergencia(usuario, agora) {
       if (!emerg || (emerg.status !== 'ativo' && agora - emerg.terminouEm > MOSTRA_FIM)) return null;
       const meu = emerg.ajudas[usuario.id];
-      return {
-        id: emerg.id, tipo: emerg.tipo, status: emerg.status, perigo: Math.round(emerg.perigo), fim: emerg.fim, agora,
+      const b = bloqueiosDoEvento();
+      const r = {
+        id: emerg.id, tipo: emerg.tipo, status: emerg.status, perigo: Math.ceil(emerg.perigo - 1e-6), fim: emerg.fim, agora,
         carregando: !!emerg.carregando[usuario.id], ligou: emerg.ligou.has(usuario.id), respondeu: emerg.respondeu.has(usuario.id),
         minhasAjudas: meu ? meu.vezes : 0, ajudantes: Object.keys(emerg.ajudas).length,
+        bloqueios: { tiles: b.tiles, agua: b.agua == null ? null : Math.round(b.agua * 100) / 100 },
       };
+      if (emerg.tipo === 'incendio') {
+        r.focos = emerg.focos.map((f) => ({ id: f.id, nome: f.nome, x: f.x, y: f.y, eletrico: f.eletrico, forca: Math.round(f.forca * 10) / 10 }));
+        r.bombeiros = emerg.bombeiros ? { chega: emerg.bombeiros.chegaEm, chegou: emerg.bombeiros.chegou, alvo: emerg.bombeiros.alvo } : null;
+      } else if (emerg.tipo === 'rio') {
+        r.agua = Math.round(linhaDaAgua(emerg.perigo) * 100) / 100;
+        r.sacos = emerg.sacos;
+        r.caminhao = emerg.caminhao ? { chega: emerg.caminhao.chegaEm, chegou: emerg.caminhao.chegou } : null;
+        r.fontes = fontesDeAreia();
+      } else if (emerg.tipo === 'chuva') {
+        r.quedas = emerg.quedas.filter((q) => !q.removida).map((q) => ({ id: q.id, arvore: q.arvore, tiles: q.tiles, fio: q.fio, ipe: q.ipe, palmeira: q.palmeira, onde: q.onde,
+          avisada: !!q.avisadaEm, por: q.por, equipe: q.equipe }));
+      }
+      return r;
     }
 
     // ---------- Hora da Praça ----------
@@ -533,7 +749,8 @@
     // ---------- Colegas de demonstração (só no modo de teste no navegador) ----------
     const bots = [];
     const pendentes = []; // falas dos colegas de demonstração que saem daqui a pouco
-    let ultimoMovimento = relogio(), ultimaConversaBot = 0, ultimaPistaBot = relogio(), ultimaAjudaBot = 0;
+    let ultimoMovimento = relogio(), ultimaConversaBot = 0, ultimaPistaBot = relogio();
+    const AJUDANTES = new Set(['demo-ana', 'demo-carla', 'demo-davi']);
     const FALAS_BOT = {
       colega: ['Bom dia, turma!', 'Alguém viu a missão da semana?', 'Terminei a aula de planilha! 📊', 'Vamos no bingo hoje?', 'Que calor, hein! ☀️', 'Quem me ensina a mandar e-mail?'],
       'demo-lia': ['Precisa de ajuda? Aperte 🙋!', 'Hoje já ajudei 2 colegas 💁'],
@@ -562,10 +779,13 @@
       }
       for (const b of bots) {
         b.em = agora;
+        // Árvore caiu ou a água subiu onde o colega estava: ele sai dali (e acha outro caminho).
+        if (!mapa.andavel(Math.round(b.x), Math.round(b.y))) { [b.x, b.y] = mapa.maisPerto(b.x, b.y); b.caminho = []; }
         if (b.caminho.length) {
           let passo = 2.3 * dt;
           while (passo > 0 && b.caminho.length) {
             const [tx, ty] = b.caminho[0];
+            if (!mapa.andavel(tx, ty)) { b.caminho = []; break; }
             const dx = tx - b.x, dy = ty - b.y, d = Math.hypot(dx, dy);
             if (dx) b.esq = dx < 0;
             if (d <= passo) { b.x = tx; b.y = ty; b.caminho.shift(); passo -= d; } else { b.x = arred(b.x + (dx / d) * passo); b.y = arred(b.y + (dy / d) * passo); passo = 0; }
@@ -575,6 +795,7 @@
           continue;
         }
         b.andando = false;
+        if (emerg && emerg.status === 'ativo' && AJUDANTES.has(b.id)) { missaoDoBot(b, agora); continue; }
         if (agora < b.proxima) continue;
         const falas = FALAS_BOT[b.id] || FALAS_BOT.colega;
         const conversar = agora - ultimaConversaBot > 7000 && Math.random() < (b.parado ? 0.35 : 0.25);
@@ -603,15 +824,8 @@
       atualizarEspecial(agora);
       for (const b of bots) checarBaus(b);
       if (especial && especial.status === 'ativo' && especial.tipo === 'festa' && Math.random() < 0.3) especial.palmas = (especial.palmas || 0) + 1;
-      // Num evento urgente, os colegas de demonstração ajudam também (devagar: quem está na praça faz a diferença).
+      // Num evento urgente, os colegas de demonstração ajudam também, andando pelo mapa (devagar: quem está na praça faz a diferença).
       atualizarEmergencia(agora);
-      if (emerg && emerg.status === 'ativo' && agora - ultimaAjudaBot > AJUDA_BOT) {
-        ultimaAjudaBot = agora;
-        const b = sortear(bots);
-        const def = nov.EMERGENCIAS[emerg.tipo];
-        if ((emerg.ajudas[b.id] || { vezes: 0 }).vezes % 3 === 0) evento({ tipo: 'emergencia-ajuda', de: quem(b), texto: `${b.nome} ${def.levar.feito}.` });
-        ajudar(b, unidade());
-      }
       // O Bruno joga quando é a vez dele (e devolve a revanche).
       const bruno = pessoas.get('demo-bruno');
       if (bruno && mesa.O && mesa.O.id === bruno.id && mesa.X && !mesa.vencedor && mesa.vez === 'O' && agora - mesa.jogadaEm > 700) {
@@ -620,6 +834,49 @@
         else if (mesa.vencedor === 'X') falaBot(bruno, 'Boa! Revanche?', 300);
         else if (mesa.vencedor === 'velha') falaBot(bruno, 'Deu velha! 🤝', 300);
       }
+    }
+    // O que um colega de demonstração faz no evento urgente quando chega onde ia: pega, leva, joga água, avisa.
+    function irBot(b, metas) {
+      const c = mapa.caminho([Math.round(b.x), Math.round(b.y)], metas);
+      if (c && c.length) { b.caminho = c; return true; }
+      return false;
+    }
+    function missaoDoBot(b, agora) {
+      if (agora < (b.missaoEm || 0)) return;
+      b.missaoEm = agora + 500;
+      const def = nov.EMERGENCIAS[emerg.tipo];
+      const levando = !!emerg.carregando[b.id];
+      const ajudou = (texto, foco) => {
+        emerg.carregando[b.id] = false;
+        b.missaoEm = agora + 2500; // respira um pouco antes da próxima viagem
+        if ((emerg.ajudas[b.id] || { vezes: 0 }).vezes % 3 === 0) evento({ tipo: 'emergencia-ajuda', de: quem(b), texto });
+        ajudar(b, unidade() * VALE_BOT, foco);
+      };
+      if (emerg.tipo === 'chuva') {
+        const q = emerg.quedas.find((x) => !x.removida && !x.avisadaEm);
+        if (q) {
+          if (distDaQueda(q, b.x, b.y) <= 2.5) { avisarQueda(q, b, agora); ajudar(b, unidade() * VALE_BOT); return; }
+          if (irBot(b, q.tiles.flatMap(([x, y]) => mapa.pertoDoPonto(x, y, 2.4)))) return;
+        }
+      }
+      if (!levando) {
+        const zonas = fontesDe(def);
+        if (zonas.some((z) => mapa.pertoDaZona(z, b.x, b.y, 1.5))) { emerg.carregando[b.id] = true; b.missaoEm = agora + 800; return; }
+        irBot(b, zonas.flatMap((z) => mapa.ZONAS[z] || []));
+        return;
+      }
+      if (emerg.tipo === 'incendio') {
+        const dist = (f) => Math.hypot(f.x - b.x, f.y - b.y);
+        const f = focosAcesos().filter((x) => !x.eletrico).sort((x, y) => dist(x) - dist(y))[0];
+        if (!f) return;
+        if (dist(f) <= mapa.PERTO_DO_FOCO) { ajudou(`${b.nome} jogou água ${em(f.nome)}.`, f); return; }
+        irBot(b, mapa.pertoDoPonto(f.x, f.y));
+        return;
+      }
+      const alvo = def.levar.entregar;
+      if (mapa.pertoDaZona(alvo, b.x, b.y, 2)) { if (emerg.tipo === 'rio') emerg.sacos++; ajudou(`${b.nome} ${def.levar.feito}.`); return; }
+      const metas = alvo === 'barreira' ? mapa.ZONAS.barreira.flatMap(([x, y]) => [[x, y], [x, y - 1], [x, y - 2]]) : mapa.ZONAS[alvo];
+      irBot(b, metas);
     }
     const pertoDe = (p, raio) => bots.filter((b) => !b.parado && b.id !== 'demo-lia' && Math.hypot(b.x - p.x, b.y - p.y) < raio);
     const tem = (t, ...palavras) => palavras.some((w) => new RegExp(`(^|[^${LETRA}])${w}([^${LETRA}]|$)`, 'i').test(t));
@@ -970,6 +1227,7 @@
         if (emerg && emerg.status === 'ativo') {
           emerg.status = 'encerrado'; emerg.terminouEm = agora;
           evento({ tipo: 'sistema', texto: 'O instrutor encerrou o evento urgente.' });
+          aplicarBloqueios();
         }
         return resumoEmergencia(usuario, agora);
       },
@@ -985,14 +1243,32 @@
         }
         let certo = true, explica = null;
         if (acao === 'pegar') {
-          if (!mapa.pertoDaZona(def.levar.pegar, p.x, p.y, 2)) throw new Error('Chegue mais perto para pegar.');
+          if (!fontesDe(def).some((z) => mapa.pertoDaZona(z, p.x, p.y, 2))) {
+            throw new Error(emerg.tipo === 'rio' ? `Chegue mais perto da areia: no monte da obra (Lote da turma)${emerg.caminhao && emerg.caminhao.chegou ? ' ou no caminhão da Defesa Civil' : ''}.` : 'Chegue mais perto para pegar.');
+          }
           emerg.carregando[usuario.id] = true;
         } else if (acao === 'entregar') {
           if (!emerg.carregando[usuario.id]) throw new Error('Primeiro pegue a ajuda no lugar certo.');
-          if (!mapa.pertoDaZona(def.levar.entregar, p.x, p.y, 2)) throw new Error('Chegue mais perto para entregar.');
+          let foco = null;
+          if (emerg.tipo === 'incendio') {
+            foco = focoParaAgua(dado && typeof dado.foco === 'string' ? dado.foco : null, p.x, p.y);
+            if (!foco) throw new Error('Chegue mais perto do fogo para jogar a água.');
+            if (foco.eletrico) throw new Error('⚡ Água no poste de luz, não! Água conduz eletricidade. O fogo do poste é com os Bombeiros (193).');
+          } else if (!mapa.pertoDaZona(def.levar.entregar, p.x, p.y, 2)) throw new Error('Chegue mais perto para entregar.');
           if (agora - (emerg.ultimaEntrega[usuario.id] || 0) < ESPERA_ENTREGA) throw new Error('Calma: uma entrega de cada vez.');
           emerg.ultimaEntrega[usuario.id] = agora;
           emerg.carregando[usuario.id] = false;
+          if (emerg.tipo === 'rio') emerg.sacos++;
+          ajudar(quem(p), unidade(), foco);
+        } else if (acao === 'avisar') {
+          if (emerg.tipo !== 'chuva') throw new Error('Não tem árvore caída para avisar.');
+          const vivas = emerg.quedas.filter((q) => !q.removida);
+          const id = dado && typeof dado.queda === 'string' ? dado.queda : null;
+          const q = id ? vivas.find((x) => x.id === id) : vivas.filter((x) => !x.avisadaEm).sort((a, b) => distDaQueda(a, p.x, p.y) - distDaQueda(b, p.x, p.y))[0];
+          if (!q) throw new Error('Não tem árvore caída para avisar aqui.');
+          if (distDaQueda(q, p.x, p.y) > 3.2) throw new Error('Chegue mais perto da árvore caída (sem encostar, que pode ter fio).');
+          if (q.avisadaEm) throw new Error(`A Defesa Civil já foi avisada${q.por ? ' por ' + q.por : ''}: a equipe está vindo.`);
+          avisarQueda(q, p, agora);
           ajudar(quem(p), unidade());
         } else if (acao === 'ligar' || acao === 'pergunta') {
           const feitos = acao === 'ligar' ? emerg.ligou : emerg.respondeu;
@@ -1000,8 +1276,12 @@
           explica = certo ? def[acao].explica : null;
           if (certo && !feitos.has(usuario.id)) {
             feitos.add(usuario.id);
-            if (acao === 'ligar') evento({ tipo: 'emergencia-ajuda', de: quem(p), texto: `📞 ${p.nome}: ${def.ligar.titulo.toLowerCase()} (${def.ligar.resposta === '76800000' ? 'CEP enviado' : def.ligar.resposta}).` });
-            ajudar(quem(p), acao === 'ligar' ? 2 * unidade() : unidade());
+            if (acao === 'ligar') {
+              evento({ tipo: 'emergencia-ajuda', de: quem(p), texto: `📞 ${p.nome}: ${def.ligar.titulo.toLowerCase()} (${def.ligar.resposta === '76800000' ? 'CEP enviado' : def.ligar.resposta}).` });
+              chamarSocorro(agora);
+            } else if (emerg.tipo === 'incendio') emerg.pulaEm += 6000; // área isolada: o fogo demora mais para pular
+            // No incêndio, quem apaga é o balde e os Bombeiros (que a ligação chamou): a ajuda conta, sem apagar na hora.
+            ajudar(quem(p), emerg.tipo === 'incendio' ? 0 : acao === 'ligar' ? 2 * unidade() : unidade());
           }
         } else throw new Error('Ajuda desconhecida.');
         return { certo, explica, emergencia: resumoEmergencia(usuario, agora) };

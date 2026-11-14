@@ -429,19 +429,31 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   // Eventos urgentes (só o instrutor dispara; a ajuda de cada aluno é conferida no computador do instrutor).
   ok(/instrutor/.test((await pedir('praca:emergencia-iniciar', ['incendio'], tT7)).erro || ''), 'praça: aluno não dispara evento urgente');
   const fogo = (await pedir('praca:emergencia-iniciar', ['incendio'], tp)).valor;
-  ok(fogo.status === 'ativo' && fogo.perigo === 50 && !(await pedir('praca:emergencia-iniciar', ['rio'], tp)).ok, 'praça: o incêndio começa com o fogo em 50% e não dá para começar outro evento junto');
+  ok(fogo.status === 'ativo' && fogo.perigo === 15 && fogo.focos.length === 1 && fogo.focos[0].id === 'lixeira' && !(await pedir('praca:emergencia-iniciar', ['rio'], tp)).ok,
+    'praça: o incêndio começa só na lata de lixo (15%) e não dá para começar outro evento junto');
   ok(/mais perto/.test((await pedir('praca:emergencia-acao', ['pegar', { x: 3, y: 3 }], tT7)).erro || '') && /Primeiro pegue/.test((await pedir('praca:emergencia-acao', ['entregar', { x: 21, y: 15 }], tT7)).erro || ''),
     'praça: longe da fonte não enche o balde, e sem balde não apaga o fogo');
   await pedir('praca:emergencia-acao', ['pegar', { x: 16, y: 13 }], tT7);
-  const jogou = (await pedir('praca:emergencia-acao', ['entregar', { x: 21, y: 15 }], tT7)).valor;
-  ok(jogou.emergencia.perigo < 50 && jogou.emergencia.minhasAjudas === 1, `praça: jogar a água baixa o fogo (${jogou.emergencia.perigo}%)`);
+  const jogou = (await pedir('praca:emergencia-acao', ['entregar', { x: 21, y: 15, foco: 'lixeira' }], tT7)).valor;
+  ok(jogou.emergencia.perigo < 15 && jogou.emergencia.minhasAjudas === 1 && jogou.emergencia.focos[0].forca < 2.7, `praça: o balde na lata de lixo diminui o fogo (${jogou.emergencia.perigo}%)`);
+  await pedir('praca:emergencia-acao', ['pegar', { x: 16, y: 13 }], tT7);
+  ok(/mais perto do fogo/.test((await pedir('praca:emergencia-acao', ['entregar', { x: 3, y: 3 }], tT7)).erro || ''), 'praça: longe do fogo a água não vai (o computador do instrutor confere onde o boneco está)');
   const ligouErrado = (await pedir('praca:emergencia-acao', ['ligar', { resposta: '190' }], tT7)).valor;
   const ligouCerto = (await pedir('praca:emergencia-acao', ['ligar', { resposta: '193' }], tT7)).valor;
-  ok(!ligouErrado.certo && ligouCerto.certo && ligouCerto.emergencia.ligou && ligouCerto.emergencia.perigo < jogou.emergencia.perigo, 'praça: ligar para o 193 ajuda (o número errado não)');
+  ok(!ligouErrado.certo && ligouCerto.certo && ligouCerto.emergencia.ligou && ligouCerto.emergencia.bombeiros && !ligouCerto.emergencia.bombeiros.chegou,
+    'praça: ligar para o 193 chama os Bombeiros, que vêm de caminhão (o número errado não)');
   const convFogo = (await pedir('sala:presenca', [{}], tT8)).valor.praca;
   ok(convFogo && convFogo.emergencia && convFogo.emergencia.tipo === 'incendio', 'praça: quem está fora da praça recebe o pedido de ajuda pela presença');
   const encerrado = (await pedir('praca:emergencia-encerrar', [], tp)).valor;
   ok(encerrado.status === 'encerrado' && /Não tem nenhum/.test((await pedir('praca:emergencia-acao', ['ligar', { resposta: '193' }], tT7)).erro || ''), 'praça: o instrutor encerra o evento');
+  // Enchente: a água já cobriu a praia; a areia vem do monte da obra (Lote da turma) e o saco vai para a barreira.
+  const enchente = (await pedir('praca:emergencia-iniciar', ['rio'], tp)).valor;
+  ok(enchente.agua === 22.5 && enchente.fontes.join() === 'obra' && enchente.bloqueios.agua === 22.5, 'praça: na enchente a água começa na feira (fileira 22,5) e a areia só está na obra');
+  ok(/monte da obra/.test((await pedir('praca:emergencia-acao', ['pegar', { x: 18, y: 26 }], tT7)).erro || ''), 'praça: na praia alagada não tem areia');
+  await pedir('praca:emergencia-acao', ['pegar', { x: 32, y: 4 }], tT7);
+  const saco = (await pedir('praca:emergencia-acao', ['entregar', { x: 20, y: 21 }], tT7)).valor;
+  ok(saco.emergencia.sacos === 1 && saco.emergencia.agua > 22.5, `praça: um saco na barreira e a água desce (fileira ${saco.emergencia.agua})`);
+  await pedir('praca:emergencia-encerrar', [], tp);
   // Hora da Praça e eventos especiais (a vaquinha da turma; o Professor Virtual conduz).
   ok(/instrutor/.test((await pedir('praca:configurar-horario', [{ fins: ['17:00'] }], tT7)).erro || '') && /instrutor/.test((await pedir('praca:testar-hora', [], tT7)).erro || ''), 'praça: aluno não muda o horário das aulas nem testa a Hora da Praça');
   const hor = (await pedir('praca:configurar-horario', [{ fins: ['17:00', '99:99'], dias: [1, 2, 3, 4, 5] }], tp)).valor;

@@ -14,6 +14,7 @@
     "teste:fase2": "node testes/sala-fase2.js",
     "teste:fase3": "node testes/sala-fase3.js",
     "teste:praca": "node testes/sala-praca.js",
+    "teste:perigos": "node testes/praca-perigos.js",
     "teste:emojis": "node testes/emojis-windows10.js"
   },
   "dependencies": {
