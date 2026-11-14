@@ -442,6 +442,25 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   ok(convFogo && convFogo.emergencia && convFogo.emergencia.tipo === 'incendio', 'praça: quem está fora da praça recebe o pedido de ajuda pela presença');
   const encerrado = (await pedir('praca:emergencia-encerrar', [], tp)).valor;
   ok(encerrado.status === 'encerrado' && /Não tem nenhum/.test((await pedir('praca:emergencia-acao', ['ligar', { resposta: '193' }], tT7)).erro || ''), 'praça: o instrutor encerra o evento');
+  // Hora da Praça e eventos especiais (a vaquinha da turma; o Professor Virtual conduz).
+  ok(/instrutor/.test((await pedir('praca:configurar-horario', [{ fins: ['17:00'] }], tT7)).erro || '') && /instrutor/.test((await pedir('praca:testar-hora', [], tT7)).erro || ''), 'praça: aluno não muda o horário das aulas nem testa a Hora da Praça');
+  const hor = (await pedir('praca:configurar-horario', [{ fins: ['17:00', '99:99'], dias: [1, 2, 3, 4, 5] }], tp)).valor;
+  ok(hor.fins.join() === '17:00' && (dados.ler('praca', {}).horario || {}).fins.join() === '17:00', 'praça: o horário das aulas fica no disco do instrutor (sem horário inválido)');
+  await pedir('praca:testar-hora', [], tp);
+  const convHora = (await pedir('sala:presenca', [{}], tT8)).valor.praca;
+  ok(convHora && convHora.hora && convHora.hora.minutos >= 14, 'praça: na Hora da Praça, quem está fora recebe o convite pela presença');
+  ok(/de graça/.test((await pedir('praca:doar', ['festa', 10], tp)).erro || '') && /instrutor/.test((await pedir('praca:especial-iniciar', ['festa'], tT7)).erro || ''), 'praça: o instrutor não doa (começa de graça) e o aluno não começa evento sem pagar');
+  const doou = (await pedir('praca:doar', ['bingo', 30], tT7)).valor;
+  ok(!doou.comprou && doou.eventos.find((e) => e.id === 'bingo').juntado === 30 && doou.eventos.find((e) => e.id === 'bingo').meu === 30, 'praça: a doação entra na vaquinha da turma');
+  ok((((dados.ler('praca', {}).loja || {})[''] || {}).bingo || {}).juntado === 30, 'praça: a vaquinha fica no disco do instrutor');
+  const bingoJa = (await pedir('praca:especial-iniciar', ['bingo'], tp)).valor;
+  ok(bingoJa.especial && bingoJa.especial.tipo === 'bingo' && bingoJa.especial.status === 'contagem', 'praça: o instrutor começa o bingo de graça (contagem de 20 segundos)');
+  ok(/Não tem bingo/.test((await pedir('praca:bingo', [], tT7)).erro || ''), 'praça: antes de começar, ninguém grita BINGO');
+  await pedir('praca:emergencia-iniciar', ['chuva'], tp);
+  const esperaBingo = (await pedir('praca:loja', [], tT7)).valor.especial;
+  ok(esperaBingo && esperaBingo.tipo === 'bingo' && esperaBingo.status === 'contagem' && esperaBingo.esperando === true, 'praça: com um evento urgente acontecendo, o evento especial espera ele acabar');
+  await pedir('praca:emergencia-encerrar', [], tp);
+  await pedir('praca:especial-encerrar', [], tp);
   await pedir('praca:sair', [], tT7);
   // 9) Arquivo de usuários estragado: usa a cópia de reserva
   const antes = dados.listarUsuarios().length;

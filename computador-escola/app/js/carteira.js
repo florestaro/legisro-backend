@@ -20,9 +20,11 @@ window.CE = window.CE || {};
     { tipo: 'final', icone: '📖', texto: 'Ajudar a turma a desvendar um capítulo', valor: 20 },
     { tipo: 'evento', icone: '🚨', texto: 'Ajudar num evento urgente que a turma venceu', valor: 15 },
     { tipo: 'evento-tentativa', icone: '🚨', texto: 'Ajudar num evento urgente (mesmo sem vencer)', valor: 5 },
+    { tipo: 'tesouro', icone: '🎁', texto: 'Achar um baú na caça ao tesouro', valor: 5 },
+    { tipo: 'bingo', icone: '🎱', texto: 'Ganhar o bingo do coreto', valor: 30 },
   ];
   const VALOR = Object.fromEntries(PREMIOS.map((p) => [p.tipo, p.valor]));
-  const ICONE = Object.fromEntries(PREMIOS.map((p) => [p.tipo, p.icone]));
+  const ICONE = { ...Object.fromEntries(PREMIOS.map((p) => [p.tipo, p.icone])), gasto: '🎟️', estorno: '↩️' };
   const MAX_EXTRATO = 60;
   const ehAluno = () => !!(CE.sessao.usuario && CE.sessao.usuario.papel !== 'instrutor');
   const vazia = () => ({ saldo: 0, desde: Date.now(), chaves: {}, extrato: [] });
@@ -51,6 +53,24 @@ window.CE = window.CE || {};
     return pago;
   }
 
+  // Gasta moedas (a vaquinha dos eventos especiais). Sem saldo, não gasta nada e avisa.
+  async function gastar(valor, motivo) {
+    valor = Math.floor(Number(valor));
+    if (!ehAluno() || !(valor > 0)) throw new Error('Só os alunos gastam moedas.');
+    let saldo = 0;
+    await CE.sessao.atualizarProgresso((p) => {
+      const c = ler(p);
+      if (c.saldo < valor) throw new Error(`Você tem ${c.saldo} moedas: não dá para dar ${valor}.`);
+      c.saldo -= valor;
+      c.extrato = [{ em: Date.now(), valor: -valor, motivo, tipo: 'gasto' }, ...c.extrato].slice(0, MAX_EXTRATO);
+      p.carteira = c;
+      saldo = c.saldo;
+    });
+    mostrarSaldo(saldo);
+    CE.emitir('carteira:gastou', { valor, saldo, motivo });
+    return saldo;
+  }
+
   // A moedinha da barra de tarefas (só para alunos), com um "+10" subindo quando entra dinheiro.
   function mostrarSaldo(saldo, ganho) {
     const b = document.getElementById('status-moedas');
@@ -74,7 +94,7 @@ window.CE = window.CE || {};
   }
 
   CE.carteira = {
-    PREMIOS, VALOR, ganhar, carregar,
+    PREMIOS, VALOR, ganhar, gastar, carregar,
     async saldo() { return ehAluno() ? ler(await CE.sessao.progresso().catch(() => null)).saldo : 0; },
     async extrato() { return ler(await CE.sessao.progresso().catch(() => null)); },
     abrir() { CE.janelas.abrir('carteira'); },
@@ -122,15 +142,16 @@ window.CE = window.CE || {};
             ? CE.el('ul', { class: 'cart-extrato' }, c.extrato.map((x) => CE.el('li', {},
               CE.el('span', { class: 'ic', 'aria-hidden': 'true' }, ICONE[x.tipo] || '💰'),
               CE.el('span', { class: 'txt' }, CE.el('span', {}, x.motivo), CE.el('small', {}, quando(x.em))),
-              CE.el('strong', { class: 'valor' }, `+${x.valor}`))))
+              CE.el('strong', { class: 'valor' + (x.valor < 0 ? ' gasto' : '') }, x.valor < 0 ? `${x.valor}` : `+${x.valor}`))))
             : CE.el('p', { class: 'cart-vazio' }, 'Ainda não entrou nenhuma moeda. Conclua uma aula ou faça a tarefa do dia na Praça Escola!'),
+          CE.el('p', { class: 'cart-dica' }, '🎟️ Para que servem: na Praça Escola, a turma junta moedas para comprar eventos especiais (festa, caça ao tesouro, bingo), que o Professor Virtual conduz.'),
           CE.el('h3', {}, 'Como ganhar'), lista()));
       }
       const lista = () => CE.el('ul', { class: 'cart-premios' }, PREMIOS.map((p) => CE.el('li', {},
         CE.el('span', { 'aria-hidden': 'true' }, p.icone), CE.el('span', { class: 'txt' }, p.texto), CE.el('strong', {}, `+${p.valor}`))));
       desenhar();
-      const parar = CE.ouvir('carteira:ganhou', desenhar);
-      return { aoFechar() { parar(); return true; } };
+      const parar = [CE.ouvir('carteira:ganhou', desenhar), CE.ouvir('carteira:gastou', desenhar)];
+      return { aoFechar() { parar.forEach((f) => f()); return true; } };
     },
   });
 

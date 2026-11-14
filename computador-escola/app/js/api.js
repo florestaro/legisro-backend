@@ -246,6 +246,14 @@ window.CE = window.CE || {};
         'praca:emergencia-iniciar': () => praca().iniciarEmergencia(atual, a[0]),
         'praca:emergencia-encerrar': () => praca().encerrarEmergencia(atual),
         'praca:emergencia-acao': () => praca().acaoEmergencia(atual, a[0], a[1] || {}),
+        'praca:horario': () => praca().horario(atual),
+        'praca:configurar-horario': () => praca().configurarHorario(atual, a[0] || {}),
+        'praca:testar-hora': () => praca().testarHora(atual),
+        'praca:loja': () => praca().loja(atual),
+        'praca:doar': () => praca().doar(atual, a[0], a[1]),
+        'praca:especial-iniciar': () => praca().iniciarEspecial(atual, a[0]),
+        'praca:especial-encerrar': () => praca().encerrarEspecial(atual),
+        'praca:bingo': () => praca().bingo(atual),
         'sala:mensagem': () => (salaTeste.mensagem = String(a[0] || '').trim() ? { id: Date.now(), texto: String(a[0]).trim().slice(0, 300), de: atual.nome } : null),
       }[canal];
       return { ok: true, valor: await valor() };

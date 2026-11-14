@@ -484,6 +484,15 @@ function criarCanais(dados) {
     'praca:emergencia-iniciar': (s, tipo) => { exigirInstrutor(s); return praca.iniciarEmergencia(s.usuario, tipo); },
     'praca:emergencia-encerrar': (s) => { exigirInstrutor(s); return praca.encerrarEmergencia(s.usuario); },
     'praca:emergencia-acao': (s, acao, dado) => { exigirSessao(s); return praca.acaoEmergencia(s.usuario, acao, dado || {}); },
+    // Hora da Praça (o horário das aulas) e eventos especiais (a vaquinha da turma; o Professor Virtual conduz).
+    'praca:horario': (s) => { exigirSessao(s); return praca.horario(s.usuario); },
+    'praca:configurar-horario': (s, h) => { exigirInstrutor(s); return praca.configurarHorario(s.usuario, h || {}); },
+    'praca:testar-hora': (s) => { exigirInstrutor(s); return praca.testarHora(s.usuario); },
+    'praca:loja': (s) => { exigirSessao(s); return praca.loja(s.usuario); },
+    'praca:doar': (s, id, valor) => { exigirSessao(s); return praca.doar(s.usuario, id, valor); },
+    'praca:especial-iniciar': (s, id) => { exigirInstrutor(s); return praca.iniciarEspecial(s.usuario, id); },
+    'praca:especial-encerrar': (s) => { exigirInstrutor(s); return praca.encerrarEspecial(s.usuario); },
+    'praca:bingo': (s) => { exigirSessao(s); return praca.bingo(s.usuario); },
 
     'jornal:enviar': (s, materia) => {
       exigirSessao(s);

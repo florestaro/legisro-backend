@@ -141,6 +141,10 @@ Abre o programa de verdade em 3 computadores (a instrutora e dois alunos, a Ana 
   medalha 🚒 Brigada da praça.
 - **Moedas**: as da Ana vieram das aulas, do final da novela e do incêndio (no disco da instrutora); a instrutora vê as
   moedas de cada aluno na Rua da Turma, o Bruno vê só as dele, e o saldo aparece no 💰 da barra de tarefas.
+- **Hora da Praça e eventos especiais**: com o horário das aulas guardado, a instrutora testa a Hora da Praça; o Bruno,
+  fora da praça, recebe o convite "⏰ Hora da Praça Escola!" e o recado do Professor Virtual, e a pílula ⏰ aparece nos
+  dois computadores. A Ana dá 10 moedas para a vaquinha da festa (sai da carteira dela, no disco da instrutora) e o
+  Bruno vê a vaquinha; a festa começa e aparece nos dois, com o Professor Virtual no coreto.
 - **Jogo da velha** entre os dois computadores: cada um joga na sua vez, a conversa conta quem ganhou e a vencedora
   ganha a medalha (guardada no computador da instrutora).
 - **A instrutora na praça**: vê os dois em "Na praça agora" e a cidade da turma deles, fala no megafone (aparece no

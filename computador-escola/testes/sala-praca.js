@@ -6,6 +6,8 @@
 //    os computadores: a instrutora abre o capítulo, os dois acham as pistas e o final aparece na tela de todos;
 //  • evento urgente: a instrutora dispara o incêndio, quem está fora da praça é chamado para ajudar, os dois apagam o
 //    fogo juntos e ganham a medalha e moedas (as moedas de cada um ficam no disco da instrutora);
+//  • Hora da Praça: com o horário das aulas, quem está fora da praça é chamado e o Professor Virtual avisa; a vaquinha
+//    da turma junta as moedas e o evento especial (conduzido pelo Professor Virtual) aparece para todos;
 //  • os dois jogam jogo da velha um contra o outro, cada um no seu computador, e quem ganha leva a medalha;
 //  • o mural e a votação ficam guardados no computador da instrutora;
 //  • a instrutora fala no megafone, deixa só frases prontas, silencia, fecha e abre a praça e chama todos (quem
@@ -270,6 +272,33 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
   const ruaBruno = await p2.evaluate(() => CE.api.chamar('praca:cidade'));
   ok(ruaBruno.rua.find((x) => x.id === idAna).moedas === undefined && ruaBruno.rua.find((x) => x.id === idBruno).moedas === carteiraDe(idBruno).saldo, 'o Bruno vê só as moedas dele');
   ok(await p1.isVisible('#status-moedas') && (await p1.textContent('#status-moedas')).includes(String(carteiraDe(idAna).saldo)), 'PC 1: o saldo da Ana aparece na barra de tarefas (💰)');
+
+  // ================= Hora da Praça e eventos especiais =================
+  await p2.evaluate(() => CE.janelas.fecharTodas());
+  await espera(1500);
+  await A.evaluate(() => CE.api.chamar('praca:configurar-horario', { fins: ['17:00'], dias: [0, 1, 2, 3, 4, 5, 6] }));
+  await A.evaluate(() => CE.api.chamar('praca:testar-hora'));
+  const conviteHora = await p2.waitForSelector('.praca-convite.hora [data-acao="ir-para-praca"]', { timeout: 20000 }).then(() => true).catch(() => false);
+  ok(conviteHora && /Hora da Praça/.test(await p2.textContent('.praca-convite')), 'PC 2: o Bruno, fora da praça, recebe o convite "⏰ Hora da Praça Escola!"');
+  ok(await ate(async () => /Hora da Praça Escola/.test(await p2.textContent('#prof-conversa'))), 'PC 2: o Professor Virtual chama o Bruno para a praça (no balão dele)');
+  if (conviteHora) await p2.click('.praca-convite [data-acao="ir-para-praca"]');
+  ok(await ate(async () => (await p2.isVisible(Z('[data-acao="hora"]'))) && (await p1.isVisible(Z('[data-acao="hora"]')))), 'nos dois computadores, a pílula ⏰ mostra quanto falta para a aula acabar');
+  const saldoAntes = carteiraDe(idAna).saldo;
+  await p1.evaluate(async () => { await CE.carteira.gastar(10, 'Vaquinha: festa'); return CE.api.chamar('praca:doar', 'festa', 10); });
+  ok(await ate(() => Promise.resolve(carteiraDe(idAna).saldo === saldoAntes - 10)), `a Ana deu 10 moedas para a festa (saldo ${saldoAntes} → ${carteiraDe(idAna).saldo}, no disco da instrutora)`);
+  const lojaBruno = await p2.evaluate(() => CE.api.chamar('praca:loja'));
+  ok(lojaBruno.eventos.find((e) => e.id === 'festa').juntado === 10, 'PC 2: o Bruno vê a vaquinha da festa com as 10 moedas da Ana');
+  await A.evaluate(() => CE.api.chamar('praca:especial-iniciar', 'festa'));
+  ok(await ate(async () => /Festa com fogos/.test(await p1.textContent(Z('.pr-especial'))) && /Festa com fogos/.test(await p2.textContent(Z('.pr-especial')))), 'a festa (conduzida pelo Professor Virtual) aparece na tela dos dois');
+  ok(await ate(async () => !(await p1.$eval(Z('.pr-p[data-pessoa="professor-virtual"]'), (e) => e.classList.contains('fora')))), 'o Professor Virtual aparece no coreto');
+  const semNull = (pg) => pg.evaluate(() => {
+    const w = document.querySelector('.janela[data-app="praca"]');
+    const tw = document.createTreeWalker(w || document.body, NodeFilter.SHOW_TEXT);
+    for (let n = tw.nextNode(); n; n = tw.nextNode()) if (/(^|\s)(null|undefined)(\s|$)/.test(n.nodeValue)) return false;
+    return true;
+  });
+  ok((await semNull(p1)) && (await semNull(p2)), 'nenhum "null" ou "undefined" na tela da praça durante o evento especial');
+  await A.evaluate(() => CE.api.chamar('praca:especial-encerrar'));
 
   // ================= Onde os dados ficaram =================
   const disco = lerDisco('praca.json', {});

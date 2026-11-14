@@ -194,6 +194,36 @@
     },
   };
   const temEmergencia = (tipo) => Object.prototype.hasOwnProperty.call(EMERGENCIAS, tipo);
+
+  // ---------- Eventos especiais (comprados com as moedas da turma e conduzidos pelo Professor Virtual) ----------
+  // A turma junta moedas numa vaquinha; quando chega no preço, o Professor Virtual conduz o evento na praça.
+  const ESPECIAIS = {
+    festa: {
+      id: 'festa', emoji: '🎆', nome: 'Festa com fogos no coreto', preco: 100, duracao: 60000,
+      descricao: 'Fogos de artifício no céu da praça e música no coreto. Quanto mais palmas (👏), maior a festa!',
+      abertura: 'A turma comprou a festa! Todo mundo para o coreto: batam palmas no 👏 para a festa ficar animada!',
+      fim: 'Que festa bonita! Obrigado, turma.',
+    },
+    tesouro: {
+      id: 'tesouro', emoji: '🎁', nome: 'Caça ao tesouro na cidade', preco: 150, duracao: 180000, baus: 8,
+      descricao: 'Oito baús escondidos pela cidade. Quem chega primeiro num baú ganha 5 moedas. Bom para conhecer a cidade inteira!',
+      abertura: 'A turma comprou a caça ao tesouro! Escondi 8 baús 🎁 pela cidade. Andem pelas ruas: quem chegar primeiro num baú ganha 5 moedas.',
+      fim: 'Fim da caça ao tesouro! Parabéns a quem achou os baús.',
+    },
+    bingo: {
+      id: 'bingo', emoji: '🎱', nome: 'Bingo no coreto', preco: 200, duracao: 240000, numeros: 30, porCartela: 9, intervalo: 6000, premio: 30,
+      descricao: 'O Professor Virtual sorteia os números em voz alta e cada um marca a sua cartela. Cartela cheia: BINGO! O primeiro ganha 30 moedas.',
+      abertura: 'A turma comprou o bingo! Cada um recebeu uma cartela com 9 números. Eu sorteio e falo em voz alta: clique nos números sorteados. Completou a cartela? Aperte BINGO!',
+      fim: 'Fim do bingo! Obrigado por jogar.',
+    },
+    brigada: {
+      id: 'brigada', emoji: '🚒', nome: 'Treino de brigada', preco: 80,
+      descricao: 'Um evento urgente surpresa (incêndio, enchente ou temporal) para a turma treinar junta, conduzido pelo Professor Virtual.',
+      abertura: 'A turma comprou um treino de brigada! Atenção: a qualquer momento pode acontecer uma emergência na cidade...',
+      fim: '',
+    },
+  };
+  const temEspecial = (id) => Object.prototype.hasOwnProperty.call(ESPECIAIS, id);
   const algarismos = (s) => String(s == null ? '' : s).replace(/\D/g, '');
   const conferirEmergencia = (tipo, acao, resposta) => {
     const e = temEmergencia(tipo) ? EMERGENCIAS[tipo] : null;
@@ -222,5 +252,5 @@
     if (t.tipo === 'digitar') return t.numero ? Math.abs(reais(resposta) - t.resposta) < 0.001 : limpo(resposta) === limpo(t.modelo);
     return false;
   }
-  return { TAREFAS, CAPITULOS, EMERGENCIAS, porCapitulo, porPista, temTarefa, temEmergencia, conferirEmergencia, dia, semana, tarefaDoDia, publica, conferir };
+  return { TAREFAS, CAPITULOS, EMERGENCIAS, ESPECIAIS, porCapitulo, porPista, temTarefa, temEmergencia, temEspecial, conferirEmergencia, dia, semana, tarefaDoDia, publica, conferir };
 });

@@ -776,6 +776,14 @@ window.CE = window.CE || {};
       $('professor').hidden = true;
     },
     comecarLicao,
+    // Um recado do professor no balão da conversa (e falado), por exemplo para chamar para a Praça Escola.
+    dizer(texto, falar = true) {
+      if (!$('prof-conversa')) return;
+      const painel = $('professor');
+      if (painel) { painel.hidden = false; painel.classList.remove('recolhido'); }
+      falarNoChat(texto);
+      if (falar) CE.voz.falar(texto);
+    },
     // Para o painel da sala ao vivo: em que aula e passo o aluno está.
     situacao: () => (licao ? { id: licao.id, titulo: licao.titulo, passo: `${Math.min(indicePasso + 1, licao.passos.length)} de ${licao.passos.length}` } : null),
   };

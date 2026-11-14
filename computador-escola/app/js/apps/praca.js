@@ -7,6 +7,8 @@
 // Tela limpa: o mapa ocupa a janela toda e o resto só aparece por cima dele quando importa.
 // Eventos urgentes: o instrutor dispara uma emergência (incêndio, rio transbordando, chuva forte) e a turma ajuda junta.
 // Moedas: o que o aluno faz aqui (tarefa do dia, pistas, final da novela, eventos) também paga moedas (carteira.js).
+// Eventos especiais: a turma junta moedas numa vaquinha e o Professor Virtual conduz o evento (festa, caça ao tesouro,
+// bingo, treino de brigada). Hora da Praça: 15 minutos antes de a aula acabar, todo mundo é chamado para a praça.
 // As regras ficam em app/js/praca-regras.js (o computador do instrutor guarda tudo) e o mapa em app/js/praca-mapa.js.
 window.CE = window.CE || {};
 
@@ -52,6 +54,9 @@ window.CE = window.CE || {};
     lixeira: { texto: 'A lata de lixo da praça. Lixo no lixo deixa a praça bonita!' },
   };
   const EMERG = NOV.EMERGENCIAS;
+  const ESP = NOV.ESPECIAIS;
+  const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   // Moradores: personagens do computador. Cada conversa ensina uma coisa do curso.
   const FICHA = {
     rosa: { papel: 'Moradora · no banco da praça', faz: 'Pede ajuda para mandar uma foto ao neto: quem ensina, aprende ensinando.' },
@@ -283,6 +288,7 @@ window.CE = window.CE || {};
     altura: 700,
     abrir(corpo, janela) {
       corpo.classList.add('pr-corpo');
+      document.querySelectorAll('.praca-convite').forEach((d) => d.remove()); // já está na praça: o convite não faz mais sentido
       const usuario = CE.sessao.usuario;
       const souInstrutor = usuario.papel === 'instrutor';
       pracaNaTela = true;
@@ -299,12 +305,14 @@ window.CE = window.CE || {};
       const botaoCidade = CE.el('button', { class: 'pr-pilula', type: 'button', 'data-acao': 'cidade', title: 'Como está a cidade da turma' }, `🏙️ Cidade 0/${M.CIDADE.length}`);
       const botaoNovela = CE.el('button', { class: 'pr-pilula novela', type: 'button', 'data-acao': 'novela', title: 'A novela da cidade: as pistas e o final' }, '🔎 Novela');
       botaoNovela.hidden = true;
-      const botaoMoedas = CE.el('button', { class: 'pr-pilula moedas', type: 'button', 'data-acao': 'moedas', title: 'Minhas moedas (o extrato abre numa janela)' }, '💰 0');
+      const botaoMoedas = CE.el('button', { class: 'pr-pilula moedas', type: 'button', 'data-acao': 'moedas', title: 'Minhas moedas e os eventos especiais da turma' }, '💰 0');
       botaoMoedas.hidden = souInstrutor;
+      const botaoHora = CE.el('button', { class: 'pr-pilula hora', type: 'button', 'data-acao': 'hora', title: 'Hora da Praça: quanto falta para a aula acabar' }, '⏰');
+      botaoHora.hidden = true;
       const listaGente = CE.el('ul', { class: 'pr-gente' });
       const popGente = CE.el('div', { class: 'pr-pop gente', role: 'dialog', 'aria-label': 'Quem está na praça agora' }, CE.el('h3', {}, 'Na praça agora'), listaGente);
       popGente.hidden = true;
-      const topoEsq = CE.el('div', { class: 'pr-hud pr-topo-esq' }, botaoGente, botaoCidade, botaoNovela, botaoMoedas, popGente);
+      const topoEsq = CE.el('div', { class: 'pr-hud pr-topo-esq' }, botaoGente, botaoCidade, botaoNovela, botaoMoedas, botaoHora, popGente);
 
       // No alto, à direita: ver a cidade inteira e, para o instrutor, quatro botões pequenos.
       const mapaIcone = CE.el('span', { 'aria-hidden': 'true' }, '🗺️');
@@ -334,7 +342,12 @@ window.CE = window.CE || {};
       popEmerg.hidden = true;
       const btEmerg = comando('emergencia', '🚨', 'Evento urgente', () => abrirPopEmerg(popEmerg.hidden));
       btEmerg.setAttribute('aria-expanded', 'false');
-      const comandos = souInstrutor ? CE.el('div', { class: 'pr-comandos', 'data-pr': 'instrutor' }, btMegafone, btChamar, btAbrir, btFrases, btEmerg, popMegafone, popEmerg) : null;
+      // ⏰ O horário das aulas: 15 minutos antes de cada uma acabar, o Professor Virtual chama todo mundo para a praça.
+      const popHora = CE.el('div', { class: 'pr-pop horario', role: 'dialog', 'aria-label': 'Hora da Praça' });
+      popHora.hidden = true;
+      const btHora = comando('horario', '⏰', 'Hora da Praça (horário das aulas)', () => abrirPopHora(popHora.hidden));
+      btHora.setAttribute('aria-expanded', 'false');
+      const comandos = souInstrutor ? CE.el('div', { class: 'pr-comandos', 'data-pr': 'instrutor' }, btMegafone, btChamar, btAbrir, btFrases, btEmerg, btHora, popMegafone, popEmerg, popHora) : null;
       const topoDir = CE.el('div', { class: 'pr-hud pr-topo-dir' }, botaoMapa, comandos);
 
       // No meio, no alto: o megafone e os avisos da praça (somem sozinhos).
@@ -342,7 +355,13 @@ window.CE = window.CE || {};
       const avisos = CE.el('ol', { class: 'pr-avisos', 'aria-live': 'polite' });
       // O alarme do evento urgente: o que aconteceu, o relógio, o perigo e como ajudar.
       const emergEl = CE.el('div', { class: 'pr-emerg', role: 'status', 'aria-live': 'polite' }); emergEl.hidden = true;
-      const centro = CE.el('div', { class: 'pr-centro' }, emergEl, megafoneEl, avisos);
+      // O evento especial (conduzido pelo Professor Virtual): o que é, o relógio e o placar.
+      const especialEl = CE.el('div', { class: 'pr-especial', role: 'status', 'aria-live': 'polite' }); especialEl.hidden = true;
+      const centro = CE.el('div', { class: 'pr-centro' }, emergEl, especialEl, megafoneEl, avisos);
+      const fogosEl = CE.el('div', { class: 'pr-fogos', 'aria-hidden': 'true' }, ...['🎆', '🎇', '✨', '🎆', '🎇', '✨', '🎆', '🎇'].map((f, k) => CE.el('span', { style: `left:${8 + k * 11.5}%;top:${12 + ((k * 37) % 50)}%;animation-delay:${(k * 0.37).toFixed(2)}s` }, f)));
+      fogosEl.hidden = true;
+      // A cartela do bingo (cada um marca os números que o Professor Virtual sorteia).
+      const bingoEl = CE.el('div', { class: 'pr-bingo', role: 'region', 'aria-label': 'Cartela do bingo' }); bingoEl.hidden = true;
       const chuvaEl = CE.el('div', { class: 'pr-chuva', 'aria-hidden': 'true' }); chuvaEl.hidden = true;
       const avisoRede = CE.el('div', { class: 'pr-aviso-rede', role: 'status' }); avisoRede.hidden = true;
 
@@ -378,10 +397,10 @@ window.CE = window.CE || {};
       // O final do capítulo da novela, revelado pelo instrutor no coreto: aparece para todos ao mesmo tempo.
       const finalEl = CE.el('div', { class: 'pr-final', role: 'dialog', 'aria-label': 'O final do capítulo' }); finalEl.hidden = true;
       const mapa = CE.el('div', { class: 'pr-mapa', tabindex: '0', 'aria-label': 'Mapa da Praça Escola. Clique no chão para andar ou use as setas do teclado; Enter conversa com quem está perto.' },
-        mundo, chuvaEl, acao, topoEsq, topoDir, centro, avisoRede, chat, baixo, dica, dialogo, finalEl, fechadaEl);
+        mundo, chuvaEl, fogosEl, acao, topoEsq, topoDir, centro, avisoRede, chat, baixo, bingoEl, dica, dialogo, finalEl, fechadaEl);
       // Clique nos botões e janelinhas não é clique no chão (um botão que redesenha a janelinha some antes de o
       // clique chegar ao mapa, e aí o boneco sairia andando).
-      for (const camada of [topoEsq, topoDir, centro, avisoRede, chat, baixo, acao, dialogo, finalEl, fechadaEl]) camada.addEventListener('click', (e) => e.stopPropagation());
+      for (const camada of [topoEsq, topoDir, centro, avisoRede, chat, baixo, bingoEl, acao, dialogo, finalEl, fechadaEl]) camada.addEventListener('click', (e) => e.stopPropagation());
       corpo.replaceChildren(CE.el('div', { class: 'pr-caixa' }, mapa));
       desenharCidade(tela);
 
@@ -434,6 +453,7 @@ window.CE = window.CE || {};
       eu.nomeEl.textContent = 'Você';
       // Moradores (iguais em todos os computadores). Os que trabalham num prédio só aparecem com ele aceso.
       const moradores = M.MORADORES.map((m) => boneco({ ...m, caminho: [] }, m.id === 'oferta' ? 'golpista' : 'morador'));
+      const professorEl = boneco({ id: 'professor-virtual', nome: 'Professor Virtual', emoji: '👨‍🏫', x: 18, y: 11.1, caminho: [] }, 'professor fora');
       const porMorador = Object.fromEntries(moradores.map((m) => [m.id, m]));
       const presente = (m) => !m.el.classList.contains('sumiu') && !m.el.classList.contains('fora');
       // Os outros: vêm do computador do instrutor
@@ -691,7 +711,164 @@ window.CE = window.CE || {};
         ].filter(Boolean));
       }
       // Só o relógio anda a cada segundo (o resto muda quando chega notícia do instrutor).
+      // ---------- Evento especial (conduzido pelo Professor Virtual) ----------
+      let esp = null, chaveEsp = '', relogioEsp = 0, marcados = new Set(), hora = null, relogioHora = 0;
+      const baus = {};
+      const restaEsp = () => (esp ? (esp.status === 'contagem' ? esp.comeca : esp.fim) - (esp.agora + (performance.now() - relogioEsp)) : 0);
+      function aplicarEspecial(e) {
+        esp = e;
+        relogioEsp = performance.now();
+        const chave = e ? [e.id, e.status, e.palmas, e.achados, (e.sorteados || []).length, e.vencedor ? e.vencedor.id : '', e.esperando ? 1 : 0].join('|') : '';
+        if (chave === chaveEsp) return;
+        const mudouId = !e || !chaveEsp.startsWith(String(e.id) + '|');
+        chaveEsp = chave;
+        if (mudouId) marcados = new Set();
+        professorEl.el.classList.toggle('fora', !e || e.status === 'fim');
+        fogosEl.hidden = !(e && e.tipo === 'festa' && e.status === 'ativo');
+        desenharBaus();
+        desenharBingo();
+        desenharEspecial();
+      }
+      function desenharEspecial() {
+        const e = esp;
+        if (!e) { especialEl.hidden = true; return; }
+        const d = ESP[e.tipo];
+        especialEl.hidden = false;
+        especialEl.classList.toggle('fim', e.status === 'fim');
+        let linha;
+        if (e.status === 'contagem' && e.esperando) linha = CE.el('span', {}, 'Começa logo depois do evento urgente. Primeiro, todo mundo ajudando!');
+        else if (e.status === 'contagem') linha = CE.el('span', {}, 'Começa em ', CE.el('strong', { 'data-relogio-esp': '' }, mmss(restaEsp())), '. Vá para o coreto!');
+        else if (e.status === 'fim') linha = CE.el('span', {}, e.tipo === 'bingo' && e.vencedor ? `🎉 ${e.vencedor.id === usuario.id ? 'Você' : e.vencedor.nome} ganhou o bingo!` : 'Terminou. Obrigado, turma!');
+        else if (e.tipo === 'festa') linha = CE.el('span', {}, `👏 ${e.palmas || 0} palmas · aperte o 👏 lá embaixo! · ⏱ `, CE.el('strong', { 'data-relogio-esp': '' }, mmss(restaEsp())));
+        else if (e.tipo === 'tesouro') linha = CE.el('span', {}, `🎁 ${e.achados || 0} de ${(e.baus || []).length} baús achados · ande pelas ruas · ⏱ `, CE.el('strong', { 'data-relogio-esp': '' }, mmss(restaEsp())));
+        else if (e.tipo === 'bingo') linha = CE.el('span', {}, `Saíram ${(e.sorteados || []).length} de ${d.numeros} números · marque na sua cartela`);
+        else linha = CE.el('span', {}, '');
+        especialEl.replaceChildren(CE.el('strong', { class: 'titulo' }, `👨‍🏫 ${d.emoji} ${d.nome}`), linha);
+      }
+      function andarRelogioEspecial() {
+        if (!esp || esp.status === 'fim') return;
+        const r = especialEl.querySelector('[data-relogio-esp]');
+        if (r) r.textContent = mmss(restaEsp());
+        if (hora && !botaoHora.hidden) botaoHora.textContent = `⏰ Faltam ${Math.max(1, Math.ceil((hora.fimEm - (hora.agora + (performance.now() - relogioHora))) / 60000))} min`;
+      }
+      function desenharBaus() {
+        const lista = esp && esp.tipo === 'tesouro' && esp.status === 'ativo' ? esp.baus || [] : [];
+        lista.forEach((b, k) => {
+          if (b.achado || !lista.length) { if (baus[k]) { baus[k].classList.add('aberto'); const el = baus[k]; delete baus[k]; setTimeout(() => el.remove(), 900); } return; }
+          if (!baus[k]) { baus[k] = CE.el('div', { class: 'pr-bau', 'data-bau': String(k), style: `left:${(b.x + 0.5) * T}px;top:${(b.y + 0.5) * T}px` }, '🎁'); camadaObjetos.append(baus[k]); }
+        });
+        if (!lista.length) for (const k of Object.keys(baus)) { baus[k].remove(); delete baus[k]; }
+      }
+      function desenharBingo() {
+        const e = esp;
+        const cartela = e && e.tipo === 'bingo' && e.cartela;
+        bingoEl.hidden = !(cartela && e.status !== 'contagem');
+        if (bingoEl.hidden) return;
+        const sorteados = new Set(e.sorteados || []);
+        const ultimo = (e.sorteados || []).slice(-1)[0];
+        const cheia = cartela.every((n) => marcados.has(n));
+        bingoEl.replaceChildren(...[
+          CE.el('div', { class: 'topo' }, CE.el('strong', {}, '🎱 Sua cartela'), ultimo ? CE.el('span', { class: 'ultimo', 'aria-label': `Último número: ${ultimo}` }, String(ultimo)) : null),
+          CE.el('div', { class: 'cartela' }, cartela.map((n) => CE.el('button', {
+            class: 'pr-bingo-num' + (marcados.has(n) ? ' marcado' : ''), type: 'button', 'data-numero': String(n), 'aria-pressed': String(marcados.has(n)),
+            onclick: (ev) => {
+              if (!sorteados.has(n)) { ev.currentTarget.classList.remove('ainda'); void ev.currentTarget.offsetWidth; ev.currentTarget.classList.add('ainda'); balao(eu, `O ${n} ainda não saiu!`); return; }
+              if (marcados.has(n)) marcados.delete(n); else marcados.add(n);
+              desenharBingo();
+            },
+          }, String(n)))),
+          CE.el('div', { class: 'saidos' }, `Saíram: ${(e.sorteados || []).join(', ') || 'ainda nenhum'}`),
+          e.status === 'ativo' ? CE.el('button', { class: 'botao pr-bingo-grito', type: 'button', 'data-acao': 'bingo', disabled: !cheia, onclick: gritarBingo }, 'BINGO!') : null,
+        ].filter(Boolean));
+      }
+      async function gritarBingo() {
+        const r = await chamar('praca:bingo');
+        if (r) { aplicarEspecial(r); sincronizar(); }
+      }
+      // A Hora da Praça: uma pílula mostra quanto falta para a aula acabar.
+      function aplicarHora(h) {
+        hora = h;
+        relogioHora = performance.now();
+        botaoHora.hidden = !h;
+        if (h) botaoHora.textContent = `⏰ Faltam ${Math.max(1, Math.ceil((h.fimEm - h.agora) / 60000))} min`;
+      }
+      // ---------- A loja de eventos especiais (a vaquinha da turma) ----------
+      let infoLoja = null;
+      async function abrirLoja() {
+        const r = await chamar('praca:loja');
+        if (!r || fechouJanela) return;
+        infoLoja = r;
+        desenharLoja(souInstrutor ? 0 : await CE.carteira.saldo());
+      }
+      function desenharLoja(saldo) {
+        const r = infoLoja;
+        const agora = r.especial && r.especial.status !== 'fim' ? ESP[r.especial.tipo] : null;
+        const cartoes = r.eventos.map((ev) => CE.el('li', { class: 'pr-loja-item', 'data-especial': ev.id },
+          CE.el('span', { class: 'ic', 'aria-hidden': 'true' }, ev.emoji),
+          CE.el('div', { class: 'txt' },
+            CE.el('strong', {}, `${ev.nome} · ${ev.preco} moedas`),
+            CE.el('span', { class: 'pr-suave' }, ev.descricao),
+            CE.el('span', { class: 'pr-suave linha' }, barrinha(ev.juntado, ev.preco), `${ev.juntado} de ${ev.preco}${ev.meu ? ` · você deu ${ev.meu}` : ''}`),
+            CE.el('div', { class: 'pr-botoes' }, souInstrutor
+              ? [CE.el('button', { class: 'botao secundario', type: 'button', 'data-comecar': ev.id, onclick: async () => { const x = await chamar('praca:especial-iniciar', ev.id); if (x) { infoLoja = x; fecharDialogo(); sincronizar(); } } }, '▶ Começar agora (grátis)')]
+              : [10, 20, 50].map((v) => CE.el('button', { class: 'botao secundario', type: 'button', 'data-doar': `${ev.id}:${v}`, disabled: saldo < v, onclick: () => doar(ev, v) }, `+${v} 💰`))))));
+        abrirDialogo({
+          tipo: 'loja', rosto: '🎟️', titulo: 'Eventos especiais', subtitulo: souInstrutor ? 'O instrutor começa de graça; os alunos compram com as moedas' : `Você tem 💰 ${saldo} moedas`,
+          fala: 'A turma junta moedas numa vaquinha: quando o valor chega, o Professor Virtual conduz o evento aqui na praça.',
+          extra: [agora ? CE.el('p', { class: 'pr-pronto' }, `Agora: ${agora.emoji} ${agora.nome}`) : null, CE.el('ul', { class: 'pr-loja' }, cartoes)].filter(Boolean),
+          opcoes: [souInstrutor && agora ? { rotulo: '⏹ Encerrar o evento especial', id: 'encerrar-especial', acao: async () => { await chamar('praca:especial-encerrar'); sincronizar(); } } : null,
+            souInstrutor ? null : { rotulo: 'Ver meu extrato', id: 'extrato', acao: () => CE.carteira.abrir() }, { rotulo: 'Fechar' }].filter(Boolean),
+        });
+      }
+      async function doar(ev, valor) {
+        try { await CE.carteira.gastar(valor, `Vaquinha: ${ev.emoji} ${ev.nome}`); } catch (e) { CE.avisar(e.message); return; }
+        const r = await chamar('praca:doar', ev.id, valor);
+        if (!r) { await CE.carteira.ganhar('estorno', 'Devolução da vaquinha (não deu certo)', null, valor); return; }
+        infoLoja = r;
+        if (r.comprou) { CE.comemorar('grande'); fecharDialogo(); sincronizar(); return; }
+        desenharLoja(await CE.carteira.saldo());
+        balao(eu, `Dei ${valor} moedas para ${ev.nome}!`);
+      }
+      // ⏰ O horário das aulas (só o instrutor mexe).
+      async function abrirPopHora(abrir) {
+        if (!souInstrutor) return;
+        popHora.hidden = !abrir;
+        btHora.setAttribute('aria-expanded', String(abrir));
+        btHora.classList.toggle('ligado', abrir);
+        if (!abrir) return;
+        abrirGente(false); abrirMegafone(false); abrirPopEmerg(false);
+        const h = await chamar('praca:horario');
+        if (h && !popHora.hidden) desenharPopHora(h);
+      }
+      function desenharPopHora(h) {
+        const fins = h.fins.slice();
+        const ativo = CE.el('input', { type: 'checkbox', id: 'pr-hora-ativa' }); ativo.checked = h.ativo;
+        const lista = CE.el('div', { class: 'pr-hora-fins' });
+        const desenharFins = () => lista.replaceChildren(...fins.map((f, k) => CE.el('span', { class: 'pr-hora-fim' }, `🕒 ${f}`, CE.el('button', { class: 'pr-x', type: 'button', 'aria-label': `Tirar ${f}`, onclick: () => { fins.splice(k, 1); desenharFins(); } }, '×'))), ...(fins.length ? [] : [CE.el('span', { class: 'pr-suave' }, 'Nenhum horário ainda.')]));
+        desenharFins();
+        const novo = CE.el('input', { type: 'time', id: 'pr-hora-nova', 'aria-label': 'Horário em que a aula termina' });
+        const dias = DIAS.map((nome, k) => { const c = CE.el('input', { type: 'checkbox', 'data-dia': String(k) }); c.checked = h.dias.includes(k); return CE.el('label', { class: 'pr-dia' }, c, nome); });
+        const proxima = h.proxima ? new Date(h.proxima).toLocaleString('pt-BR', { weekday: 'long', hour: '2-digit', minute: '2-digit' }) : null;
+        popHora.replaceChildren(...[
+          CE.el('h3', {}, '⏰ Hora da Praça'),
+          CE.el('p', { class: 'pr-suave' }, '15 minutos antes de a aula acabar, a praça abre e o Professor Virtual chama todo mundo.'),
+          CE.el('label', { class: 'pr-chave' }, ativo, 'Chamar a turma automaticamente'),
+          CE.el('strong', {}, 'A aula termina às:'), lista,
+          CE.el('div', { class: 'pr-digitar' }, novo, CE.el('button', { class: 'botao secundario', type: 'button', 'data-acao': 'adicionar-hora', onclick: () => { if (novo.value && !fins.includes(novo.value)) { fins.push(novo.value); fins.sort(); novo.value = ''; desenharFins(); } } }, 'Adicionar')),
+          CE.el('div', { class: 'pr-dias' }, dias),
+          proxima ? CE.el('p', { class: 'pr-suave' }, `Próxima: ${proxima}`) : null,
+          CE.el('div', { class: 'pr-botoes' },
+            CE.el('button', { class: 'botao', type: 'button', 'data-acao': 'salvar-horario', onclick: async () => {
+              if (novo.value && !fins.includes(novo.value)) fins.push(novo.value);
+              const x = await chamar('praca:configurar-horario', { ativo: ativo.checked, fins, dias: dias.map((l, k) => (l.querySelector('input').checked ? k : null)).filter((k) => k != null) });
+              if (x) { desenharPopHora(x); CE.avisar('⏰ Horário da Hora da Praça guardado.'); }
+            } }, 'Salvar'),
+            CE.el('button', { class: 'botao secundario', type: 'button', 'data-acao': 'testar-hora', onclick: async () => { const x = await chamar('praca:testar-hora'); if (x) { abrirPopHora(false); sincronizar(); } } }, 'Testar agora')),
+        ].filter(Boolean));
+      }
+
       function andarRelogio() {
+        andarRelogioEspecial();
         if (!emergAtiva()) return;
         const r = emergEl.querySelector('[data-relogio]');
         if (!r) return;
@@ -815,6 +992,8 @@ window.CE = window.CE || {};
         if (r.cidade) aplicarCidade(r.cidade);
         if (r.novela !== undefined) aplicarNovela(r.novela);
         if (r.emergencia !== undefined) aplicarEmergencia(r.emergencia);
+        if (r.especial !== undefined) aplicarEspecial(r.especial);
+        if (r.hora !== undefined) aplicarHora(r.hora);
         // Pessoas
         const vistos = new Set();
         for (const x of r.pessoas) {
@@ -913,6 +1092,25 @@ window.CE = window.CE || {};
             if (CE.voz) CE.voz.falar(`Atenção! ${d.titulo} Todo mundo ajudando!`);
             if (!perto) mudarZoom(true);
           }
+        } else if (ev.tipo === 'professor') {
+          // O Professor Virtual conduz: o recado aparece no alto (menos os números do bingo, que ficam na cartela).
+          registrar({ classe: 'megafone', quem: '👨‍🏫 Professor Virtual', texto: ev.texto });
+          if (!velho) {
+            if (!ev.bingo) {
+              megafoneEl.textContent = `👨‍🏫 Professor Virtual: ${ev.texto}`; megafoneEl.hidden = false;
+              clearTimeout(megafoneEl.timer); megafoneEl.timer = setTimeout(() => { megafoneEl.hidden = true; }, AVISO + 2000);
+              balao(professorEl, ev.texto.length > 70 ? ev.texto.slice(0, 68) + '…' : ev.texto, 'megafone');
+            }
+            if (CE.voz) CE.voz.falar(ev.bingo ? `Número ${ev.bingo}` : ev.texto.replace(/[^\p{L}\p{N}\s.,!?:;'"()%-]/gu, ''));
+            if (ev.especial && !ev.comecou && !perto) mudarZoom(true);
+          }
+        } else if (ev.tipo === 'tesouro') {
+          registrar({ classe: 'cidade', texto: ev.texto });
+          if (!velho) avisarNoMapa(ev.texto, 'cidade');
+          if (ev.de && ev.de.id === usuario.id) { CE.carteira.ganhar('tesouro', 'Achou um baú na caça ao tesouro', `tesouro:${ev.idEspecial}:${ev.bau}`); if (!velho) { CE.comemorar('pequena'); balao(eu, '🎁 Achei! +5 moedas'); } }
+        } else if (ev.tipo === 'bingo-ganhou') {
+          if (ev.de && ev.de.id === usuario.id) CE.carteira.ganhar('bingo', 'Ganhou o bingo do coreto!', `bingo:${ev.idEspecial}`);
+          if (!velho) CE.comemorar('grande');
         } else if (ev.tipo === 'emergencia-ajuda') {
           registrar({ classe: 'sistema', texto: ev.texto });
         } else if (ev.tipo === 'emergencia-fim') {
@@ -971,10 +1169,13 @@ window.CE = window.CE || {};
       botaoGente.addEventListener('click', () => { abrirMegafone(false); abrirGente(popGente.hidden); });
       botaoCidade.addEventListener('click', () => { fecharPopups(); abrirCidade('predios'); });
       botaoNovela.addEventListener('click', () => { fecharPopups(); abrirNovela(); });
-      botaoMoedas.addEventListener('click', () => { fecharPopups(); CE.carteira.abrir(); });
+      botaoMoedas.addEventListener('click', () => { fecharPopups(); abrirLoja(); });
+      botaoHora.addEventListener('click', () => { fecharPopups(); avisarNoMapa('⏰ Hora da Praça: aproveite para fazer a tarefa do dia, achar as pistas da novela e juntar moedas para um evento especial!'); });
       const mostrarMoedas = (saldo) => { botaoMoedas.textContent = `💰 ${saldo}`; };
       if (!souInstrutor) CE.carteira.saldo().then(mostrarMoedas);
-      const pararMoedas = CE.ouvir('carteira:ganhou', (d) => { mostrarMoedas(d.saldo); botaoMoedas.classList.remove('ganhou'); void botaoMoedas.offsetWidth; botaoMoedas.classList.add('ganhou'); });
+      const pararGanho = CE.ouvir('carteira:ganhou', (d) => { mostrarMoedas(d.saldo); botaoMoedas.classList.remove('ganhou'); void botaoMoedas.offsetWidth; botaoMoedas.classList.add('ganhou'); });
+      const pararGasto = CE.ouvir('carteira:gastou', (d) => mostrarMoedas(d.saldo));
+      const pararMoedas = () => { pararGanho(); pararGasto(); };
       function abrirMegafone(abrir) {
         if (!souInstrutor) return;
         popMegafone.hidden = !abrir;
@@ -982,7 +1183,7 @@ window.CE = window.CE || {};
         btMegafone.classList.toggle('ligado', abrir);
         if (abrir) { abrirGente(false); campoMegafone.focus({ preventScroll: true }); }
       }
-      function fecharPopups() { abrirGente(false); abrirMegafone(false); if (souInstrutor && !popEmerg.hidden) abrirPopEmerg(false); }
+      function fecharPopups() { abrirGente(false); abrirMegafone(false); if (souInstrutor && !popEmerg.hidden) abrirPopEmerg(false); if (souInstrutor && !popHora.hidden) abrirPopHora(false); }
 
       // Os botões do instrutor mostram o que está valendo agora.
       function desenharInstrutor() {
@@ -1418,6 +1619,7 @@ window.CE = window.CE || {};
           const x = await chamar('praca:revelar-final', turmaEscolhida);
           if (x) { infoNovela = x; fecharDialogo(); sincronizar(); }
         } });
+        opcoes.push({ rotulo: '🎟️ Eventos especiais', id: 'loja', fica: true, acao: () => abrirLoja() });
         if (souInstrutor) opcoes.push({ rotulo: 'Abrir a gincana', id: 'gincana', acao: () => CE.janelas.abrir('gincana') }, { rotulo: 'Corrida de digitação', id: 'corrida', acao: () => CE.janelas.abrir('corrida') });
         opcoes.push({ rotulo: 'Fechar' });
         abrirDialogo({ tipo: 'novela', rosto: '🎭', titulo: 'A novela da cidade', subtitulo: `No coreto da praça${r.turma ? ' · turma ' + r.turma : ''}`, extra: partes,
@@ -1592,7 +1794,7 @@ window.CE = window.CE || {};
         if (e.key === 'Escape') {
           if (!finalEl.hidden) { finalEl.hidden = true; mapa.focus({ preventScroll: true }); return; }
           if (!dialogo.hidden) { fecharDialogo(); return; }
-          if (!popGente.hidden || !popMegafone.hidden || !popEmerg.hidden) { fecharPopups(); mapa.focus({ preventScroll: true }); return; }
+          if (!popGente.hidden || !popMegafone.hidden || !popEmerg.hidden || !popHora.hidden) { fecharPopups(); mapa.focus({ preventScroll: true }); return; }
           if (!chat.hidden) { abrirConversa(false); mapa.focus({ preventScroll: true }); return; }
         }
         if (e.target.closest('input, textarea, select') || !dialogo.hidden || bloqueado()) return;

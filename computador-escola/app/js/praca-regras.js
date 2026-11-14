@@ -23,6 +23,21 @@
   const ESPERA_ENTREGA = 1200;  // entre duas entregas da mesma pessoa
   const MOSTRA_FIM = 15000;     // o resultado do evento fica na tela por 15 s
   const AJUDA_BOT = 5000;       // no modo de teste, um colega de demonstração ajuda a cada 5 s
+  // Eventos especiais (comprados com moedas) e Hora da Praça.
+  const CONTAGEM = 20000;       // o evento especial começa 20 s depois de comprado (dá tempo de ir para o coreto)
+  const FIM_ESPECIAL = 15000;   // o resultado fica na tela por 15 s
+  const DICA_TESOURO = 45000;   // na caça ao tesouro, uma dica do Professor Virtual a cada 45 s
+  const MAX_DOACAO = 500;
+  const PROFESSOR = { id: 'professor-virtual', nome: 'Professor Virtual', avatar: '👨‍🏫', papel: 'professor' };
+  const DIAS_PADRAO = [1, 2, 3, 4, 5];
+  const horaValida = (t) => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(t));
+  // O horário das aulas: a que horas cada aula termina (pode ter mais de uma por dia) e em que dias da semana.
+  function horarioValido(h) {
+    h = h && typeof h === 'object' ? h : {};
+    const fins = [...new Set((Array.isArray(h.fins) ? h.fins : []).map(String).filter(horaValida))].sort().slice(0, 6);
+    const dias = Array.isArray(h.dias) ? [...new Set(h.dias.map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6))].sort() : DIAS_PADRAO.slice();
+    return { ativo: h.ativo !== false, fins, dias, antes: 15 };
+  }
   const OPCOES = [
     { id: 'quadra', emoji: '🏀', nome: 'Quadra de esportes' },
     { id: 'horta', emoji: '🥬', nome: 'Aumentar a horta' },
@@ -67,6 +82,12 @@
         // No modo de teste, a turma de demonstração já começou o primeiro capítulo e algumas tarefas da semana.
         if (demonstracao && !lido.novela['Demonstração']) lido.novela['Demonstração'] = { atual: 'barco', abertoEm: relogio(), achados: { 'barco-bilhete': ['demo-ana', 'demo-carla'], 'barco-email': ['demo-lia'] }, resolvido: false, revelado: false, feitos: [] };
         if (demonstracao && !lido.tarefas['Demonstração']) lido.tarefas['Demonstração'] = { semana: nov.semana(relogio()), conta: { horta: 3, estacao: 2, escola: 1 }, selos: [] };
+        if (demonstracao && !lido.loja['Demonstração']) {
+          lido.loja['Demonstração'] = {
+            festa: { juntado: 60, doadores: { 'demo-ana': 30, 'demo-lia': 30 } }, tesouro: { juntado: 90, doadores: { 'demo-lia': 50, 'demo-carla': 40 } },
+            bingo: { juntado: 120, doadores: { 'demo-ana': 60, 'demo-bruno': 30, 'demo-davi': 30 } }, brigada: { juntado: 50, doadores: { 'demo-fatima': 20, 'demo-jorge': 30 } },
+          };
+        }
       }
       return lido;
     };
@@ -95,6 +116,10 @@
         bonus: Number(g.bonus) || 0,
         // A novela da cidade de cada turma: o capítulo aberto, quem achou cada pista e os capítulos já revelados.
         novela: g.novela && typeof g.novela === 'object' ? g.novela : {},
+        // Hora da Praça: a turma é chamada para a praça 15 minutos antes de cada aula acabar.
+        horario: horarioValido(g.horario),
+        // A vaquinha de cada turma para os eventos especiais: quanto já juntou e quem deu.
+        loja: g.loja && typeof g.loja === 'object' ? g.loja : {},
       };
     }
     function gravar() {
@@ -306,6 +331,16 @@
       a.vezes++;
       if (emerg.perigo <= 0) terminarEmergencia(true, relogio());
     }
+    function abrirEmergencia(tipo, agora) {
+      const def = nov.EMERGENCIAS[tipo];
+      const alunosNaPraca = [...pessoas.values()].filter((x) => x.papel !== 'instrutor').length;
+      emerg = {
+        id: Math.max(agora, emerg ? emerg.id + 1 : 0), tipo, inicio: agora, fim: agora + def.duracao, atualizadoEm: agora, perigo: PERIGO_INICIAL,
+        pessoas: Math.max(2, alunosNaPraca), ajudas: {}, carregando: {}, ultimaEntrega: {}, ligou: new Set(), respondeu: new Set(), status: 'ativo', terminouEm: 0,
+      };
+      if (!dados().aberta) { dados().aberta = true; gravar(); }
+      evento({ tipo: 'emergencia', emergencia: tipo, idEmergencia: emerg.id, texto: `🚨 ${def.titulo} ${def.alerta}` });
+    }
     function resumoEmergencia(usuario, agora) {
       if (!emerg || (emerg.status !== 'ativo' && agora - emerg.terminouEm > MOSTRA_FIM)) return null;
       const meu = emerg.ajudas[usuario.id];
@@ -313,6 +348,185 @@
         id: emerg.id, tipo: emerg.tipo, status: emerg.status, perigo: Math.round(emerg.perigo), fim: emerg.fim, agora,
         carregando: !!emerg.carregando[usuario.id], ligou: emerg.ligou.has(usuario.id), respondeu: emerg.respondeu.has(usuario.id),
         minhasAjudas: meu ? meu.vezes : 0, ajudantes: Object.keys(emerg.ajudas).length,
+      };
+    }
+
+    // ---------- Hora da Praça ----------
+    // 15 minutos antes de cada aula acabar, a praça abre e o Professor Virtual chama todo mundo (quem está fora
+    // recebe o convite pela presença). O instrutor também pode testar na hora.
+    let horaManual = null, horaAnunciada = null;
+    const falaProfessor = (texto, extra = {}) => evento({ tipo: 'professor', de: PROFESSOR, texto, ...extra });
+    function janelaDaHora(agora) {
+      if (horaManual && agora < horaManual.fimEm) return horaManual;
+      const h = dados().horario;
+      if (!h.ativo || !h.fins.length) return null;
+      const d = new Date(agora);
+      if (!h.dias.includes(d.getDay())) return null;
+      for (const fim of h.fins) {
+        const [hh, mm] = fim.split(':').map(Number);
+        const fimEm = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh, mm).getTime();
+        if (agora >= fimEm - h.antes * 60000 && agora < fimEm) return { id: `hora-${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${fim}`, fim, fimEm };
+      }
+      return null;
+    }
+    function verificarHora(agora) {
+      const j = janelaDaHora(agora);
+      if (j && j.id !== horaAnunciada) {
+        horaAnunciada = j.id;
+        if (!dados().aberta) { dados().aberta = true; gravar(); }
+        const min = Math.max(1, Math.round((j.fimEm - agora) / 60000));
+        falaProfessor(`⏰ Faltam ${min} minutos para acabar a aula: hora da Praça Escola! Façam a tarefa do dia nos prédios, procurem as pistas da novela e juntem moedas para um evento especial.`, { hora: j.id });
+      }
+      return j;
+    }
+    // A próxima Hora da Praça (para o instrutor conferir o horário).
+    function proximaHora(agora) {
+      const h = dados().horario;
+      if (!h.ativo || !h.fins.length || !h.dias.length) return null;
+      for (let k = 0; k < 8; k++) {
+        const d = new Date(agora + k * 86400000);
+        if (!h.dias.includes(d.getDay())) continue;
+        for (const fim of h.fins) {
+          const [hh, mm] = fim.split(':').map(Number);
+          const inicio = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh, mm).getTime() - h.antes * 60000;
+          if (inicio + h.antes * 60000 > agora) return inicio;
+        }
+      }
+      return null;
+    }
+
+    // ---------- Eventos especiais (a vaquinha da turma e o Professor Virtual conduzindo) ----------
+    let especial = null;
+    const fila = []; // eventos já comprados esperando o de agora terminar
+    const lojaDa = (turma) => (dados().loja[turma] = dados().loja[turma] || {});
+    function comecarEspecial(tipo, turma, agora) {
+      const def = nov.ESPECIAIS[tipo];
+      if ((especial && especial.status !== 'fim') || (emerg && emerg.status === 'ativo')) {
+        fila.push({ tipo, turma });
+        falaProfessor(`🎟️ ${def.emoji} ${def.nome} está na fila: começa assim que terminar o evento de agora.`);
+        return;
+      }
+      especial = { id: Math.max(agora, especial ? especial.id + 1 : 0), tipo, turma, status: 'contagem', comeca: agora + CONTAGEM, fim: 0, terminouEm: 0 };
+      if (!dados().aberta) { dados().aberta = true; gravar(); }
+      falaProfessor(`🎟️ ${def.emoji} ${def.nome}: começa em 20 segundos no coreto! ${def.abertura}`, { especial: tipo, idEspecial: especial.id });
+    }
+    function embaralhar(lista) {
+      const l = lista.slice();
+      for (let i = l.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [l[i], l[j]] = [l[j], l[i]]; }
+      return l;
+    }
+    // Baús espalhados pela cidade (nas ruas e na praça), longe uns dos outros.
+    function escolherBaus(n) {
+      const escolhidos = [];
+      for (const [x, y] of embaralhar([...mapa.RUAS, ...mapa.PRACA])) {
+        if (escolhidos.every((b) => Math.hypot(b.x - x, b.y - y) >= 5)) escolhidos.push({ x, y, por: null });
+        if (escolhidos.length >= n) break;
+      }
+      return escolhidos;
+    }
+    const PERTO_DE = [['escola', 'perto da Escola'], ['fonte', 'perto da fonte'], ['coreto', 'perto do coreto'], ['banco', 'perto do Banco'], ['correios', 'perto dos Correios'],
+      ['prefeitura', 'perto da Prefeitura'], ['posto', 'perto do Posto de Saúde'], ['feira', 'perto da Feira'], ['horta', 'perto da horta'], ['estacao', 'perto da Estação'],
+      ['empregos', 'perto da Agência de Empregos'], ['lote', 'perto do Lote da turma'], ['sua-casa', 'na Rua da Turma'], ['rio', 'perto do cais']];
+    function ondeFica(x, y) {
+      let melhor = PERTO_DE[0], menor = Infinity;
+      for (const par of PERTO_DE) {
+        const L = mapa.porLugar[par[0]];
+        if (!L) continue;
+        const [lx, ly, w, h] = L.r;
+        const d = Math.hypot(lx + w / 2 - x, ly + h / 2 - y);
+        if (d < menor) { menor = d; melhor = par; }
+      }
+      return melhor[1];
+    }
+    const cartelaDe = (id) => {
+      if (!especial || especial.tipo !== 'bingo') return null;
+      if (!especial.cartelas[id]) {
+        const def = nov.ESPECIAIS.bingo;
+        especial.cartelas[id] = embaralhar(Array.from({ length: def.numeros }, (_, k) => k + 1)).slice(0, def.porCartela).sort((a, b) => a - b);
+      }
+      return especial.cartelas[id];
+    };
+    function terminarEspecial(agora, texto) {
+      especial.status = 'fim';
+      especial.terminouEm = agora;
+      falaProfessor(texto || nov.ESPECIAIS[especial.tipo].fim, { fimEspecial: especial.tipo, idEspecial: especial.id });
+    }
+    function atualizarEspecial(agora) {
+      if (especial && especial.status === 'fim' && agora - especial.terminouEm > FIM_ESPECIAL) especial = null;
+      if (!especial || especial.status === 'fim') {
+        if (fila.length && !(emerg && emerg.status === 'ativo') && (!especial || agora - especial.terminouEm > FIM_ESPECIAL)) { const f = fila.shift(); especial = null; comecarEspecial(f.tipo, f.turma, agora); }
+        return;
+      }
+      const def = nov.ESPECIAIS[especial.tipo];
+      if (especial.status === 'contagem') {
+        // Um evento urgente começou durante a contagem: o especial espera ele acabar (e aí conta os 20 s de novo).
+        if (emerg && emerg.status === 'ativo') { especial.esperando = true; especial.comeca = Math.max(especial.comeca, agora + CONTAGEM); return; }
+        especial.esperando = false;
+        if (agora < especial.comeca) return;
+        especial.status = 'ativo';
+        especial.fim = agora + (def.duracao || 0);
+        if (especial.tipo === 'festa') especial.palmas = 0;
+        if (especial.tipo === 'tesouro') { especial.baus = escolherBaus(def.baus); especial.ultimaDica = agora; }
+        if (especial.tipo === 'bingo') { especial.ordem = embaralhar(Array.from({ length: def.numeros }, (_, k) => k + 1)); especial.sorteados = []; especial.cartelas = {}; especial.proximo = agora + 3000; especial.vencedor = null; }
+        if (especial.tipo === 'brigada') {
+          // O treino de brigada é um evento urgente surpresa, conduzido pelo Professor Virtual.
+          abrirEmergencia(sortear(Object.keys(nov.EMERGENCIAS)), agora);
+          especial.status = 'fim'; especial.terminouEm = agora - FIM_ESPECIAL;
+          return;
+        }
+        falaProfessor(`${def.emoji} Começou: ${def.nome}!`, { especial: especial.tipo, idEspecial: especial.id, comecou: true });
+        return;
+      }
+      if (especial.tipo === 'bingo') {
+        while (!especial.vencedor && agora >= especial.proximo && especial.ordem.length) {
+          const n = especial.ordem.shift();
+          especial.sorteados.push(n);
+          especial.proximo += def.intervalo;
+          falaProfessor(`🎱 Número ${n}!`, { bingo: n, idEspecial: especial.id });
+        }
+        if (!especial.vencedor && !especial.ordem.length && agora >= especial.proximo + 15000) terminarEspecial(agora, 'Saíram todos os números e ninguém gritou BINGO. Fim do bingo!');
+        return;
+      }
+      if (especial.tipo === 'tesouro' && agora - especial.ultimaDica > DICA_TESOURO) {
+        especial.ultimaDica = agora;
+        const falta = especial.baus.find((b) => !b.por);
+        if (falta) falaProfessor(`🧭 Dica: ainda tem baú ${ondeFica(falta.x, falta.y)}.`);
+      }
+      if (agora >= especial.fim) terminarEspecial(agora);
+    }
+    // Na caça ao tesouro, quem chega num baú primeiro fica com ele (o computador do instrutor confere pela posição).
+    function checarBaus(p) {
+      if (!especial || especial.status !== 'ativo' || especial.tipo !== 'tesouro' || p.papel === 'instrutor') return;
+      especial.baus.forEach((b, k) => {
+        if (b.por || Math.hypot(b.x - p.x, b.y - p.y) > 0.9) return;
+        b.por = { id: p.id, nome: p.nome };
+        const achados = especial.baus.filter((x) => x.por).length;
+        evento({ tipo: 'tesouro', de: quem(p), idEspecial: especial.id, bau: k, texto: `🎁 ${p.nome} achou um baú! (${achados} de ${especial.baus.length})` });
+        if (achados === especial.baus.length) terminarEspecial(relogio(), '🎉 Todos os baús foram achados! Parabéns, turma: vocês conhecem a cidade inteira.');
+      });
+    }
+    function resumoEspecial(usuario, agora) {
+      if (!especial) return null;
+      const r = { id: especial.id, tipo: especial.tipo, status: especial.status, comeca: especial.comeca, fim: especial.fim, agora, esperando: !!especial.esperando };
+      if (especial.tipo === 'festa') r.palmas = especial.palmas || 0;
+      if (especial.tipo === 'tesouro' && especial.baus) { r.baus = especial.baus.map((b) => ({ x: b.x, y: b.y, achado: !!b.por })); r.achados = especial.baus.filter((b) => b.por).length; }
+      if (especial.tipo === 'bingo' && especial.sorteados) {
+        r.sorteados = especial.sorteados.slice();
+        r.cartela = especial.status === 'ativo' && usuario.papel !== 'instrutor' ? cartelaDe(usuario.id) : (especial.cartelas[usuario.id] || null);
+        r.vencedor = especial.vencedor;
+      }
+      return r;
+    }
+    function infoLoja(usuario) {
+      const turma = turmaVista(usuario);
+      const loja = lojaDa(turma);
+      return {
+        turma,
+        eventos: Object.values(nov.ESPECIAIS).map((e) => {
+          const v = loja[e.id] || { juntado: 0, doadores: {} };
+          return { id: e.id, emoji: e.emoji, nome: e.nome, descricao: e.descricao, preco: e.preco, juntado: Number(v.juntado) || 0, meu: Number((v.doadores || {})[usuario.id]) || 0, doadores: Object.keys(v.doadores || {}).length };
+        }),
+        especial: resumoEspecial(usuario, relogio()),
       };
     }
 
@@ -386,6 +600,9 @@
           gravar();
         }
       }
+      atualizarEspecial(agora);
+      for (const b of bots) checarBaus(b);
+      if (especial && especial.status === 'ativo' && especial.tipo === 'festa' && Math.random() < 0.3) especial.palmas = (especial.palmas || 0) + 1;
       // Num evento urgente, os colegas de demonstração ajudam também (devagar: quem está na praça faz a diferença).
       atualizarEmergencia(agora);
       if (emerg && emerg.status === 'ativo' && agora - ultimaAjudaBot > AJUDA_BOT) {
@@ -444,11 +661,16 @@
         const turma = turmaVista(usuario, eu && eu.turma);
         if (demonstracao && !avaliouDemo) { avaliouDemo = true; avaliar('Demonstração', false); }
         atualizarEmergencia(agora);
+        atualizarEspecial(agora);
+        checarBaus(p);
+        const hora = verificarHora(agora);
         return {
           agora, novo, eu: { x: p.x, y: p.y },
           cidade: { turma, abertos: (dados().abertos[turma] || []).slice(), selos: semanaDa(turma).selos.slice() },
           novela: resumoNovela(usuario, turma),
           emergencia: resumoEmergencia(usuario, agora),
+          especial: resumoEspecial(usuario, agora),
+          hora: hora ? { id: hora.id, fimEm: hora.fimEm, agora } : null,
           aberta: dados().aberta, soFrases: dados().soFrases, silenciado: dados().silenciados.includes(usuario.id),
           silenciados: ehInstrutor(usuario) ? dados().silenciados.slice() : undefined,
           chamada: chamada && agora - chamada.em < CONVITE ? { id: chamada.id, em: chamada.em } : null,
@@ -606,6 +828,7 @@
         podeFalar(usuario);
         if (!['acenar', 'aplaudir', 'ajuda'].includes(tipo)) throw new Error('Gesto desconhecido.');
         if (tipo === 'ajuda') p.mao = relogio();
+        if (tipo !== 'ajuda' && especial && especial.status === 'ativo' && especial.tipo === 'festa') especial.palmas = (especial.palmas || 0) + 1;
         const ev = evento({ tipo: 'gesto', gesto: tipo, de: quem(p), x: p.x, y: p.y });
         if (demonstracao) {
           if (tipo === 'ajuda') monitoraVem(p);
@@ -649,9 +872,87 @@
           const def = nov.EMERGENCIAS[emerg.tipo];
           return { id: 'emergencia-' + emerg.id, emergencia: { tipo: emerg.tipo, emoji: def.emoji, titulo: def.titulo } };
         }
+        const hora = verificarHora(agora);
+        if (hora && dados().aberta) return { id: hora.id, hora: { fimEm: hora.fimEm, agora, minutos: Math.max(1, Math.round((hora.fimEm - agora) / 60000)) } };
         if (!chamada || agora - chamada.em > CONVITE || !dados().aberta) return null;
         return { id: chamada.id };
       },
+      // ---------- Hora da Praça ----------
+      horario(usuario) {
+        const agora = relogio();
+        return { ...dados().horario, proxima: proximaHora(agora), agora, agoraNaPraca: !!janelaDaHora(agora) };
+      },
+      configurarHorario(usuario, h) {
+        exigirInstrutor(usuario);
+        dados().horario = horarioValido(h);
+        gravar();
+        return this.horario(usuario);
+      },
+      testarHora(usuario) {
+        exigirInstrutor(usuario);
+        const agora = relogio();
+        horaManual = { id: 'hora-teste-' + agora, fim: 'teste', fimEm: agora + dados().horario.antes * 60000 };
+        verificarHora(agora);
+        return this.horario(usuario);
+      },
+
+      // ---------- Eventos especiais ----------
+      loja(usuario) { atualizarEspecial(relogio()); return infoLoja(usuario); },
+      // O aluno dá moedas para a vaquinha (as moedas saem da carteira dele, no computador dele).
+      doar(usuario, id, valor) {
+        if (ehInstrutor(usuario)) throw new Error('O instrutor começa os eventos especiais de graça, pelo coreto.');
+        if (!nov.temEspecial(id)) throw new Error('Evento desconhecido.');
+        const v = Math.floor(Number(valor));
+        if (!Number.isFinite(v) || v < 1 || v > MAX_DOACAO) throw new Error('Valor de doação inválido.');
+        const turma = turmaVista(usuario);
+        const loja = lojaDa(turma);
+        const item = loja[id] = loja[id] || { juntado: 0, doadores: {} };
+        item.juntado = (Number(item.juntado) || 0) + v;
+        item.doadores = item.doadores || {};
+        item.doadores[usuario.id] = (Number(item.doadores[usuario.id]) || 0) + v;
+        const def = nov.ESPECIAIS[id];
+        let comprou = false;
+        if (item.juntado >= def.preco) {
+          item.juntado -= def.preco;
+          item.doadores = {};
+          comprou = true;
+          evento({ tipo: 'sistema', texto: `🎟️ A turma${turma ? ' ' + turma : ''} juntou as moedas e comprou: ${def.emoji} ${def.nome}!` });
+          comecarEspecial(id, turma, relogio());
+        }
+        gravar();
+        return { comprou, ...infoLoja(usuario) };
+      },
+      iniciarEspecial(usuario, id) {
+        exigirInstrutor(usuario);
+        if (!nov.temEspecial(id)) throw new Error('Evento desconhecido.');
+        comecarEspecial(id, turmaVista(usuario), relogio());
+        return infoLoja(usuario);
+      },
+      encerrarEspecial(usuario) {
+        exigirInstrutor(usuario);
+        const agora = relogio();
+        fila.length = 0;
+        if (especial && especial.status !== 'fim') terminarEspecial(agora, 'O instrutor encerrou o evento especial.');
+        return infoLoja(usuario);
+      },
+      // BINGO! O computador do instrutor confere a cartela com os números sorteados.
+      bingo(usuario) {
+        const agora = relogio();
+        atualizarEspecial(agora);
+        if (!especial || especial.tipo !== 'bingo' || especial.status !== 'ativo') throw new Error('Não tem bingo acontecendo agora.');
+        if (especial.vencedor) throw new Error(`O bingo já tem vencedor: ${especial.vencedor.nome}.`);
+        const cartela = especial.cartelas[usuario.id];
+        if (!cartela) throw new Error('Você não tem cartela neste bingo.');
+        const faltam = cartela.filter((n) => !especial.sorteados.includes(n));
+        if (faltam.length) throw new Error(`Ainda falta${faltam.length === 1 ? '' : 'm'} ${faltam.length} número${faltam.length === 1 ? '' : 's'} da sua cartela. Confira com calma!`);
+        especial.vencedor = { id: usuario.id, nome: usuario.nome };
+        const def = nov.ESPECIAIS.bingo;
+        terminarEspecial(agora, `🎉 BINGO! ${usuario.nome} completou a cartela e ganhou ${def.premio} moedas!`);
+        especial.vencedorEvento = true;
+        evento({ tipo: 'bingo-ganhou', de: { id: usuario.id, nome: usuario.nome }, idEspecial: especial.id, texto: `🎱 ${usuario.nome} ganhou o bingo!` });
+        return resumoEspecial(usuario, agora);
+      },
+
       // ---------- Eventos urgentes ----------
       iniciarEmergencia(usuario, tipo) {
         exigirInstrutor(usuario);
@@ -659,14 +960,7 @@
         const agora = relogio();
         atualizarEmergencia(agora);
         if (emerg && emerg.status === 'ativo') throw new Error('Já tem um evento acontecendo. Encerre esse antes de começar outro.');
-        const def = nov.EMERGENCIAS[tipo];
-        const alunosNaPraca = [...pessoas.values()].filter((x) => x.papel !== 'instrutor').length;
-        emerg = {
-          id: Math.max(agora, emerg ? emerg.id + 1 : 0), tipo, inicio: agora, fim: agora + def.duracao, atualizadoEm: agora, perigo: PERIGO_INICIAL,
-          pessoas: Math.max(2, alunosNaPraca), ajudas: {}, carregando: {}, ultimaEntrega: {}, ligou: new Set(), respondeu: new Set(), status: 'ativo', terminouEm: 0,
-        };
-        if (!dados().aberta) { dados().aberta = true; gravar(); }
-        evento({ tipo: 'emergencia', emergencia: tipo, idEmergencia: emerg.id, texto: `🚨 ${def.titulo} ${def.alerta}` });
+        abrirEmergencia(tipo, agora);
         return resumoEmergencia(usuario, agora);
       },
       encerrarEmergencia(usuario) {

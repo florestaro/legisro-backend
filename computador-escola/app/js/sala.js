@@ -104,17 +104,23 @@ window.CE = window.CE || {};
     pracasVistas.set(quem, convite.id);
     document.querySelectorAll('.praca-convite').forEach((d) => d.remove());
     // Evento urgente na praça (incêndio, rio transbordando, chuva forte): o convite pede ajuda.
-    const e = convite.emergencia;
-    const fundo = CE.el('div', { class: 'dialogo-fundo praca-convite' + (e ? ' emergencia' : ''), 'data-convite-praca': convite.id },
+    // Hora da Praça: faltando 15 minutos para a aula acabar, o Professor Virtual chama todo mundo.
+    const e = convite.emergencia, h = convite.hora;
+    const titulo = e ? `🚨 ${e.emoji} ${e.titulo}` : h ? '⏰ Hora da Praça Escola!' : '⛲ Todo mundo para a praça!';
+    const texto = e ? 'A Praça Escola precisa de ajuda agora! Venha ajudar a turma.'
+      : h ? `Faltam ${h.minutos} minutos para acabar a aula. Vamos para a praça: tarefa do dia nos prédios, pistas da novela e eventos especiais com as moedas da turma!`
+        : 'O instrutor chamou a turma para a Praça Escola. Vamos?';
+    const fundo = CE.el('div', { class: 'dialogo-fundo praca-convite' + (e ? ' emergencia' : h ? ' hora' : ''), 'data-convite-praca': convite.id },
       CE.el('div', { class: 'dialogo' },
-        CE.el('h3', {}, e ? `🚨 ${e.emoji} ${e.titulo}` : '⛲ Todo mundo para a praça!'),
-        CE.el('p', {}, e ? 'A Praça Escola precisa de ajuda agora! Venha ajudar a turma.' : 'O instrutor chamou a turma para a Praça Escola. Vamos?'),
+        CE.el('h3', {}, titulo),
+        CE.el('p', {}, texto),
         CE.el('div', { class: 'dialogo-botoes' },
           CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Agora não'),
           CE.el('button', { class: 'botao', 'data-acao': 'ir-para-praca', onclick: () => { fundo.remove(); CE.janelas.abrir('praca'); } }, e ? 'Ir ajudar ▶' : 'Ir para a praça ▶'))));
     document.body.append(fundo);
-    CE.emitir('sala:praca', { id: convite.id, emergencia: e ? e.tipo : null });
-    CE.voz.falar(e ? `Atenção! ${e.titulo} Venha ajudar a turma na praça.` : 'O instrutor chamou todos para a praça.');
+    CE.emitir('sala:praca', { id: convite.id, emergencia: e ? e.tipo : null, hora: !!h });
+    if (h && CE.professor && CE.professor.dizer) CE.professor.dizer(`⏰ Faltam ${h.minutos} minutos para acabar a aula! Hora da Praça Escola: clique em "Ir para a praça" e venha explorar com a turma.`);
+    else CE.voz.falar(e ? `Atenção! ${e.titulo} Venha ajudar a turma na praça.` : 'O instrutor chamou todos para a praça.');
   }
 
   // Monitoria: o colega monitor avisou que vem ajudar (uma vez por pedido de ajuda).

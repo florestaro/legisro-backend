@@ -296,6 +296,17 @@ curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela red
   Se o perigo zerar a tempo, a turma vence: confete, a lição do dia e, para quem ajudou, moedas e a medalha 🚒 Brigada
   da praça. O computador do instrutor confere cada ajuda (até se o boneco está perto do lugar certo). No modo de teste,
   os colegas de demonstração ajudam também.
+- **Eventos especiais comprados com moedas** (no 💰 da praça ou no coreto): a turma junta moedas numa vaquinha e, quando o
+  valor chega, o **Professor Virtual conduz o evento** no coreto, sem precisar do instrutor: 🎆 **festa com fogos** (100
+  moedas; as palmas 👏 animam a festa), 🎁 **caça ao tesouro** (150; 8 baús pela cidade, quem chega primeiro ganha 5
+  moedas, com dicas do professor), 🎱 **bingo** (200; o professor sorteia e fala os números, cada um marca a sua cartela
+  de 9 números, e a cartela cheia ganha 30 moedas; o computador do instrutor confere) e 🚒 **treino de brigada** (80; um
+  evento urgente surpresa). Comprado, o evento começa em 20 segundos (o Professor Virtual aparece no coreto); se já tem
+  outro acontecendo, entra na fila (e, com um evento urgente na praça, espera ele acabar). O instrutor começa qualquer um
+  de graça e pode encerrar.
+- **Hora da Praça**: o instrutor informa no ⏰ a que horas cada aula termina (e em que dias). **15 minutos antes**, a praça
+  abre e o Professor Virtual chama todo mundo (quem está fora recebe o convite "⏰ Hora da Praça Escola!" e o recado no
+  balão do professor); na praça, uma pílula mostra quanto falta. Dá para testar na hora ("Testar agora").
 - **Moradores** (personagens do computador, com conversas que ensinam): a Dona Rosa pede ajuda para mandar foto ao neto,
   a Dona Lúcia explica o Pix, o Seu Raimundo desafia no troco da feira, a Enfermeira Cida dá dicas, o Seu Bené conta a
   história da Madeira-Mamoré e o **Moço da Oferta** oferece um golpe (quem percebe ganha medalha).
@@ -318,8 +329,9 @@ curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela red
 Todo aluno começa com **zero moedas** e ganha com o que faz: aula concluída (10), prova de nível (50), missão da semana
 (30), exercício de digitação aprovado (5), medalha nova (10), ajudar um colega como monitor (15), gincana (10, e o
 pódio ganha mais), e na Praça Escola: tarefa do dia (5), pista da novela (10), capítulo desvendado (20) e evento urgente
-vencido (15; quem ajudou e a turma não venceu leva 5). Cada coisa paga uma vez só (a mesma aula refeita não paga de
-novo). O saldo aparece no **💰 da barra de tarefas** e, clicando, abre "Minhas moedas", com o extrato e a lista de como
+vencido (15; quem ajudou e a turma não venceu leva 5), baú da caça ao tesouro (5) e bingo (30). Cada coisa paga uma vez
+só (a mesma aula refeita não paga de novo). **Para que servem:** na Praça Escola, a turma junta moedas para comprar os
+eventos especiais (festa, caça ao tesouro, bingo, treino de brigada), que o Professor Virtual conduz. O saldo aparece no **💰 da barra de tarefas** e, clicando, abre "Minhas moedas", com o extrato e a lista de como
 ganhar. As moedas ficam no progresso do aluno (no modo sala de aula, no computador do instrutor), e o instrutor vê as
 de cada um na Praça Escola, em 🏙️ Cidade › Rua da Turma.
 
@@ -415,7 +427,7 @@ npm run teste:sala            # 1 instrutor + 20 alunos usando o sistema ao mesm
 npm run teste:sala -- 5       # o mesmo com 5 alunos
 npm run teste:fase2           # novidades da fase 2: o aluno troca de computador e encontra tudo (uns 3 minutos)
 npm run teste:fase3           # novidades da fase 3: MEI, anúncio e PDF em outro computador, e a monitoria (uns 3 minutos)
-npm run teste:praca           # a Praça Escola em 3 computadores: andar, conversar, a cidade que cresce, tarefas, novela, eventos urgentes, moedas, jogar, mural, votação e comandos do instrutor
+npm run teste:praca           # a Praça Escola em 3 computadores: andar, conversar, a cidade que cresce, tarefas, novela, eventos urgentes e especiais, Hora da Praça, moedas, jogar, mural, votação e comandos do instrutor
 npm run teste:emojis          # todos os emojis aparecem direito no Windows 10 (sem tela, segundos)
 ```
 
@@ -492,7 +504,8 @@ E a Praça Escola (`npm run teste:praca`): cada aluno vê o boneco do outro anda
 o módulo que a Ana conclui acende prédios na tela do Bruno, a tarefa do dia conta uma vez por dia para cada um, os dois
 acham as pistas da novela e o final revelado pela instrutora aparece na tela de todos, os dois apagam juntos o incêndio
 que a instrutora disparou (o Bruno, fora da praça, recebe o pedido de ajuda) e as moedas de cada um ficam guardadas, os
-dois jogam jogo da velha cada um no seu computador, e o megafone, o fechar/abrir, o só frases prontas, o silenciar e
+o convite da Hora da Praça chega para quem está fora (com o recado do Professor Virtual), a vaquinha da turma junta as
+moedas e a festa aparece na tela dos dois, os dois jogam jogo da velha cada um no seu computador, e o megafone, o fechar/abrir, o só frases prontas, o silenciar e
 o chamar todos da instrutora chegam na hora.
 
 ## Criar aulas sem programar
@@ -548,7 +561,8 @@ app/js/missao.js         a missão da semana (banco de missões por nível, sema
 app/js/monitoria.js      a monitoria (o botão 💁 e a janela dos pedidos de ajuda)
 app/js/carteira.js       as moedas de cada aluno (o 💰 da barra de tarefas, a janela "Minhas moedas" e o que paga moedas)
 app/js/praca-mapa.js     o mapa da Praça Escola (prédios, praça, caminhos); praca-novela.js: a tarefa do dia de cada
-                         lugar, os capítulos da novela e os eventos urgentes (textos e respostas); praca-regras.js: as regras (quem está onde,
+                         lugar, os capítulos da novela, os eventos urgentes e os especiais (textos, preços e respostas);
+                         praca-regras.js: as regras (quem está onde, Hora da Praça, vaquinha, o Professor Virtual conduzindo,
                          conversa, mural, votação, mesa de jogo, comandos do instrutor, colegas de demonstração), usadas
                          pelo servidor da sala e pelo modo navegador; apps/praca.js: a janela da praça
 testes/                  testes automáticos do modo sala de aula (servidor, turma de 20 alunos, as novidades das
