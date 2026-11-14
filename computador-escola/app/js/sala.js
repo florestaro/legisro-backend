@@ -103,16 +103,18 @@ window.CE = window.CE || {};
     if (!quem || !convite || pracasVistas.get(quem) === convite.id || CE.janelas.estaAberta('praca')) return;
     pracasVistas.set(quem, convite.id);
     document.querySelectorAll('.praca-convite').forEach((d) => d.remove());
-    const fundo = CE.el('div', { class: 'dialogo-fundo praca-convite', 'data-convite-praca': convite.id },
+    // Evento urgente na praça (incêndio, rio transbordando, chuva forte): o convite pede ajuda.
+    const e = convite.emergencia;
+    const fundo = CE.el('div', { class: 'dialogo-fundo praca-convite' + (e ? ' emergencia' : ''), 'data-convite-praca': convite.id },
       CE.el('div', { class: 'dialogo' },
-        CE.el('h3', {}, '⛲ Todo mundo para a praça!'),
-        CE.el('p', {}, 'O instrutor chamou a turma para a Praça Escola. Vamos?'),
+        CE.el('h3', {}, e ? `🚨 ${e.emoji} ${e.titulo}` : '⛲ Todo mundo para a praça!'),
+        CE.el('p', {}, e ? 'A Praça Escola precisa de ajuda agora! Venha ajudar a turma.' : 'O instrutor chamou a turma para a Praça Escola. Vamos?'),
         CE.el('div', { class: 'dialogo-botoes' },
           CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Agora não'),
-          CE.el('button', { class: 'botao', 'data-acao': 'ir-para-praca', onclick: () => { fundo.remove(); CE.janelas.abrir('praca'); } }, 'Ir para a praça ▶'))));
+          CE.el('button', { class: 'botao', 'data-acao': 'ir-para-praca', onclick: () => { fundo.remove(); CE.janelas.abrir('praca'); } }, e ? 'Ir ajudar ▶' : 'Ir para a praça ▶'))));
     document.body.append(fundo);
-    CE.emitir('sala:praca', { id: convite.id });
-    CE.voz.falar('O instrutor chamou todos para a praça.');
+    CE.emitir('sala:praca', { id: convite.id, emergencia: e ? e.tipo : null });
+    CE.voz.falar(e ? `Atenção! ${e.titulo} Venha ajudar a turma na praça.` : 'O instrutor chamou todos para a praça.');
   }
 
   // Monitoria: o colega monitor avisou que vem ajudar (uma vez por pedido de ajuda).

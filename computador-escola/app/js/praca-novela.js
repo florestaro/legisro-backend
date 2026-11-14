@@ -4,6 +4,9 @@
 //   por dia em cada lugar, e a turma tem um desafio da semana em cada um (metade da turma fazendo a tarefa).
 // • Novela da cidade: capítulos com um mistério. As pistas ficam nos prédios (marcados com 🔎 no mapa) e cada pista é
 //   uma tarefa no computador. A turma junta as pistas e o instrutor revela o final no coreto.
+// • Eventos urgentes: o instrutor dispara uma emergência na cidade (incêndio, rio transbordando, chuva forte) e a turma
+//   inteira ajuda junto, cada um do seu jeito: levar ajuda de um lugar para outro andando pelo mapa, ligar para o número
+//   certo ou responder o que fazer.
 // Tipos de tarefa: "escolha" (uma das opções), "lista" (achar o item certo num papel: extrato, ficha, quadro de
 // horários) e "digitar" (copiar igualzinho, ou responder um valor em reais quando "numero" for true).
 (function (raiz, fabrica) {
@@ -152,6 +155,54 @@
     },
   ];
   // Sem protótipo: um pedido com um nome estranho ("__proto__", "constructor") não acha nada.
+  // ---------- Eventos urgentes (emergências da cidade) ----------
+  // "levar": pega num lugar e leva para outro (zonas em praca-mapa.js); "ligar": digitar o número certo (só os
+  // algarismos contam); "pergunta": o que fazer. O perigo cresce com o tempo e cada ajuda o diminui.
+  const EMERGENCIAS = {
+    incendio: {
+      id: 'incendio', emoji: '🔥', titulo: 'Incêndio na lata de lixo!', perigo: 'Fogo', duracao: 180000,
+      alerta: 'A lata de lixo da praça pegou fogo! Encham o balde na fonte e joguem no fogo, liguem para os Bombeiros e afastem os curiosos.',
+      levar: { pegar: 'fonte', pegarTexto: '💧 Encher o balde na fonte', levando: '💧', entregar: 'lixeira', entregarTexto: '💦 Jogar a água no fogo', feito: 'jogou água no fogo' },
+      ligar: { titulo: 'Ligar para os Bombeiros', pergunta: 'Qual é o número do Corpo de Bombeiros? Digite e ligue.', resposta: '193', explica: '193 é o número do Corpo de Bombeiros. A ligação é de graça, de qualquer telefone.' },
+      pergunta: { titulo: 'Afastar os curiosos', pergunta: 'Tem um fio elétrico perto do fogo. O que NÃO pode fazer?',
+        opcoes: ['Jogar água no fio elétrico', 'Afastar as pessoas', 'Chamar os Bombeiros (193)'], certa: 0,
+        explica: 'Água conduz eletricidade: nunca jogue água em fio ou tomada. Afaste as pessoas e chame os Bombeiros.' },
+      salvo: 'O fogo apagou! A turma salvou a praça. 🚒', perdido: 'O fogo queimou a lata de lixo e chegou no banco. Na próxima a turma chega antes!',
+      licao: 'Bombeiros: 193. Água nunca em fio elétrico.',
+    },
+    rio: {
+      id: 'rio', emoji: '🌊', titulo: 'O Rio Madeira está transbordando!', perigo: 'Água', duracao: 180000,
+      alerta: 'O rio subiu e a água está chegando na avenida! Encham sacos de areia na praia e levem para a barreira na calçada, liguem para a Defesa Civil e avisem quem mora perto.',
+      levar: { pegar: 'areia', pegarTexto: '🟫 Encher um saco de areia', levando: '🟫', entregar: 'barreira', entregarTexto: '🧱 Pôr o saco na barreira', feito: 'reforçou a barreira' },
+      ligar: { titulo: 'Ligar para a Defesa Civil', pergunta: 'Qual é o número da Defesa Civil? Digite e ligue.', resposta: '199', explica: '199 é o número da Defesa Civil, para enchente, alagamento e deslizamento.' },
+      pergunta: { titulo: 'Avisar quem mora perto do rio', pergunta: 'A água está subindo. O que a família deve fazer primeiro?',
+        opcoes: ['Ir ver a água de perto', 'Pôr documentos e remédios num lugar alto e sair com calma', 'Esperar a água entrar em casa'], certa: 1,
+        explica: 'Documentos e remédios no alto e sair com calma pelo caminho seguro. Nunca chegue perto da correnteza.' },
+      salvo: 'A barreira segurou a água! A avenida ficou seca. 💪', perdido: 'A água passou da barreira e molhou a avenida. Na próxima, mais sacos de areia!',
+      licao: 'Defesa Civil: 199. Na enchente, documentos e remédios no alto.',
+    },
+    chuva: {
+      id: 'chuva', emoji: '🌧️', titulo: 'Alerta da Defesa Civil: chuva forte!', perigo: 'Temporal', duracao: 180000,
+      alerta: 'A Defesa Civil avisou: chuva forte com vento chegando! Levem a mercadoria da feira para a estação, cadastrem o CEP para receber os alertas e lembrem o que fazer na chuva.',
+      levar: { pegar: 'feira', pegarTexto: '🧺 Pegar a mercadoria da feira', levando: '🧺', entregar: 'estacao', entregarTexto: '🏠 Guardar na estação', feito: 'guardou a mercadoria' },
+      ligar: { titulo: 'Receber os alertas no celular', pergunta: 'Os alertas chegam por SMS para quem manda o CEP para o número 40199. Digite o CEP da escola, 76800-000, e envie.', resposta: '76800000', explica: 'Pronto! Quem manda o CEP para o 40199 recebe de graça os alertas de chuva forte da Defesa Civil.' },
+      pergunta: { titulo: 'Proteger-se da chuva', pergunta: 'Na chuva forte com vento, o que é mais seguro?',
+        opcoes: ['Atravessar a rua alagada', 'Ficar longe de árvores, postes e fios caídos', 'Abrigar-se debaixo de uma árvore'], certa: 1,
+        explica: 'Árvore, poste e fio podem cair com o vento. E nunca atravesse rua alagada: a correnteza arrasta.' },
+      salvo: 'A mercadoria ficou seca e todo mundo se abrigou a tempo! ☂️', perdido: 'A chuva chegou antes e molhou a feira. Na próxima a turma se adianta!',
+      licao: 'Alerta da Defesa Civil: mande o CEP para o 40199.',
+    },
+  };
+  const temEmergencia = (tipo) => Object.prototype.hasOwnProperty.call(EMERGENCIAS, tipo);
+  const algarismos = (s) => String(s == null ? '' : s).replace(/\D/g, '');
+  const conferirEmergencia = (tipo, acao, resposta) => {
+    const e = temEmergencia(tipo) ? EMERGENCIAS[tipo] : null;
+    if (!e) return false;
+    if (acao === 'ligar') return algarismos(resposta) === e.ligar.resposta;
+    if (acao === 'pergunta') return Number(resposta) === e.pergunta.certa;
+    return false;
+  };
+
   const porCapitulo = Object.assign(Object.create(null), Object.fromEntries(CAPITULOS.map((c) => [c.id, c])));
   const porPista = Object.create(null);
   for (const c of CAPITULOS) for (const p of c.pistas) porPista[p.id] = { ...p, capitulo: c.id };
@@ -171,5 +222,5 @@
     if (t.tipo === 'digitar') return t.numero ? Math.abs(reais(resposta) - t.resposta) < 0.001 : limpo(resposta) === limpo(t.modelo);
     return false;
   }
-  return { TAREFAS, CAPITULOS, porCapitulo, porPista, temTarefa, dia, semana, tarefaDoDia, publica, conferir };
+  return { TAREFAS, CAPITULOS, EMERGENCIAS, porCapitulo, porPista, temTarefa, temEmergencia, conferirEmergencia, dia, semana, tarefaDoDia, publica, conferir };
 });

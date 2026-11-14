@@ -288,6 +288,14 @@ curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela red
   mistério está desvendado quando todas as pistas foram achadas e a turma juntou tantas pistas quanto o número de
   alunos. Aí o instrutor revela o final no coreto, e ele aparece na tela de todos, falado em voz alta, com a moral da
   história. Quem ajudou ganha a medalha 🔎 Detetive da novela.
+- **Eventos urgentes** (o instrutor aperta 🚨 e escolhe): **incêndio na lata de lixo**, **o Rio Madeira transbordando**
+  ou **chuva forte com alerta da Defesa Civil**. Toca o alarme na tela de todos (quem está fora da praça recebe o pedido
+  de ajuda), aparece o relógio de 3 minutos e a barra do perigo, que cresce sozinha. Cada um ajuda do seu jeito: leva a
+  ajuda andando pelo mapa (água da fonte para o fogo, sacos de areia da praia para a barreira, mercadoria da feira para
+  a estação), liga para o número certo (193 Bombeiros, 199 Defesa Civil, ou o CEP para o 40199) e responde o que fazer.
+  Se o perigo zerar a tempo, a turma vence: confete, a lição do dia e, para quem ajudou, moedas e a medalha 🚒 Brigada
+  da praça. O computador do instrutor confere cada ajuda (até se o boneco está perto do lugar certo). No modo de teste,
+  os colegas de demonstração ajudam também.
 - **Moradores** (personagens do computador, com conversas que ensinam): a Dona Rosa pede ajuda para mandar foto ao neto,
   a Dona Lúcia explica o Pix, o Seu Raimundo desafia no troco da feira, a Enfermeira Cida dá dicas, o Seu Bené conta a
   história da Madeira-Mamoré e o **Moço da Oferta** oferece um golpe (quem percebe ganha medalha).
@@ -306,8 +314,17 @@ curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela red
   das tarefas e das pistas são conferidas no computador do instrutor); as medalhas, no progresso de cada aluno. No modo de
   teste pelo navegador, a praça tem **colegas de demonstração** andando e conversando.
 
+### 💰 Moedas de cada aluno
+Todo aluno começa com **zero moedas** e ganha com o que faz: aula concluída (10), prova de nível (50), missão da semana
+(30), exercício de digitação aprovado (5), medalha nova (10), ajudar um colega como monitor (15), gincana (10, e o
+pódio ganha mais), e na Praça Escola: tarefa do dia (5), pista da novela (10), capítulo desvendado (20) e evento urgente
+vencido (15; quem ajudou e a turma não venceu leva 5). Cada coisa paga uma vez só (a mesma aula refeita não paga de
+novo). O saldo aparece no **💰 da barra de tarefas** e, clicando, abre "Minhas moedas", com o extrato e a lista de como
+ganhar. As moedas ficam no progresso do aluno (no modo sala de aula, no computador do instrutor), e o instrutor vê as
+de cada um na Praça Escola, em 🏙️ Cidade › Rua da Turma.
+
 ### Outros
-- **81 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova (também por cumprir missões, ir ao
+- **82 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova (também por cumprir missões, ir ao
   pódio da gincana, mandar matéria para o jornal, ajudar colegas como monitor e conquistas na Praça Escola).
 - **Painel do Instrutor**: cadastro (com a opção "criança"), aula atual de cada aluno, média, exercício de digitação
   atual, melhor velocidade, provas e medalhas. Também:
@@ -398,7 +415,7 @@ npm run teste:sala            # 1 instrutor + 20 alunos usando o sistema ao mesm
 npm run teste:sala -- 5       # o mesmo com 5 alunos
 npm run teste:fase2           # novidades da fase 2: o aluno troca de computador e encontra tudo (uns 3 minutos)
 npm run teste:fase3           # novidades da fase 3: MEI, anúncio e PDF em outro computador, e a monitoria (uns 3 minutos)
-npm run teste:praca           # a Praça Escola em 3 computadores: andar, conversar, a cidade que cresce, tarefas, novela, jogar, mural, votação e comandos do instrutor
+npm run teste:praca           # a Praça Escola em 3 computadores: andar, conversar, a cidade que cresce, tarefas, novela, eventos urgentes, moedas, jogar, mural, votação e comandos do instrutor
 npm run teste:emojis          # todos os emojis aparecem direito no Windows 10 (sem tela, segundos)
 ```
 
@@ -473,7 +490,9 @@ foto na Feira Online e o formulário em PDF preenchido num computador aparecem n
 computadores (o monitor vê o pedido de ajuda do colega, avisa que vai ajudar e o colega recebe o aviso na tela dele).
 E a Praça Escola (`npm run teste:praca`): cada aluno vê o boneco do outro andar, a conversa chega para quem está perto,
 o módulo que a Ana conclui acende prédios na tela do Bruno, a tarefa do dia conta uma vez por dia para cada um, os dois
-acham as pistas da novela e o final revelado pela instrutora aparece na tela de todos, os dois jogam jogo da velha cada um no seu computador, e o megafone, o fechar/abrir, o só frases prontas, o silenciar e
+acham as pistas da novela e o final revelado pela instrutora aparece na tela de todos, os dois apagam juntos o incêndio
+que a instrutora disparou (o Bruno, fora da praça, recebe o pedido de ajuda) e as moedas de cada um ficam guardadas, os
+dois jogam jogo da velha cada um no seu computador, e o megafone, o fechar/abrir, o só frases prontas, o silenciar e
 o chamar todos da instrutora chegam na hora.
 
 ## Criar aulas sem programar
@@ -527,8 +546,9 @@ app/js/gincana-regras.js as regras da gincana ao vivo (idem)
 app/js/jornal-regras.js  as regras do jornal da turma (idem); jornal.js monta o jornal e filtra as matérias
 app/js/missao.js         a missão da semana (banco de missões por nível, semana do ano e conferência automática)
 app/js/monitoria.js      a monitoria (o botão 💁 e a janela dos pedidos de ajuda)
+app/js/carteira.js       as moedas de cada aluno (o 💰 da barra de tarefas, a janela "Minhas moedas" e o que paga moedas)
 app/js/praca-mapa.js     o mapa da Praça Escola (prédios, praça, caminhos); praca-novela.js: a tarefa do dia de cada
-                         lugar e os capítulos da novela (textos e respostas); praca-regras.js: as regras (quem está onde,
+                         lugar, os capítulos da novela e os eventos urgentes (textos e respostas); praca-regras.js: as regras (quem está onde,
                          conversa, mural, votação, mesa de jogo, comandos do instrutor, colegas de demonstração), usadas
                          pelo servidor da sala e pelo modo navegador; apps/praca.js: a janela da praça
 testes/                  testes automáticos do modo sala de aula (servidor, turma de 20 alunos, as novidades das

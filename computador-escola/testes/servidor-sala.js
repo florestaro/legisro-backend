@@ -426,6 +426,22 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   const repetiu = (await pedir('praca:resolver-pista', ['barco-bilhete', 1], tT7)).valor;
   ok(!errou.certo && acertou.certo && acertou.contou && !repetiu.contou && acertou.novela.atual.total === 1 && (dados.ler('praca', {}).novela[''].achados['barco-bilhete'] || []).length === 1,
     'praça: pista errada não conta; a certa conta uma vez só e fica no disco do instrutor');
+  // Eventos urgentes (só o instrutor dispara; a ajuda de cada aluno é conferida no computador do instrutor).
+  ok(/instrutor/.test((await pedir('praca:emergencia-iniciar', ['incendio'], tT7)).erro || ''), 'praça: aluno não dispara evento urgente');
+  const fogo = (await pedir('praca:emergencia-iniciar', ['incendio'], tp)).valor;
+  ok(fogo.status === 'ativo' && fogo.perigo === 50 && !(await pedir('praca:emergencia-iniciar', ['rio'], tp)).ok, 'praça: o incêndio começa com o fogo em 50% e não dá para começar outro evento junto');
+  ok(/mais perto/.test((await pedir('praca:emergencia-acao', ['pegar', { x: 3, y: 3 }], tT7)).erro || '') && /Primeiro pegue/.test((await pedir('praca:emergencia-acao', ['entregar', { x: 21, y: 15 }], tT7)).erro || ''),
+    'praça: longe da fonte não enche o balde, e sem balde não apaga o fogo');
+  await pedir('praca:emergencia-acao', ['pegar', { x: 16, y: 13 }], tT7);
+  const jogou = (await pedir('praca:emergencia-acao', ['entregar', { x: 21, y: 15 }], tT7)).valor;
+  ok(jogou.emergencia.perigo < 50 && jogou.emergencia.minhasAjudas === 1, `praça: jogar a água baixa o fogo (${jogou.emergencia.perigo}%)`);
+  const ligouErrado = (await pedir('praca:emergencia-acao', ['ligar', { resposta: '190' }], tT7)).valor;
+  const ligouCerto = (await pedir('praca:emergencia-acao', ['ligar', { resposta: '193' }], tT7)).valor;
+  ok(!ligouErrado.certo && ligouCerto.certo && ligouCerto.emergencia.ligou && ligouCerto.emergencia.perigo < jogou.emergencia.perigo, 'praça: ligar para o 193 ajuda (o número errado não)');
+  const convFogo = (await pedir('sala:presenca', [{}], tT8)).valor.praca;
+  ok(convFogo && convFogo.emergencia && convFogo.emergencia.tipo === 'incendio', 'praça: quem está fora da praça recebe o pedido de ajuda pela presença');
+  const encerrado = (await pedir('praca:emergencia-encerrar', [], tp)).valor;
+  ok(encerrado.status === 'encerrado' && /Não tem nenhum/.test((await pedir('praca:emergencia-acao', ['ligar', { resposta: '193' }], tT7)).erro || ''), 'praça: o instrutor encerra o evento');
   await pedir('praca:sair', [], tT7);
   // 9) Arquivo de usuários estragado: usa a cópia de reserva
   const antes = dados.listarUsuarios().length;

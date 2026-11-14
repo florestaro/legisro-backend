@@ -4,6 +4,8 @@
 //  • a cidade cresce com a turma: o módulo que a Ana conclui acende prédios na tela do Bruno e a casa dela fica pronta;
 //  • cada prédio aceso tem a tarefa do dia (conta uma vez por dia para cada aluno) e a novela da cidade funciona entre
 //    os computadores: a instrutora abre o capítulo, os dois acham as pistas e o final aparece na tela de todos;
+//  • evento urgente: a instrutora dispara o incêndio, quem está fora da praça é chamado para ajudar, os dois apagam o
+//    fogo juntos e ganham a medalha e moedas (as moedas de cada um ficam no disco da instrutora);
 //  • os dois jogam jogo da velha um contra o outro, cada um no seu computador, e quem ganha leva a medalha;
 //  • o mural e a votação ficam guardados no computador da instrutora;
 //  • a instrutora fala no megafone, deixa só frases prontas, silencia, fecha e abre a praça e chama todos (quem
@@ -158,6 +160,32 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
   ok(await ate(async () => /juntou todas as pistas/.test(await p1.textContent(Z('.pr-log')))), 'PC 1: a Ana fica sabendo que a turma juntou as pistas');
   ok(await ate(async () => !(await p1.$(Z('.pr-marca-pista[data-marca="rio"]')))), 'PC 1: a 🔎 some dos lugares em que a Ana já achou a pista');
 
+  // ================= Evento urgente: incêndio na lata de lixo =================
+  await p2.evaluate(() => CE.janelas.fecharTodas());
+  await espera(1500);
+  const inicio = await A.evaluate(() => CE.api.chamar('praca:emergencia-iniciar', 'incendio'));
+  ok(inicio && inicio.status === 'ativo' && inicio.perigo >= 45, 'a instrutora dispara o incêndio na lata de lixo');
+  ok(await ate(async () => (await p1.isVisible(Z('.pr-emerg'))) && /Incêndio/.test(await p1.textContent(Z('.pr-emerg')))), 'PC 1: o alarme do incêndio aparece na tela da Ana');
+  const pedidoDeAjuda = await p2.waitForSelector('.praca-convite.emergencia [data-acao="ir-para-praca"]', { timeout: 20000 }).then(() => true).catch(() => false);
+  ok(pedidoDeAjuda && /Incêndio/.test(await p2.textContent('.praca-convite')), 'PC 2: o Bruno, fora da praça, recebe o pedido de ajuda "🚨 Incêndio na lata de lixo!"');
+  if (pedidoDeAjuda) await p2.click('.praca-convite [data-acao="ir-para-praca"]');
+  ok(await ate(async () => p2.isVisible(Z('.pr-emerg'))), 'PC 2: o Bruno vai para a praça e vê o alarme');
+  const ajuda = (p, acao, dado) => p.evaluate(([a, d]) => CE.api.chamar('praca:emergencia-acao', a, d).then((r) => r, (e) => ({ erro: e.message })), [acao, dado]);
+  const longeDaFonte = await ajuda(p1, 'pegar', { x: 5, y: 5 });
+  ok(/mais perto/.test(longeDaFonte.erro || ''), 'longe da fonte não dá para encher o balde (o computador da instrutora confere onde o boneco está)');
+  const errado = await ajuda(p1, 'ligar', { resposta: '190' });
+  ok(errado.certo === false, 'ligar para o número errado não ajuda');
+  await ajuda(p1, 'ligar', { resposta: '193' }); await ajuda(p2, 'pergunta', { resposta: 0 });
+  for (let k = 0; k < 12; k++) {
+    const p = k % 2 ? p2 : p1;
+    await ajuda(p, 'pegar', { x: 16, y: 13 }); await espera(1300);
+    const r = await ajuda(p, 'entregar', { x: 21, y: 15 });
+    if (r.emergencia && r.emergencia.status !== 'ativo') break;
+  }
+  ok(await ate(async () => /O fogo apagou!/.test(await p1.textContent(Z('.pr-emerg'))) && /O fogo apagou!/.test(await p2.textContent(Z('.pr-emerg')))), 'a turma apagou o fogo: o resultado aparece na tela dos dois');
+  await p1.screenshot({ path: foto('praca-01d-incendio-apagado.png') });
+  ok(await ate(() => Promise.resolve(['praca-brigada'].every((m) => ((lerDisco(`progresso-${idAna}.json`, {}).medalhas || {})[m]) && ((lerDisco(`progresso-${idBruno}.json`, {}).medalhas || {})[m]))), 10000), 'disco da instrutora: a Ana e o Bruno ganharam a medalha 🚒 Brigada da praça');
+
   // ================= Jogo da velha entre os dois computadores =================
   const mesa = (p, ...a) => p.evaluate((a) => CE.api.chamar('praca:mesa', ...a).then((m) => m, (e) => ({ erro: e.message })), a);
   await mesa(p1, 'sentar'); const m2 = await mesa(p2, 'sentar');
@@ -232,6 +260,16 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
   const anaNaFonte = await ate(async () => { const e = await ondeEsta(p1, idAna); return e && Math.hypot(e.x - 17.5, e.y - 13.5) < 3; }, 12000);
   ok(anaNaFonte, 'a Ana, que estava na praça, também vai para perto da fonte');
   await A.screenshot({ path: foto('praca-04-instrutora.png') });
+
+  // ================= Moedas: cada um começa com zero e ganha com o que faz =================
+  const carteiraDe = (id) => (lerDisco(`progresso-${id}.json`, {}).carteira) || { saldo: 0, extrato: [] };
+  ok(await ate(() => Promise.resolve(carteiraDe(idAna).extrato.some((x) => x.tipo === 'evento') && carteiraDe(idAna).extrato.some((x) => x.tipo === 'aula') && carteiraDe(idAna).extrato.some((x) => x.tipo === 'final')), 10000),
+    `disco da instrutora: as moedas da Ana (${carteiraDe(idAna).saldo}) vieram das aulas, do final da novela e do incêndio`);
+  const ruaInstrutora = await A.evaluate(() => CE.api.chamar('praca:cidade', 'Manhã'));
+  ok(ruaInstrutora.rua.find((x) => x.id === idAna).moedas === carteiraDe(idAna).saldo && typeof ruaInstrutora.rua.find((x) => x.id === idBruno).moedas === 'number', 'instrutora: a Rua da Turma mostra as moedas de cada aluno');
+  const ruaBruno = await p2.evaluate(() => CE.api.chamar('praca:cidade'));
+  ok(ruaBruno.rua.find((x) => x.id === idAna).moedas === undefined && ruaBruno.rua.find((x) => x.id === idBruno).moedas === carteiraDe(idBruno).saldo, 'o Bruno vê só as moedas dele');
+  ok(await p1.isVisible('#status-moedas') && (await p1.textContent('#status-moedas')).includes(String(carteiraDe(idAna).saldo)), 'PC 1: o saldo da Ana aparece na barra de tarefas (💰)');
 
   // ================= Onde os dados ficaram =================
   const disco = lerDisco('praca.json', {});

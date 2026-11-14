@@ -183,6 +183,24 @@ button { cursor: pointer; }
 .bandeja { display: flex; align-items: center; gap: 4px; padding-right: 10px; }
 .bandeja-item { background: transparent; border: none; color: #fff; font-size: 18px; padding: 6px 8px; border-radius: 4px; }
 button.bandeja-item:hover { background: rgba(255,255,255,.15); }
+/* Moedas do aluno (app/js/carteira.js): o saldo na barra e um "+10" que sobe quando entra dinheiro */
+.bandeja-item.moedas { position: relative; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bandeja-item.moedas.ganhou::after { content: attr(data-ganho); position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); color: #ffd84d; font-size: 15px; font-weight: 800; text-shadow: 0 1px 3px rgba(0, 0, 0, .6); pointer-events: none; animation: moeda-sobe 1.8s ease-out forwards; }
+@keyframes moeda-sobe { from { opacity: 1; transform: translate(-50%, 6px); } to { opacity: 0; transform: translate(-50%, -26px); } }
+.janela-corpo.cart-corpo { overflow-y: auto; background: var(--fundo-janela); }
+.cart { padding: 16px 18px; display: grid; gap: 10px; }
+.cart h2, .cart h3 { margin: 0; }
+.cart h3 { font-size: 15px; margin-top: 4px; }
+.cart-saldo { display: grid; justify-items: center; gap: 2px; padding: 14px; border-radius: 14px; background: linear-gradient(135deg, #fff4ce, #ffe08a); color: #4a3500; }
+.cart-saldo strong { font-size: 40px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.cart-saldo .rotulo { font-size: 13px; font-weight: 600; }
+.cart-extrato, .cart-premios { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.cart-extrato li, .cart-premios li { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 9px; background: var(--fundo-cinza); }
+.cart-extrato .txt, .cart-premios .txt { flex: 1; min-width: 0; display: grid; }
+.cart-extrato small { color: var(--texto-suave); font-size: 12px; }
+.cart-extrato .valor, .cart-premios strong { color: #1e7a3a; font-variant-numeric: tabular-nums; }
+.cart-vazio { margin: 0; color: var(--texto-suave); }
+@media (prefers-reduced-motion: reduce) { .bandeja-item.moedas.ganhou::after { animation: none; opacity: 0; } }
 .relogio { text-align: center; font-size: 13px; line-height: 1.25; padding: 0 8px; }
 
 /* ---------- Menu Iniciar e menu do botão direito ---------- */
@@ -2187,8 +2205,8 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 /* Botões por cima do mapa */
 .pr-hud { position: absolute; z-index: 5; display: flex; gap: 6px; pointer-events: none; }
 .pr-hud > * { pointer-events: auto; }
-.pr-topo-esq { left: 10px; top: 10px; flex-wrap: wrap; align-items: flex-start; max-width: calc(100% - 250px); }
-.pr-topo-dir { right: 10px; top: 10px; flex-direction: column; align-items: flex-end; gap: 10px; }
+.pr-topo-esq { z-index: 7; left: 10px; top: 10px; flex-wrap: wrap; align-items: flex-start; max-width: calc(100% - 250px); }
+.pr-topo-dir { z-index: 7; right: 10px; top: 10px; flex-direction: column; align-items: flex-end; gap: 10px; }
 .pr-baixo { left: 10px; bottom: 10px; }
 .pr-mapa.com-dialogo .pr-baixo, .pr-mapa.com-dialogo .pr-chat { visibility: hidden; }
 .pr-pilula { border: 0; background: rgba(255, 255, 255, .95); color: #1e2a25; font: 700 14px/1 var(--fonte); padding: 10px 14px; border-radius: 999px; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, .28); white-space: nowrap; }
@@ -2367,4 +2385,42 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .pr-pilula.novela { background: #fff4e5; box-shadow: 0 0 0 2px #e2a02a, 0 2px 8px rgba(0, 0, 0, .28); }
 .pr-marca-pista { position: absolute; transform: translate(-50%, -50%) scale(var(--inv, 1)); font-size: 22px; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: #fff4e5; border: 2px solid #e2a02a; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); pointer-events: none; animation: pr-pista 1.2s ease-in-out infinite alternate; }
 @keyframes pr-pista { to { transform: translate(-50%, calc(-50% - 5px)) scale(var(--inv, 1)); } }
-@media (prefers-reduced-motion: reduce) { .pr-mundo.suave, .pr-obra { transition: none; } .pr-p.andando .corpo, .pr-obj.barco, .pr-mao, .pr-acao, .pr-avisos li, .pr-marca-pista { animation: none; } }
+/* Moedas na praça */
+.pr-pilula.moedas { background: #fff4ce; color: #4a3500; font-variant-numeric: tabular-nums; }
+.pr-pilula.moedas.ganhou { animation: pr-moeda 1s ease-out; }
+@keyframes pr-moeda { 30% { transform: scale(1.18); box-shadow: 0 0 0 4px #f5b400, 0 2px 8px rgba(0, 0, 0, .28); } }
+.pr-morada .moedas { font-size: 12.5px; font-weight: 700; color: #6b4e00; font-variant-numeric: tabular-nums; }
+/* Eventos urgentes: o alarme no alto, o fogo, a água subindo, a chuva e onde pegar e levar a ajuda */
+.pr-emerg { width: 100%; pointer-events: auto; cursor: default; display: grid; gap: 7px; background: #b3261e; color: #fff; border-radius: 14px; padding: 10px 14px; box-shadow: 0 8px 26px rgba(0, 0, 0, .4); animation: pr-alarme 1.2s ease-in-out 3; }
+.pr-emerg.fim { background: #1e7a3a; animation: none; }
+.pr-emerg .topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 16px; }
+.pr-emerg .relogio { font-weight: 800; font-variant-numeric: tabular-nums; background: rgba(0, 0, 0, .22); padding: 3px 9px; border-radius: 999px; }
+.pr-emerg .perigo { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.pr-emerg .perigo .barra { flex: 1; height: 12px; border-radius: 999px; background: rgba(255, 255, 255, .3); overflow: hidden; }
+.pr-emerg .perigo .barra span { display: block; height: 100%; background: linear-gradient(90deg, #ffd84d, #ff8a00); border-radius: 999px; transition: width .4s; }
+.pr-emerg .botoes { display: flex; flex-wrap: wrap; gap: 6px; }
+.pr-emerg-botao { border: 0; border-radius: 999px; padding: 7px 12px; background: #fff; color: #7a1712; font: 700 13.5px/1 var(--fonte); cursor: pointer; }
+.pr-emerg-botao.feito { background: #dceee2; color: #1e5a2e; }
+.pr-emerg .carregando { margin: 0; font-weight: 700; background: rgba(0, 0, 0, .2); padding: 5px 9px; border-radius: 8px; }
+.pr-emerg .licao { font-size: 14px; opacity: .95; }
+@keyframes pr-alarme { 50% { background: #e0412f; box-shadow: 0 0 0 6px rgba(255, 216, 77, .7), 0 8px 26px rgba(0, 0, 0, .4); } }
+.pr-mapa.alarme { animation: pr-borda 0.6s ease-in-out 4; }
+@keyframes pr-borda { 50% { box-shadow: inset 0 0 0 8px #e0412f; } }
+.pr-mapa.emergencia .pr-acao.urgente { background: #b3261e; }
+.pr-mapa.emergencia .pr-acao.urgente::after { border-top-color: #b3261e; }
+.pr-mapa.emergencia .pr-acao.urgente.embaixo::after { border-top-color: transparent; border-bottom-color: #b3261e; }
+.pr-fogo { position: absolute; transform: translate(-50%, -80%); line-height: 1; pointer-events: none; filter: drop-shadow(0 0 8px rgba(255, 120, 0, .9)); animation: pr-fogo .35s ease-in-out infinite alternate; transition: font-size .4s; }
+@keyframes pr-fogo { to { transform: translate(-50%, -84%) scale(1.08, .95); } }
+.pr-obj.lixeira { font-size: 26px; }
+.pr-enchente { position: absolute; left: 0; width: 1440px; pointer-events: none; background: linear-gradient(180deg, rgba(80, 150, 210, .55), rgba(60, 110, 170, .75)); border-top: 4px solid rgba(220, 240, 255, .8); transition: top .5s, height .5s; }
+.pr-sacos { position: absolute; transform: translateY(-60%); font-size: 26px; letter-spacing: 6px; white-space: nowrap; overflow: hidden; pointer-events: none; }
+.pr-chuva { position: absolute; inset: 0; z-index: 3; pointer-events: none; background: repeating-linear-gradient(105deg, rgba(200, 220, 255, .0) 0 14px, rgba(200, 220, 255, .45) 14px 16px), rgba(20, 35, 60, .35); background-size: 40px 40px, auto; animation: pr-chove .45s linear infinite; }
+@keyframes pr-chove { to { background-position: -10px 40px, 0 0; } }
+.pr-marca-ajuda { position: absolute; transform: translate(-50%, -100%) scale(var(--inv, 1)); transform-origin: 50% 100%; display: flex; align-items: center; gap: 5px; background: #fff; color: #7a1712; border: 2px solid #b3261e; border-radius: 999px; padding: 3px 9px 3px 5px; font: 700 12.5px/1 var(--fonte); white-space: nowrap; pointer-events: none; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); animation: pr-pista 1s ease-in-out infinite alternate; }
+.pr-marca-ajuda .ic { font-size: 18px; }
+.pr-carga { position: absolute; left: -12px; top: -10px; transform: scale(var(--inv, 1)); font-size: 20px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .4)); pointer-events: none; }
+.pr-pop.emergencia { right: calc(100% + 10px); top: 0; width: min(320px, calc(100cqw - 90px)); }
+.pr-emerg-opcao { display: flex; align-items: center; gap: 10px; text-align: left; border: 1px solid var(--borda); background: var(--fundo-janela); color: var(--texto); border-radius: 10px; padding: 9px 11px; font: 600 14px/1.25 var(--fonte); cursor: pointer; }
+.pr-emerg-opcao:hover { border-color: #b3261e; background: #fbeceb; }
+.pr-emerg-opcao .ic { font-size: 24px; }
+@media (prefers-reduced-motion: reduce) { .pr-mundo.suave, .pr-obra { transition: none; } .pr-p.andando .corpo, .pr-obj.barco, .pr-mao, .pr-acao, .pr-avisos li, .pr-marca-pista, .pr-marca-ajuda, .pr-emerg, .pr-mapa.alarme, .pr-fogo, .pr-chuva, .pr-pilula.moedas.ganhou { animation: none; } }

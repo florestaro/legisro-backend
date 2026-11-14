@@ -94,7 +94,11 @@ function criarCanais(dados) {
   };
   // Praça Escola: quem está onde e a conversa ficam na memória; o mural, a votação e as escolhas do instrutor, no disco.
   // A lista de alunos serve para a cidade que cresce: cada prédio acende quando metade da turma conclui o módulo dele.
-  const praca = criarPraca({ ler: () => dados.ler('praca', null), salvar: (v) => dados.salvar('praca', v), alunos: () => dados.listarUsuarios() });
+  // As moedas de cada aluno (do progresso dele) aparecem para o instrutor na Rua da Turma.
+  const praca = criarPraca({
+    ler: () => dados.ler('praca', null), salvar: (v) => dados.salvar('praca', v), alunos: () => dados.listarUsuarios(),
+    moedas: (id) => { const p = dados.ler(`progresso-${id}`, null); return p && p.carteira ? Number(p.carteira.saldo) || 0 : 0; },
+  });
   const monitores = new Map(); // id -> { sim, em }: quem é monitor (lido do progresso no máximo a cada 30 s)
   function ehMonitor(u) {
     const c = monitores.get(u.id);
@@ -476,6 +480,10 @@ function criarCanais(dados) {
     'praca:abrir-capitulo': (s, id, turma) => { exigirInstrutor(s); return praca.abrirCapitulo(s.usuario, id, turma); },
     'praca:resolver-pista': (s, id, resposta) => { exigirSessao(s); return praca.resolverPista(s.usuario, id, resposta); },
     'praca:revelar-final': (s, turma) => { exigirInstrutor(s); return praca.revelarFinal(s.usuario, turma); },
+    // Eventos urgentes: o instrutor dispara e encerra; cada aluno ajuda do seu jeito.
+    'praca:emergencia-iniciar': (s, tipo) => { exigirInstrutor(s); return praca.iniciarEmergencia(s.usuario, tipo); },
+    'praca:emergencia-encerrar': (s) => { exigirInstrutor(s); return praca.encerrarEmergencia(s.usuario); },
+    'praca:emergencia-acao': (s, acao, dado) => { exigirSessao(s); return praca.acaoEmergencia(s.usuario, acao, dado || {}); },
 
     'jornal:enviar': (s, materia) => {
       exigirSessao(s);

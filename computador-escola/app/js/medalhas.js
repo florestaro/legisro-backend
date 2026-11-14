@@ -99,6 +99,7 @@ window.CE = window.CE || {};
     { id: 'praca-olho-vivo', icone: '👀', nome: 'Olho vivo', descricao: 'Percebeu o golpe do Moço da Oferta, na Praça Escola.', ganhou: (p) => !!(p.praca && p.praca.olhoVivo) },
     { id: 'praca-velha', icone: '❌', nome: 'Bom de jogo', descricao: 'Ganhou uma partida de jogo da velha na Praça Escola.', ganhou: (p) => !!(p.praca && p.praca.velha) },
     { id: 'praca-detetive', icone: '🔎', nome: 'Detetive da novela', descricao: 'Achou pistas e ajudou a turma a desvendar um capítulo da novela da Praça Escola.', ganhou: (p) => !!(p.praca && p.praca.detetive) },
+    { id: 'praca-brigada', icone: '🚒', nome: 'Brigada da praça', descricao: 'Ajudou a turma a vencer um evento urgente na Praça Escola (incêndio, enchente ou temporal).', ganhou: (p) => !!(p.praca && p.praca.brigada) },
     { id: 'praca-mao-na-massa', icone: '🧰', nome: 'Mão na massa', descricao: 'Fez 10 tarefas do dia nos prédios da Praça Escola.', ganhou: (p) => !!(p.praca && Number(p.praca.tarefas) >= 10) },
   ];
 

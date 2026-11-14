@@ -39,7 +39,7 @@ window.CE = window.CE || {};
   const gincanas = () => (gincanasTeste = gincanasTeste || CE.gincanaRegras());
   // Praça Escola no navegador de teste: com colegas de demonstração andando e conversando (regras em praca-regras.js).
   let pracaTeste = null;
-  const praca = () => (pracaTeste = pracaTeste || CE.pracaRegras({ ler: () => ler('praca', null), salvar: (v) => gravar('praca', v), demonstracao: true, alunos: () => ler('usuarios', []) }));
+  const praca = () => (pracaTeste = pracaTeste || CE.pracaRegras({ ler: () => ler('praca', null), salvar: (v) => gravar('praca', v), demonstracao: true, alunos: () => ler('usuarios', []), moedas: (id) => Number(((ler('progresso:' + id, null) || {}).carteira || {}).saldo) || 0 }));
   const progressoAtual = () => (atual && ler('progresso:' + atual.id, null)) || {};
   // Cofre: as aulas concluídas de quem usa este navegador, mais as dos colegas de demonstração.
   const cofreTeste = () => { const aulas = 300 + Object.values(progressoAtual().licoes || {}).filter((r) => r && r.concluida && !r.dispensada).length; const bonus = praca().bonus(); return { aulas, bonus, moedas: aulas * 4 + bonus, meta: 1500 }; };
@@ -243,6 +243,9 @@ window.CE = window.CE || {};
         'praca:abrir-capitulo': () => praca().abrirCapitulo(atual, a[0], a[1]),
         'praca:resolver-pista': () => praca().resolverPista(atual, a[0], a[1]),
         'praca:revelar-final': () => praca().revelarFinal(atual, a[0]),
+        'praca:emergencia-iniciar': () => praca().iniciarEmergencia(atual, a[0]),
+        'praca:emergencia-encerrar': () => praca().encerrarEmergencia(atual),
+        'praca:emergencia-acao': () => praca().acaoEmergencia(atual, a[0], a[1] || {}),
         'sala:mensagem': () => (salaTeste.mensagem = String(a[0] || '').trim() ? { id: Date.now(), texto: String(a[0]).trim().slice(0, 300), de: atual.nome } : null),
       }[canal];
       return { ok: true, valor: await valor() };

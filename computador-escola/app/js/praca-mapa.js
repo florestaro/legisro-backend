@@ -48,6 +48,7 @@
     { id: 'mesa-velha', nome: 'Jogo da velha', emoji: '❌', r: [14, 13, 1, 1], entradas: [[13, 13], [14, 12], [14, 14], [15, 13]] },
     { id: 'mesa-domino', nome: 'Dominó', emoji: '🎲', r: [21, 13, 1, 1], entradas: [[21, 12], [21, 14]] },
     { id: 'mural', nome: 'Mural de recados', emoji: '📌', r: [21, 8, 2, 1], entradas: [[21, 9], [22, 9]] },
+    { id: 'lixeira', nome: 'Lata de lixo', emoji: '🗑️', r: [22, 15, 1, 1], entradas: [[21, 15], [23, 15], [22, 14], [22, 16]] },
   ];
   // Moradores: personagens do computador, sempre no mesmo lugar (o mesmo para todos os alunos).
   const MORADORES = [
@@ -109,6 +110,17 @@
   for (let y = 22; y <= 24; y++) for (let x = 0; x <= 10; x++) if (!bloq[y][x]) porLugar.feira.entradas.push([x, y]);
 
   const andavel = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !bloq[y][x] && chao[y][x] !== 'agua';
+  // Os lugares dos eventos urgentes: onde se pega a ajuda (água, areia, mercadoria) e onde se leva.
+  const ZONAS = {
+    fonte: porLugar.fonte.entradas, lixeira: porLugar.lixeira.entradas,
+    areia: [], barreira: [],
+    feira: porLugar.feira.entradas, estacao: porLugar.estacao.entradas,
+  };
+  for (let x = 0; x < W; x++) {
+    if (chao[26][x] === 'areia' && andavel(x, 26)) ZONAS.areia.push([x, 26]);
+    if (x >= 11 && x <= 30 && andavel(x, 21)) ZONAS.barreira.push([x, 21]);
+  }
+  const pertoDaZona = (zona, x, y, raio = 1.3) => (Object.prototype.hasOwnProperty.call(ZONAS, zona) ? ZONAS[zona] : []).some(([a, b]) => Math.hypot(a - x, b - y) <= raio);
   // Caminho mais curto (pelos quadrinhos, sem diagonal) até um dos destinos. [] = já está lá; null = não dá.
   function caminho(de, metas) {
     const alvos = new Set(metas.filter(([x, y]) => andavel(x, y)).map(([x, y]) => y * W + x));
@@ -158,5 +170,5 @@
   const CHEGADA = [[18, 15], [17, 15], [19, 15], [16, 15], [18, 16], [17, 16], [19, 16], [16, 16], [15, 15], [20, 15], [15, 14], [20, 14]];
 
   return { T, W, H, chao, bloq, dono, LUGARES, OBJETOS, MORADORES, CIDADE, CASA_PRONTA, ENFEITES, MODULOS_DA_CIDADE, BANCOS, BARRACAS, IPES, ARVORES, PALMEIRAS, porLugar,
-    andavel, caminho, vizinhos, maisPerto, PRACA, RUAS, RODA, CHEGADA };
+    andavel, caminho, vizinhos, maisPerto, PRACA, RUAS, RODA, CHEGADA, ZONAS, pertoDaZona };
 });

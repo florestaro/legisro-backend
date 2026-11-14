@@ -5,6 +5,8 @@
 // conclui o módulo ligado a ele (praca-mapa.js: CIDADE). Cada aluno tem a sua casa na Rua da Turma, que fica
 // pronta no primeiro módulo e ganha um enfeite por nível ou curso concluído.
 // Tela limpa: o mapa ocupa a janela toda e o resto só aparece por cima dele quando importa.
+// Eventos urgentes: o instrutor dispara uma emergência (incêndio, rio transbordando, chuva forte) e a turma ajuda junta.
+// Moedas: o que o aluno faz aqui (tarefa do dia, pistas, final da novela, eventos) também paga moedas (carteira.js).
 // As regras ficam em app/js/praca-regras.js (o computador do instrutor guarda tudo) e o mapa em app/js/praca-mapa.js.
 window.CE = window.CE || {};
 
@@ -47,7 +49,9 @@ window.CE = window.CE || {};
     'mesa-velha': { texto: 'Mesa do jogo da velha: dois colegas jogam, cada um no seu computador.' },
     'mesa-domino': { texto: 'Mesa de dominó.', embreve: 'Em breve: dominó para até 4 colegas, cada um no seu computador.' },
     mural: { texto: 'Recados da turma, guardados no computador do instrutor.' },
+    lixeira: { texto: 'A lata de lixo da praça. Lixo no lixo deixa a praça bonita!' },
   };
+  const EMERG = NOV.EMERGENCIAS;
   // Moradores: personagens do computador. Cada conversa ensina uma coisa do curso.
   const FICHA = {
     rosa: { papel: 'Moradora · no banco da praça', faz: 'Pede ajuda para mandar uma foto ao neto: quem ensina, aprende ensinando.' },
@@ -295,10 +299,12 @@ window.CE = window.CE || {};
       const botaoCidade = CE.el('button', { class: 'pr-pilula', type: 'button', 'data-acao': 'cidade', title: 'Como está a cidade da turma' }, `🏙️ Cidade 0/${M.CIDADE.length}`);
       const botaoNovela = CE.el('button', { class: 'pr-pilula novela', type: 'button', 'data-acao': 'novela', title: 'A novela da cidade: as pistas e o final' }, '🔎 Novela');
       botaoNovela.hidden = true;
+      const botaoMoedas = CE.el('button', { class: 'pr-pilula moedas', type: 'button', 'data-acao': 'moedas', title: 'Minhas moedas (o extrato abre numa janela)' }, '💰 0');
+      botaoMoedas.hidden = souInstrutor;
       const listaGente = CE.el('ul', { class: 'pr-gente' });
       const popGente = CE.el('div', { class: 'pr-pop gente', role: 'dialog', 'aria-label': 'Quem está na praça agora' }, CE.el('h3', {}, 'Na praça agora'), listaGente);
       popGente.hidden = true;
-      const topoEsq = CE.el('div', { class: 'pr-hud pr-topo-esq' }, botaoGente, botaoCidade, botaoNovela, popGente);
+      const topoEsq = CE.el('div', { class: 'pr-hud pr-topo-esq' }, botaoGente, botaoCidade, botaoNovela, botaoMoedas, popGente);
 
       // No alto, à direita: ver a cidade inteira e, para o instrutor, quatro botões pequenos.
       const mapaIcone = CE.el('span', { 'aria-hidden': 'true' }, '🗺️');
@@ -323,13 +329,21 @@ window.CE = window.CE || {};
       const btAbrir = comando('abrir-fechar', '🔒', 'Fechar a praça', () => chamar('praca:configurar', { aberta: !estado.aberta }).then(sincronizar));
       const btFrases = comando('so-frases', '🔤', 'Só frases prontas', () => chamar('praca:configurar', { soFrases: !estado.soFrases }).then(sincronizar));
       btFrases.setAttribute('aria-pressed', 'false');
-      const comandos = souInstrutor ? CE.el('div', { class: 'pr-comandos', 'data-pr': 'instrutor' }, btMegafone, btChamar, btAbrir, btFrases, popMegafone) : null;
+      // 🚨 Evento urgente: o instrutor escolhe a emergência e a turma inteira ajuda junta.
+      const popEmerg = CE.el('div', { class: 'pr-pop emergencia', role: 'dialog', 'aria-label': 'Evento urgente' });
+      popEmerg.hidden = true;
+      const btEmerg = comando('emergencia', '🚨', 'Evento urgente', () => abrirPopEmerg(popEmerg.hidden));
+      btEmerg.setAttribute('aria-expanded', 'false');
+      const comandos = souInstrutor ? CE.el('div', { class: 'pr-comandos', 'data-pr': 'instrutor' }, btMegafone, btChamar, btAbrir, btFrases, btEmerg, popMegafone, popEmerg) : null;
       const topoDir = CE.el('div', { class: 'pr-hud pr-topo-dir' }, botaoMapa, comandos);
 
       // No meio, no alto: o megafone e os avisos da praça (somem sozinhos).
       const megafoneEl = CE.el('div', { class: 'pr-megafone', role: 'status' }); megafoneEl.hidden = true;
       const avisos = CE.el('ol', { class: 'pr-avisos', 'aria-live': 'polite' });
-      const centro = CE.el('div', { class: 'pr-centro' }, megafoneEl, avisos);
+      // O alarme do evento urgente: o que aconteceu, o relógio, o perigo e como ajudar.
+      const emergEl = CE.el('div', { class: 'pr-emerg', role: 'status', 'aria-live': 'polite' }); emergEl.hidden = true;
+      const centro = CE.el('div', { class: 'pr-centro' }, emergEl, megafoneEl, avisos);
+      const chuvaEl = CE.el('div', { class: 'pr-chuva', 'aria-hidden': 'true' }); chuvaEl.hidden = true;
       const avisoRede = CE.el('div', { class: 'pr-aviso-rede', role: 'status' }); avisoRede.hidden = true;
 
       // Embaixo, à esquerda: a conversa (fechada; a fala aparece no balão) e os gestos.
@@ -364,7 +378,7 @@ window.CE = window.CE || {};
       // O final do capítulo da novela, revelado pelo instrutor no coreto: aparece para todos ao mesmo tempo.
       const finalEl = CE.el('div', { class: 'pr-final', role: 'dialog', 'aria-label': 'O final do capítulo' }); finalEl.hidden = true;
       const mapa = CE.el('div', { class: 'pr-mapa', tabindex: '0', 'aria-label': 'Mapa da Praça Escola. Clique no chão para andar ou use as setas do teclado; Enter conversa com quem está perto.' },
-        mundo, acao, topoEsq, topoDir, centro, avisoRede, chat, baixo, dica, dialogo, finalEl, fechadaEl);
+        mundo, chuvaEl, acao, topoEsq, topoDir, centro, avisoRede, chat, baixo, dica, dialogo, finalEl, fechadaEl);
       // Clique nos botões e janelinhas não é clique no chão (um botão que redesenha a janelinha some antes de o
       // clique chegar ao mapa, e aí o boneco sairia andando).
       for (const camada of [topoEsq, topoDir, centro, avisoRede, chat, baixo, acao, dialogo, finalEl, fechadaEl]) camada.addEventListener('click', (e) => e.stopPropagation());
@@ -392,6 +406,7 @@ window.CE = window.CE || {};
       objeto('⛵', 27.5 * T, 28.3 * T, 'barco'); objeto('🛶', 8.5 * T, 28 * T, 'barco');
       const enfeiteDe = { estacao: [objeto('🚂🚃🚃', 21.7 * T, 25.45 * T, 'trem')], rio: [objeto('🎣', 33.1 * T, 28.2 * T)] };
       objeto('🚧', 32.8 * T, 2.7 * T);
+      objeto('🗑️', 22.5 * T, 15.45 * T, 'lixeira');
 
       // ---------- Bonecos ----------
       function boneco(p, classe) {
@@ -613,11 +628,161 @@ window.CE = window.CE || {};
           marcas[id] = CE.el('div', { class: 'pr-marca-pista', 'data-marca': id, style: `left:${r.style.left};top:calc(${r.style.top} - 30px)` }, '🔎');
           camadaRotulos.append(marcas[id]);
         }
-        if (n && n.revelado && n.participei && !detetiveDado && !souInstrutor) { detetiveDado = true; conquista('detetive'); }
+        if (n && n.revelado && n.participei && !detetiveDado && !souInstrutor) { detetiveDado = true; conquista('detetive'); CE.carteira.ganhar('final', `Desvendou “${n.titulo}”`, `final:${n.id}:${n.aberto}`); }
         if (!dialogo.hidden && dialogo.dataset.tipo === 'novela') abrirNovela();
         verPerto(true);
       }
       const pistaAqui = (lugar) => (novela && !novela.revelado ? novela.faltam.find((p) => p.lugar === lugar) : null);
+
+      // ---------- Evento urgente ----------
+      let emerg = null, chaveEmerg = '', relogioEmerg = 0;
+      const emergAtiva = () => !!(emerg && emerg.status === 'ativo');
+      const defEmerg = () => (emerg ? EMERG[emerg.tipo] : null);
+      const visual = {}; // elementos do mapa do evento (fogo, água, marcas de onde pegar e levar)
+      const CENTRO_ZONA = { fonte: [18, 12.2], lixeira: [22.5, 14.4], areia: [18.5, 26.5], barreira: [20.5, 21.5], feira: [5.5, 23.2], estacao: [23.5, 24.6] };
+      function marcaAjuda(zona, emoji, texto) {
+        const [x, y] = CENTRO_ZONA[zona];
+        return CE.el('div', { class: 'pr-marca-ajuda', 'data-zona': zona, style: `left:${x * T}px;top:${y * T}px` }, CE.el('span', { class: 'ic' }, emoji), CE.el('span', { class: 'txt' }, texto));
+      }
+      function limparVisual() {
+        for (const k of Object.keys(visual)) { visual[k].remove(); delete visual[k]; }
+        chuvaEl.hidden = true;
+        mapa.classList.remove('emergencia');
+      }
+      function desenharVisual() {
+        const e = emerg, d = defEmerg();
+        if (!e || e.status !== 'ativo') { limparVisual(); return; }
+        mapa.classList.add('emergencia');
+        if (!visual.pegar) {
+          visual.pegar = marcaAjuda(d.levar.pegar, d.levar.levando, d.levar.pegarTexto.replace(/^\S+\s/, ''));
+          visual.entregar = marcaAjuda(d.levar.entregar, e.tipo === 'incendio' ? '🔥' : e.tipo === 'rio' ? '🧱' : '🏠', d.levar.entregarTexto.replace(/^\S+\s/, ''));
+          camadaRotulos.append(visual.pegar, visual.entregar);
+          if (e.tipo === 'incendio') { visual.fogo = CE.el('div', { class: 'pr-fogo', style: `left:${22.5 * T}px;top:${15.2 * T}px` }, '🔥'); camadaObjetos.append(visual.fogo); }
+          if (e.tipo === 'rio') { visual.agua = CE.el('div', { class: 'pr-enchente' }); visual.sacos = CE.el('div', { class: 'pr-sacos', style: `left:${11 * T}px;top:${21 * T}px;width:${20 * T}px` }); camadaObjetos.append(visual.agua, visual.sacos); }
+        }
+        if (visual.fogo) visual.fogo.style.fontSize = `${Math.round(24 + e.perigo * 0.5)}px`;
+        if (visual.agua) { const topo = 27 - (e.perigo / 100) * 6; visual.agua.style.top = `${topo * T}px`; visual.agua.style.height = `${(27.2 - topo) * T}px`; }
+        if (visual.sacos) visual.sacos.textContent = '🟫'.repeat(Math.max(0, Math.min(20, Math.round((50 - Math.min(50, e.perigo)) / 2.5))));
+        chuvaEl.hidden = e.tipo !== 'chuva';
+        if (e.tipo === 'chuva') chuvaEl.style.opacity = String(0.35 + e.perigo / 160);
+      }
+      function desenharAlarme() {
+        const e = emerg, d = defEmerg();
+        if (!e) { emergEl.hidden = true; return; }
+        emergEl.hidden = false;
+        emergEl.classList.toggle('fim', e.status !== 'ativo');
+        if (e.status !== 'ativo') {
+          const texto = e.status === 'salvo' ? d.salvo : e.status === 'perdido' ? d.perdido : 'O instrutor encerrou o evento.';
+          emergEl.replaceChildren(CE.el('strong', {}, `${e.status === 'salvo' ? '🎉' : d.emoji} ${texto}`), CE.el('span', { class: 'licao' }, d.licao));
+          return;
+        }
+        const resta = Math.max(0, Math.ceil((e.fim - (e.agora + (performance.now() - relogioEmerg))) / 1000));
+        const relogioTxt = `${Math.floor(resta / 60)}:${String(resta % 60).padStart(2, '0')}`;
+        emergEl.replaceChildren(...[
+          CE.el('div', { class: 'topo' }, CE.el('strong', {}, `🚨 ${d.titulo}`), CE.el('span', { class: 'relogio', 'data-relogio': '' }, `⏱ ${relogioTxt}`)),
+          CE.el('div', { class: 'perigo' }, CE.el('span', {}, `${d.emoji} ${d.perigo}`),
+            CE.el('span', { class: 'barra', role: 'progressbar', 'aria-label': d.perigo, 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(e.perigo) }, CE.el('span', { style: `width:${e.perigo}%` })),
+            CE.el('strong', {}, `${e.perigo}%`)),
+          CE.el('div', { class: 'botoes' },
+            CE.el('button', { class: 'pr-emerg-botao' + (e.ligou ? ' feito' : ''), type: 'button', 'data-emerg': 'ligar', onclick: () => abrirLigar() }, `${e.ligou ? '✅' : '📞'} ${d.ligar.titulo}`),
+            CE.el('button', { class: 'pr-emerg-botao' + (e.respondeu ? ' feito' : ''), type: 'button', 'data-emerg': 'pergunta', onclick: () => abrirPergunta() }, `${e.respondeu ? '✅' : '❓'} ${d.pergunta.titulo}`),
+            CE.el('button', { class: 'pr-emerg-botao', type: 'button', 'data-emerg': 'como', onclick: () => comoAjudar() }, 'ℹ️ Como ajudar')),
+          e.carregando ? CE.el('p', { class: 'carregando' }, `Você está levando ${d.levar.levando}: ${d.levar.entregarTexto.replace(/^\S+\s/, '').toLowerCase()}!`) : null,
+        ].filter(Boolean));
+      }
+      // Só o relógio anda a cada segundo (o resto muda quando chega notícia do instrutor).
+      function andarRelogio() {
+        if (!emergAtiva()) return;
+        const r = emergEl.querySelector('[data-relogio]');
+        if (!r) return;
+        const resta = Math.max(0, Math.ceil((emerg.fim - (emerg.agora + (performance.now() - relogioEmerg))) / 1000));
+        r.textContent = `⏱ ${Math.floor(resta / 60)}:${String(resta % 60).padStart(2, '0')}`;
+      }
+      function aplicarEmergencia(e) {
+        const antes = emerg;
+        emerg = e;
+        relogioEmerg = performance.now();
+        const chave = e ? [e.id, e.status, e.perigo, e.carregando, e.ligou, e.respondeu].join('|') : '';
+        if (chave === chaveEmerg) return;
+        chaveEmerg = chave;
+        if (!e && antes) limparVisual();
+        desenharAlarme();
+        desenharVisual();
+        marcarCarga(eu, e && e.status === 'ativo' && e.carregando ? EMERG[e.tipo].levar.levando : null);
+        if (souInstrutor && !popEmerg.hidden) desenharPopEmerg();
+        verPerto(true);
+      }
+      function marcarCarga(p, emoji) {
+        if (emoji && !p.cargaEl) { p.cargaEl = CE.el('span', { class: 'pr-carga', 'aria-hidden': 'true' }, emoji); p.el.append(p.cargaEl); }
+        else if (emoji && p.cargaEl) p.cargaEl.textContent = emoji;
+        else if (!emoji && p.cargaEl) { p.cargaEl.remove(); p.cargaEl = null; }
+      }
+      // Pegar e entregar: andando até o lugar certo (o botão em cima do boneco avisa).
+      async function acaoEmerg(acao, extra) {
+        const r = await chamar('praca:emergencia-acao', acao, { x: arred(eu.x), y: arred(eu.y), ...(extra || {}) });
+        if (!r || fechouJanela) return null;
+        aplicarEmergencia(r.emergencia);
+        const d = r.emergencia ? EMERG[r.emergencia.tipo] : null;
+        if (d && acao === 'pegar') balao(eu, `${d.levar.levando} Peguei! Agora: ${d.levar.entregarTexto.replace(/^\S+\s/, '').toLowerCase()}.`);
+        if (d && acao === 'entregar') balao(eu, `${d.levar.entregarTexto.split(' ')[0]} Feito!`);
+        return r;
+      }
+      function zonaDaAcao() {
+        if (!emergAtiva()) return null;
+        const d = defEmerg();
+        if (!emerg.carregando && M.pertoDaZona(d.levar.pegar, eu.x, eu.y, 1.3)) return 'pegar';
+        if (emerg.carregando && M.pertoDaZona(d.levar.entregar, eu.x, eu.y, 1.3)) return 'entregar';
+        return null;
+      }
+      // Ligar (ou mandar o CEP) e a pergunta: do jeito das tarefas, de qualquer lugar do mapa.
+      function abrirLigar() {
+        if (!emergAtiva()) return;
+        const d = defEmerg();
+        const sms = emerg.tipo === 'chuva';
+        mostrarTarefa({
+          tipo: 'emergencia', rosto: sms ? '📱' : '📞', titulo: d.ligar.titulo, subtitulo: `🚨 ${d.titulo}`,
+          t: { tipo: 'digitar', numero: true, pergunta: d.ligar.pergunta, dica: sms ? 'Ex.: 76800-000' : 'Digite o número', botao: sms ? 'Enviar' : 'Ligar', erro: sms ? 'Ainda não: confira o CEP, número por número.' : 'Esse não é o número certo. Pense de novo!' },
+          enviar: (resposta) => chamar('praca:emergencia-acao', 'ligar', { resposta }),
+          depois: (r) => { aplicarEmergencia(r.emergencia); mostrarAcerto({ tipo: 'emergencia', titulo: sms ? 'Mensagem enviada!' : 'Ligação feita!', subtitulo: `🚨 ${d.titulo}`, explica: r.explica, nota: 'Agora ajude a turma do outro jeito também.' }); },
+        });
+      }
+      function abrirPergunta() {
+        if (!emergAtiva()) return;
+        const d = defEmerg();
+        mostrarTarefa({
+          tipo: 'emergencia', rosto: '❓', titulo: d.pergunta.titulo, subtitulo: `🚨 ${d.titulo}`,
+          t: { tipo: 'escolha', pergunta: d.pergunta.pergunta, opcoes: d.pergunta.opcoes },
+          enviar: (resposta) => chamar('praca:emergencia-acao', 'pergunta', { resposta }),
+          depois: (r) => { aplicarEmergencia(r.emergencia); mostrarAcerto({ tipo: 'emergencia', titulo: 'Isso mesmo!', subtitulo: `🚨 ${d.titulo}`, explica: r.explica, nota: 'Cada ajuda baixa o perigo. Continue!' }); },
+        });
+      }
+      function comoAjudar() {
+        if (!emergAtiva()) return;
+        const d = defEmerg();
+        abrirDialogo({ tipo: 'emergencia', rosto: d.emoji, titulo: 'Como ajudar', subtitulo: `🚨 ${d.titulo}`, fala: d.alerta,
+          lista: [`${d.levar.pegarTexto} (vá até lá: o lugar está marcado no mapa).`, `${d.levar.entregarTexto} (leve até o lugar marcado e aperte o botão em cima do boneco).`, `${d.ligar.titulo}: o botão 📞 no alarme.`, `${d.pergunta.titulo}: o botão ❓ no alarme.`],
+          nota: 'Cada ajuda baixa o perigo. Se chegar a zero antes do tempo acabar, a turma vence e todo mundo que ajudou ganha moedas.',
+          opcoes: [{ rotulo: 'Entendi!', principal: true }] });
+      }
+      // O instrutor escolhe a emergência.
+      function abrirPopEmerg(abrir) {
+        if (!souInstrutor) return;
+        popEmerg.hidden = !abrir;
+        btEmerg.setAttribute('aria-expanded', String(abrir));
+        btEmerg.classList.toggle('ligado', abrir);
+        if (abrir) { abrirGente(false); abrirMegafone(false); desenharPopEmerg(); }
+      }
+      function desenharPopEmerg() {
+        const ativo = emergAtiva();
+        popEmerg.replaceChildren(CE.el('h3', {}, '🚨 Evento urgente'),
+          CE.el('p', { class: 'pr-suave' }, ativo ? 'Tem um evento acontecendo agora.' : 'A turma toda ajuda junta, cada um do seu jeito. Dura até 3 minutos e abre a praça para todos.'),
+          ...(ativo
+            ? [CE.el('button', { class: 'botao secundario', type: 'button', 'data-acao': 'encerrar-emergencia', onclick: async () => { const r = await chamar('praca:emergencia-encerrar'); if (r !== null) { abrirPopEmerg(false); sincronizar(); } } }, '⏹ Encerrar o evento')]
+            : Object.values(EMERG).map((d) => CE.el('button', { class: 'pr-emerg-opcao', type: 'button', 'data-emergencia': d.id, onclick: async () => {
+              const r = await chamar('praca:emergencia-iniciar', d.id);
+              if (r) { abrirPopEmerg(false); aplicarEmergencia(r); sincronizar(); }
+            } }, CE.el('span', { class: 'ic', 'aria-hidden': 'true' }, d.emoji), CE.el('span', {}, d.titulo)))));
+      }
       function mostrarFinal(ev) {
         finalEl.replaceChildren(CE.el('div', { class: 'pr-fechada-cartao pr-final-cartao' },
           CE.el('span', { class: 'pr-final-emoji', 'aria-hidden': 'true' }, ev.emoji || '📖'),
@@ -627,7 +792,7 @@ window.CE = window.CE || {};
         finalEl.hidden = false;
         CE.comemorar('grande');
         if (CE.voz) CE.voz.falar(`${ev.texto} ${ev.moral || ''}`);
-        if ((ev.participantes || []).includes(usuario.id)) { detetiveDado = true; conquista('detetive'); }
+        if ((ev.participantes || []).includes(usuario.id)) { detetiveDado = true; conquista('detetive'); CE.carteira.ganhar('final', `Desvendou “${ev.titulo}”`, `final:${ev.capitulo}:${ev.aberto}`); }
       }
 
       async function sincronizar() {
@@ -649,6 +814,7 @@ window.CE = window.CE || {};
         if (r.novo) { eu.x = r.eu.x; eu.y = r.eu.y; eu.caminho = []; posicionar(eu); enquadrar(); }
         if (r.cidade) aplicarCidade(r.cidade);
         if (r.novela !== undefined) aplicarNovela(r.novela);
+        if (r.emergencia !== undefined) aplicarEmergencia(r.emergencia);
         // Pessoas
         const vistos = new Set();
         for (const x of r.pessoas) {
@@ -739,6 +905,28 @@ window.CE = window.CE || {};
             registrar({ classe: 'cidade', texto: ev.texto });
             if (!velho) avisarNoMapa(ev.texto, 'cidade');
           }
+        } else if (ev.tipo === 'emergencia') {
+          const d = EMERG[ev.emergencia];
+          registrar({ classe: 'megafone', texto: ev.texto });
+          if (!velho && d) {
+            mapa.classList.remove('alarme'); void mapa.offsetWidth; mapa.classList.add('alarme');
+            if (CE.voz) CE.voz.falar(`Atenção! ${d.titulo} Todo mundo ajudando!`);
+            if (!perto) mudarZoom(true);
+          }
+        } else if (ev.tipo === 'emergencia-ajuda') {
+          registrar({ classe: 'sistema', texto: ev.texto });
+        } else if (ev.tipo === 'emergencia-fim') {
+          const d = EMERG[ev.emergencia];
+          registrar({ classe: 'cidade', texto: ev.texto });
+          if (!velho && d) {
+            avisarNoMapa(ev.texto, 'cidade');
+            if (ev.salvo) CE.comemorar('grande');
+            if (CE.voz) CE.voz.falar(ev.salvo ? `${d.salvo} ${d.licao}` : `${d.perdido} ${d.licao}`);
+          }
+          if ((ev.participantes || []).includes(usuario.id)) {
+            CE.carteira.ganhar(ev.salvo ? 'evento' : 'evento-tentativa', `${d ? d.emoji + ' ' : ''}${ev.salvo ? 'Venceu' : 'Ajudou'}: ${d ? d.titulo : 'evento urgente'}`, 'emergencia:' + ev.idEmergencia);
+            if (ev.salvo) conquista('brigada');
+          }
         } else if (ev.tipo === 'final') {
           if (souInstrutor || ev.turma === turmaDaCidade) {
             registrar({ classe: 'cidade', texto: `📖 O final de “${ev.titulo}”: ${ev.texto}` });
@@ -783,6 +971,10 @@ window.CE = window.CE || {};
       botaoGente.addEventListener('click', () => { abrirMegafone(false); abrirGente(popGente.hidden); });
       botaoCidade.addEventListener('click', () => { fecharPopups(); abrirCidade('predios'); });
       botaoNovela.addEventListener('click', () => { fecharPopups(); abrirNovela(); });
+      botaoMoedas.addEventListener('click', () => { fecharPopups(); CE.carteira.abrir(); });
+      const mostrarMoedas = (saldo) => { botaoMoedas.textContent = `💰 ${saldo}`; };
+      if (!souInstrutor) CE.carteira.saldo().then(mostrarMoedas);
+      const pararMoedas = CE.ouvir('carteira:ganhou', (d) => { mostrarMoedas(d.saldo); botaoMoedas.classList.remove('ganhou'); void botaoMoedas.offsetWidth; botaoMoedas.classList.add('ganhou'); });
       function abrirMegafone(abrir) {
         if (!souInstrutor) return;
         popMegafone.hidden = !abrir;
@@ -790,7 +982,7 @@ window.CE = window.CE || {};
         btMegafone.classList.toggle('ligado', abrir);
         if (abrir) { abrirGente(false); campoMegafone.focus({ preventScroll: true }); }
       }
-      function fecharPopups() { abrirGente(false); abrirMegafone(false); }
+      function fecharPopups() { abrirGente(false); abrirMegafone(false); if (souInstrutor && !popEmerg.hidden) abrirPopEmerg(false); }
 
       // Os botões do instrutor mostram o que está valendo agora.
       function desenharInstrutor() {
@@ -892,7 +1084,8 @@ window.CE = window.CE || {};
             CE.el('div', { class: 'pr-rua' }, r.rua.map((a) => CE.el('div', { class: 'pr-morada' + (a.id === usuario.id ? ' eu' : ''), 'data-morada': a.id },
               CE.el('span', { class: 'casa', 'aria-hidden': 'true' }, a.casa ? '🏠' : '🏗️'),
               CE.el('strong', {}, `${a.avatar || '🙂'} ${a.id === usuario.id ? 'Você' : a.nome}`),
-              CE.el('span', { class: 'enfeites' }, a.casa ? (a.enfeites || 'casa pronta') : 'terreno')))),
+              CE.el('span', { class: 'enfeites' }, a.casa ? (a.enfeites || 'casa pronta') : 'terreno'),
+              a.moedas != null ? CE.el('span', { class: 'moedas', 'data-moedas': String(a.moedas) }, `💰 ${a.moedas}`) : null))),
             CE.el('p', { class: 'pr-suave pr-legenda' }, M.ENFEITES.map((e) => `${e.emoji} ${e.nome}`).join(' · ')),
           ];
         } else if (abaCidade === 'lote') conteudo = conteudoLote();
@@ -1075,6 +1268,11 @@ window.CE = window.CE || {};
 
       // ---------- Lugares ----------
       function abrirLugar(L) {
+        if (emergAtiva()) {
+          const d = defEmerg();
+          if (d.levar.pegar === L.id) return emerg.carregando ? balao(eu, `Já peguei! Agora: ${d.levar.entregarTexto.replace(/^\S+\s/, '').toLowerCase()}.`) : acaoEmerg('pegar');
+          if (d.levar.entregar === L.id) return emerg.carregando ? acaoEmerg('entregar') : balao(eu, `Primeiro: ${d.levar.pegarTexto.replace(/^\S+\s/, '').toLowerCase()}!`);
+        }
         const info = LUGAR[L.id] || {};
         if (NA_CIDADE[L.id] && !aceso(L.id)) return abrirObra(L);
         if (L.id === 'mesa-velha') return abrirMesa();
@@ -1130,7 +1328,7 @@ window.CE = window.CE || {};
           const r = await enviar(resposta).finally(() => { enviando = false; });
           if (!r || fechouJanela) return;
           if (!r.certo) {
-            aviso.textContent = t.tipo === 'digitar' ? (t.numero ? 'Ainda não. Faça a conta de novo, com calma.' : 'Ainda não. Confira letra por letra: maiúsculas, acentos e pontuação.') : 'Ainda não. Leia de novo com calma e tente outra resposta.';
+            aviso.textContent = t.erro || (t.tipo === 'digitar' ? (t.numero ? 'Ainda não. Faça a conta de novo, com calma.' : 'Ainda não. Confira letra por letra: maiúsculas, acentos e pontuação.') : 'Ainda não. Leia de novo com calma e tente outra resposta.');
             aviso.hidden = false;
             if (botao) { botao.disabled = true; botao.classList.add('errada'); }
             const campo = dialogo.querySelector('#pr-campo-resposta');
@@ -1143,9 +1341,9 @@ window.CE = window.CE || {};
         if (t.tipo === 'escolha') corpo = [CE.el('div', { class: 'pr-respostas' }, t.opcoes.map((o, i) => { const b = CE.el('button', { class: 'pr-resposta', type: 'button', 'data-resposta': String(i), onclick: () => responder(i, b) }, o); return b; }))];
         else if (t.tipo === 'lista') corpo = [CE.el('ol', { class: 'pr-papel' }, t.itens.map((o, i) => { const b = CE.el('button', { type: 'button', 'data-resposta': String(i), onclick: () => responder(i, b) }, o); return CE.el('li', {}, b); }))];
         else {
-          const campo = CE.el('input', { id: 'pr-campo-resposta', autocomplete: 'off', spellcheck: 'false', inputmode: t.numero ? 'decimal' : 'text', placeholder: t.numero ? 'Ex.: 5,00' : 'Digite aqui', 'aria-label': 'Sua resposta' });
+          const campo = CE.el('input', { id: 'pr-campo-resposta', autocomplete: 'off', spellcheck: 'false', inputmode: t.numero ? 'decimal' : 'text', placeholder: t.dica || (t.numero ? 'Ex.: 5,00' : 'Digite aqui'), 'aria-label': 'Sua resposta' });
           corpo = [t.numero ? null : CE.el('p', { class: 'pr-modelo' }, t.modelo),
-            CE.el('form', { class: 'pr-digitar', onsubmit: (e) => { e.preventDefault(); if (campo.value.trim()) responder(campo.value); } }, campo, CE.el('button', { class: 'botao', type: 'submit', 'data-opcao': 'conferir' }, 'Conferir'))].filter(Boolean);
+            CE.el('form', { class: 'pr-digitar', onsubmit: (e) => { e.preventDefault(); if (campo.value.trim()) responder(campo.value); } }, campo, CE.el('button', { class: 'botao', type: 'submit', 'data-opcao': 'conferir' }, t.botao || 'Conferir'))].filter(Boolean);
         }
         abrirDialogo({ tipo, rosto, titulo, subtitulo, fala: t.pergunta, extra: [...corpo, aviso], opcoes: [{ rotulo: 'Fechar' }] });
       }
@@ -1160,9 +1358,9 @@ window.CE = window.CE || {};
           tipo: 'tarefa', rosto: '📝', titulo: `Tarefa do dia: ${info.titulo}`, subtitulo: nomeDoLugar(L.id), t: info.tarefa,
           enviar: (resposta) => chamar('praca:fazer-tarefa', L.id, resposta),
           depois: (r) => {
-            if (r.contou) contarTarefa();
+            if (r.contou) { contarTarefa(); CE.carteira.ganhar('tarefa', `Tarefa do dia: ${info.titulo}`, `tarefa:${L.id}:${r.dia}`); }
             mostrarAcerto({ tipo: 'tarefa', titulo: 'Certo!', subtitulo: `Tarefa do dia: ${info.titulo}`, explica: r.explica,
-              nota: souInstrutor ? 'Instrutor: a resposta não conta para a turma.' : r.contou ? `Valeu para o desafio da turma: ${r.semana.feitas} de ${r.semana.meta} nesta semana.` : 'Você já tinha feito esta tarefa hoje: esta foi só de treino.',
+              nota: souInstrutor ? 'Instrutor: a resposta não conta para a turma.' : r.contou ? `+${CE.carteira.VALOR.tarefa} moedas 💰. Valeu para o desafio da turma: ${r.semana.feitas} de ${r.semana.meta} nesta semana.` : 'Você já tinha feito esta tarefa hoje: esta foi só de treino.',
               voltar: { rotulo: `Voltar para ${nomeDoLugar(L.id)}`, acao: () => abrirLugar(L) } });
             if (r.contou) sincronizar();
           },
@@ -1177,8 +1375,9 @@ window.CE = window.CE || {};
           enviar: (resposta) => chamar('praca:resolver-pista', id, resposta),
           depois: (r) => {
             const a = r.novela.atual;
+            if (r.contou) CE.carteira.ganhar('pista', `Pista da novela: ${p.titulo}`, `pista:${a.aberto}:${id}`);
             mostrarAcerto({ tipo: 'pista', titulo: 'Pista guardada!', subtitulo: `${a.emoji} ${a.titulo}`, explica: r.explica,
-              nota: souInstrutor ? 'Instrutor: a resposta não conta para a turma.' : r.contou ? `A turma já juntou ${Math.min(a.total, a.meta)} de ${a.meta} pistas.${a.resolvido ? ' Todas as pistas foram achadas: o final sai no coreto!' : ''}` : 'Você já tinha achado esta pista.',
+              nota: souInstrutor ? 'Instrutor: a resposta não conta para a turma.' : r.contou ? `+${CE.carteira.VALOR.pista} moedas 💰. A turma já juntou ${Math.min(a.total, a.meta)} de ${a.meta} pistas.${a.resolvido ? ' Todas as pistas foram achadas: o final sai no coreto!' : ''}` : 'Você já tinha achado esta pista.',
               voltar: { rotulo: 'Ver a novela', acao: () => abrirNovela() } });
             sincronizar();
           },
@@ -1310,12 +1509,14 @@ window.CE = window.CE || {};
         return null;
       }
       function interagir(a) {
+        if (a.emergencia) return acaoEmerg(a.emergencia);
         if (a.morador) return abrirNo(a.morador.id, 'inicio');
         if (a.pessoa) return abrirPessoa(a.pessoa);
         if (a.lugar) return abrirLugar(a.lugar);
       }
       // O texto do botão que aparece em cima do boneco.
       function textoDaAcao(a) {
+        if (a.emergencia) { const d = defEmerg(); return a.emergencia === 'pegar' ? d.levar.pegarTexto : d.levar.entregarTexto; }
         if (a.morador) return `💬 Conversar com ${a.morador.nome}`;
         if (a.pessoa) return `💬 Falar com ${a.pessoa.nomeReal}`;
         return textoDoLugar(a.lugar) + (pistaAqui(a.lugar.id) ? ' · 🔎 pista' : '');
@@ -1329,11 +1530,13 @@ window.CE = window.CE || {};
       }
       let pertoAtual = null, pertoAlvo = null;
       function verPerto(forcar) {
-        const a = oQueEstaPerto();
-        const chave = a ? (a.morador ? 'm' + a.morador.id : a.pessoa ? 'p' + a.pessoa.id : 'l' + a.lugar.id) : '';
+        const z = zonaDaAcao();
+        const a = z ? { emergencia: z } : oQueEstaPerto();
+        const chave = a ? (a.emergencia ? 'e' + a.emergencia + emerg.tipo : a.morador ? 'm' + a.morador.id : a.pessoa ? 'p' + a.pessoa.id : 'l' + a.lugar.id) : '';
         if (chave === pertoAtual && !forcar) return;
         pertoAtual = chave; pertoAlvo = a;
         acao.hidden = !a;
+        acao.classList.toggle('urgente', !!(a && a.emergencia));
         if (a) { acao.replaceChildren(CE.el('span', {}, textoDaAcao(a)), CE.el('kbd', {}, 'Enter')); posicionarAcao(); }
       }
       acao.addEventListener('click', () => { if (pertoAlvo) interagir(pertoAlvo); });
@@ -1389,7 +1592,7 @@ window.CE = window.CE || {};
         if (e.key === 'Escape') {
           if (!finalEl.hidden) { finalEl.hidden = true; mapa.focus({ preventScroll: true }); return; }
           if (!dialogo.hidden) { fecharDialogo(); return; }
-          if (!popGente.hidden || !popMegafone.hidden) { fecharPopups(); mapa.focus({ preventScroll: true }); return; }
+          if (!popGente.hidden || !popMegafone.hidden || !popEmerg.hidden) { fecharPopups(); mapa.focus({ preventScroll: true }); return; }
           if (!chat.hidden) { abrirConversa(false); mapa.focus({ preventScroll: true }); return; }
         }
         if (e.target.closest('input, textarea, select') || !dialogo.hidden || bloqueado()) return;
@@ -1412,7 +1615,7 @@ window.CE = window.CE || {};
         if (!bloqueado()) mover(dt);
         moverOutros(dt);
         if (perto) enquadrar();
-        if (agora - ultimoPerto > 200) { ultimoPerto = agora; verPerto(); }
+        if (agora - ultimoPerto > 200) { ultimoPerto = agora; verPerto(); andarRelogio(); }
         posicionarAcao();
         const minimizada = janela.elemento ? janela.elemento.classList.contains('minimizada') : corpo.closest('.janela') && corpo.closest('.janela').classList.contains('minimizada');
         if (agora - ultimaSincronia > (minimizada ? SINCRONIA_LONGE : SINCRONIA)) { ultimaSincronia = agora; sincronizar(); }
@@ -1431,6 +1634,7 @@ window.CE = window.CE || {};
         aoFechar() {
           fechouJanela = true;
           pracaNaTela = false;
+          pararMoedas();
           cancelAnimationFrame(quadroId);
           aoRedimensionar.disconnect();
           document.removeEventListener('keydown', teclaDesce);

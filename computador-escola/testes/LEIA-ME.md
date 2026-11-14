@@ -135,6 +135,12 @@ Abre o programa de verdade em 3 computadores (a instrutora e dois alunos, a Ana 
   da novela, a Ana vê as 3 pistas marcadas com 🔎; resposta errada não conta; a Ana acha duas pistas e o Bruno a última,
   e o mistério está resolvido. Mais tarde a instrutora revela o final no coreto: ele aparece na tela dos dois e a Ana
   ganha a medalha 🔎 Detetive da novela (tudo guardado no disco da instrutora).
+- **Evento urgente**: com o Bruno fora da praça, a instrutora dispara o incêndio na lata de lixo; o alarme aparece na tela
+  da Ana e o Bruno recebe o pedido de ajuda e vai para a praça. Longe da fonte não dá para encher o balde, e o número
+  errado não ajuda; os dois ligam para o 193, respondem a pergunta e levam água até o fogo apagar. Os dois ganham a
+  medalha 🚒 Brigada da praça.
+- **Moedas**: as da Ana vieram das aulas, do final da novela e do incêndio (no disco da instrutora); a instrutora vê as
+  moedas de cada aluno na Rua da Turma, o Bruno vê só as dele, e o saldo aparece no 💰 da barra de tarefas.
 - **Jogo da velha** entre os dois computadores: cada um joga na sua vez, a conversa conta quem ganhou e a vencedora
   ganha a medalha (guardada no computador da instrutora).
 - **A instrutora na praça**: vê os dois em "Na praça agora" e a cidade da turma deles, fala no megafone (aparece no
