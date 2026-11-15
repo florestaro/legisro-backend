@@ -126,7 +126,8 @@ Abre o programa de verdade em 3 computadores (a instrutora e dois alunos, a Ana 
 - **Os dois na praça**: cada um vê o boneco do outro; a Ana anda com as setas e o computador do Bruno vê ela andar; o
   "Bom dia!" da Ana chega na conversa do Bruno (estão perto); o 🙋 do Bruno aparece em cima dele no computador da Ana.
 - **Entrevista de emprego**: no primeiro acesso, o Professor Virtual (recrutador) abre a entrevista na tela da Ana; os
-  dois respondem e as respostas ficam guardadas no disco da instrutora.
+  dois respondem e as respostas ficam guardadas no disco da instrutora. A instrutora deixa um retorno de recrutador na
+  entrevista da Ana, e ele aparece na praça, na tela dela.
 - **A cidade cresce com a turma**: a cidade começa sem prédios acesos; a Ana conclui dois módulos (na turma de 2, ela já
   é a metade) e a horta e a estação acendem na tela do Bruno, que fica sabendo pela conversa; o terreno da Ana vira
   "Sua casa" e, na Rua da Turma, a casa dela aparece pronta e a do Bruno ainda é terreno (tudo guardado no disco da

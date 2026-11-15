@@ -111,6 +111,11 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
     }, nome);
   }
   ok(await ate(() => Promise.resolve(Object.values(lerDisco('praca.json', {}).entrevistas || {}).filter((e) => /Ana Souza|Bruno Lima/.test(e.nome)).length === 2)), 'disco da instrutora: as entrevistas da Ana e do Bruno ficam guardadas');
+  // O retorno do recrutador: a instrutora comenta a entrevista da Ana e ela recebe na praça.
+  await A.evaluate((id) => CE.api.chamar('praca:comentar-entrevista', { id, texto: 'Ótima entrevista, Ana! Treine a planilha.' }), idAna);
+  const retornoChegou = await p1.waitForSelector(Z('.pr-dialogo[data-tipo="retorno"]:not([hidden])'), { timeout: 15000 }).then(() => true).catch(() => false);
+  ok(retornoChegou && /Ótima entrevista, Ana/.test(await p1.textContent(Z('.pr-dialogo')).catch(() => '')), 'PC 1: a instrutora deixa um retorno na entrevista e a Ana recebe na praça');
+  await p1.click(Z('.pr-dlg-fechar')).catch(() => {});
   // A Ana anda para a esquerda com as setas; o PC 2 vê o boneco dela sair do lugar.
   const antes = await ondeEsta(p2, idAna);
   await p1.focus(Z('.pr-mapa')); await p1.keyboard.down('ArrowLeft'); await espera(700); await p1.keyboard.up('ArrowLeft');
