@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guia do Instrutor do Computador Escola</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style>
+body { margin: 0; }
+/* Layout: uma coluna de leitura (manual de sala) com um sumário fixo à esquerda no computador e no topo no celular. */
+:root {
+  --fundo: #f4f7f4;
+  --papel: #ffffff;
+  --tinta: #1a2a23;
+  --suave: #4c5f56;
+  --linha: #d6e0da;
+  --rio: #0d6b66;
+  --rio-claro: #e3f1ef;
+  --ipe: #8a5a00;
+  --ipe-fundo: #fff4d6;
+  --alerta: #b23a26;
+  --alerta-fundo: #fbe9e5;
+  --f-titulo: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-texto: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --fundo: #111a16; --papel: #18241f; --tinta: #e6efe9; --suave: #a4b8ae; --linha: #2b3b34;
+  --rio: #5cc4bc; --rio-claro: #1b3330; --ipe: #f0c454; --ipe-fundo: #2e2612; --alerta: #f08a76; --alerta-fundo: #3a1f1a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --fundo: #111a16; --papel: #18241f; --tinta: #e6efe9; --suave: #a4b8ae; --linha: #2b3b34;
+  --rio: #5cc4bc; --rio-claro: #1b3330; --ipe: #f0c454; --ipe-fundo: #2e2612; --alerta: #f08a76; --alerta-fundo: #3a1f1a; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--fundo); color: var(--tinta); font: 17px/1.6 var(--f-texto); }
+.pagina { max-width: 1180px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 40px; }
+@media (max-width: 860px) { .pagina { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
+
+nav.sumario { position: sticky; top: calc(16px + env(safe-area-inset-top, 0px)); align-self: start; font-size: 15px; }
+nav.sumario p { font: 700 12px/1 var(--f-texto); letter-spacing: .08em; text-transform: uppercase; color: var(--suave); margin: 0 0 10px; }
+nav.sumario ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: s; }
+nav.sumario a { display: block; padding: 5px 10px; border-radius: 6px; color: var(--tinta); text-decoration: none; }
+nav.sumario a:hover, nav.sumario a:focus-visible { background: var(--rio-claro); color: var(--rio); outline: none; }
+@media (max-width: 860px) {
+  nav.sumario { position: static; }
+  nav.sumario ol { display: flex; flex-wrap: wrap; gap: 6px; }
+  nav.sumario a { border: 1px solid var(--linha); background: var(--papel); font-size: 14px; }
+}
+
+main { min-width: 0; }
+header.abre { padding-bottom: 22px; border-bottom: 2px solid var(--tinta); margin-bottom: 8px; }
+header.abre .sobre { font: 700 13px/1 var(--f-texto); letter-spacing: .08em; text-transform: uppercase; color: var(--rio); margin: 0 0 10px; }
+h1 { font: 800 clamp(30px, 5vw, 46px)/1.08 var(--f-titulo); margin: 0 0 14px; text-wrap: balance; }
+header.abre .lead { font-size: 19px; color: var(--suave); max-width: 62ch; margin: 0; }
+
+section { padding-top: 34px; scroll-margin-top: 12px; }
+h2 { font: 800 clamp(23px, 3.2vw, 30px)/1.15 var(--f-titulo); margin: 0 0 10px; text-wrap: balance; }
+h3 { font: 600 19px/1.3 var(--f-titulo); margin: 22px 0 6px; }
+p, li { max-width: 68ch; }
+p { margin: 0 0 12px; }
+ul, ol { margin: 0 0 12px; padding-left: 22px; }
+li { margin-bottom: 4px; }
+strong { font-weight: 700; }
+.botao { display: inline-block; padding: 0 7px; border: 1px solid var(--linha); border-radius: 6px; background: var(--papel); font-size: .92em; white-space: nowrap; }
+.caminho { color: var(--rio); font-weight: 700; }
+
+.quadro { border: 1px solid var(--linha); background: var(--papel); border-radius: 10px; padding: 14px 18px; margin: 14px 0; }
+.quadro.conversa { border-left: 5px solid var(--rio); }
+.quadro.conversa > b:first-child { display: block; font: 700 13px/1.2 var(--f-texto); letter-spacing: .06em; text-transform: uppercase; color: var(--rio); margin-bottom: 6px; }
+.quadro.atencao { border-left: 5px solid var(--alerta); background: var(--alerta-fundo); }
+.quadro p:last-child, .quadro ul:last-child { margin-bottom: 0; }
+
+/* Roteiro: linha do tempo de uma aula (a ordem é a informação) */
+.tempo { list-style: none; padding: 0; margin: 14px 0; display: grid; gap: 0; }
+.tempo li { max-width: none; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 16px; padding: 12px 0; border-top: 1px solid var(--linha); margin: 0; }
+.tempo li:last-child { border-bottom: 1px solid var(--linha); }
+.tempo .min { font: 700 15px/1.3 var(--f-titulo); color: var(--rio); font-variant-numeric: tabular-nums; }
+.tempo .o-que b { display: block; }
+@media (max-width: 520px) { .tempo li { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+
+.tabela { overflow-x: auto; margin: 12px 0 16px; border: 1px solid var(--linha); border-radius: 10px; background: var(--papel); }
+table { border-collapse: collapse; width: 100%; font-size: 15.5px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--linha); }
+th { font: 700 13px/1.3 var(--f-texto); letter-spacing: .04em; text-transform: uppercase; color: var(--suave); background: var(--rio-claro); }
+tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 12px 0; }
+.grade .item { border: 1px solid var(--linha); background: var(--papel); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.grade .item b { display: block; font-family: var(--f-titulo); font-size: 17px; margin-bottom: 4px; }
+.grade .item p { font-size: 15.5px; margin: 0; color: var(--suave); }
+
+.urgente { border: 1px solid var(--linha); border-radius: 12px; background: var(--papel); padding: 16px 18px; margin: 14px 0; }
+.urgente h3 { margin-top: 0; }
+.urgente dl { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 6px 14px; margin: 8px 0 0; }
+.urgente dt { font-weight: 700; color: var(--suave); }
+.urgente dd { margin: 0; }
+@media (max-width: 560px) { .urgente dl { grid-template-columns: minmax(0, 1fr); } .urgente dd { margin-bottom: 8px; } }
+.numero { font: 800 15px/1 var(--f-titulo); color: var(--alerta); }
+
+footer { margin-top: 44px; padding-top: 16px; border-top: 1px solid var(--linha); color: var(--suave); font-size: 15px; }
+a { color: var(--rio); }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="pagina">
+  <nav class="sumario" aria-label="Sumário">
+    <p>Neste guia</p>
+    <ol>
+      <li><a href="#comecar">Antes da primeira aula</a></li>
+      <li><a href="#roteiro">Roteiro de uma aula</a></li>
+      <li><a href="#semana">O ritmo da semana</a></li>
+      <li><a href="#curso">As aulas do curso</a></li>
+      <li><a href="#painel">Painel do Instrutor</a></li>
+      <li><a href="#turma">Atividades da turma</a></li>
+      <li><a href="#praca">Praça Escola</a></li>
+      <li><a href="#comandos">Seus botões na praça</a></li>
+      <li><a href="#urgentes">Eventos urgentes</a></li>
+      <li><a href="#especiais">Eventos especiais</a></li>
+      <li><a href="#novela">A novela da cidade</a></li>
+      <li><a href="#trabalho">Trabalho na cidade</a></li>
+      <li><a href="#dinheiro">Banco, contas e feira</a></li>
+      <li><a href="#cidade">Atividades da cidade</a></li>
+      <li><a href="#moedas">Moedas e medalhas</a></li>
+      <li><a href="#duvidas">Dúvidas comuns</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="abre">
+      <p class="sobre">Computador Escola · para quem conduz a turma</p>
+      <h1>Guia do Instrutor</h1>
+      <p class="lead">Tudo o que existe no programa e como conduzir cada parte: as aulas, as atividades da turma e a Praça Escola, com os eventos urgentes, os especiais, o trabalho e o dinheiro da cidade. O Professor Virtual faz a maior parte sozinho; este guia mostra onde você entra.</p>
+    </header>
+
+    <section id="comecar">
+      <h2>Antes da primeira aula</h2>
+      <ol>
+        <li><strong>Instale</strong> o programa em todos os computadores da sala.</li>
+        <li><strong>Ligue a rede da sala.</strong> No seu computador, na tela de entrada, clique em <span class="botao">🖧 Rede da sala</span>, escolha <em>Computador do INSTRUTOR</em> e salve. Abra de novo e anote o endereço e o código de 6 números. Se o Windows perguntar, permita em <em>Redes privadas</em>. Em cada computador de aluno: <span class="botao">🖧 Rede da sala</span> › <em>Computador de ALUNO</em> › <span class="botao">🔎 Procurar o computador do instrutor</span>, digite o código e salve.</li>
+        <li><strong>Cadastre os alunos</strong> em <span class="caminho">Painel do Instrutor › Alunos</span> (nome, turma, senha e figurinha). Marque "criança" quando for o caso: as metas ficam menores e a praça pode ficar só com frases prontas.</li>
+        <li><strong>Escolha a trilha</strong> em <span class="caminho">Painel › Progresso da turma › 🧭 Trilha do curso</span>. A <em>essencial</em> é para turmas com pouco tempo (1 hora por semana); a <em>completa</em> torna obrigatórias também as aulas de reforço. Ali também liga ou desliga a <em>revisão rápida</em>.</li>
+        <li><strong>Marque o horário das aulas</strong> na Praça Escola, no botão <span class="botao">⏰</span>: a cidade chama a turma sozinha 15 minutos antes de cada aula acabar.</li>
+        <li><strong>Preencha os dados da escola</strong> em <span class="caminho">Painel › 📜 Certificados e relatório</span> (nome, cidade, quem assina e a carga horária), para os certificados saírem certos.</li>
+      </ol>
+      <div class="quadro">
+        <p>Tudo fica no <strong>seu</strong> computador: o aluno pode sentar em qualquer máquina e continuar de onde parou. Se o seu computador desligar, os alunos veem "Sem conexão" e um botão <span class="botao">Tentar de novo</span>; é só abrir o programa de novo.</p>
+      </div>
+    </section>
+
+    <section id="roteiro">
+      <h2>Roteiro de uma aula</h2>
+      <p>Para uma aula de 1 hora. Com 2 horas, dobre a parte da aula do dia e ponha uma corrida de digitação ou uma gincana no meio.</p>
+      <ol class="tempo">
+        <li><span class="min">0 a 5 min</span><span class="o-que"><b>Chegada e revisão rápida</b>Cada aluno entra no próprio nome. No primeiro login do dia, o Professor Virtual faz até 3 perguntas das últimas aulas, e as perguntas que o aluno errou antes voltam primeiro. Você não precisa fazer nada.</span></li>
+        <li><span class="min">5 a 8 min</span><span class="o-que"><b>Recado do dia</b>Em <span class="caminho">Painel › 🖥️ Sala ao vivo</span>, use <span class="botao">📢 Mandar mensagem</span> (aparece e é falada na tela de todos). Lembre a missão da semana no 🎯 da barra de tarefas.</span></li>
+        <li><span class="min">8 a 40 min</span><span class="o-que"><b>A aula do dia</b>O aluno clica no botão verde <span class="botao">Começar ▶</span>: o Professor Virtual explica, mostra com a seta vermelha e confere sozinho. Você acompanha na <em>Sala ao vivo</em>: quem apertou <span class="botao">🙋 Não entendi</span> aparece primeiro, em laranja. Vá até ele, ou deixe um monitor ir.</span></li>
+        <li><span class="min">40 a 45 min</span><span class="o-que"><b>Treino rápido</b>Uma <em>corrida de digitação</em> ou um <em>desafio relâmpago</em> (veja <a href="#turma">Atividades da turma</a>). Bom para o projetor.</span></li>
+        <li><span class="min">45 a 60 min</span><span class="o-que"><b>Hora da Praça</b>A Praça Escola abre sozinha e chama todos. É a hora de trabalhar nas vagas, pagar as contas, vender na feira, procurar as pistas da novela ou enfrentar um evento urgente que você dispara.</span></li>
+        <li><span class="min">Últimos 2 min</span><span class="o-que"><b>Fechamento</b>Pergunte o que aprenderam hoje. Se houve evento urgente ou golpe, repita a lição (por exemplo: "Bombeiros, 193").</span></li>
+      </ol>
+      <div class="quadro conversa"><b>Para conduzir</b><p>Deixe o Professor Virtual ensinar e use o seu tempo com quem está travado. O <span class="caminho">Painel › 🧩 Onde a turma trava</span> mostra em que passo a turma mais pede ajuda: comece a aula seguinte por ali.</p></div>
+    </section>
+
+    <section id="semana">
+      <h2>O ritmo da semana</h2>
+      <div class="tabela"><table>
+        <thead><tr><th>Quando</th><th>O que acontece</th><th>O que você faz</th></tr></thead>
+        <tbody>
+          <tr><td>Toda segunda</td><td>A <strong>missão da semana</strong> muda; cada aluno recebe uma do nível dele.</td><td>Nada (ou escolha uma missão para todos no Painel).</td></tr>
+          <tr><td>Uma vez por semana</td><td>Um capítulo da <strong>novela da cidade</strong>.</td><td>Abra o capítulo no coreto; quando a turma achar as pistas, revele o final.</td></tr>
+          <tr><td>Todo dia</td><td>Cada lugar aceso da cidade tem uma <strong>tarefa do dia</strong> nova.</td><td>Nada: o aluno faz quando quiser.</td></tr>
+          <tr><td>De vez em quando</td><td>Um <strong>evento urgente</strong> (incêndio, rio subindo, chuva forte).</td><td>Dispare no 🚨 quando a turma estiver na praça. Sem aviso é melhor.</td></tr>
+          <tr><td>Fim de módulo</td><td><strong>Gincana ao vivo</strong>.</td><td>Abra no Painel e escolha o nível e as equipes.</td></tr>
+          <tr><td>Uma vez por mês</td><td><strong>Jornal da turma</strong>, <strong>relatório</strong> e <strong>certificados</strong>.</td><td>Aprove as matérias e monte o jornal; tire o relatório; imprima os certificados de quem terminou.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="curso">
+      <h2>As aulas do curso</h2>
+      <p>São 5 níveis em sequência e 2 cursos livres, que andam em paralelo. O aluno só passa para a próxima aula quando é aprovado (70% nas perguntas).</p>
+      <div class="tabela"><table>
+        <thead><tr><th>Curso</th><th>Aulas na trilha essencial</th><th>Para quem</th></tr></thead>
+        <tbody>
+          <tr><td>Iniciante</td><td class="num">29</td><td>Quem nunca usou: mouse, teclado, janelas, arquivos, internet e segurança.</td></tr>
+          <tr><td>Intermediário</td><td class="num">45</td><td>E-mail, planilha, gov.br, PDF, assinatura, currículo, prova prática e golpes de agora.</td></tr>
+          <tr><td>Avançado</td><td class="num">42</td><td>Apresentações, configurações, dinheiro e dívidas, vender pela internet e MEI.</td></tr>
+          <tr><td>Profissional</td><td class="num">24</td><td>Operador de computador: Windows, editor e planilha profissionais, agenda, hardware.</td></tr>
+          <tr><td>Assistente Administrativo</td><td class="num">19</td><td>Rotinas de escritório com o sistema Gestão Fácil.</td></tr>
+          <tr><td>Celular no dia a dia (livre)</td><td class="num">12</td><td>Abre depois do Iniciante: Zap, Pix, golpes e aplicativos.</td></tr>
+          <tr><td>Criação digital (livre)</td><td class="num">11</td><td>Abre depois do Intermediário: fotos, cartazes e vídeos.</td></tr>
+        </tbody>
+      </table></div>
+      <h3>Tipos de aula</h3>
+      <ul>
+        <li><strong>Aula normal</strong>: explicação, prática guiada (seta vermelha e o desenho do mouse) e perguntas.</li>
+        <li><strong>Desafio</strong>: no fim de cada módulo, sem ajuda.</li>
+        <li><strong>Prova</strong>: no fim de cada nível; vale o certificado.</li>
+        <li><strong>Prova prática</strong> (Intermediário): uma tarefa real e cronometrada (meta de 15 minutos). O aluno pede a ficha ao RH por e-mail, preenche o PDF, assina pelo Cidadão Digital e devolve. No fim, o professor diz em quantos minutos ele fez.</li>
+      </ul>
+      <h3>Coisas que ajudam a turma</h3>
+      <ul>
+        <li><strong>Teste de nivelamento</strong> no primeiro acesso: quem já sabe pula as aulas do Iniciante.</li>
+        <li><strong>Revisão rápida</strong> no primeiro login do dia; as perguntas que o aluno errou voltam na próxima revisão.</li>
+        <li><strong>Trilhas por objetivo</strong> (<span class="caminho">Aulas › 🎯 Meu objetivo</span>): o aluno escolhe Arrumar emprego, Resolver as coisas no gov.br, Vender pelo celular ou Me proteger dos golpes, e o professor monta o caminho com as aulas certas. O certificado continua sendo o do nível.</li>
+        <li><strong>Currículo da entrevista</strong> (Intermediário): o currículo já vem montado com o que o aluno respondeu na entrevista de emprego da Praça.</li>
+        <li><strong>Golpes de agora</strong> (Intermediário): falso advogado, emprego de "tarefas pagas", boleto falso e Pix "por engano".</li>
+      </ul>
+      <div class="quadro conversa"><b>Sugestão</b><p>No primeiro dia, pergunte para que cada um quer aprender e ajude a escolher o objetivo. Quem quer emprego costuma render mais seguindo a trilha "Arrumar emprego".</p></div>
+    </section>
+
+    <section id="painel">
+      <h2>Painel do Instrutor</h2>
+      <div class="grade">
+        <div class="item"><b>Alunos</b><p>Cadastrar, trocar a senha, remover. Em 🔓 Liberar aulas, abre um nível, um módulo ou aulas avulsas fora da ordem, e muda a trilha do aluno.</p></div>
+        <div class="item"><b>Progresso da turma</b><p>Aula atual, média, digitação, provas e medalhas de cada um. Liga a revisão rápida e escolhe a trilha da escola.</p></div>
+        <div class="item"><b>🖥️ Sala ao vivo</b><p>Quem está em cada computador e em que passo. ⏸️ Pausar todas as telas e 📢 Mandar mensagem.</p></div>
+        <div class="item"><b>🧩 Onde a turma trava</b><p>Os passos em que mais pediram ajuda ou erraram. ▶ Ver abre a aula naquele passo.</p></div>
+        <div class="item"><b>🏁 Gincana, missão e jornal</b><p>Abrir gincana e desafio relâmpago, escolher a missão, aprovar matérias e marcar monitores.</p></div>
+        <div class="item"><b>📜 Certificados e relatório</b><p>Certificados com número fixo e o relatório do mês (frequência, aulas, digitação), em PDF ou planilha.</p></div>
+        <div class="item"><b>📝 Criar aulas</b><p>Aulas suas com explicação, pergunta e tarefa. Aparecem em Aulas › 📌 Do professor.</p></div>
+      </div>
+    </section>
+
+    <section id="turma">
+      <h2>Atividades da turma (fora da praça)</h2>
+      <div class="tabela"><table>
+        <thead><tr><th>Atividade</th><th>Como é</th><th>Como você conduz</th></tr></thead>
+        <tbody>
+          <tr><td>Gincana ao vivo</td><td>Perguntas sorteadas das aulas e tarefas práticas, em equipes. Acerto vale 100 pontos, mais bônus por rapidez. Placar e pódio ao vivo.</td><td>Painel › 🏁 Gincana: escolha o nível, quantas perguntas (5, 8 ou 10), as equipes e a turma. Mostre o placar no projetor.</td></tr>
+          <tr><td>Desafio relâmpago</td><td>Só tarefas de Planilha e Editor (gráfico, AutoSoma, R$, tabela, PDF), com ranking por quem termina primeiro.</td><td>No mesmo lugar da gincana. Bom para fechar um módulo de planilha.</td></tr>
+          <tr><td>Corrida de digitação</td><td>Todos digitam o mesmo texto ao mesmo tempo, com placar ao vivo e pódio.</td><td>Ícone "Corrida de Digitação" ou Sala ao vivo: escolha o texto e o tempo e dê a largada.</td></tr>
+          <tr><td>Missão da semana</td><td>Um desafio curto que vale a semana toda (55 missões, do nível de cada um).</td><td>Automático. Comente no começo da aula quem cumpriu.</td></tr>
+          <tr><td>Jornal da turma</td><td>O aluno escreve no Editor e clica em 📰 Jornal.</td><td>Aprove ou peça para melhorar e monte a edição, com os destaques da semana calculados sozinhos.</td></tr>
+          <tr><td>Monitoria</td><td>O pedido de ajuda vai para o 💁 do monitor, que avisa que está indo.</td><td>Marque os mais rápidos como monitores. Cada ajuda conta para as medalhas deles.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="praca">
+      <h2>Praça Escola</h2>
+      <p>A Praça Escola é uma cidade de treino em que cada aluno anda com o próprio boneco e encontra os colegas de verdade, pela rede da sala. Ali ele treina o mouse (clicando no chão) e o teclado (com as setas), conversa, joga e pratica o que aprendeu: trabalhar, pagar contas, vender, não cair em golpes e agir numa emergência.</p>
+      <h3>O que o aluno vê</h3>
+      <ul>
+        <li>No alto: quantos estão na praça (<span class="botao">👥 8 aqui</span>), o relógio da cidade, como está a cidade (<span class="botao">🏙️ Cidade 3/9</span>), a novela, as moedas e as vagas.</li>
+        <li>Perto de alguém, de uma mesa ou de uma porta, surge um botão em cima do boneco. Basta clicar ou apertar Enter.</li>
+        <li>A conversa fica no 💬; a fala aparece num balão em cima do boneco, só para quem está perto. Palavrões viram asteriscos.</li>
+        <li>Gestos: 👋 acenar, 👏 aplaudir e 🙋 pedir ajuda (a mão levantada aparece para você e para os monitores).</li>
+      </ul>
+      <h3>A cidade cresce com a turma</h3>
+      <p>Começa só com a praça e a escola. Cada lugar acende quando <strong>metade da turma</strong> conclui o módulo ligado a ele. A turma toda fica sabendo, com confete.</p>
+      <div class="tabela"><table>
+        <thead><tr><th>Lugar</th><th>Acende com o módulo</th><th>O que tem lá</th></tr></thead>
+        <tbody>
+          <tr><td>Horta</td><td>Conhecendo o computador</td><td>Tarefa do dia</td></tr>
+          <tr><td>Estação Madeira-Mamoré</td><td>Teclado</td><td>Textos da nossa terra na Digitação, Seu Bené</td></tr>
+          <tr><td>Cais do rio</td><td>Internet</td><td>Pescaria de palavras</td></tr>
+          <tr><td>Posto de Saúde</td><td>Segurança básica</td><td>Agendar consulta (e o SMS falso), Enfermeira Cida</td></tr>
+          <tr><td>Correios</td><td>E-mail</td><td>O Correio, separar as cartas</td></tr>
+          <tr><td>Banco</td><td>Banco e serviços digitais</td><td>Caixa eletrônico, conta de moedas, Dona Lúcia</td></tr>
+          <tr><td>Prefeitura</td><td>gov.br</td><td>Cidadão Digital, ficha da Prefeitura</td></tr>
+          <tr><td>Feira</td><td>Vender pela internet</td><td>Feira Online e a <strong>feira da turma</strong> (esta funciona mesmo em obra), Seu Raimundo</td></tr>
+          <tr><td>Agência de Empregos</td><td>Computador e trabalho</td><td>Emprega Já e as vagas da cidade</td></tr>
+        </tbody>
+      </table></div>
+      <p>Na <strong>Rua da Turma</strong>, cada aluno tem uma casa que fica pronta no primeiro módulo e ganha um enfeite por nível concluído. Em <span class="caminho">🏙️ Cidade</span> você vê a cidade da turma, as casas e as moedas de cada um.</p>
+    </section>
+
+    <section id="comandos">
+      <h2>Seus botões na praça</h2>
+      <p>Só o instrutor vê os botões redondos no canto direito da praça.</p>
+      <div class="tabela"><table>
+        <thead><tr><th>Botão</th><th>O que faz</th><th>Quando usar</th></tr></thead>
+        <tbody>
+          <tr><td><span class="botao">📣</span> Megafone</td><td>O recado aparece no mapa de todos e é falado em voz alta.</td><td>Avisos rápidos ("Daqui a 5 minutos tem incêndio na praça!").</td></tr>
+          <tr><td><span class="botao">⛲</span> Chamar todos</td><td>Quem está na praça vai para perto da fonte; quem está fora recebe o convite na tela.</td><td>Para começar um evento ou uma conversa com a turma.</td></tr>
+          <tr><td><span class="botao">🔒</span> Fechar e abrir</td><td>Fecha a praça para todos.</td><td>Na hora da aula, para ninguém fugir para a praça.</td></tr>
+          <tr><td><span class="botao">🔤</span> Só frases prontas</td><td>Tira o campo de escrever.</td><td>Turmas de crianças ou quando a conversa sai do controle.</td></tr>
+          <tr><td><span class="botao">🚨</span> Evento urgente</td><td>Escolhe e dispara um evento (e encerra).</td><td>Veja <a href="#urgentes">Eventos urgentes</a>.</td></tr>
+          <tr><td><span class="botao">⏰</span> Hora da Praça</td><td>Os dias e os horários em que cada aula termina. <span class="botao">Testar agora</span> abre na hora.</td><td>Configure uma vez; depois é automático.</td></tr>
+          <tr><td><span class="botao">👥 aqui</span> › Silenciar</td><td>Na lista de quem está na praça, cala um aluno (e devolve a fala depois).</td><td>Quando alguém atrapalha a conversa.</td></tr>
+        </tbody>
+      </table></div>
+      <p>Também é seu: tirar recados do mural 🗑️, encerrar a votação do Lote da turma, criar vagas, ler as entrevistas e ver o dinheiro da turma (em <span class="botao">💼 Vagas</span>).</p>
+    </section>
+
+    <section id="urgentes">
+      <h2>Eventos urgentes</h2>
+      <p>Você aperta <span class="botao">🚨</span> e escolhe. Toca o alarme na tela de todos, e quem está fora da praça recebe um pedido de ajuda. Aparece um relógio de <strong>3 minutos</strong> e a barra do perigo. Se o perigo zerar a tempo, a turma vence: confete, a lição do dia, <strong>15 moedas</strong> e a medalha <strong>🚒 Brigada da praça</strong> para quem ajudou (quem ajudou e a turma perdeu leva 5). Você pode encerrar a qualquer hora.</p>
+      <div class="urgente">
+        <h3>Incêndio na lata de lixo</h3>
+        <dl>
+          <dt>Telefone certo</dt><dd><span class="numero">193</span> Bombeiros</dd>
+          <dt>O que acontece</dt><dd>O fogo começa na lata e pula para o banco, as mesas, o mural, o coreto e os ipês. Fogo grande cresce mais rápido. Chega também ao poste de luz ⚡.</dd>
+          <dt>O que a turma faz</dt><dd>Cada um enche o balde na fonte e clica no fogo para jogar a água. Quem liga 193 chama o caminhão 🚒, que desliga a energia do poste e ajuda com a mangueira. Afastar os curiosos faz o fogo demorar mais para pular.</dd>
+          <dt>A lição</dt><dd>Água nunca em fio elétrico: no poste, só os Bombeiros. Sem ninguém ajudando, o fogo toma a praça em uns 2 minutos.</dd>
+        </dl>
+      </div>
+      <div class="urgente">
+        <h3>O Rio Madeira transbordando</h3>
+        <dl>
+          <dt>Telefone certo</dt><dd><span class="numero">199</span> Defesa Civil</dd>
+          <dt>O que acontece</dt><dd>A água já cobre a praia, os trilhos e a feira e sobe fileira por fileira para a calçada e a avenida. Ninguém anda na água.</dd>
+          <dt>O que a turma faz</dt><dd>Pega areia no monte da obra (Lote da turma) ou, depois de ligar 199, no caminhão da Defesa Civil 🚚, e põe os sacos na barreira. Cada saco faz a água descer.</dd>
+          <dt>A lição</dt><dd>Na enchente, a Defesa Civil orienta; não se atravessa água.</dd>
+        </dl>
+      </div>
+      <div class="urgente">
+        <h3>Chuva forte com alerta da Defesa Civil</h3>
+        <dl>
+          <dt>Telefone certo</dt><dd><span class="numero">199</span> Defesa Civil, e o CEP por SMS para o <span class="numero">40199</span> (para receber os alertas)</dd>
+          <dt>O que acontece</dt><dd>Uma árvore cai na rua a cada 15 segundos e fecha o caminho. Às vezes derruba um fio ⚡. A chuva e os relâmpagos engrossam com o perigo.</dd>
+          <dt>O que a turma faz</dt><dd>Chega perto da árvore (sem encostar) e avisa a Defesa Civil; a equipe 👷 vem e tira. Leva a mercadoria da feira para a estação.</dd>
+          <dt>A lição</dt><dd>Fio caído: ninguém chega perto. Cadastre o CEP no 40199 para receber os alertas da sua cidade.</dd>
+        </dl>
+      </div>
+      <div class="quadro conversa"><b>Para conduzir</b>
+        <ul>
+          <li>Não avise antes: a surpresa é parte do treino. Se quiser, use o megafone dez segundos antes.</li>
+          <li>Durante o evento, só observe. Quem fica parado na tela é quem precisa de ajuda.</li>
+          <li>Depois, pergunte: "Qual era o número? O que não se faz?" Escreva no quadro: 190 Polícia, 192 SAMU, 193 Bombeiros, 199 Defesa Civil.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="especiais">
+      <h2>Eventos especiais</h2>
+      <p>A turma junta moedas numa vaquinha (no <span class="botao">💰</span> da praça ou no coreto). Quando o valor chega, o <strong>Professor Virtual conduz o evento</strong> no coreto, sem precisar de você. O evento começa em 20 segundos; se já tiver outro acontecendo, entra na fila. Você pode começar qualquer um de graça e encerrar.</p>
+      <div class="tabela"><table>
+        <thead><tr><th>Evento</th><th>Custa</th><th>Como é</th></tr></thead>
+        <tbody>
+          <tr><td>Festa com fogos</td><td class="num">100</td><td>Fogos no céu da praça; as palmas 👏 animam a festa.</td></tr>
+          <tr><td>Caça ao tesouro</td><td class="num">150</td><td>8 baús pela cidade, com dicas do professor. Quem chega primeiro em cada baú ganha 5 moedas.</td></tr>
+          <tr><td>Bingo</td><td class="num">200</td><td>O professor sorteia e fala os números; cada um marca a cartela de 9 números. Cartela cheia ganha 30 moedas.</td></tr>
+          <tr><td>Treino de brigada</td><td class="num">80</td><td>Um evento urgente surpresa.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="quadro conversa"><b>Para conduzir</b><p>Use os eventos especiais como meta da turma: "Se juntarmos 200 moedas até sexta, tem bingo." Isso puxa as aulas, porque cada aula concluída também enche o cofre da turma.</p></div>
+    </section>
+
+    <section id="novela">
+      <h2>A novela da cidade</h2>
+      <p>São 4 capítulos de mistério: <em>O barco do Seu Bené sumiu</em>, <em>O golpe na feira</em>, <em>A carta sem remetente</em> e <em>O apagão na estação</em>.</p>
+      <ol>
+        <li>No <strong>coreto</strong>, abra um capítulo (um por semana é um bom ritmo).</li>
+        <li>As pistas aparecem com 🔎 no mapa, até nos prédios em obra. Cada pista é uma tarefa no computador e vale 10 moedas.</li>
+        <li>O mistério se resolve quando todas as pistas foram achadas e a turma juntou tantas pistas quanto o número de alunos.</li>
+        <li>Você <strong>revela o final</strong> no coreto: ele aparece na tela de todos, falado, com a moral da história. Quem ajudou ganha 20 moedas e a medalha 🔎 Detetive da novela.</li>
+      </ol>
+    </section>
+
+    <section id="trabalho">
+      <h2>Trabalho na cidade</h2>
+      <h3>O dia da cidade</h3>
+      <p>Em 15 minutos a cidade vai das 8h às 18h (o mesmo dia para a turma toda). A luz muda, e a vaga em destaque também. Na Hora da Praça, o dia acaba junto com a aula.</p>
+      <h3>Entrevista de emprego</h3>
+      <p>No primeiro acesso à praça, o recrutador (o Professor Virtual) pergunta o nome, a idade (opcional), o trabalho que já fez ou quer fazer, três pontos fortes, três coisas que quer melhorar e por que quer trabalhar ali. Vale 20 moedas. O aluno pode deixar para depois, e ela volta na próxima vez.</p>
+      <p><strong>A sua parte:</strong> em <span class="caminho">💼 Vagas › 📋 Entrevistas da turma</span>, leia cada uma e escreva um <strong>retorno de recrutador</strong> (<span class="botao">📨 Enviar retorno</span>). O aluno recebe o retorno na praça e relê em <span class="caminho">💼 Vagas › 📄 Minha entrevista</span>. As respostas também viram o currículo dele na aula do Intermediário.</p>
+      <h3>As vagas e as provas</h3>
+      <div class="tabela"><table>
+        <thead><tr><th>Vaga</th><th>Prova</th><th>Em destaque (+50%)</th></tr></thead>
+        <tbody>
+          <tr><td>Datilógrafo(a) do Cartório</td><td>Ditado no ritmo: o tabelião fala e o texto aparece aos poucos</td><td class="num">8h às 10h30</td></tr>
+          <tr><td>Caixa do Mercado</td><td>Somar a compra e o troco, em 90 segundos</td><td class="num">10h30 às 13h</td></tr>
+          <tr><td>Recepcionista da Prefeitura</td><td>Memória de números de 5, 6 e 7 dígitos</td><td class="num">13h às 15h30</td></tr>
+          <tr><td>Auxiliar administrativo do Posto</td><td>Copiar a ficha do paciente (nome, CPF, telefone, CEP)</td><td class="num">15h30 às 18h</td></tr>
+          <tr><td>Escrevente do Cartório (promoção)</td><td>Ditado maior; só para quem já foi datilógrafo</td><td>—</td></tr>
+          <tr><td>Fiscal de caixa (promoção)</td><td>Contas; só para quem já foi caixa</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+      <ul>
+        <li>Com nota 60 ou mais, o aluno é contratado: ganha um crachá no boneco (todos veem) e o salário cai na conta do banco, uma vez por dia em cada vaga. Com 90 ou mais, vira supervisor e ganha 10 de bônus.</li>
+        <li>As promoções aparecem com 🔒 até o aluno ser contratado na vaga de antes. Medalhas: 💼 Contratado(a) e ⭐ Promovido(a).</li>
+        <li><strong>Crie vagas suas</strong> em <span class="caminho">💼 Vagas › ➕ Criar vaga</span>: nome, lugar, tipo de prova (ditado com o seu texto, contas, memória ou cadastro), salário de 5 a 100 e quem pode se candidatar (todos, ou promoção para quem já foi contratado).</li>
+      </ul>
+      <div class="quadro conversa"><b>Para conduzir</b><p>Use o ditado com textos do seu curso ("Digitador da Câmara" com um trecho de ata, por exemplo). Na conversa da entrevista, explique que o que se quer melhorar não vai no currículo.</p></div>
+    </section>
+
+    <section id="dinheiro">
+      <h2>Banco, contas e feira</h2>
+      <h3>O banco das moedas</h3>
+      <p>Fica em <span class="caminho">💰 › 🏦 Banco</span> ou no prédio do Banco.</p>
+      <div class="tabela"><table>
+        <thead><tr><th>Produto</th><th>Juros</th><th>Regra</th></tr></thead>
+        <tbody>
+          <tr><td>Conta</td><td>—</td><td>O salário das vagas cai aqui. Saque para a carteira para gastar na praça.</td></tr>
+          <tr><td>Poupança</td><td class="num">0,5% ao dia</td><td>Sai quando quiser.</td></tr>
+          <tr><td>Aplicação</td><td class="num">1% ao dia</td><td>Fica presa por 3 dias.</td></tr>
+          <tr><td>Empréstimo</td><td class="num">1,5% a 3% ao dia</td><td>Juros e limite dependem do nome. Enquanto deve, <strong>metade de cada salário vai direto para a dívida</strong>.</td></tr>
+        </tbody>
+      </table></div>
+      <p>Os juros contam os dias de calendário (de uma aula para a outra, a dívida cresce). A janela mostra quanto 100 moedas emprestadas viram em 1, 7 e 30 dias.</p>
+      <h3>Contas do mês</h3>
+      <p>A cada dia da cidade chega uma conta (luz, água ou aluguel) que vence no dia seguinte. O aluno paga no banco conferindo quem recebe, por onde a conta chegou e o código. Atrasou: multa de 10%. De 3 em 3 dias chega também um <strong>boleto falso</strong> pelo WhatsApp: quem paga perde as moedas; quem aperta <span class="botao">🚫 É golpe</span> ganha 5.</p>
+      <h3>O nome (score de crédito)</h3>
+      <div class="tabela"><table>
+        <thead><tr><th>Nome</th><th>Pontos</th><th>Limite</th><th>Juros do empréstimo</th></tr></thead>
+        <tbody>
+          <tr><td>Bom pagador</td><td class="num">700 ou mais</td><td class="num">250</td><td class="num">1,5% ao dia</td></tr>
+          <tr><td>Regular</td><td class="num">400 a 699</td><td class="num">150</td><td class="num">2% ao dia</td></tr>
+          <tr><td>Baixo</td><td class="num">menos de 400</td><td class="num">60</td><td class="num">3% ao dia</td></tr>
+          <tr><td>Nome sujo</td><td>conta atrasada há 2 dias ou mais</td><td>sem empréstimo</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+      <p>Começa em 500. Sobe pagando em dia, recusando boleto falso e quitando empréstimo; desce atrasando e caindo em golpe. A janela mostra "por que meu nome mudou".</p>
+      <h3>Golpes do banco</h3>
+      <p>Uma vez por dia da cidade, depois da 1 da tarde, chega o SMS do "empréstimo aprovado, pague a taxa" ou a ligação do falso gerente pedindo transferência para a "conta segura". Quem cai perde as moedas e o nome piora; quem não cai ganha 5 moedas e a lição.</p>
+      <h3>Feira da turma</h3>
+      <p>Na Feira, cada aluno abre a sua barraca: produto, figura, preço (1 a 30) e estoque. Os colegas compram com <strong>Pix</strong>: a tela mostra para quem vai o dinheiro e pede para conferir o nome, e depois mostra o comprovante. As moedas caem na carteira do dono da barraca.</p>
+      <h3>Dinheiro da turma (só você vê)</h3>
+      <p>Em <span class="caminho">💼 Vagas › 📊 Dinheiro da turma</span> (ou no Banco): conta, guardado, dívida e nome de cada aluno. Quem está de nome sujo (🔴) ou devendo (🟡) aparece primeiro.</p>
+      <div class="quadro conversa"><b>Perguntas para a roda de conversa</b>
+        <ul>
+          <li>"Quem pegou empréstimo? Quanto já pagou de juros? Valeu a pena?"</li>
+          <li>"Por que o banco cobra 2% no empréstimo e paga só 1% na aplicação?" (É assim que o banco lucra.)</li>
+          <li>"Como vocês perceberam que o boleto era falso?" (Quem recebe, por onde chegou, o valor e a pressa.)</li>
+          <li>"O que acontece com quem fica de nome sujo na vida real?"</li>
+        </ul>
+        <p>Não exponha ninguém: fale da turma como um todo ("três pessoas sujaram o nome esta semana").</p>
+      </div>
+    </section>
+
+    <section id="cidade">
+      <h2>Atividades da cidade</h2>
+      <div class="grade">
+        <div class="item"><b>Tarefa do dia</b><p>Uma por lugar aceso, muda todo dia (5 moedas). Quando metade da turma faz a de um lugar na semana, ele ganha a ⭐ e o cofre ganha 40.</p></div>
+        <div class="item"><b>Coleta seletiva</b><p>Lixo no chão: o aluno pega e leva à lixeira da cor certa (azul papel, vermelha plástico, verde vidro, amarela metal, marrom orgânico). 2 moedas por acerto; 10 acertos dão a medalha ♻️.</p></div>
+        <div class="item"><b>Caixa eletrônico</b><p>No Banco: sacar R$ 50 recusando o desconhecido que pede a senha (golpe da troca de cartão). 5 moedas por dia.</p></div>
+        <div class="item"><b>Agendar consulta</b><p>No Posto: especialidade, Cartão SUS, horário e o SMS falso que cobra taxa. 5 moedas por dia.</p></div>
+        <div class="item"><b>Moradores</b><p>Dona Rosa (foto para o neto), Dona Lúcia (Pix), Seu Raimundo (troco), Enfermeira Cida, Seu Bené (Madeira-Mamoré) e o Moço da Oferta, que oferece um golpe.</p></div>
+        <div class="item"><b>Jogo da velha</b><p>Dois colegas, cada um no seu computador, ou um aluno contra o computador.</p></div>
+        <div class="item"><b>Mural e votação</b><p>Recados da turma e a votação do que construir no Lote (quadra, horta ou biblioteca). Você encerra a votação.</p></div>
+        <div class="item"><b>Sua casa</b><p>As medalhas do aluno na parede e os enfeites de cada nível.</p></div>
+      </div>
+    </section>
+
+    <section id="moedas">
+      <h2>Moedas e medalhas</h2>
+      <p>Todo aluno começa com zero. Cada coisa paga uma vez só (a mesma aula refeita não paga de novo).</p>
+      <div class="tabela"><table>
+        <thead><tr><th>Como ganha</th><th>Moedas</th></tr></thead>
+        <tbody>
+          <tr><td>Concluir uma aula</td><td class="num">10</td></tr>
+          <tr><td>Passar na prova de um nível</td><td class="num">50</td></tr>
+          <tr><td>Missão da semana</td><td class="num">30</td></tr>
+          <tr><td>Exercício de digitação aprovado</td><td class="num">5</td></tr>
+          <tr><td>Medalha nova</td><td class="num">10</td></tr>
+          <tr><td>Ajudar um colega como monitor</td><td class="num">15</td></tr>
+          <tr><td>Gincana (o pódio ganha mais)</td><td class="num">10 a 30</td></tr>
+          <tr><td>Entrevista de emprego</td><td class="num">20</td></tr>
+          <tr><td>Salário de uma vaga (por dia, por vaga)</td><td class="num">até 60</td></tr>
+          <tr><td>Tarefa do dia, caixa eletrônico, agendamento</td><td class="num">5</td></tr>
+          <tr><td>Pista da novela / capítulo desvendado</td><td class="num">10 / 20</td></tr>
+          <tr><td>Evento urgente vencido (ajudou, mas perdeu)</td><td class="num">15 (5)</td></tr>
+          <tr><td>Não cair num golpe do banco ou boleto falso</td><td class="num">5</td></tr>
+          <tr><td>Coleta seletiva certa</td><td class="num">2</td></tr>
+          <tr><td>Baú da caça ao tesouro / bingo</td><td class="num">5 / 30</td></tr>
+        </tbody>
+      </table></div>
+      <p>As moedas servem para a vaquinha dos eventos especiais, as compras na feira e, guardadas no banco, para render. São <strong>85 medalhas</strong> no total; o aluno vê as dele em <span class="caminho">Aulas › 🏅 Medalhas</span>.</p>
+    </section>
+
+    <section id="duvidas">
+      <h2>Dúvidas comuns</h2>
+      <h3>O aluno fechou a entrevista sem responder.</h3>
+      <p>Ela volta na próxima vez que ele abrir a praça. Ele também pode fazer em <span class="caminho">💼 Vagas › 📄 Minha entrevista</span>.</p>
+      <h3>O aluno ficou de nome sujo e não consegue empréstimo.</h3>
+      <p>Está certo: ele precisa pagar as contas atrasadas (com a multa). Ao pagar, o nome limpa. É uma boa conversa sobre a vida real.</p>
+      <h3>O aluno não tem moedas para comprar na feira.</h3>
+      <p>As moedas da feira saem da carteira. Ele precisa sacar do banco ou trabalhar numa vaga.</p>
+      <h3>A Feira aparece "em obra".</h3>
+      <p>O barracão acende quando metade da turma termina o módulo de vendas, mas a feira da turma funciona mesmo assim: clique na Feira e em <span class="botao">🧺 Feira da turma</span>.</p>
+      <h3>Um evento urgente apareceu sozinho.</h3>
+      <p>Foi o <em>treino de brigada</em>, que a turma comprou com moedas.</p>
+      <h3>Qual a diferença entre o link na internet e a sala?</h3>
+      <p>O link é uma <strong>demonstração</strong>: tudo funciona num computador só, com colegas de demonstração andando pela praça. Na sala, com a rede ligada, cada boneco é um aluno de verdade e tudo fica guardado no seu computador.</p>
+    </section>
+
+    <footer>Guia do Instrutor · Computador Escola · versão de novembro de 2026. Para criar aulas novas, veja o arquivo LEIA-ME-LICOES.md do projeto.</footer>
+  </main>
+</div>
+
+</html>
