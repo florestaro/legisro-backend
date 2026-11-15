@@ -25,9 +25,10 @@ window.CE = window.CE || {};
     { tipo: 'coleta', icone: '♻️', texto: 'Separar o lixo na lixeira certa (coleta seletiva da praça)', valor: 2 },
     { tipo: 'caixa', icone: '🏧', texto: 'Treinar no caixa eletrônico do Banco (uma vez por dia)', valor: 5 },
     { tipo: 'agenda', icone: '📅', texto: 'Agendar consulta no Posto sem cair no golpe (uma vez por dia)', valor: 5 },
+    { tipo: 'entrevista', icone: '💼', texto: 'Fazer a entrevista de emprego (primeira vez na praça)', valor: 20 },
   ];
   const VALOR = Object.fromEntries(PREMIOS.map((p) => [p.tipo, p.valor]));
-  const ICONE = { ...Object.fromEntries(PREMIOS.map((p) => [p.tipo, p.icone])), gasto: '🎟️', estorno: '↩️' };
+  const ICONE = { ...Object.fromEntries(PREMIOS.map((p) => [p.tipo, p.icone])), gasto: '🎟️', estorno: '↩️', saque: '🏦', deposito: '🏦' };
   const MAX_EXTRATO = 60;
   const ehAluno = () => !!(CE.sessao.usuario && CE.sessao.usuario.papel !== 'instrutor');
   const vazia = () => ({ saldo: 0, desde: Date.now(), chaves: {}, extrato: [] });
@@ -74,6 +75,108 @@ window.CE = window.CE || {};
     return saldo;
   }
 
+  // ---------- O banco das moedas: conta, poupança, aplicação e empréstimo ----------
+  // O salário das vagas da Praça Escola cai na conta. Da conta, o aluno saca para a carteira (para gastar) ou deixa
+  // rendendo: a poupança rende 1% ao dia e pode sair quando quiser; a aplicação rende 3% ao dia, mas só sai depois de
+  // 3 dias. O empréstimo vem na hora, mas cobra 4% ao dia, e metade de cada salário vai para pagar a dívida (o salário
+  // futuro fica comprometido). "Dia" é dia de verdade (de calendário): os juros entram quando o aluno volta.
+  const TAXA = { poupanca: 0.01, aplicacao: 0.03, emprestimo: 0.04 };
+  const PRAZO_APLICACAO = 3, LIMITE_EMPRESTIMO = 150, PARTE_DO_SALARIO = 0.5, MAX_EXTRATO_BANCO = 40;
+  const hoje = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const diasEntre = (a, b) => Math.max(0, Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000));
+  const c2 = (v) => Math.round(v * 100) / 100;
+  const moeda = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function lerBanco(p) {
+    const b = (p && p.banco) || {};
+    return {
+      conta: Number(b.conta) || 0, poupanca: Number(b.poupanca) || 0,
+      aplicacoes: Array.isArray(b.aplicacoes) ? b.aplicacoes.filter((a) => a && Number(a.valor) > 0) : [],
+      emprestimo: b.emprestimo && Number(b.emprestimo.devendo) > 0.004 ? b.emprestimo : null,
+      dia: typeof b.dia === 'string' ? b.dia : hoje(), extrato: Array.isArray(b.extrato) ? b.extrato : [],
+    };
+  }
+  const linhaBanco = (b, motivo, valor, tipo) => { b.extrato = [{ em: Date.now(), motivo, valor: c2(valor), tipo }, ...b.extrato].slice(0, MAX_EXTRATO_BANCO); };
+  // Os dias que passaram desde a última visita: rendimento da poupança e juros do empréstimo (juros compostos).
+  function passarDias(b) {
+    const dias = Math.min(60, diasEntre(b.dia, hoje()));
+    b.dia = hoje();
+    if (!dias) return b;
+    if (b.poupanca > 0) { const r = c2(b.poupanca * (Math.pow(1 + TAXA.poupanca, dias) - 1)); if (r > 0) { b.poupanca = c2(b.poupanca + r); linhaBanco(b, `Rendimento da poupança (${dias} dia${dias > 1 ? 's' : ''})`, r, 'rende'); } }
+    if (b.emprestimo) { const j = c2(b.emprestimo.devendo * (Math.pow(1 + TAXA.emprestimo, dias) - 1)); if (j > 0) { b.emprestimo.devendo = c2(b.emprestimo.devendo + j); linhaBanco(b, `Juros do empréstimo (${dias} dia${dias > 1 ? 's' : ''})`, -j, 'juros'); } }
+    return b;
+  }
+  const valorDaAplicacao = (a) => c2(a.valor * Math.pow(1 + TAXA.aplicacao, Math.min(60, diasEntre(a.desde, hoje()))));
+  const liberaEm = (a) => Math.max(0, PRAZO_APLICACAO - diasEntre(a.desde, hoje()));
+  // Uma operação no banco (e na carteira, junto): tudo ou nada.
+  async function noBanco(fazer, soLer) {
+    if (!ehAluno()) throw new Error('O banco das moedas é dos alunos.');
+    let resultado = null, saldo = 0;
+    await CE.sessao.atualizarProgresso((p) => {
+      const c = ler(p), b = passarDias(lerBanco(p));
+      resultado = fazer(b, c);
+      p.banco = b; p.carteira = c; saldo = c.saldo;
+    });
+    mostrarSaldo(saldo);
+    if (!soLer) CE.emitir('banco:mudou', {}); // só ler (a janela redesenhando) não avisa, senão vira um laço
+    return resultado;
+  }
+  const quanto = (v, max, oQue) => {
+    const n = c2(Number(String(v).replace(',', '.')));
+    if (!(n > 0)) throw new Error('Digite um valor maior que zero.');
+    if (n > c2(max) + 1e-9) throw new Error(`Não dá: ${oQue} tem ${moeda(max)}.`);
+    return n;
+  };
+  const banco = {
+    TAXA, PRAZO_APLICACAO, LIMITE_EMPRESTIMO, PARTE_DO_SALARIO, moeda,
+    async ver() { if (!ehAluno()) return lerBanco(null); let r = null; await noBanco((b) => { r = JSON.parse(JSON.stringify(b)); }, true); r.aplicacoes = r.aplicacoes.map((a) => ({ ...a, atual: valorDaAplicacao(a), faltam: liberaEm(a) })); return r; },
+    depositar: (v) => noBanco((b, c) => { const n = Math.floor(quanto(v, c.saldo, 'a carteira')); if (n < 1) throw new Error('Deposite moedas inteiras.'); c.saldo -= n; c.extrato = [{ em: Date.now(), valor: -n, motivo: 'Depósito no banco', tipo: 'deposito' }, ...c.extrato].slice(0, MAX_EXTRATO); b.conta = c2(b.conta + n); linhaBanco(b, 'Depósito (da carteira)', n, 'deposito'); }),
+    sacar: (v) => noBanco((b, c) => { const n = Math.floor(quanto(v, b.conta, 'a conta')); if (n < 1) throw new Error('Saque moedas inteiras.'); b.conta = c2(b.conta - n); c.saldo += n; c.extrato = [{ em: Date.now(), valor: n, motivo: 'Saque no banco', tipo: 'saque' }, ...c.extrato].slice(0, MAX_EXTRATO); linhaBanco(b, 'Saque (para a carteira)', -n, 'saque'); }),
+    guardar: (v) => noBanco((b) => { const n = quanto(v, b.conta, 'a conta'); b.conta = c2(b.conta - n); b.poupanca = c2(b.poupanca + n); linhaBanco(b, 'Guardou na poupança', -n, 'poupanca'); }),
+    tirar: (v) => noBanco((b) => { const n = quanto(v, b.poupanca, 'a poupança'); b.poupanca = c2(b.poupanca - n); b.conta = c2(b.conta + n); linhaBanco(b, 'Tirou da poupança', n, 'poupanca'); }),
+    aplicar: (v) => noBanco((b) => { const n = quanto(v, b.conta, 'a conta'); b.conta = c2(b.conta - n); b.aplicacoes.push({ id: 'ap-' + Date.now(), valor: n, desde: hoje() }); linhaBanco(b, `Aplicação (sai em ${PRAZO_APLICACAO} dias)`, -n, 'aplicacao'); }),
+    resgatar: (id) => noBanco((b) => {
+      const a = b.aplicacoes.find((x) => x.id === id);
+      if (!a) throw new Error('Aplicação não encontrada.');
+      if (liberaEm(a) > 0) throw new Error(`Ainda não: essa aplicação só sai daqui a ${liberaEm(a)} dia${liberaEm(a) > 1 ? 's' : ''}.`);
+      const v = valorDaAplicacao(a);
+      b.aplicacoes = b.aplicacoes.filter((x) => x !== a); b.conta = c2(b.conta + v);
+      linhaBanco(b, `Resgate da aplicação (rendeu ${moeda(v - a.valor)})`, v, 'aplicacao');
+    }),
+    // Quanto vai dever depois de N dias, para mostrar antes de pegar.
+    simular: (v, dias) => c2(Number(v) * Math.pow(1 + TAXA.emprestimo, dias)),
+    emprestar: (v) => noBanco((b) => {
+      if (b.emprestimo) throw new Error('Você já tem um empréstimo. Pague esse antes de pegar outro.');
+      const n = quanto(v, LIMITE_EMPRESTIMO, 'o seu limite');
+      b.emprestimo = { pego: n, devendo: n, desde: hoje() }; b.conta = c2(b.conta + n);
+      linhaBanco(b, `Empréstimo (juros de ${TAXA.emprestimo * 100}% ao dia)`, n, 'emprestimo');
+    }),
+    pagar: (v) => noBanco((b) => {
+      if (!b.emprestimo) throw new Error('Você não tem empréstimo.');
+      const n = quanto(Math.min(Number(String(v).replace(',', '.')) || 0, b.emprestimo.devendo), b.conta, 'a conta');
+      b.conta = c2(b.conta - n); b.emprestimo.devendo = c2(b.emprestimo.devendo - n);
+      linhaBanco(b, 'Pagou parte do empréstimo', -n, 'emprestimo');
+      if (b.emprestimo.devendo <= 0.004) { b.emprestimo = null; linhaBanco(b, '🎉 Empréstimo quitado!', 0, 'emprestimo'); }
+    }),
+    // O salário das vagas: cai na conta; com empréstimo, metade vai direto para a dívida. Uma vez por chave.
+    async receberSalario(valor, motivo, chave) {
+      if (!ehAluno() || !(valor > 0)) return null;
+      let r = null;
+      await noBanco((b, c) => {
+        if (chave && c.chaves[chave]) return;
+        if (chave) c.chaves[chave] = Date.now();
+        let desconto = 0;
+        if (b.emprestimo) { desconto = c2(Math.min(b.emprestimo.devendo, valor * PARTE_DO_SALARIO)); b.emprestimo.devendo = c2(b.emprestimo.devendo - desconto); }
+        b.conta = c2(b.conta + valor - desconto);
+        linhaBanco(b, `Salário: ${motivo}`, valor, 'salario');
+        if (desconto) linhaBanco(b, 'Parcela do empréstimo (descontada do salário)', -desconto, 'emprestimo');
+        if (b.emprestimo && b.emprestimo.devendo <= 0.004) { b.emprestimo = null; linhaBanco(b, '🎉 Empréstimo quitado!', 0, 'emprestimo'); }
+        r = { valor, desconto, liquido: c2(valor - desconto) };
+      });
+      if (r) CE.emitir('banco:salario', r);
+      return r;
+    },
+  };
+
   // A moedinha da barra de tarefas (só para alunos), com um "+10" subindo quando entra dinheiro.
   function mostrarSaldo(saldo, ganho) {
     const b = document.getElementById('status-moedas');
@@ -97,7 +200,7 @@ window.CE = window.CE || {};
   }
 
   CE.carteira = {
-    PREMIOS, VALOR, ganhar, gastar, carregar,
+    PREMIOS, VALOR, ganhar, gastar, carregar, banco, aba: null,
     async saldo() { return ehAluno() ? ler(await CE.sessao.progresso().catch(() => null)).saldo : 0; },
     async extrato() { return ler(await CE.sessao.progresso().catch(() => null)); },
     abrir() { CE.janelas.abrir('carteira'); },
@@ -127,10 +230,13 @@ window.CE = window.CE || {};
   // ---------- A janela "Minhas moedas" ----------
   const quando = (t) => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   CE.registrarApp({
-    id: 'carteira', nome: 'Minhas moedas', icone: '💰', semIcone: true, largura: 480, altura: 560,
+    id: 'carteira', nome: 'Minhas moedas', icone: '💰', semIcone: true, largura: 540, altura: 620,
     abrir(corpo) {
       corpo.classList.add('cart-corpo');
+      let aba = CE.carteira.aba || 'carteira';
+      CE.carteira.aba = null;
       async function desenhar() {
+        if (ehAluno() && aba === 'banco') return desenharBanco();
         if (!ehAluno()) {
           corpo.replaceChildren(CE.el('div', { class: 'cart' }, CE.el('h2', {}, '💰 Moedas da turma'),
             CE.el('p', {}, 'Cada aluno começa com zero e ganha moedas com as aulas, as missões e as atividades da Praça Escola. O instrutor vê o saldo de cada um na Praça Escola, em 🏙️ Cidade › Rua da Turma.'),
@@ -138,7 +244,7 @@ window.CE = window.CE || {};
           return;
         }
         const c = await CE.carteira.extrato();
-        corpo.replaceChildren(CE.el('div', { class: 'cart' },
+        corpo.replaceChildren(CE.el('div', { class: 'cart' }, abas(),
           CE.el('div', { class: 'cart-saldo', 'data-saldo': String(c.saldo) }, CE.el('span', { class: 'rotulo' }, 'Meu saldo'), CE.el('strong', {}, `💰 ${c.saldo}`), CE.el('span', { class: 'rotulo' }, c.saldo === 1 ? 'moeda' : 'moedas')),
           CE.el('h3', {}, 'Extrato'),
           c.extrato.length
@@ -150,10 +256,50 @@ window.CE = window.CE || {};
           CE.el('p', { class: 'cart-dica' }, '🎟️ Para que servem: na Praça Escola, a turma junta moedas para comprar eventos especiais (festa, caça ao tesouro, bingo), que o Professor Virtual conduz.'),
           CE.el('h3', {}, 'Como ganhar'), lista()));
       }
+      const abas = () => CE.el('div', { class: 'cart-abas', role: 'tablist' },
+        CE.el('button', { type: 'button', role: 'tab', 'data-aba': 'carteira', 'aria-selected': String(aba === 'carteira'), onclick: () => { aba = 'carteira'; desenhar(); } }, '💰 Carteira'),
+        CE.el('button', { type: 'button', role: 'tab', 'data-aba': 'banco', 'aria-selected': String(aba === 'banco'), onclick: () => { aba = 'banco'; desenhar(); } }, '🏦 Banco'));
+      let aviso = '';
+      async function operar(f) {
+        try { await f(); aviso = ''; } catch (e) { aviso = e.message; }
+        desenhar();
+      }
+      async function desenharBanco() {
+        const b = await banco.ver();
+        const c = await CE.carteira.extrato();
+        const campo = CE.el('input', { id: 'cart-valor', inputmode: 'decimal', autocomplete: 'off', placeholder: 'Ex.: 20', 'aria-label': 'Valor em moedas' });
+        const v = () => campo.value;
+        const botao = (rotulo, acao, id, sec = true) => CE.el('button', { class: 'botao' + (sec ? ' secundario' : ''), type: 'button', 'data-banco': id, onclick: () => operar(() => acao(v())) }, rotulo);
+        const e = b.emprestimo;
+        const simula = [1, 3, 7].map((d) => `${d} dia${d > 1 ? 's' : ''}: ${moeda(banco.simular(100, d))}`).join(' · ');
+        corpo.replaceChildren(CE.el('div', { class: 'cart banco' }, abas(),
+          CE.el('div', { class: 'banco-cartoes' },
+            CE.el('div', { class: 'banco-cartao', 'data-conta': String(b.conta) }, CE.el('span', {}, '🏦 Conta'), CE.el('strong', {}, moeda(b.conta)), CE.el('small', {}, 'O salário das vagas cai aqui')),
+            CE.el('div', { class: 'banco-cartao' }, CE.el('span', {}, '🐷 Poupança'), CE.el('strong', {}, moeda(b.poupanca)), CE.el('small', {}, `Rende ${TAXA.poupanca * 100}% ao dia · sai quando quiser`)),
+            CE.el('div', { class: 'banco-cartao' }, CE.el('span', {}, '💰 Carteira'), CE.el('strong', {}, String(c.saldo)), CE.el('small', {}, 'Para gastar na praça (vaquinha)')),
+            CE.el('div', { class: 'banco-cartao' + (e ? ' divida' : '') }, CE.el('span', {}, '📉 Empréstimo'), CE.el('strong', {}, e ? moeda(e.devendo) : '—'),
+              CE.el('small', {}, e ? `Juros de ${TAXA.emprestimo * 100}% ao dia · ${PARTE_DO_SALARIO * 100}% do salário paga a dívida` : `Limite: ${LIMITE_EMPRESTIMO} moedas`))),
+          CE.el('div', { class: 'banco-operar' }, CE.el('label', { for: 'cart-valor' }, 'Valor'), campo),
+          aviso ? CE.el('p', { class: 'banco-aviso', role: 'alert' }, aviso) : null,
+          CE.el('div', { class: 'banco-botoes' },
+            botao('⬇ Depositar (da carteira)', banco.depositar, 'depositar', false), botao('⬆ Sacar (para a carteira)', banco.sacar, 'sacar'),
+            botao('🐷 Guardar na poupança', banco.guardar, 'guardar'), botao('Tirar da poupança', banco.tirar, 'tirar'),
+            botao(`📈 Aplicar (${TAXA.aplicacao * 100}% ao dia, ${PRAZO_APLICACAO} dias)`, banco.aplicar, 'aplicar'),
+            e ? botao('Pagar o empréstimo', banco.pagar, 'pagar') : botao('📉 Pegar empréstimo', banco.emprestar, 'emprestar')),
+          b.aplicacoes.length ? CE.el('div', {}, CE.el('h3', {}, '📈 Aplicações'), CE.el('ul', { class: 'cart-extrato' }, b.aplicacoes.map((a) => CE.el('li', {},
+            CE.el('span', { class: 'txt' }, CE.el('span', {}, `Aplicou ${moeda(a.valor)} · hoje vale ${moeda(a.atual)}`), CE.el('small', {}, a.faltam ? `Sai daqui a ${a.faltam} dia${a.faltam > 1 ? 's' : ''}` : 'Já pode resgatar')),
+            CE.el('button', { class: 'botao secundario', type: 'button', 'data-resgatar': a.id, disabled: a.faltam > 0, onclick: () => operar(() => banco.resgatar(a.id)) }, 'Resgatar'))))) : null,
+          CE.el('p', { class: 'cart-dica' }, `💡 Juros trabalham a seu favor na poupança e na aplicação, e contra você no empréstimo. Exemplo: pegando 100 moedas emprestadas, a dívida vira ${simula}. Enquanto deve, metade de cada salário vai para o banco.`),
+          CE.el('h3', {}, 'Extrato do banco'),
+          b.extrato.length ? CE.el('ul', { class: 'cart-extrato' }, b.extrato.map((x) => CE.el('li', {},
+            CE.el('span', { class: 'txt' }, CE.el('span', {}, x.motivo), CE.el('small', {}, quando(x.em))),
+            CE.el('strong', { class: 'valor' + (x.valor < 0 ? ' gasto' : '') }, x.valor < 0 ? `−${moeda(-x.valor)}` : `+${moeda(x.valor)}`))))
+            : CE.el('p', { class: 'cart-vazio' }, 'Nenhum movimento ainda. Candidate-se a uma vaga na Praça Escola (💼 Vagas): o salário cai aqui.')));
+      }
       const lista = () => CE.el('ul', { class: 'cart-premios' }, PREMIOS.map((p) => CE.el('li', {},
         CE.el('span', { 'aria-hidden': 'true' }, p.icone), CE.el('span', { class: 'txt' }, p.texto), CE.el('strong', {}, `+${p.valor}`))));
       desenhar();
-      const parar = [CE.ouvir('carteira:ganhou', desenhar), CE.ouvir('carteira:gastou', desenhar)];
+      const parar = [CE.ouvir('carteira:ganhou', desenhar), CE.ouvir('carteira:gastou', desenhar), CE.ouvir('banco:mudou', desenhar)];
       return { aoFechar() { parar.forEach((f) => f()); return true; } };
     },
   });

@@ -101,6 +101,16 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
   const viu2 = await p2.waitForSelector(Z(`.pr-p[data-pessoa="${idAna}"]`), { timeout: 15000 }).then(() => true).catch(() => false);
   ok(viu1 && viu2, 'PC 1 vê o boneco do Bruno e o PC 2 vê o boneco da Ana');
   ok(/monitor/.test(await p1.textContent(Z(`.pr-p[data-pessoa="${idBruno}"] .nome`)).catch(() => '')), 'PC 1: o Bruno aparece como monitor(a)');
+  // Entrevista de emprego no primeiro acesso: a Ana responde; a resposta fica no disco da instrutora.
+  ok(await p1.waitForSelector(Z('.pr-dialogo[data-tipo="entrevista"]'), { timeout: 15000 }).then(() => true).catch(() => false), 'PC 1: no primeiro acesso, a entrevista de emprego aparece para a Ana');
+  for (const [p, nome] of [[p1, 'Ana Souza'], [p2, 'Bruno Lima']]) {
+    await p.evaluate(async (nome) => {
+      await CE.api.chamar('praca:entrevista', { nome, experiencia: 'Vendedor(a)', fortes: ['pontual', 'paciente', 'curioso'], melhorar: ['digitar', 'e-mail', 'planilha'] });
+      await CE.sessao.atualizarProgresso((x) => { x.praca = x.praca || {}; x.praca.entrevista = Date.now(); });
+      document.querySelectorAll('.janela[data-app="praca"] .pr-dlg-fechar').forEach((b) => b.click());
+    }, nome);
+  }
+  ok(await ate(() => Promise.resolve(Object.values(lerDisco('praca.json', {}).entrevistas || {}).filter((e) => /Ana Souza|Bruno Lima/.test(e.nome)).length === 2)), 'disco da instrutora: as entrevistas da Ana e do Bruno ficam guardadas');
   // A Ana anda para a esquerda com as setas; o PC 2 vê o boneco dela sair do lugar.
   const antes = await ondeEsta(p2, idAna);
   await p1.focus(Z('.pr-mapa')); await p1.keyboard.down('ArrowLeft'); await espera(700); await p1.keyboard.up('ArrowLeft');

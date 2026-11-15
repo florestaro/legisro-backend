@@ -476,6 +476,11 @@ function criarCanais(dados) {
     // O que cada prédio faz (tarefa do dia e desafio da semana) e a novela da cidade.
     'praca:tarefa': (s, lugar) => { exigirSessao(s); return praca.tarefa(s.usuario, lugar); },
     'praca:coleta': (s, acao, dado) => { exigirSessao(s); return praca.coletar(s.usuario, acao, dado || {}); },
+    'praca:entrevista': (s, respostas) => { exigirSessao(s); return praca.entrevista(s.usuario, respostas || {}); },
+    'praca:entrevistas': (s) => { exigirInstrutor(s); return praca.entrevistas(s.usuario); },
+    'praca:vagas': (s) => { exigirSessao(s); return praca.vagas(s.usuario); },
+    'praca:criar-vaga': (s, v) => { exigirInstrutor(s); return praca.criarVaga(s.usuario, v || {}); },
+    'praca:remover-vaga': (s, id) => { exigirInstrutor(s); return praca.removerVaga(s.usuario, String(id || '')); },
     'praca:fazer-tarefa': (s, lugar, resposta) => { exigirSessao(s); return praca.fazerTarefa(s.usuario, lugar, resposta); },
     'praca:novela': (s, turma) => { exigirSessao(s); return praca.novela(s.usuario, turma); },
     'praca:abrir-capitulo': (s, id, turma) => { exigirInstrutor(s); return praca.abrirCapitulo(s.usuario, id, turma); },

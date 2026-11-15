@@ -119,6 +119,11 @@
         horario: horarioValido(g.horario),
         // A vaquinha de cada turma para os eventos especiais: quanto já juntou e quem deu.
         loja: g.loja && typeof g.loja === 'object' ? g.loja : {},
+        // As entrevistas de emprego (uma por aluno, para o professor ler), as vagas que o professor criou e quantos
+        // dias a cidade já viveu.
+        entrevistas: g.entrevistas && typeof g.entrevistas === 'object' ? g.entrevistas : {},
+        vagas: Array.isArray(g.vagas) ? g.vagas.slice(0, 20) : [],
+        dias: Number(g.dias) || 0,
       };
     }
     function gravar() {
@@ -136,6 +141,7 @@
     const publica = (p, agora) => ({
       id: p.id, nome: p.nome, avatar: p.avatar, papel: p.papel, turma: p.turma, monitor: !!p.monitor,
       x: p.x, y: p.y, esq: !!p.esq, andando: !!p.andando, mao: !!(p.mao && agora - p.mao < MAO), bot: !!p.bot,
+      cracha: p.cracha || null,
       carga: emerg && emerg.status === 'ativo' && emerg.carregando[p.id] ? nov.EMERGENCIAS[emerg.tipo].levar.levando : (coleta.carregando.get(p.id) || {}).emoji || null,
       ...casaDe(p.id),
     });
@@ -746,6 +752,22 @@
       };
     }
 
+    // ---------- O dia da cidade ----------
+    // Em 15 minutos a cidade vive das 8h às 18h, o mesmo dia para a turma toda. Na Hora da Praça, o dia termina
+    // junto com a aula; fora dela, um dia novo começa quando o anterior acaba.
+    const DURACAO_DIA = 15 * 60000;
+    let diaInicio = 0;
+    function relogioDoDia(agora, hora) {
+      const inicio = hora ? hora.fimEm - DURACAO_DIA : diaInicio && agora - diaInicio < DURACAO_DIA ? diaInicio : agora;
+      if (inicio !== diaInicio) {
+        if (!diaInicio || inicio - diaInicio >= DURACAO_DIA / 2) { dados().dias = (dados().dias || 0) + 1; gravar(); }
+        diaInicio = inicio;
+      }
+      return { inicio: diaInicio, duracao: DURACAO_DIA, agora, numero: dados().dias || 1 };
+    }
+    const VAGA_PROVAS = Object.keys(nov.PROVAS);
+    const CRACHAS = new Set([...nov.VAGAS.map((v) => v.emoji), '💼', '⭐']);
+
     // ---------- Coleta seletiva ----------
     // Lixo aparece no chão da praça e das calçadas (um a cada 20 s, até 6); quem pega leva até a lixeira da cor certa.
     // Fica só na memória; quem acerta ganha moedas no próprio computador (carteira.js).
@@ -939,6 +961,7 @@
           p.x = Math.min(mapa.W - 1, Math.max(0, arred(eu.x))); p.y = Math.min(mapa.H - 1, Math.max(0, arred(eu.y)));
           p.esq = !!eu.esq; p.andando = !!eu.andando;
         }
+        if (eu && 'cracha' in eu) p.cracha = typeof eu.cracha === 'string' && CRACHAS.has(eu.cracha) ? eu.cracha : null;
         Object.assign(p, { nome: texto(usuario.nome, 40), avatar: texto(usuario.avatar, 16) || '🙂', papel: usuario.papel, turma: usuario.turma || '', monitor: !!(extra && extra.monitor), em: agora });
         if (p.mao && agora - p.mao > MAO) p.mao = 0;
         const d = Number(desde) || 0;
@@ -949,7 +972,9 @@
         checarBaus(p);
         const hora = verificarHora(agora);
         atualizarColeta(agora);
+        const dia = relogioDoDia(agora, hora);
         return {
+          dia,
           agora, novo, eu: { x: p.x, y: p.y },
           cidade: { turma, abertos: (dados().abertos[turma] || []).slice(), selos: semanaDa(turma).selos.slice() },
           novela: resumoNovela(usuario, turma),
@@ -964,6 +989,51 @@
           eventos: d ? eventos.filter((e) => e.id > d) : eventos.slice(-12),
           ultimo: ultimoEvento, versao: dados().versao, mesa: mesaPublica(),
         };
+      },
+      // ---------- Entrevista de emprego e vagas ----------
+      entrevista(usuario, respostas) {
+        if (ehInstrutor(usuario)) throw new Error('A entrevista é para os alunos.');
+        const r = respostas && typeof respostas === 'object' ? respostas : {};
+        const lista = (v) => (Array.isArray(v) ? v : [v]).map((x) => limpo(texto(x, 120))).filter(Boolean).slice(0, 3);
+        const e = {
+          id: usuario.id, nome: limpo(texto(r.nome || usuario.nome, 80)), aluno: texto(usuario.nome, 40), turma: usuario.turma || '',
+          idade: Number.isInteger(Number(r.idade)) && Number(r.idade) > 0 && Number(r.idade) < 120 ? Number(r.idade) : null,
+          experiencia: limpo(texto(r.experiencia, 200)), fortes: lista(r.fortes), melhorar: lista(r.melhorar), motivo: limpo(texto(r.motivo, 200)), em: relogio(),
+        };
+        if (!e.nome || !e.experiencia || !e.fortes.length || !e.melhorar.length) throw new Error('Responda as perguntas para terminar a entrevista.');
+        dados().entrevistas[seguro(usuario.id)] = e;
+        gravar();
+        evento({ tipo: 'sistema', texto: `💼 ${usuario.nome} fez a entrevista de emprego e já é morador(a) da cidade!` });
+        return e;
+      },
+      entrevistas(usuario) {
+        exigirInstrutor(usuario);
+        return Object.values(dados().entrevistas).sort((a, b) => b.em - a.em);
+      },
+      vagas() {
+        return { padrao: nov.VAGAS.map((v) => ({ ...v })), extras: dados().vagas.map((v) => ({ ...v })) };
+      },
+      criarVaga(usuario, v0) {
+        exigirInstrutor(usuario);
+        const v = v0 && typeof v0 === 'object' ? v0 : {};
+        const titulo = limpo(texto(v.titulo, 60)), lugar = limpo(texto(v.lugar, 60)), prova = String(v.prova || '');
+        if (!titulo) throw new Error('Escreva o nome da vaga.');
+        if (!VAGA_PROVAS.includes(prova)) throw new Error('Escolha o tipo de prova.');
+        const textoDitado = limpo(texto(v.texto, 300));
+        if (prova === 'ditado' && textoDitado.split(' ').length < 4) throw new Error('Escreva o texto do ditado (pelo menos 4 palavras).');
+        const salario = Math.max(5, Math.min(100, Math.round(Number(v.salario) || 30)));
+        if (dados().vagas.length >= 20) throw new Error('Já tem 20 vagas criadas: apague uma antes.');
+        const nova = { id: 'vaga-' + relogio(), emoji: '💼', titulo, lugar: lugar || 'Cidade', prova, salario, explica: limpo(texto(v.explica, 200)) || `Vaga criada pelo professor: ${titulo}.`, textos: prova === 'ditado' ? [textoDitado] : undefined, extra: true };
+        dados().vagas.push(nova);
+        gravar();
+        evento({ tipo: 'sistema', texto: `💼 Vaga nova na cidade: ${titulo}. Todos podem se candidatar (botão 💼 Vagas).` });
+        return this.vagas(usuario);
+      },
+      removerVaga(usuario, id) {
+        exigirInstrutor(usuario);
+        dados().vagas = dados().vagas.filter((v) => v.id !== id);
+        gravar();
+        return this.vagas(usuario);
       },
       sair(usuario) { const p = pessoas.get(usuario.id); if (p) largarLixo(p); pessoas.delete(usuario.id); levantar(usuario.id); return true; },
       // Coleta seletiva: pegar um lixo do chão (do lado dele) e jogar na lixeira (do lado dela). Errou a cor: continua com ele.

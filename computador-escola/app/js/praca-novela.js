@@ -201,6 +201,33 @@
   };
   const temEmergencia = (tipo) => Object.prototype.hasOwnProperty.call(EMERGENCIAS, tipo);
 
+  // ---------- Entrevista de emprego (no primeiro acesso à praça; o Professor Virtual é o recrutador) ----------
+  const ENTREVISTA = [
+    { id: 'nome', pergunta: 'Bom dia! Eu sou o recrutador da cidade. Para começar, qual é o seu nome completo?', rotulo: 'Nome completo' },
+    { id: 'idade', pergunta: 'Quantos anos você tem? Se preferir, pode não responder.', rotulo: 'Idade (pode deixar em branco)', opcional: true, numero: true },
+    { id: 'experiencia', pergunta: 'Que trabalho você já fez, ou gostaria de fazer?', rotulo: 'Trabalho que já fez ou que gostaria de fazer' },
+    { id: 'fortes', pergunta: 'Me diga três pontos fortes seus. Por exemplo: sou pontual, gosto de aprender, trato bem as pessoas.', rotulo: 'Três pontos fortes', tres: true },
+    { id: 'melhorar', pergunta: 'E agora três coisas que você quer melhorar. Todo mundo tem! Por exemplo: digitar mais rápido, falar em público.', rotulo: 'Três coisas que quero melhorar', tres: true },
+    { id: 'motivo', pergunta: 'Para terminar: por que você quer trabalhar aqui na nossa cidade?', rotulo: 'Por que quer trabalhar aqui', opcional: true },
+  ];
+
+  // ---------- Vagas de emprego (as contratações: cada vaga tem uma prova rápida e paga salário) ----------
+  // A vaga em destaque muda com a hora do dia da cidade (8h às 18h) e paga 50% a mais.
+  const VAGAS = [
+    { id: 'datilografo', emoji: '📝', titulo: 'Datilógrafo(a) do Cartório', lugar: 'Cartório (na Prefeitura)', prova: 'ditado', salario: 30, de: 8, ate: 10.5,
+      explica: 'Datilógrafo é a pessoa que digita os documentos. O tabelião fala o texto e você digita junto, no mesmo ritmo.',
+      textos: ['Certifico que a casa da Rua da Turma pertence a Maria da Silva.', 'Registro o nascimento de João, filho de Ana e de Pedro, em Porto Velho.',
+        'Declaro que o documento foi conferido e assinado na frente das testemunhas.', 'O comprador pagou o terreno à vista e recebeu a escritura hoje.'] },
+    { id: 'caixa', emoji: '🛒', titulo: 'Operador(a) de caixa do Mercado', lugar: 'Mercado da feira', prova: 'contas', salario: 30, de: 10.5, ate: 13,
+      explica: 'O operador de caixa soma as compras e dá o troco certo, rápido e sem errar.' },
+    { id: 'recepcao', emoji: '📞', titulo: 'Recepcionista da Prefeitura', lugar: 'Prefeitura', prova: 'memoria', salario: 30, de: 13, ate: 15.5,
+      explica: 'O recepcionista atende as pessoas e guarda de cabeça números de telefone e de protocolo, até anotar.' },
+    { id: 'auxiliar', emoji: '🗂️', titulo: 'Auxiliar administrativo do Posto', lugar: 'Posto de Saúde', prova: 'ficha', salario: 30, de: 15.5, ate: 18,
+      explica: 'O auxiliar administrativo cadastra os pacientes no computador, copiando os dados da ficha sem errar.' },
+  ];
+  const PROVAS = { ditado: 'Ditado no ritmo (digitação)', contas: 'Contas do caixa', memoria: 'Memória de números', ficha: 'Cadastro (copiar a ficha)' };
+  const temProva = (id) => Object.prototype.hasOwnProperty.call(PROVAS, id);
+
   // ---------- Coleta seletiva (o lixo aparece pela praça; cada um leva até a lixeira da cor certa) ----------
   const COLETA = {
     itens: [
@@ -274,5 +301,5 @@
     if (t.tipo === 'digitar') return t.numero ? Math.abs(reais(resposta) - t.resposta) < 0.001 : limpo(resposta) === limpo(t.modelo);
     return false;
   }
-  return { TAREFAS, CAPITULOS, EMERGENCIAS, ESPECIAIS, COLETA, porCapitulo, porPista, temTarefa, temEmergencia, temEspecial, conferirEmergencia, dia, semana, tarefaDoDia, publica, conferir };
+  return { TAREFAS, CAPITULOS, EMERGENCIAS, ESPECIAIS, COLETA, ENTREVISTA, VAGAS, PROVAS, temProva, porCapitulo, porPista, temTarefa, temEmergencia, temEspecial, conferirEmergencia, dia, semana, tarefaDoDia, publica, conferir };
 });

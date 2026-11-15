@@ -404,7 +404,10 @@ window.CE = window.CE || {};
       const listaGente = CE.el('ul', { class: 'pr-gente' });
       const popGente = CE.el('div', { class: 'pr-pop gente', role: 'dialog', 'aria-label': 'Quem está na praça agora' }, CE.el('h3', {}, 'Na praça agora'), listaGente);
       popGente.hidden = true;
-      const topoEsq = CE.el('div', { class: 'pr-hud pr-topo-esq' }, botaoGente, botaoCidade, botaoNovela, botaoMoedas, botaoHora, popGente);
+      // O relógio do dia da cidade (8h às 18h em 15 minutos) e o quadro de vagas de emprego.
+      const botaoRelogio = CE.el('button', { class: 'pr-pilula relogio', type: 'button', 'data-acao': 'relogio', title: 'O dia na cidade: das 8h às 18h' }, '🕗 8:00');
+      const botaoVagas = CE.el('button', { class: 'pr-pilula vagas', type: 'button', 'data-acao': 'vagas', title: 'Vagas de emprego da cidade' }, '💼 Vagas');
+      const topoEsq = CE.el('div', { class: 'pr-hud pr-topo-esq' }, botaoGente, botaoRelogio, botaoCidade, botaoNovela, botaoMoedas, botaoVagas, botaoHora, popGente);
 
       // No alto, à direita: ver a cidade inteira e, para o instrutor, quatro botões pequenos.
       const mapaIcone = CE.el('span', { 'aria-hidden': 'true' }, '🗺️');
@@ -455,6 +458,7 @@ window.CE = window.CE || {};
       // A cartela do bingo (cada um marca os números que o Professor Virtual sorteia).
       const bingoEl = CE.el('div', { class: 'pr-bingo', role: 'region', 'aria-label': 'Cartela do bingo' }); bingoEl.hidden = true;
       const chuvaEl = CE.el('div', { class: 'pr-chuva', 'aria-hidden': 'true' }); chuvaEl.hidden = true;
+      const luzEl = CE.el('div', { class: 'pr-luz', 'aria-hidden': 'true' });
       const avisoRede = CE.el('div', { class: 'pr-aviso-rede', role: 'status' }); avisoRede.hidden = true;
 
       // Embaixo, à esquerda: a conversa (fechada; a fala aparece no balão) e os gestos.
@@ -489,7 +493,7 @@ window.CE = window.CE || {};
       // O final do capítulo da novela, revelado pelo instrutor no coreto: aparece para todos ao mesmo tempo.
       const finalEl = CE.el('div', { class: 'pr-final', role: 'dialog', 'aria-label': 'O final do capítulo' }); finalEl.hidden = true;
       const mapa = CE.el('div', { class: 'pr-mapa', tabindex: '0', 'aria-label': 'Mapa da Praça Escola. Clique no chão para andar ou use as setas do teclado; Enter conversa com quem está perto.' },
-        mundo, chuvaEl, fogosEl, acao, topoEsq, topoDir, centro, avisoRede, chat, baixo, bingoEl, dica, dialogo, finalEl, fechadaEl);
+        mundo, luzEl, chuvaEl, fogosEl, acao, topoEsq, topoDir, centro, avisoRede, chat, baixo, bingoEl, dica, dialogo, finalEl, fechadaEl);
       // Clique nos botões e janelinhas não é clique no chão (um botão que redesenha a janelinha some antes de o
       // clique chegar ao mapa, e aí o boneco sairia andando).
       for (const camada of [topoEsq, topoDir, centro, avisoRede, chat, baixo, bingoEl, acao, dialogo, finalEl, fechadaEl]) camada.addEventListener('click', (e) => e.stopPropagation());
@@ -1131,6 +1135,7 @@ window.CE = window.CE || {};
 
       function andarRelogio() {
         andarRelogioEspecial();
+        andarDia();
         if (!emergAtiva()) return;
         for (const s of emergEl.querySelectorAll('[data-relogio-socorro]')) s.textContent = mmss(Number(s.dataset.relogioSocorro) - agoraEmerg());
         const r = emergEl.querySelector('[data-relogio]');
@@ -1288,7 +1293,7 @@ window.CE = window.CE || {};
         if (emCurso || fechouJanela) return;
         emCurso = true;
         try {
-          const eu0 = { x: arred(eu.x), y: arred(eu.y), esq: !!eu.esq, andando: !!eu.andando };
+          const eu0 = { x: arred(eu.x), y: arred(eu.y), esq: !!eu.esq, andando: !!eu.andando, cracha: meuCracha };
           if (souInstrutor && typeof turmaEscolhida === 'string') eu0.turma = turmaEscolhida;
           const r = await CE.api.chamar('praca:sincronizar', eu0, desde);
           if (fechouJanela) return;
@@ -1306,6 +1311,7 @@ window.CE = window.CE || {};
         if (r.emergencia !== undefined) aplicarEmergencia(r.emergencia);
         if (r.especial !== undefined) aplicarEspecial(r.especial);
         if (r.coleta !== undefined) aplicarColeta(r.coleta);
+        if (r.dia) aplicarDia(r.dia);
         if (r.hora !== undefined) aplicarHora(r.hora);
         // Pessoas
         const vistos = new Set();
@@ -1320,6 +1326,7 @@ window.CE = window.CE || {};
           o.el.className = `pr-p ${classeDe(x)}` + (o.el.classList.contains('andando') ? ' andando' : '') + (o.el.classList.contains('esq') ? ' esq' : '');
           marcarMao(o, x.mao);
           marcarCarga(o, x.carga || null);
+          marcarCracha(o, x.cracha || null);
         }
         for (const [id, o] of outros) if (!vistos.has(id)) { o.el.remove(); outros.delete(id); }
         const minha = r.pessoas.find((x) => x.id === usuario.id);
@@ -1358,7 +1365,7 @@ window.CE = window.CE || {};
           if (dialogo.dataset.tipo === 'mural' && !dialogo.hidden) abrirMural();
         }
         desenharGente();
-        if (primeira) { primeira = false; conquista('visitou'); CE.emitir('praca:entrou', {}); }
+        if (primeira) { primeira = false; conquista('visitou'); CE.emitir('praca:entrou', {}); if (!souInstrutor) conferirEntrevista(); }
       }
       function marcarMao(p, ligada) {
         if (ligada && !p.maoEl) { p.maoEl = CE.el('span', { class: 'pr-mao', 'aria-label': 'pediu ajuda' }, '🙋'); p.el.append(p.maoEl); }
@@ -1489,6 +1496,8 @@ window.CE = window.CE || {};
       botaoCidade.addEventListener('click', () => { fecharPopups(); abrirCidade('predios'); });
       botaoNovela.addEventListener('click', () => { fecharPopups(); abrirNovela(); });
       botaoMoedas.addEventListener('click', () => { fecharPopups(); abrirLoja(); });
+      botaoRelogio.addEventListener('click', () => { fecharPopups(); const v = vagaDaHora(); avisarNoMapa(`${botaoRelogio.textContent}: dia ${diaAtual ? diaAtual.numero : 1} na cidade. O dia vai das 8h às 18h.${v ? ` Agora: ${v.emoji} ${v.titulo} contratando (vale 50% a mais)!` : ''}`); });
+      botaoVagas.addEventListener('click', () => { fecharPopups(); abrirVagas(); });
       botaoHora.addEventListener('click', () => { fecharPopups(); avisarNoMapa('⏰ Hora da Praça: aproveite para fazer a tarefa do dia, achar as pistas da novela e juntar moedas para um evento especial!'); });
       const mostrarMoedas = (saldo) => { botaoMoedas.textContent = `💰 ${saldo}`; };
       if (!souInstrutor) CE.carteira.saldo().then(mostrarMoedas);
@@ -1810,6 +1819,8 @@ window.CE = window.CE || {};
         const opcoes = [];
         if (info.botao) opcoes.push({ rotulo: info.botao, principal: true, id: 'entrar', acao: () => { info.abrir(); CE.emitir('praca:entrou-lugar', { lugar: L.id }); } });
         if (L.id === 'banco') opcoes.push({ rotulo: '🏧 Caixa eletrônico (treino)', id: 'caixa', fica: true, acao: () => abrirCaixa() });
+        if (L.id === 'banco' && !souInstrutor) opcoes.push({ rotulo: '🏦 Minha conta de moedas', id: 'minha-conta', acao: () => { CE.carteira.aba = 'banco'; CE.janelas.abrir('carteira'); } });
+        if (L.id === 'empregos') opcoes.push({ rotulo: '💼 Ver as vagas da cidade', principal: true, id: 'vagas', fica: true, acao: () => abrirVagas() });
         if (L.id === 'posto') opcoes.push({ rotulo: '📅 Agendar consulta (treino)', principal: true, id: 'agendar', fica: true, acao: () => abrirAgendamento() });
         if (L.morador && presente(porMorador[L.morador])) opcoes.push({ rotulo: `Falar com ${porMorador[L.morador].nome}`, principal: !info.botao, acao: () => chegarPerto(porMorador[L.morador]) });
         opcoes.push({ rotulo: 'Fechar' });
@@ -2159,6 +2170,285 @@ window.CE = window.CE || {};
             lista: [`${agenda.esp}: ${agenda.dia}`, 'Leve o Cartão SUS e um documento com foto.', 'Chegue 15 minutos antes.', 'Mensagem pedindo pagamento ou senha: é golpe.'],
             opcoes: [{ rotulo: 'Fechar', principal: true }] });
         }
+      }
+
+      // ---------- O dia da cidade (8h às 18h em 15 minutos) ----------
+      let diaAtual = null, relogioDia = 0, vagaAnunciada = undefined;
+      const LUZ = [[8, [255, 236, 190, 0.12]], [10, [255, 250, 230, 0.04]], [12, [255, 255, 255, 0]], [15, [255, 220, 150, 0.06]], [16.5, [255, 170, 80, 0.13]], [17.5, [255, 120, 60, 0.2]], [18, [110, 70, 140, 0.26]]];
+      function horaDoDia() {
+        if (!diaAtual) return 8;
+        const passou = (diaAtual.agora + (performance.now() - relogioDia)) - diaAtual.inicio;
+        return 8 + 10 * Math.max(0, Math.min(1, passou / diaAtual.duracao));
+      }
+      const vagaDaHora = (h = horaDoDia()) => NOV.VAGAS.find((v) => h >= v.de && h < v.ate) || null;
+      function aplicarDia(d) { diaAtual = d; relogioDia = performance.now(); andarDia(); }
+      function andarDia() {
+        if (!diaAtual) return;
+        const h = horaDoDia(), hh = Math.floor(h), mm = Math.floor((h - hh) * 60 / 10) * 10;
+        const icone = h < 9 ? '🕗' : h < 11 ? '🕙' : h < 13 ? '☀️' : h < 16 ? '🕒' : h < 17.5 ? '🕔' : '🌇';
+        botaoRelogio.textContent = `${icone} ${hh}:${String(mm).padStart(2, '0')}`;
+        let a = LUZ[0], b = LUZ[LUZ.length - 1];
+        for (let k = 0; k < LUZ.length - 1; k++) if (h >= LUZ[k][0] && h <= LUZ[k + 1][0]) { a = LUZ[k]; b = LUZ[k + 1]; break; }
+        const f = b[0] === a[0] ? 0 : (h - a[0]) / (b[0] - a[0]);
+        const c = a[1].map((v, k) => v + (b[1][k] - v) * f);
+        luzEl.style.background = `rgba(${Math.round(c[0])}, ${Math.round(c[1])}, ${Math.round(c[2])}, ${c[3].toFixed(3)})`;
+        // A vaga em destaque muda com a hora (os alunos ficam sabendo).
+        const v = vagaDaHora(h);
+        const id = v ? v.id : (h >= 18 ? 'fim' : null);
+        if (id !== vagaAnunciada) {
+          const primeiraVez = vagaAnunciada === undefined;
+          vagaAnunciada = id;
+          if (!primeiraVez && !souInstrutor && v) { avisarNoMapa(`💼 ${v.emoji} Agora: ${v.titulo} está contratando! Vale 50% a mais (💼 Vagas).`, 'cidade'); if (CE.voz) CE.voz.falar(`Atenção: ${v.titulo} está contratando!`); }
+          if (!primeiraVez && id === 'fim') avisarNoMapa('🌇 Seis da tarde: fim do expediente na cidade. Amanhã tem mais vagas!', 'cidade');
+        }
+      }
+
+      // ---------- Crachá de quem foi contratado ----------
+      let meuCracha = null;
+      function marcarCracha(p, emoji) {
+        if (emoji && !p.crachaEl) { p.crachaEl = CE.el('span', { class: 'pr-cracha', title: 'Contratado(a)', 'aria-label': 'crachá' }, emoji); p.el.append(p.crachaEl); }
+        else if (emoji && p.crachaEl) p.crachaEl.textContent = emoji;
+        else if (!emoji && p.crachaEl) { p.crachaEl.remove(); p.crachaEl = null; }
+      }
+      if (!souInstrutor) CE.sessao.progresso().then((pr) => { meuCracha = (pr && pr.praca && pr.praca.cracha) || null; marcarCracha(eu, meuCracha); }).catch(() => {});
+
+      // ---------- Entrevista de emprego (primeira vez na praça; o recrutador é o Professor Virtual) ----------
+      const respostas = {};
+      async function conferirEntrevista() {
+        const pr = await CE.sessao.progresso().catch(() => null);
+        if (pr && pr.praca && pr.praca.entrevista) return;
+        setTimeout(async () => {
+          // Confere de novo (a entrevista pode ter sido feita nesse meio-tempo, em outra janela).
+          const agora = await CE.sessao.progresso().catch(() => null);
+          if (agora && agora.praca && agora.praca.entrevista) return;
+          if (!fechouJanela && dialogo.hidden) abrirEntrevista(0);
+        }, 1200);
+      }
+      function abrirEntrevista(k) {
+        const perguntas = NOV.ENTREVISTA, q = perguntas[k];
+        if (!q) return terminarEntrevista();
+        if (CE.voz) CE.voz.falar(q.pergunta);
+        const campos = q.tres ? [0, 1, 2].map((i) => CE.el('input', { class: 'pr-entrevista-campo', 'data-campo': `${q.id}-${i}`, maxlength: '120', autocomplete: 'off', placeholder: `${i + 1}.`, value: ((respostas[q.id] || [])[i]) || '' }))
+          : [CE.el('input', { class: 'pr-entrevista-campo', 'data-campo': q.id, maxlength: q.numero ? '3' : '200', inputmode: q.numero ? 'numeric' : 'text', autocomplete: 'off', value: respostas[q.id] || (q.id === 'nome' ? usuario.nome : '') })];
+        const erro = CE.el('p', { class: 'pr-erro', role: 'alert' }); erro.hidden = true;
+        const seguir = () => {
+          const vals = campos.map((c) => c.value.trim());
+          if (!q.opcional && !vals.some(Boolean)) { erro.textContent = 'Responda para continuar 🙂'; erro.hidden = false; return; }
+          respostas[q.id] = q.tres ? vals.filter(Boolean) : vals[0];
+          abrirEntrevista(k + 1);
+        };
+        abrirDialogo({ tipo: 'entrevista', rosto: '👨‍💼', papelCor: 'professor', titulo: 'Entrevista de emprego', subtitulo: `Recrutador da cidade · pergunta ${k + 1} de ${perguntas.length}`,
+          fala: q.pergunta, campo: CE.el('label', { class: 'pr-campo' }, q.rotulo, ...campos), extra: erro,
+          nota: k === 0 ? 'Toda pessoa nova na cidade passa por uma entrevista. Responda com calma: não existe resposta errada.' : null,
+          opcoes: [{ rotulo: k === perguntas.length - 1 ? 'Terminar a entrevista ✅' : 'Responder ▶', principal: true, fica: true, id: 'responder', acao: seguir },
+            ...(k > 0 ? [{ rotulo: '◀ Voltar', fica: true, id: 'voltar', acao: () => abrirEntrevista(k - 1) }] : [{ rotulo: 'Fazer depois' }])] });
+        for (const c of campos) c.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); seguir(); } });
+      }
+      async function terminarEntrevista() {
+        const r = await chamar('praca:entrevista', respostas);
+        if (!r) return;
+        await CE.sessao.atualizarProgresso((p) => { p.praca = p.praca || {}; p.praca.entrevista = Date.now(); }).catch(() => {});
+        CE.carteira.ganhar('entrevista', 'Fez a entrevista de emprego', 'entrevista');
+        CE.comemorar('grande');
+        if (CE.voz) CE.voz.falar(`Parabéns, ${r.nome}! Você foi aprovado na entrevista. Bem-vindo à cidade!`);
+        abrirDialogo({ tipo: 'entrevista', rosto: '🤝', titulo: 'Aprovado(a) na entrevista!', subtitulo: 'Bem-vindo(a) à cidade',
+          fala: `Parabéns, ${r.nome}! Seu currículo já está na Agência de Empregos. Agora candidate-se às vagas: cada prova vale salário, que cai na sua conta no banco.`,
+          lista: [`Pontos fortes: ${r.fortes.join(', ')}`, `Quer melhorar: ${r.melhorar.join(', ')}`],
+          opcoes: [{ rotulo: '💼 Ver as vagas', principal: true, fica: true, id: 'ver-vagas', acao: () => abrirVagas() }, { rotulo: 'Fechar' }] });
+      }
+
+      // ---------- Vagas de emprego e as provas (contratações) ----------
+      const dinheiro = (v) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
+      async function abrirVagas() {
+        const r = await chamar('praca:vagas');
+        if (!r || fechouJanela) return;
+        const destaque = vagaDaHora();
+        const pagos = souInstrutor ? {} : ((await CE.carteira.extrato()).chaves || {});
+        const hojeDia = NOV.dia(Date.now());
+        const cartao = (v) => {
+          const pago = pagos[`salario:${v.id}:${hojeDia}`];
+          const em = destaque && destaque.id === v.id;
+          return CE.el('li', { class: 'pr-vaga' + (em ? ' destaque' : ''), 'data-vaga': v.id },
+            CE.el('span', { class: 'ic', 'aria-hidden': 'true' }, v.emoji),
+            CE.el('div', { class: 'txt' }, CE.el('strong', {}, v.titulo), CE.el('span', { class: 'pr-suave' }, `${v.lugar} · prova: ${NOV.PROVAS[v.prova]}`),
+              CE.el('span', { class: 'pr-suave' }, `Salário: até ${Math.round(v.salario * (em ? 1.5 : 1)) + 10} moedas${em ? ' · ⭐ em destaque agora (+50%)' : ''}${pago ? ' · ✅ já recebeu hoje (pode treinar)' : ''}`)),
+            CE.el('div', { class: 'pr-botoes' },
+              souInstrutor ? null : CE.el('button', { class: 'botao' + (em ? '' : ' secundario'), type: 'button', 'data-candidatar': v.id, onclick: () => abrirProva(v) }, 'Candidatar-se'),
+              souInstrutor && v.extra ? CE.el('button', { class: 'botao secundario', type: 'button', 'data-apagar-vaga': v.id, onclick: async () => { await chamar('praca:remover-vaga', v.id); abrirVagas(); } }, '🗑 Apagar') : null));
+        };
+        abrirDialogo({ tipo: 'vagas', rosto: '💼', titulo: 'Vagas de emprego', subtitulo: `Agência de Empregos · ${botaoRelogio.textContent}`,
+          fala: souInstrutor ? 'As vagas da cidade. Crie vagas novas (com o seu texto de ditado, por exemplo) e leia as entrevistas da turma.' : 'Todos podem se candidatar. Cada vaga tem uma prova rápida; quem tira 60 ou mais é contratado e recebe o salário na conta do banco (uma vez por dia em cada vaga).',
+          extra: CE.el('ul', { class: 'pr-vagas' }, [...r.padrao, ...r.extras].map(cartao)),
+          opcoes: souInstrutor
+            ? [{ rotulo: '➕ Criar vaga', principal: true, fica: true, id: 'criar-vaga', acao: () => abrirCriarVaga() }, { rotulo: '📋 Entrevistas da turma', fica: true, id: 'entrevistas', acao: () => abrirEntrevistas() }, { rotulo: 'Fechar' }]
+            : [{ rotulo: '🏦 Minha conta no banco', id: 'minha-conta', acao: () => { CE.carteira.aba = 'banco'; CE.janelas.abrir('carteira'); } }, { rotulo: 'Fechar' }] });
+      }
+      function abrirCriarVaga(erro = '') {
+        const campo = (id, rotulo, el) => CE.el('label', { class: 'pr-campo', for: id }, rotulo, el);
+        const titulo = CE.el('input', { id: 'vaga-titulo', maxlength: '60', placeholder: 'Ex.: Digitador(a) da Câmara' });
+        const lugar = CE.el('input', { id: 'vaga-lugar', maxlength: '60', placeholder: 'Ex.: Câmara de Vereadores' });
+        const prova = CE.el('select', { id: 'vaga-prova' }, Object.entries(NOV.PROVAS).map(([id, nome]) => CE.el('option', { value: id }, nome)));
+        const textoDit = CE.el('textarea', { id: 'vaga-texto', rows: '3', maxlength: '300', placeholder: 'O texto que o Professor Virtual vai ditar (só para a prova de ditado)' });
+        const salario = CE.el('input', { id: 'vaga-salario', type: 'number', min: '5', max: '100', value: '30' });
+        abrirDialogo({ tipo: 'vagas', rosto: '➕', titulo: 'Criar vaga', subtitulo: 'A vaga aparece para a turma toda', fala: erro || 'Preencha e crie. A prova pode ser ditado (com o seu texto), contas, memória ou cadastro.',
+          extra: CE.el('div', { class: 'pr-form-vaga' }, campo('vaga-titulo', 'Nome da vaga', titulo), campo('vaga-lugar', 'Lugar', lugar), campo('vaga-prova', 'Prova', prova), campo('vaga-texto', 'Texto do ditado', textoDit), campo('vaga-salario', 'Salário (moedas)', salario)),
+          opcoes: [{ rotulo: 'Criar a vaga', principal: true, fica: true, id: 'salvar-vaga', acao: async () => {
+            try { await CE.api.chamar('praca:criar-vaga', { titulo: titulo.value, lugar: lugar.value, prova: prova.value, texto: textoDit.value, salario: salario.value }); abrirVagas(); } catch (e) { abrirCriarVaga(e.message); }
+          } }, { rotulo: 'Voltar', fica: true, id: 'voltar', acao: () => abrirVagas() }] });
+      }
+      async function abrirEntrevistas() {
+        const lista = await chamar('praca:entrevistas');
+        if (!lista) return;
+        abrirDialogo({ tipo: 'vagas', rosto: '📋', titulo: 'Entrevistas da turma', subtitulo: `${lista.length} entrevista${lista.length === 1 ? '' : 's'}`,
+          extra: lista.length ? CE.el('ul', { class: 'pr-entrevistas' }, lista.map((e) => CE.el('li', {},
+            CE.el('strong', {}, `${e.nome}${e.idade ? `, ${e.idade} anos` : ''}${e.turma ? ` · turma ${e.turma}` : ''}`),
+            CE.el('span', {}, `Trabalho: ${e.experiencia}`), CE.el('span', {}, `💪 Pontos fortes: ${e.fortes.join(', ')}`), CE.el('span', {}, `🎯 Quer melhorar: ${e.melhorar.join(', ')}`),
+            e.motivo ? CE.el('span', {}, `💬 ${e.motivo}`) : null))) : CE.el('p', { class: 'pr-suave' }, 'Nenhum aluno fez a entrevista ainda. Ela aparece sozinha na primeira vez que o aluno entra na praça.'),
+          opcoes: [{ rotulo: 'Voltar às vagas', fica: true, id: 'voltar', acao: () => abrirVagas() }, { rotulo: 'Fechar' }] });
+      }
+      // As provas: cada uma devolve a nota (0 a 100) para resultadoDaProva.
+      let provaId = 0;
+      const sorteio = (l) => l[Math.floor(Math.random() * l.length)];
+      const semAcento = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '');
+      const palavras = (s) => String(s).toLowerCase().replace(/[.,;:!?"“”]/g, ' ').split(/\s+/).filter(Boolean);
+      function abrirProva(v) {
+        abrirDialogo({ tipo: 'prova', rosto: v.emoji, titulo: v.titulo, subtitulo: `${v.lugar} · ${NOV.PROVAS[v.prova]}`, fala: v.explica,
+          lista: { ditado: ['O tabelião fala o texto (e ele aparece aos poucos).', 'Digite junto, no mesmo ritmo.', 'Quando acabar, aperte "Terminei". O relógio corre!'],
+            contas: ['Quatro clientes no caixa.', 'Some a compra ou calcule o troco e digite o valor (ex.: 12,50).', 'Rápido e sem errar: o relógio corre!'],
+            memoria: ['Uma sequência de números aparece por alguns segundos.', 'Depois ela some e você digita de cabeça.', 'São três rodadas, cada uma um número maior.'],
+            ficha: ['Uma ficha de paciente aparece na tela.', 'Copie os dados nos campos do computador, sem errar.', 'O relógio corre!'] }[v.prova],
+          opcoes: [{ rotulo: 'Começar a prova ▶', principal: true, fica: true, id: 'comecar-prova', acao: () => ({ ditado: provaDitado, contas: provaContas, memoria: provaMemoria, ficha: provaFicha })[v.prova](v) }, { rotulo: 'Voltar às vagas', fica: true, id: 'voltar', acao: () => abrirVagas() }] });
+      }
+      // Relógio da prova; para sozinho se a pessoa fechar a janelinha.
+      function cronometro(segundos, el, aoAcabar) {
+        const id = ++provaId, fim = performance.now() + segundos * 1000;
+        const tique = () => {
+          if (id !== provaId || dialogo.hidden || dialogo.dataset.tipo !== 'prova') return;
+          const resta = Math.max(0, Math.ceil((fim - performance.now()) / 1000));
+          el.textContent = `⏱ ${resta}s`; el.classList.toggle('acabando', resta <= 10);
+          if (resta <= 0) { provaId++; aoAcabar(); return; }
+          setTimeout(tique, 250);
+        };
+        tique();
+        return { parar: () => { if (id === provaId) provaId++; }, vivo: () => id === provaId };
+      }
+      function provaDitado(v) {
+        const texto = sorteio(v.textos && v.textos.length ? v.textos : NOV.VAGAS[0].textos);
+        const ps = texto.split(' ');
+        const mostra = CE.el('p', { class: 'pr-ditado' });
+        const relogio = CE.el('strong', { class: 'pr-prova-relogio' });
+        const area = CE.el('textarea', { id: 'pr-campo-ditado', rows: '3', autocomplete: 'off', spellcheck: 'false', placeholder: 'Digite aqui o que o tabelião fala...' });
+        const terminar = () => {
+          relo.parar();
+          const certo = palavras(texto), meu = palavras(area.value);
+          let pontos = 0;
+          certo.forEach((w, k) => { const m = meu[k]; if (m === w) pontos += 1; else if (m && semAcento(m) === semAcento(w)) pontos += 0.5; });
+          resultadoDaProva(v, Math.round((pontos / certo.length) * 100), `Você acertou ${Math.round(pontos)} de ${certo.length} palavras.`, texto);
+        };
+        abrirDialogo({ tipo: 'prova', rosto: '📝', titulo: v.titulo, subtitulo: 'Ditado: digite junto com o tabelião', extra: CE.el('div', { class: 'pr-prova' }, relogio, mostra, area),
+          opcoes: [{ rotulo: 'Terminei ✅', principal: true, fica: true, id: 'terminei', acao: terminar }] });
+        const relo = cronometro(Math.ceil(ps.length * 1.3) + 12, relogio, terminar);
+        if (CE.voz) CE.voz.falar(texto, { velocidade: 0.85, forcar: true });
+        ps.forEach((w, k) => setTimeout(() => { if (relo.vivo()) mostra.textContent = ps.slice(0, k + 1).join(' '); }, 700 * k));
+        area.focus();
+      }
+      function provaContas(v) {
+        const P = [['açaí', 12], ['farinha d’água', 8.5], ['tucumã', 2], ['castanha', 15], ['banana', 1.5], ['peixe', 22]];
+        const perguntas = [0, 1, 2, 3].map((k) => {
+          const [a, pa] = sorteio(P), [b, pb] = sorteio(P.filter((x) => x[0] !== a)), qa = 1 + Math.floor(Math.random() * 3);
+          const total = qa * pa + pb;
+          if (k % 2) { const pagou = Math.ceil(total / 10) * 10 + (total % 10 === 0 ? 10 : 0); return { texto: `${qa} ${a} (R$ ${dinheiro(pa).slice(3)} cada) e 1 ${b} (${dinheiro(pb)}). A cliente pagou com ${dinheiro(pagou)}. Qual é o troco?`, resposta: pagou - total }; }
+          return { texto: `${qa} ${a} (${dinheiro(pa)} cada) e 1 ${b} (${dinheiro(pb)}). Quanto dá a compra?`, resposta: total };
+        });
+        let k = 0, acertos = 0;
+        const relogio = CE.el('strong', { class: 'pr-prova-relogio' });
+        const enunciado = CE.el('p', { class: 'pr-ditado' });
+        const campo = CE.el('input', { id: 'pr-campo-conta', inputmode: 'decimal', autocomplete: 'off', placeholder: 'Ex.: 12,50' });
+        const fim = () => { relo.parar(); resultadoDaProva(v, Math.round((acertos / perguntas.length) * 100), `Você acertou ${acertos} de ${perguntas.length} contas.`); };
+        const mostrar = () => { enunciado.textContent = `Cliente ${k + 1} de ${perguntas.length}: ${perguntas[k].texto}`; campo.value = ''; campo.focus(); };
+        const responder = () => {
+          const n = parseFloat(String(campo.value).replace(/[^\d,.]/g, '').replace(',', '.'));
+          if (Math.abs(n - perguntas[k].resposta) < 0.001) acertos++;
+          k++;
+          if (k >= perguntas.length) fim(); else mostrar();
+        };
+        abrirDialogo({ tipo: 'prova', rosto: '🛒', titulo: v.titulo, subtitulo: 'Caixa do mercado', extra: CE.el('div', { class: 'pr-prova' }, relogio, enunciado, campo),
+          opcoes: [{ rotulo: 'Confirmar ▶', principal: true, fica: true, id: 'confirmar-conta', acao: responder }] });
+        campo.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); responder(); } });
+        const relo = cronometro(90, relogio, fim);
+        mostrar();
+      }
+      function provaMemoria(v) {
+        const tamanhos = [5, 6, 7];
+        let rodada = 0, total = 0;
+        const fim = () => resultadoDaProva(v, Math.round((total / tamanhos.length) * 100), `Você guardou ${Math.round(total * 10) / 10} de ${tamanhos.length} sequências.`);
+        const rodar = () => {
+          if (rodada >= tamanhos.length) return fim();
+          const seq = Array.from({ length: tamanhos[rodada] }, () => Math.floor(Math.random() * 10)).join('');
+          const relogio = CE.el('strong', { class: 'pr-prova-relogio' });
+          abrirDialogo({ tipo: 'prova', rosto: '📞', titulo: v.titulo, subtitulo: `Rodada ${rodada + 1} de ${tamanhos.length}: guarde de cabeça`,
+            extra: CE.el('div', { class: 'pr-prova' }, relogio, CE.el('p', { class: 'pr-sequencia', 'data-sequencia': seq }, seq.split('').join(' '))), opcoes: [] });
+          const relo = cronometro(4 + rodada, relogio, () => {
+            const campo = CE.el('input', { id: 'pr-campo-memoria', inputmode: 'numeric', autocomplete: 'off', maxlength: '12' });
+            const conferir = () => {
+              const meu = campo.value.replace(/\D/g, '');
+              let certos = 0; for (let i = 0; i < seq.length; i++) if (meu[i] === seq[i]) certos++;
+              total += certos / seq.length; rodada++; rodar();
+            };
+            abrirDialogo({ tipo: 'prova', rosto: '📞', titulo: v.titulo, subtitulo: `Rodada ${rodada + 1} de ${tamanhos.length}`, fala: 'Qual era a sequência? Digite de cabeça.',
+              campo: CE.el('label', { class: 'pr-campo', for: 'pr-campo-memoria' }, 'Sequência', campo), opcoes: [{ rotulo: 'Confirmar ▶', principal: true, fica: true, id: 'confirmar-memoria', acao: conferir }] });
+            campo.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); conferir(); } });
+          });
+          if (!relo) return;
+        };
+        rodar();
+      }
+      function provaFicha(v) {
+        const nomes = ['Maria José da Silva', 'Raimundo Nonato Souza', 'Francisca das Chagas Lima', 'José Ribamar Oliveira', 'Antônia Ferreira Costa'];
+        const num = (n) => Array.from({ length: n }, () => Math.floor(Math.random() * 10)).join('');
+        const cpf = num(11), tel = '69' + '9' + num(8), cep = '768' + num(5);
+        const dados = { nome: sorteio(nomes), cpf: `${cpf.slice(0, 3)}.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-${cpf.slice(9)}`, telefone: `(${tel.slice(0, 2)}) ${tel.slice(2, 7)}-${tel.slice(7)}`, cep: `${cep.slice(0, 5)}-${cep.slice(5)}` };
+        const relogio = CE.el('strong', { class: 'pr-prova-relogio' });
+        const rot = { nome: 'Nome completo', cpf: 'CPF', telefone: 'Telefone', cep: 'CEP' };
+        const campos = Object.fromEntries(Object.keys(dados).map((k) => [k, CE.el('input', { id: 'pr-ficha-' + k, autocomplete: 'off', 'data-ficha': k })]));
+        const terminar = () => {
+          relo.parar();
+          let certos = 0;
+          for (const k of Object.keys(dados)) {
+            const a = campos[k].value.trim(), b = dados[k];
+            if (k === 'nome' ? semAcento(a).toLowerCase().replace(/\s+/g, ' ') === semAcento(b).toLowerCase() : a.replace(/\D/g, '') === b.replace(/\D/g, '')) certos++;
+          }
+          resultadoDaProva(v, Math.round((certos / 4) * 100), `Você acertou ${certos} de 4 campos.`);
+        };
+        abrirDialogo({ tipo: 'prova', rosto: '🗂️', titulo: v.titulo, subtitulo: 'Cadastro: copie a ficha no computador',
+          extra: CE.el('div', { class: 'pr-prova' }, relogio,
+            CE.el('div', { class: 'pr-ficha-papel' }, CE.el('strong', {}, '📄 Ficha do paciente'), ...Object.keys(dados).map((k) => CE.el('span', { 'data-papel': k }, `${rot[k]}: ${dados[k]}`))),
+            CE.el('div', { class: 'pr-ficha-campos' }, ...Object.keys(dados).map((k) => CE.el('label', { class: 'pr-campo', for: 'pr-ficha-' + k }, rot[k], campos[k])))),
+          opcoes: [{ rotulo: 'Salvar o cadastro ✅', principal: true, fica: true, id: 'salvar-ficha', acao: terminar }] });
+        const relo = cronometro(90, relogio, terminar);
+        campos.nome.focus();
+      }
+      async function resultadoDaProva(v, nota, detalhe, textoCerto) {
+        provaId++;
+        const passou = nota >= 60;
+        const destaque = (vagaDaHora() || {}).id === v.id;
+        const salario = passou ? Math.round(v.salario * (nota / 100) * (destaque ? 1.5 : 1)) + (nota >= 90 ? 10 : 0) : 0;
+        let pago = null;
+        if (passou && !souInstrutor) {
+          pago = await CE.carteira.banco.receberSalario(salario, `${v.titulo} (nota ${nota})`, `salario:${v.id}:${NOV.dia(Date.now())}`);
+          meuCracha = v.emoji; marcarCracha(eu, meuCracha);
+          await CE.sessao.atualizarProgresso((p) => { p.praca = p.praca || {}; p.praca.cracha = v.emoji; p.praca.contratacoes = (Number(p.praca.contratacoes) || 0) + 1; }).catch(() => {});
+          conquista('contratado');
+          CE.comemorar(nota >= 90 ? 'grande' : 'pequena');
+        }
+        const cargo = nota >= 90 ? 'Supervisor(a)' : 'Contratado(a)';
+        const lista = [detalhe, ...(textoCerto ? [`Texto: “${textoCerto}”`] : [])];
+        if (passou && pago) lista.push(`💰 Salário: ${pago.valor} moedas${destaque ? ' (vaga em destaque: +50%)' : ''}${nota >= 90 ? ' (+10 de bônus)' : ''}.`, pago.desconto ? `📉 ${CE.carteira.banco.moeda(pago.desconto)} foram para pagar o empréstimo; caíram ${CE.carteira.banco.moeda(pago.liquido)} na conta.` : '🏦 O salário caiu na sua conta no banco.');
+        if (passou && !pago && !souInstrutor) lista.push('✅ Você já recebeu por esta vaga hoje: esta prova valeu como treino.');
+        if (CE.voz) CE.voz.falar(passou ? `Parabéns! Você foi contratado. Nota ${nota}.` : `Nota ${nota}. Ainda não foi desta vez. Treine e tente de novo!`);
+        abrirDialogo({ tipo: 'vagas', rosto: passou ? '🤝' : '💪', titulo: passou ? `${cargo}! Nota ${nota}` : `Nota ${nota}: ainda não foi desta vez`, subtitulo: v.titulo,
+          fala: passou ? `Parabéns! Você ganhou o crachá ${v.emoji}, que todo mundo vê no seu boneco.` : 'Para ser contratado, precisa de nota 60. Treine e tente de novo: você pode se candidatar quantas vezes quiser.',
+          lista, opcoes: [{ rotulo: 'Tentar de novo', fica: true, id: 'de-novo', acao: () => abrirProva(v) }, { rotulo: '💼 Outras vagas', principal: true, fica: true, id: 'outras-vagas', acao: () => abrirVagas() }, ...(passou && !souInstrutor ? [{ rotulo: '🏦 Ver a conta', id: 'ver-conta', acao: () => { CE.carteira.aba = 'banco'; CE.janelas.abrir('carteira'); } }] : [])] });
       }
 
       // ---------- Perto de quê? ----------

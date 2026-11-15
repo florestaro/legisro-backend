@@ -2461,6 +2461,39 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .pr-mapa.relampago::after { content: ''; position: absolute; inset: 0; z-index: 4; pointer-events: none; background: rgba(255, 255, 255, .7); opacity: 0; animation: pr-relampago .45s ease-out; }
 @keyframes pr-relampago { 10% { opacity: 1; } 30% { opacity: .15; } 45% { opacity: .8; } 100% { opacity: 0; } }
 .pr-avisos li.urgente { background: #b3261e; color: #fff; }
+/* O dia da cidade (a luz muda das 8h às 18h), o crachá de quem foi contratado, as vagas e as provas */
+.pr-luz { position: absolute; inset: 0; z-index: 2; pointer-events: none; transition: background 1s linear; mix-blend-mode: multiply; }
+.pr-pilula.relogio { font-variant-numeric: tabular-nums; }
+.pr-cracha { position: absolute; left: 50%; top: 22px; transform: translateX(-50%) scale(var(--inv, 1)); font-size: 13px; line-height: 1; background: #fff; border: 2px solid #1e5a9e; border-radius: 5px; padding: 1px 2px; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); pointer-events: none; }
+.pr-vagas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pr-vaga { display: flex; gap: 10px; align-items: center; border: 1px solid var(--borda); border-radius: 10px; padding: 8px 10px; }
+.pr-vaga.destaque { border-color: #e2a400; background: #fff8e1; color: #3a2a00; }
+.pr-vaga .ic { font-size: 28px; flex: none; }
+.pr-vaga .txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.pr-prova { display: grid; gap: 10px; }
+.pr-prova-relogio { justify-self: end; font-variant-numeric: tabular-nums; background: var(--fundo-cinza); border-radius: 999px; padding: 3px 10px; }
+.pr-prova-relogio.acabando { background: #b3261e; color: #fff; }
+.pr-ditado { margin: 0; min-height: 2.6em; font-size: 18px; line-height: 1.45; background: var(--fundo-cinza); border-radius: 10px; padding: 10px 12px; }
+.pr-prova textarea, .pr-prova input, .pr-ficha-campos input, .pr-form-vaga input, .pr-form-vaga select, .pr-form-vaga textarea, .pr-entrevista-campo { width: 100%; box-sizing: border-box; font: 16px/1.4 var(--fonte); padding: 8px 10px; border: 1px solid var(--borda); border-radius: 8px; background: var(--fundo-janela); color: var(--texto); }
+.pr-entrevista-campo + .pr-entrevista-campo { margin-top: 6px; }
+.pr-sequencia { margin: 0; text-align: center; font: 800 38px/1.2 var(--fonte); letter-spacing: 4px; }
+.pr-ficha-papel { display: grid; gap: 4px; background: #fffbe8; color: #3a2f12; border: 1px dashed #c9b36b; border-radius: 8px; padding: 10px 12px; font-family: 'Courier New', monospace; }
+.pr-ficha-campos, .pr-form-vaga { display: grid; gap: 6px; }
+.pr-entrevistas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pr-entrevistas li { display: grid; gap: 2px; border: 1px solid var(--borda); border-radius: 10px; padding: 8px 10px; }
+/* O banco das moedas (na janela "Minhas moedas") */
+.cart-abas { display: flex; gap: 6px; margin-bottom: 10px; }
+.cart-abas button { flex: 1; border: 1px solid var(--borda); background: var(--fundo-cinza); color: var(--texto); border-radius: 999px; padding: 8px; font: 700 14px var(--fonte); cursor: pointer; }
+.cart-abas button[aria-selected="true"] { background: #1e5a9e; color: #fff; border-color: #1e5a9e; }
+.banco-cartoes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.banco-cartao { display: grid; gap: 2px; border: 1px solid var(--borda); border-radius: 12px; padding: 8px 10px; }
+.banco-cartao strong { font-size: 20px; }
+.banco-cartao small { color: var(--texto-suave); }
+.banco-cartao.divida { border-color: #b3261e; background: #fbeceb; color: #5a1410; }
+.banco-operar { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.banco-operar input { flex: 1; font: 18px var(--fonte); padding: 8px 10px; border: 1px solid var(--borda); border-radius: 8px; background: var(--fundo-janela); color: var(--texto); }
+.banco-botoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.banco-aviso { margin: 6px 0 0; color: #b3261e; font-weight: 700; }
 /* Coleta seletiva: o lixo no chão (balança um pouquinho para chamar a atenção) */
 .pr-lixo { position: absolute; transform: translate(-50%, -50%); font-size: 22px; line-height: 1; pointer-events: none; z-index: 1; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .35)); animation: pr-lixo 1.6s ease-in-out infinite alternate; }
 .pr-lixo::after { content: ''; position: absolute; left: 50%; top: 100%; width: 22px; height: 6px; margin: -2px 0 0 -11px; border-radius: 50%; background: rgba(0, 0, 0, .18); z-index: -1; }

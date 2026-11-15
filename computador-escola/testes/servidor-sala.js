@@ -454,6 +454,17 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   const saco = (await pedir('praca:emergencia-acao', ['entregar', { x: 20, y: 21 }], tT7)).valor;
   ok(saco.emergencia.sacos === 1 && saco.emergencia.agua > 22.5, `praça: um saco na barreira e a água desce (fileira ${saco.emergencia.agua})`);
   await pedir('praca:emergencia-encerrar', [], tp);
+  // Entrevista de emprego, vagas e o dia da cidade.
+  ok(/Responda/.test((await pedir('praca:entrevista', [{ nome: 'Teste' }], tT7)).erro || ''), 'praça: entrevista sem responder não vale');
+  const entrevistaFeita = (await pedir('praca:entrevista', [{ nome: 'Aluno Sete', idade: '33', experiencia: 'Vendedor', fortes: ['pontual'], melhorar: ['digitar'] }], tT7)).valor;
+  ok(entrevistaFeita.idade === 33 && /instrutor/.test((await pedir('praca:entrevistas', [], tT7)).erro || '') && (await pedir('praca:entrevistas', [], tp)).valor.some((e) => e.nome === 'Aluno Sete'),
+    'praça: a entrevista fica no disco do instrutor, e só o instrutor lê as entrevistas');
+  ok(/instrutor/.test((await pedir('praca:criar-vaga', [{ titulo: 'X', prova: 'ditado', texto: 'a b c d e' }], tT7)).erro || ''), 'praça: aluno não cria vaga');
+  const vg = (await pedir('praca:criar-vaga', [{ titulo: 'Digitador da Câmara', prova: 'ditado', texto: 'A sessão começa às nove horas.', salario: 500 }], tp)).valor;
+  ok(vg.padrao.length === 4 && vg.extras.length === 1 && vg.extras[0].salario === 100, 'praça: o instrutor cria uma vaga (salário no máximo 100)');
+  ok((await pedir('praca:remover-vaga', [vg.extras[0].id], tp)).valor.extras.length === 0, 'praça: o instrutor apaga a vaga que criou');
+  const sDia = (await pedir('praca:sincronizar', [{ x: 18, y: 15, cracha: '📝' }, 0], tT7)).valor;
+  ok(sDia.dia && sDia.dia.duracao === 900000 && sDia.pessoas.find((x) => x.nome && x.cracha === '📝'), 'praça: o dia da cidade (15 minutos) e o crachá de quem foi contratado');
   // Hora da Praça e eventos especiais (a vaquinha da turma; o Professor Virtual conduz).
   ok(/instrutor/.test((await pedir('praca:configurar-horario', [{ fins: ['17:00'] }], tT7)).erro || '') && /instrutor/.test((await pedir('praca:testar-hora', [], tT7)).erro || ''), 'praça: aluno não muda o horário das aulas nem testa a Hora da Praça');
   const hor = (await pedir('praca:configurar-horario', [{ fins: ['17:00', '99:99'], dias: [1, 2, 3, 4, 5] }], tp)).valor;
