@@ -101,6 +101,7 @@ window.CE = window.CE || {};
     { id: 'praca-detetive', icone: '🔎', nome: 'Detetive da novela', descricao: 'Achou pistas e ajudou a turma a desvendar um capítulo da novela da Praça Escola.', ganhou: (p) => !!(p.praca && p.praca.detetive) },
     { id: 'praca-brigada', icone: '🚒', nome: 'Brigada da praça', descricao: 'Ajudou a turma a vencer um evento urgente na Praça Escola (incêndio, enchente ou temporal).', ganhou: (p) => !!(p.praca && p.praca.brigada) },
     { id: 'praca-contratado', icone: '💼', nome: 'Contratado(a)', descricao: 'Passou na prova de uma vaga de emprego da cidade, na Praça Escola.', ganhou: (p) => !!(p.praca && p.praca.contratado) },
+    { id: 'praca-promovido', icone: '⭐', nome: 'Promovido(a)', descricao: 'Passou na prova de uma vaga de promoção (só para quem já tinha sido contratado), na Praça Escola.', ganhou: (p) => !!(p.praca && p.praca.promovido) },
     { id: 'praca-reciclagem', icone: '♻️', nome: 'Cidade limpa', descricao: 'Separou 10 lixos na lixeira certa, na coleta seletiva da Praça Escola.', ganhou: (p) => !!(p.praca && Number(p.praca.reciclou) >= 10) },
     { id: 'praca-mao-na-massa', icone: '🧰', nome: 'Mão na massa', descricao: 'Fez 10 tarefas do dia nos prédios da Praça Escola.', ganhou: (p) => !!(p.praca && Number(p.praca.tarefas) >= 10) },
   ];

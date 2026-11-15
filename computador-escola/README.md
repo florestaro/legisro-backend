@@ -326,18 +326,26 @@ curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela red
     o dia acaba junto com a aula). A luz muda: manhã fresquinha, sol a pino, fim de tarde alaranjado.
   - 💼 **Entrevista de emprego** no primeiro acesso: o recrutador (Professor Virtual, falando as perguntas) pergunta o
     nome, a idade (opcional), o trabalho que já fez ou quer fazer, três pontos fortes, três coisas que quer melhorar e por
-    que quer trabalhar na cidade. Vale 20 moedas; o professor lê as entrevistas da turma no 💼 Vagas.
+    que quer trabalhar na cidade. Vale 20 moedas; o professor lê as entrevistas da turma no 💼 Vagas e pode deixar um
+    **retorno de recrutador** em cada uma (📨 Enviar retorno): o aluno vê o retorno na praça assim que ele chega, e a
+    qualquer hora em 💼 Vagas › 📄 Minha entrevista.
   - **Vagas com prova rápida** (💼 Vagas, ou na Agência de Empregos): 📝 datilógrafo(a) do Cartório (o tabelião dita e o
     aluno digita junto, no ritmo), 🛒 caixa do Mercado (somar a compra e o troco), 📞 recepcionista da Prefeitura (guardar
     sequências de números de cabeça) e 🗂️ auxiliar administrativo do Posto (copiar a ficha do paciente). Nota 60 ou mais:
     contratado(a), crachá no boneco (todos veem) e salário na conta do banco, uma vez por dia em cada vaga; nota 90 ou
     mais: supervisor(a), +10. A vaga em destaque muda com a hora do dia e paga 50% a mais. O professor cria vagas novas
     (com o próprio texto de ditado) e apaga as que criou. Medalha 💼 Contratado(a).
+  - ⭐ **Promoções**: vagas que só abrem para quem já foi contratado(a) antes e pagam mais: ✍️ escrevente do Cartório
+    (para quem já foi datilógrafo; ditados maiores) e 🧾 fiscal de caixa do Mercado (para quem já foi caixa). Antes
+    disso, a vaga aparece com 🔒; ao ser contratado na vaga de antes, o aluno fica sabendo que a promoção foi liberada.
+    Ao criar uma vaga, o professor escolhe se todos podem se candidatar ou se é promoção (para quem já foi contratado
+    em qualquer vaga, ou numa vaga certa). Medalha ⭐ Promovido(a).
   - 🏦 **Banco das moedas** (💰 › 🏦 Banco, ou no Banco Escola): conta (o salário cai aqui), saque para a carteira (para
-    gastar na praça) e depósito, poupança (1% ao dia, sai quando quiser), aplicação (3% ao dia, só sai depois de 3 dias)
-    e empréstimo (até 150 moedas, 4% ao dia; enquanto deve, metade de cada salário vai direto para a dívida: o salário
+    gastar na praça) e depósito, poupança (0,5% ao dia, sai quando quiser), aplicação (1% ao dia, só sai depois de 3 dias)
+    e empréstimo (até 150 moedas, 2% ao dia; enquanto deve, metade de cada salário vai direto para a dívida: o salário
     futuro fica comprometido). Os juros são compostos e contam os dias de calendário; a janela mostra quanto uma dívida
-    de 100 vira em 1, 3 e 7 dias.
+    de 100 vira em 1, 7 e 30 dias, e que o banco cobra no empréstimo o dobro do que paga na aplicação (é assim que ele
+    lucra).
 - **Atividades na cidade**: ♻️ **coleta seletiva** (lixo aparece no chão da praça e das calçadas; o aluno clica para pegar e leva até a lixeira da cor certa: azul papel, vermelha plástico, verde vidro, amarela metal, marrom orgânico; acerto vale 2 moedas, errar explica a cor certa; 10 acertos dão a medalha ♻️ Cidade limpa), 🏧 **caixa eletrônico** no Banco (sacar R$ 50 com segurança, recusando o desconhecido que pede a senha: golpe da troca de cartão) e 📅 **agendamento de consulta** no Posto (especialidade, Cartão SUS, horário e o SMS falso que cobra taxa). O caixa e o agendamento valem 5 moedas uma vez por dia. A cidade também ficou mais detalhada: asfalto com textura, bueiros, postes de luz, telhados com telhas, janelas com cortina, árvores com volume e desenho mais nítido em telas de alta definição.
 - **Moradores** (personagens do computador, com conversas que ensinam): a Dona Rosa pede ajuda para mandar foto ao neto,
   a Dona Lúcia explica o Pix, o Seu Raimundo desafia no troco da feira, a Enfermeira Cida dá dicas, o Seu Bené conta a
@@ -368,7 +376,7 @@ ganhar. As moedas ficam no progresso do aluno (no modo sala de aula, no computad
 de cada um na Praça Escola, em 🏙️ Cidade › Rua da Turma.
 
 ### Outros
-- **84 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova (também por cumprir missões, ir ao
+- **85 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova (também por cumprir missões, ir ao
   pódio da gincana, mandar matéria para o jornal, ajudar colegas como monitor e conquistas na Praça Escola).
 - **Painel do Instrutor**: cadastro (com a opção "criança"), aula atual de cada aluno, média, exercício de digitação
   atual, melhor velocidade, provas e medalhas. Também:

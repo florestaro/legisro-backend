@@ -2468,6 +2468,12 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .pr-vagas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .pr-vaga { display: flex; gap: 10px; align-items: center; border: 1px solid var(--borda); border-radius: 10px; padding: 8px 10px; }
 .pr-vaga.destaque { border-color: #e2a400; background: #fff8e1; color: #3a2a00; }
+.pr-vaga.promocao { border-style: dashed; border-color: #8a63d2; }
+.pr-vaga.bloqueada { opacity: .78; }
+.pr-vaga.bloqueada .ic { filter: grayscale(1); }
+.pr-requer { font-size: 13px; font-weight: 600; color: #6a45b8; }
+.pr-retorno { display: grid; gap: 4px; margin-top: 6px; }
+.pr-retorno textarea { width: 100%; box-sizing: border-box; font: 15px/1.4 var(--fonte); padding: 6px 8px; border: 1px solid var(--borda); border-radius: 8px; background: var(--fundo-janela); color: var(--texto); }
 .pr-vaga .ic { font-size: 28px; flex: none; }
 .pr-vaga .txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
 .pr-prova { display: grid; gap: 10px; }

@@ -973,8 +973,10 @@
         const hora = verificarHora(agora);
         atualizarColeta(agora);
         const dia = relogioDoDia(agora, hora);
+        const minha = ehInstrutor(usuario) ? null : dados().entrevistas[seguro(usuario.id)];
         return {
           dia,
+          retorno: minha && minha.comentario ? minha.comentario.em : 0,
           agora, novo, eu: { x: p.x, y: p.y },
           cidade: { turma, abertos: (dados().abertos[turma] || []).slice(), selos: semanaDa(turma).selos.slice() },
           novela: resumoNovela(usuario, turma),
@@ -1010,6 +1012,21 @@
         exigirInstrutor(usuario);
         return Object.values(dados().entrevistas).sort((a, b) => b.em - a.em);
       },
+      // O retorno do recrutador: o professor escreve um comentário na entrevista e o aluno vê na praça.
+      comentarEntrevista(usuario, d0) {
+        exigirInstrutor(usuario);
+        const d = d0 && typeof d0 === 'object' ? d0 : {};
+        const e = dados().entrevistas[seguro(String(d.id || ''))];
+        if (!e) throw new Error('Essa entrevista não existe.');
+        const t = limpo(texto(d.texto, 300));
+        if (!t) { delete e.comentario; gravar(); return e; }
+        e.comentario = { texto: t, por: texto(usuario.nome, 40), em: Math.max(relogio(), ((e.comentario && e.comentario.em) || 0) + 1) };
+        gravar();
+        return e;
+      },
+      minhaEntrevista(usuario) {
+        return dados().entrevistas[seguro(usuario.id)] || null;
+      },
       vagas() {
         return { padrao: nov.VAGAS.map((v) => ({ ...v })), extras: dados().vagas.map((v) => ({ ...v })) };
       },
@@ -1022,11 +1039,15 @@
         const textoDitado = limpo(texto(v.texto, 300));
         if (prova === 'ditado' && textoDitado.split(' ').length < 4) throw new Error('Escreva o texto do ditado (pelo menos 4 palavras).');
         const salario = Math.max(5, Math.min(100, Math.round(Number(v.salario) || 30)));
+        // Promoção: só para quem já foi contratado (em qualquer vaga, ou numa vaga certa da cidade).
+        const requer = String(v.requer || '');
+        const existe = (id) => nov.VAGAS.some((x) => x.id === id) || dados().vagas.some((x) => x.id === id);
+        if (requer && requer !== 'contratado' && !existe(requer)) throw new Error('Essa vaga de antes não existe mais.');
         if (dados().vagas.length >= 20) throw new Error('Já tem 20 vagas criadas: apague uma antes.');
-        const nova = { id: 'vaga-' + relogio(), emoji: '💼', titulo, lugar: lugar || 'Cidade', prova, salario, explica: limpo(texto(v.explica, 200)) || `Vaga criada pelo professor: ${titulo}.`, textos: prova === 'ditado' ? [textoDitado] : undefined, extra: true };
+        const nova = { id: 'vaga-' + relogio(), emoji: requer ? '⭐' : '💼', titulo, lugar: lugar || 'Cidade', prova, salario, explica: limpo(texto(v.explica, 200)) || `Vaga criada pelo professor: ${titulo}.`, textos: prova === 'ditado' ? [textoDitado] : undefined, requer: requer || undefined, extra: true };
         dados().vagas.push(nova);
         gravar();
-        evento({ tipo: 'sistema', texto: `💼 Vaga nova na cidade: ${titulo}. Todos podem se candidatar (botão 💼 Vagas).` });
+        evento({ tipo: 'sistema', texto: requer ? `⭐ Promoção nova na cidade: ${titulo}. Só para quem já foi contratado(a) (botão 💼 Vagas).` : `💼 Vaga nova na cidade: ${titulo}. Todos podem se candidatar (botão 💼 Vagas).` });
         return this.vagas(usuario);
       },
       removerVaga(usuario, id) {

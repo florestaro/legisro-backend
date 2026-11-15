@@ -478,6 +478,8 @@ function criarCanais(dados) {
     'praca:coleta': (s, acao, dado) => { exigirSessao(s); return praca.coletar(s.usuario, acao, dado || {}); },
     'praca:entrevista': (s, respostas) => { exigirSessao(s); return praca.entrevista(s.usuario, respostas || {}); },
     'praca:entrevistas': (s) => { exigirInstrutor(s); return praca.entrevistas(s.usuario); },
+    'praca:comentar-entrevista': (s, d) => { exigirInstrutor(s); return praca.comentarEntrevista(s.usuario, d || {}); },
+    'praca:minha-entrevista': (s) => { exigirSessao(s); return praca.minhaEntrevista(s.usuario); },
     'praca:vagas': (s) => { exigirSessao(s); return praca.vagas(s.usuario); },
     'praca:criar-vaga': (s, v) => { exigirInstrutor(s); return praca.criarVaga(s.usuario, v || {}); },
     'praca:remover-vaga': (s, id) => { exigirInstrutor(s); return praca.removerVaga(s.usuario, String(id || '')); },

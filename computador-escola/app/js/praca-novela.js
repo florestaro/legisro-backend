@@ -224,7 +224,21 @@
       explica: 'O recepcionista atende as pessoas e guarda de cabeça números de telefone e de protocolo, até anotar.' },
     { id: 'auxiliar', emoji: '🗂️', titulo: 'Auxiliar administrativo do Posto', lugar: 'Posto de Saúde', prova: 'ficha', salario: 30, de: 15.5, ate: 18,
       explica: 'O auxiliar administrativo cadastra os pacientes no computador, copiando os dados da ficha sem errar.' },
+    // Promoções: só para quem já foi contratado(a) na vaga de antes (requer). Pagam mais e não entram no destaque da hora.
+    { id: 'escrevente', emoji: '✍️', titulo: 'Escrevente do Cartório (promoção)', lugar: 'Cartório (na Prefeitura)', prova: 'ditado', salario: 50, requer: 'datilografo',
+      explica: 'Promoção para quem já foi datilógrafo: o escrevente digita as escrituras inteiras, com textos maiores e cheios de detalhes.',
+      textos: ['Aos quinze dias do mês de março, o senhor José Ferreira vendeu o lote número doze da Rua da Turma para a senhora Maria da Silva.',
+        'Certifico que Ana Souza e Pedro Lima se casaram neste cartório, na presença de duas testemunhas, e assinaram o livro de registro.'] },
+    { id: 'fiscal', emoji: '🧾', titulo: 'Fiscal de caixa do Mercado (promoção)', lugar: 'Mercado da feira', prova: 'contas', salario: 50, requer: 'caixa',
+      explica: 'Promoção para quem já foi operador de caixa: o fiscal confere as contas dos colegas e resolve os trocos difíceis.' },
   ];
+  // A vaga está liberada para o aluno? (cargos: as vagas em que ele já foi contratado; total: quantas contratações)
+  function liberada(v, cargos, total) {
+    if (!v || !v.requer) return true;
+    const c = cargos && typeof cargos === 'object' ? cargos : {};
+    if (v.requer === 'contratado') return (Number(total) || 0) > 0 || Object.keys(c).length > 0;
+    return !!c[v.requer];
+  }
   const PROVAS = { ditado: 'Ditado no ritmo (digitação)', contas: 'Contas do caixa', memoria: 'Memória de números', ficha: 'Cadastro (copiar a ficha)' };
   const temProva = (id) => Object.prototype.hasOwnProperty.call(PROVAS, id);
 
@@ -301,5 +315,5 @@
     if (t.tipo === 'digitar') return t.numero ? Math.abs(reais(resposta) - t.resposta) < 0.001 : limpo(resposta) === limpo(t.modelo);
     return false;
   }
-  return { TAREFAS, CAPITULOS, EMERGENCIAS, ESPECIAIS, COLETA, ENTREVISTA, VAGAS, PROVAS, temProva, porCapitulo, porPista, temTarefa, temEmergencia, temEspecial, conferirEmergencia, dia, semana, tarefaDoDia, publica, conferir };
+  return { TAREFAS, CAPITULOS, EMERGENCIAS, ESPECIAIS, COLETA, ENTREVISTA, VAGAS, PROVAS, temProva, liberada, porCapitulo, porPista, temTarefa, temEmergencia, temEspecial, conferirEmergencia, dia, semana, tarefaDoDia, publica, conferir };
 });

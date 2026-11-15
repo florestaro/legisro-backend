@@ -1312,6 +1312,7 @@ window.CE = window.CE || {};
         if (r.especial !== undefined) aplicarEspecial(r.especial);
         if (r.coleta !== undefined) aplicarColeta(r.coleta);
         if (r.dia) aplicarDia(r.dia);
+        if (r.retorno) verRetorno(r.retorno);
         if (r.hora !== undefined) aplicarHora(r.hora);
         // Pessoas
         const vistos = new Set();
@@ -2257,23 +2258,70 @@ window.CE = window.CE || {};
           opcoes: [{ rotulo: '💼 Ver as vagas', principal: true, fica: true, id: 'ver-vagas', acao: () => abrirVagas() }, { rotulo: 'Fechar' }] });
       }
 
+      // ---------- Retorno do recrutador (o professor comenta a entrevista; o aluno vê na praça) ----------
+      let retornoVisto = null, buscandoRetorno = false;
+      async function verRetorno(em) {
+        if (souInstrutor || !em || buscandoRetorno || fechouJanela) return;
+        if (retornoVisto === null) {
+          buscandoRetorno = true;
+          const pr = await CE.sessao.progresso().catch(() => null);
+          buscandoRetorno = false;
+          retornoVisto = (pr && pr.praca && pr.praca.retornoVisto) || 0;
+        }
+        if (em <= retornoVisto || !dialogo.hidden) return;
+        buscandoRetorno = true;
+        const e = await CE.api.chamar('praca:minha-entrevista').catch(() => null);
+        buscandoRetorno = false;
+        if (!e || !e.comentario || !dialogo.hidden || fechouJanela) return;
+        retornoVisto = e.comentario.em;
+        await CE.sessao.atualizarProgresso((p) => { p.praca = p.praca || {}; p.praca.retornoVisto = e.comentario.em; }).catch(() => {});
+        if (CE.voz) CE.voz.falar('Chegou o retorno do recrutador sobre a sua entrevista.');
+        abrirMinhaEntrevista(e, true);
+      }
+      async function abrirMinhaEntrevista(e0, novo) {
+        const e = e0 || await chamar('praca:minha-entrevista');
+        if (fechouJanela) return;
+        if (!e) return abrirDialogo({ tipo: 'vagas', rosto: '👨‍💼', papelCor: 'professor', titulo: 'Minha entrevista', fala: 'Você ainda não fez a entrevista de emprego.',
+          opcoes: [{ rotulo: 'Fazer a entrevista agora', principal: true, fica: true, id: 'fazer-entrevista', acao: () => abrirEntrevista(0) }, { rotulo: 'Fechar' }] });
+        const c = e.comentario;
+        abrirDialogo({ tipo: 'retorno', rosto: '👨‍💼', papelCor: 'professor', titulo: novo ? '📨 Retorno do recrutador' : 'Minha entrevista',
+          subtitulo: c ? `${c.por} · ${new Date(c.em).toLocaleDateString('pt-BR')}` : 'Agência de Empregos',
+          fala: c ? `“${c.texto}”` : 'O recrutador ainda não deixou um retorno sobre a sua entrevista. Quando ele deixar, aparece aqui.',
+          lista: [`Trabalho: ${e.experiencia}`, `💪 Pontos fortes: ${e.fortes.join(', ')}`, `🎯 Quer melhorar: ${e.melhorar.join(', ')}`],
+          nota: c && novo ? 'Leia com atenção: o retorno ajuda a melhorar na próxima entrevista de verdade.' : null,
+          opcoes: [{ rotulo: '💼 Ver as vagas', principal: true, fica: true, id: 'ver-vagas', acao: () => abrirVagas() }, { rotulo: 'Fechar' }] });
+      }
+
       // ---------- Vagas de emprego e as provas (contratações) ----------
       const dinheiro = (v) => `R$ ${Number(v).toFixed(2).replace('.', ',')}`;
+      let vagasConhecidas = NOV.VAGAS.slice();
+      const nomeDaVaga = (id) => ((vagasConhecidas.find((x) => x.id === id) || {}).titulo || 'a vaga de antes').replace(/ \(promoção\)$/, '');
+      const textoRequer = (v) => (v.requer === 'contratado' ? 'em qualquer vaga' : `como ${nomeDaVaga(v.requer)}`);
+      async function meusCargos() {
+        const pr = souInstrutor ? null : await CE.sessao.progresso().catch(() => null);
+        const pp = (pr && pr.praca) || {};
+        return { cargos: pp.cargos || {}, total: Number(pp.contratacoes) || 0 };
+      }
       async function abrirVagas() {
         const r = await chamar('praca:vagas');
         if (!r || fechouJanela) return;
+        vagasConhecidas = [...r.padrao, ...r.extras];
         const destaque = vagaDaHora();
         const pagos = souInstrutor ? {} : ((await CE.carteira.extrato()).chaves || {});
+        const meus = await meusCargos();
         const hojeDia = NOV.dia(Date.now());
         const cartao = (v) => {
           const pago = pagos[`salario:${v.id}:${hojeDia}`];
           const em = destaque && destaque.id === v.id;
-          return CE.el('li', { class: 'pr-vaga' + (em ? ' destaque' : ''), 'data-vaga': v.id },
+          const livre = souInstrutor || NOV.liberada(v, meus.cargos, meus.total);
+          return CE.el('li', { class: 'pr-vaga' + (em ? ' destaque' : '') + (v.requer ? ' promocao' : '') + (livre ? '' : ' bloqueada'), 'data-vaga': v.id },
             CE.el('span', { class: 'ic', 'aria-hidden': 'true' }, v.emoji),
             CE.el('div', { class: 'txt' }, CE.el('strong', {}, v.titulo), CE.el('span', { class: 'pr-suave' }, `${v.lugar} · prova: ${NOV.PROVAS[v.prova]}`),
+              v.requer ? CE.el('span', { class: 'pr-requer' }, livre && !souInstrutor ? `🔓 Promoção liberada para você (já foi contratado(a) ${textoRequer(v)})` : `🔒 Promoção: só para quem já foi contratado(a) ${textoRequer(v)}`) : null,
               CE.el('span', { class: 'pr-suave' }, `Salário: até ${Math.round(v.salario * (em ? 1.5 : 1)) + 10} moedas${em ? ' · ⭐ em destaque agora (+50%)' : ''}${pago ? ' · ✅ já recebeu hoje (pode treinar)' : ''}`)),
             CE.el('div', { class: 'pr-botoes' },
-              souInstrutor ? null : CE.el('button', { class: 'botao' + (em ? '' : ' secundario'), type: 'button', 'data-candidatar': v.id, onclick: () => abrirProva(v) }, 'Candidatar-se'),
+              souInstrutor ? null : livre ? CE.el('button', { class: 'botao' + (em ? '' : ' secundario'), type: 'button', 'data-candidatar': v.id, onclick: () => abrirProva(v) }, 'Candidatar-se')
+                : CE.el('button', { class: 'botao secundario', type: 'button', 'data-candidatar': v.id, disabled: true, title: `Primeiro seja contratado(a) ${textoRequer(v)}` }, '🔒 Bloqueada'),
               souInstrutor && v.extra ? CE.el('button', { class: 'botao secundario', type: 'button', 'data-apagar-vaga': v.id, onclick: async () => { await chamar('praca:remover-vaga', v.id); abrirVagas(); } }, '🗑 Apagar') : null));
         };
         abrirDialogo({ tipo: 'vagas', rosto: '💼', titulo: 'Vagas de emprego', subtitulo: `Agência de Empregos · ${botaoRelogio.textContent}`,
@@ -2281,7 +2329,7 @@ window.CE = window.CE || {};
           extra: CE.el('ul', { class: 'pr-vagas' }, [...r.padrao, ...r.extras].map(cartao)),
           opcoes: souInstrutor
             ? [{ rotulo: '➕ Criar vaga', principal: true, fica: true, id: 'criar-vaga', acao: () => abrirCriarVaga() }, { rotulo: '📋 Entrevistas da turma', fica: true, id: 'entrevistas', acao: () => abrirEntrevistas() }, { rotulo: 'Fechar' }]
-            : [{ rotulo: '🏦 Minha conta no banco', id: 'minha-conta', acao: () => { CE.carteira.aba = 'banco'; CE.janelas.abrir('carteira'); } }, { rotulo: 'Fechar' }] });
+            : [{ rotulo: '🏦 Minha conta no banco', id: 'minha-conta', acao: () => { CE.carteira.aba = 'banco'; CE.janelas.abrir('carteira'); } }, { rotulo: '📄 Minha entrevista', fica: true, id: 'minha-entrevista', acao: () => abrirMinhaEntrevista() }, { rotulo: 'Fechar' }] });
       }
       function abrirCriarVaga(erro = '') {
         const campo = (id, rotulo, el) => CE.el('label', { class: 'pr-campo', for: id }, rotulo, el);
@@ -2290,11 +2338,24 @@ window.CE = window.CE || {};
         const prova = CE.el('select', { id: 'vaga-prova' }, Object.entries(NOV.PROVAS).map(([id, nome]) => CE.el('option', { value: id }, nome)));
         const textoDit = CE.el('textarea', { id: 'vaga-texto', rows: '3', maxlength: '300', placeholder: 'O texto que o Professor Virtual vai ditar (só para a prova de ditado)' });
         const salario = CE.el('input', { id: 'vaga-salario', type: 'number', min: '5', max: '100', value: '30' });
+        const requer = CE.el('select', { id: 'vaga-requer' }, CE.el('option', { value: '' }, 'Todos podem se candidatar'),
+          CE.el('option', { value: 'contratado' }, 'Promoção: só quem já foi contratado(a) em alguma vaga'),
+          ...vagasConhecidas.map((x) => CE.el('option', { value: x.id }, `Promoção: só quem já foi contratado(a) como ${nomeDaVaga(x.id)}`)));
         abrirDialogo({ tipo: 'vagas', rosto: '➕', titulo: 'Criar vaga', subtitulo: 'A vaga aparece para a turma toda', fala: erro || 'Preencha e crie. A prova pode ser ditado (com o seu texto), contas, memória ou cadastro.',
-          extra: CE.el('div', { class: 'pr-form-vaga' }, campo('vaga-titulo', 'Nome da vaga', titulo), campo('vaga-lugar', 'Lugar', lugar), campo('vaga-prova', 'Prova', prova), campo('vaga-texto', 'Texto do ditado', textoDit), campo('vaga-salario', 'Salário (moedas)', salario)),
+          extra: CE.el('div', { class: 'pr-form-vaga' }, campo('vaga-titulo', 'Nome da vaga', titulo), campo('vaga-lugar', 'Lugar', lugar), campo('vaga-prova', 'Prova', prova), campo('vaga-texto', 'Texto do ditado', textoDit), campo('vaga-salario', 'Salário (moedas)', salario), campo('vaga-requer', 'Quem pode se candidatar', requer)),
           opcoes: [{ rotulo: 'Criar a vaga', principal: true, fica: true, id: 'salvar-vaga', acao: async () => {
-            try { await CE.api.chamar('praca:criar-vaga', { titulo: titulo.value, lugar: lugar.value, prova: prova.value, texto: textoDit.value, salario: salario.value }); abrirVagas(); } catch (e) { abrirCriarVaga(e.message); }
+            try { await CE.api.chamar('praca:criar-vaga', { titulo: titulo.value, lugar: lugar.value, prova: prova.value, texto: textoDit.value, salario: salario.value, requer: requer.value }); abrirVagas(); } catch (e) { abrirCriarVaga(e.message); }
           } }, { rotulo: 'Voltar', fica: true, id: 'voltar', acao: () => abrirVagas() }] });
+      }
+      function retornoDoProfessor(e) {
+        const caixa = CE.el('textarea', { rows: '2', maxlength: '300', 'data-retorno': e.id, 'aria-label': `Retorno para ${e.nome}`, placeholder: 'Seu retorno de recrutador (o aluno vê na praça). Ex.: Gostei da sua vontade de aprender! Treine a digitação.' });
+        caixa.value = e.comentario ? e.comentario.texto : '';
+        const aviso = CE.el('span', { class: 'pr-suave', 'data-retorno-ok': e.id, role: 'status' }, e.comentario ? '✅ Retorno enviado' : '');
+        const enviar = async () => {
+          const r = await chamar('praca:comentar-entrevista', { id: e.id, texto: caixa.value });
+          if (r) aviso.textContent = r.comentario ? '✅ Retorno enviado: o aluno vê na praça.' : 'Retorno apagado.';
+        };
+        return CE.el('div', { class: 'pr-retorno' }, caixa, CE.el('div', { class: 'pr-botoes' }, CE.el('button', { class: 'botao secundario', type: 'button', 'data-salvar-retorno': e.id, onclick: enviar }, '📨 Enviar retorno'), aviso));
       }
       async function abrirEntrevistas() {
         const lista = await chamar('praca:entrevistas');
@@ -2303,7 +2364,7 @@ window.CE = window.CE || {};
           extra: lista.length ? CE.el('ul', { class: 'pr-entrevistas' }, lista.map((e) => CE.el('li', {},
             CE.el('strong', {}, `${e.nome}${e.idade ? `, ${e.idade} anos` : ''}${e.turma ? ` · turma ${e.turma}` : ''}`),
             CE.el('span', {}, `Trabalho: ${e.experiencia}`), CE.el('span', {}, `💪 Pontos fortes: ${e.fortes.join(', ')}`), CE.el('span', {}, `🎯 Quer melhorar: ${e.melhorar.join(', ')}`),
-            e.motivo ? CE.el('span', {}, `💬 ${e.motivo}`) : null))) : CE.el('p', { class: 'pr-suave' }, 'Nenhum aluno fez a entrevista ainda. Ela aparece sozinha na primeira vez que o aluno entra na praça.'),
+            e.motivo ? CE.el('span', {}, `💬 ${e.motivo}`) : null, retornoDoProfessor(e)))) : CE.el('p', { class: 'pr-suave' }, 'Nenhum aluno fez a entrevista ainda. Ela aparece sozinha na primeira vez que o aluno entra na praça.'),
           opcoes: [{ rotulo: 'Voltar às vagas', fica: true, id: 'voltar', acao: () => abrirVagas() }, { rotulo: 'Fechar' }] });
       }
       // As provas: cada uma devolve a nota (0 a 100) para resultadoDaProva.
@@ -2311,7 +2372,11 @@ window.CE = window.CE || {};
       const sorteio = (l) => l[Math.floor(Math.random() * l.length)];
       const semAcento = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '');
       const palavras = (s) => String(s).toLowerCase().replace(/[.,;:!?"“”]/g, ' ').split(/\s+/).filter(Boolean);
-      function abrirProva(v) {
+      async function abrirProva(v) {
+        if (!souInstrutor && v.requer) {
+          const meus = await meusCargos();
+          if (!NOV.liberada(v, meus.cargos, meus.total)) return abrirDialogo({ tipo: 'vagas', rosto: '🔒', titulo: v.titulo, fala: `Esta vaga é uma promoção: primeiro seja contratado(a) ${textoRequer(v)}.`, opcoes: [{ rotulo: '💼 Outras vagas', principal: true, fica: true, id: 'outras-vagas', acao: () => abrirVagas() }] });
+        }
         abrirDialogo({ tipo: 'prova', rosto: v.emoji, titulo: v.titulo, subtitulo: `${v.lugar} · ${NOV.PROVAS[v.prova]}`, fala: v.explica,
           lista: { ditado: ['O tabelião fala o texto (e ele aparece aos poucos).', 'Digite junto, no mesmo ritmo.', 'Quando acabar, aperte "Terminei". O relógio corre!'],
             contas: ['Quatro clientes no caixa.', 'Some a compra ou calcule o troco e digite o valor (ex.: 12,50).', 'Rápido e sem errar: o relógio corre!'],
@@ -2433,18 +2498,27 @@ window.CE = window.CE || {};
         const passou = nota >= 60;
         const destaque = (vagaDaHora() || {}).id === v.id;
         const salario = passou ? Math.round(v.salario * (nota / 100) * (destaque ? 1.5 : 1)) + (nota >= 90 ? 10 : 0) : 0;
-        let pago = null;
+        let pago = null, primeiraVez = false, primeiroEmprego = false;
         if (passou && !souInstrutor) {
           pago = await CE.carteira.banco.receberSalario(salario, `${v.titulo} (nota ${nota})`, `salario:${v.id}:${NOV.dia(Date.now())}`);
           meuCracha = v.emoji; marcarCracha(eu, meuCracha);
-          await CE.sessao.atualizarProgresso((p) => { p.praca = p.praca || {}; p.praca.cracha = v.emoji; p.praca.contratacoes = (Number(p.praca.contratacoes) || 0) + 1; }).catch(() => {});
+          await CE.sessao.atualizarProgresso((p) => {
+            p.praca = p.praca || {}; p.praca.cracha = v.emoji;
+            primeiraVez = !(p.praca.cargos && p.praca.cargos[v.id]);
+            primeiroEmprego = !(Number(p.praca.contratacoes) > 0);
+            p.praca.contratacoes = (Number(p.praca.contratacoes) || 0) + 1;
+            p.praca.cargos = { ...(p.praca.cargos || {}), [v.id]: Math.max(nota, Number((p.praca.cargos || {})[v.id]) || 0) };
+          }).catch(() => {});
           conquista('contratado');
+          if (v.requer) conquista('promovido');
           CE.comemorar(nota >= 90 ? 'grande' : 'pequena');
         }
         const cargo = nota >= 90 ? 'Supervisor(a)' : 'Contratado(a)';
         const lista = [detalhe, ...(textoCerto ? [`Texto: “${textoCerto}”`] : [])];
         if (passou && pago) lista.push(`💰 Salário: ${pago.valor} moedas${destaque ? ' (vaga em destaque: +50%)' : ''}${nota >= 90 ? ' (+10 de bônus)' : ''}.`, pago.desconto ? `📉 ${CE.carteira.banco.moeda(pago.desconto)} foram para pagar o empréstimo; caíram ${CE.carteira.banco.moeda(pago.liquido)} na conta.` : '🏦 O salário caiu na sua conta no banco.');
         if (passou && !pago && !souInstrutor) lista.push('✅ Você já recebeu por esta vaga hoje: esta prova valeu como treino.');
+        const promocoes = primeiraVez ? vagasConhecidas.filter((x) => x.requer === v.id || (x.requer === 'contratado' && primeiroEmprego)) : [];
+        for (const x of promocoes) lista.push(`🔓 Promoção liberada: ${x.titulo.replace(/ \(promoção\)$/, '')} (paga até ${x.salario + 10} moedas). Veja em 💼 Vagas!`);
         if (CE.voz) CE.voz.falar(passou ? `Parabéns! Você foi contratado. Nota ${nota}.` : `Nota ${nota}. Ainda não foi desta vez. Treine e tente de novo!`);
         abrirDialogo({ tipo: 'vagas', rosto: passou ? '🤝' : '💪', titulo: passou ? `${cargo}! Nota ${nota}` : `Nota ${nota}: ainda não foi desta vez`, subtitulo: v.titulo,
           fala: passou ? `Parabéns! Você ganhou o crachá ${v.emoji}, que todo mundo vê no seu boneco.` : 'Para ser contratado, precisa de nota 60. Treine e tente de novo: você pode se candidatar quantas vezes quiser.',

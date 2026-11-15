@@ -77,10 +77,12 @@ window.CE = window.CE || {};
 
   // ---------- O banco das moedas: conta, poupança, aplicação e empréstimo ----------
   // O salário das vagas da Praça Escola cai na conta. Da conta, o aluno saca para a carteira (para gastar) ou deixa
-  // rendendo: a poupança rende 1% ao dia e pode sair quando quiser; a aplicação rende 3% ao dia, mas só sai depois de
-  // 3 dias. O empréstimo vem na hora, mas cobra 4% ao dia, e metade de cada salário vai para pagar a dívida (o salário
-  // futuro fica comprometido). "Dia" é dia de verdade (de calendário): os juros entram quando o aluno volta.
-  const TAXA = { poupanca: 0.01, aplicacao: 0.03, emprestimo: 0.04 };
+  // rendendo: a poupança rende 0,5% ao dia e pode sair quando quiser; a aplicação rende 1% ao dia, mas só sai depois
+  // de 3 dias. O empréstimo vem na hora, mas cobra 2% ao dia (o dobro da aplicação e 4 vezes a poupança, como na vida
+  // real: o banco ganha na diferença), e metade de cada salário vai para pagar a dívida (o salário futuro fica
+  // comprometido). "Dia" é dia de verdade (de calendário): os juros entram quando o aluno volta.
+  const TAXA = { poupanca: 0.005, aplicacao: 0.01, emprestimo: 0.02 };
+  const pct = (t) => `${(t * 100).toLocaleString('pt-BR')}%`;
   const PRAZO_APLICACAO = 3, LIMITE_EMPRESTIMO = 150, PARTE_DO_SALARIO = 0.5, MAX_EXTRATO_BANCO = 40;
   const hoje = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const diasEntre = (a, b) => Math.max(0, Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000));
@@ -127,7 +129,7 @@ window.CE = window.CE || {};
     return n;
   };
   const banco = {
-    TAXA, PRAZO_APLICACAO, LIMITE_EMPRESTIMO, PARTE_DO_SALARIO, moeda,
+    TAXA, PRAZO_APLICACAO, LIMITE_EMPRESTIMO, PARTE_DO_SALARIO, moeda, pct,
     async ver() { if (!ehAluno()) return lerBanco(null); let r = null; await noBanco((b) => { r = JSON.parse(JSON.stringify(b)); }, true); r.aplicacoes = r.aplicacoes.map((a) => ({ ...a, atual: valorDaAplicacao(a), faltam: liberaEm(a) })); return r; },
     depositar: (v) => noBanco((b, c) => { const n = Math.floor(quanto(v, c.saldo, 'a carteira')); if (n < 1) throw new Error('Deposite moedas inteiras.'); c.saldo -= n; c.extrato = [{ em: Date.now(), valor: -n, motivo: 'Depósito no banco', tipo: 'deposito' }, ...c.extrato].slice(0, MAX_EXTRATO); b.conta = c2(b.conta + n); linhaBanco(b, 'Depósito (da carteira)', n, 'deposito'); }),
     sacar: (v) => noBanco((b, c) => { const n = Math.floor(quanto(v, b.conta, 'a conta')); if (n < 1) throw new Error('Saque moedas inteiras.'); b.conta = c2(b.conta - n); c.saldo += n; c.extrato = [{ em: Date.now(), valor: n, motivo: 'Saque no banco', tipo: 'saque' }, ...c.extrato].slice(0, MAX_EXTRATO); linhaBanco(b, 'Saque (para a carteira)', -n, 'saque'); }),
@@ -148,7 +150,7 @@ window.CE = window.CE || {};
       if (b.emprestimo) throw new Error('Você já tem um empréstimo. Pague esse antes de pegar outro.');
       const n = quanto(v, LIMITE_EMPRESTIMO, 'o seu limite');
       b.emprestimo = { pego: n, devendo: n, desde: hoje() }; b.conta = c2(b.conta + n);
-      linhaBanco(b, `Empréstimo (juros de ${TAXA.emprestimo * 100}% ao dia)`, n, 'emprestimo');
+      linhaBanco(b, `Empréstimo (juros de ${pct(TAXA.emprestimo)} ao dia)`, n, 'emprestimo');
     }),
     pagar: (v) => noBanco((b) => {
       if (!b.emprestimo) throw new Error('Você não tem empréstimo.');
@@ -271,25 +273,25 @@ window.CE = window.CE || {};
         const v = () => campo.value;
         const botao = (rotulo, acao, id, sec = true) => CE.el('button', { class: 'botao' + (sec ? ' secundario' : ''), type: 'button', 'data-banco': id, onclick: () => operar(() => acao(v())) }, rotulo);
         const e = b.emprestimo;
-        const simula = [1, 3, 7].map((d) => `${d} dia${d > 1 ? 's' : ''}: ${moeda(banco.simular(100, d))}`).join(' · ');
+        const simula = [1, 7, 30].map((d) => `${d} dia${d > 1 ? 's' : ''}: ${moeda(banco.simular(100, d))}`).join(' · ');
         corpo.replaceChildren(CE.el('div', { class: 'cart banco' }, abas(),
           CE.el('div', { class: 'banco-cartoes' },
             CE.el('div', { class: 'banco-cartao', 'data-conta': String(b.conta) }, CE.el('span', {}, '🏦 Conta'), CE.el('strong', {}, moeda(b.conta)), CE.el('small', {}, 'O salário das vagas cai aqui')),
-            CE.el('div', { class: 'banco-cartao' }, CE.el('span', {}, '🐷 Poupança'), CE.el('strong', {}, moeda(b.poupanca)), CE.el('small', {}, `Rende ${TAXA.poupanca * 100}% ao dia · sai quando quiser`)),
+            CE.el('div', { class: 'banco-cartao' }, CE.el('span', {}, '🐷 Poupança'), CE.el('strong', {}, moeda(b.poupanca)), CE.el('small', {}, `Rende ${pct(TAXA.poupanca)} ao dia · sai quando quiser`)),
             CE.el('div', { class: 'banco-cartao' }, CE.el('span', {}, '💰 Carteira'), CE.el('strong', {}, String(c.saldo)), CE.el('small', {}, 'Para gastar na praça (vaquinha)')),
             CE.el('div', { class: 'banco-cartao' + (e ? ' divida' : '') }, CE.el('span', {}, '📉 Empréstimo'), CE.el('strong', {}, e ? moeda(e.devendo) : '—'),
-              CE.el('small', {}, e ? `Juros de ${TAXA.emprestimo * 100}% ao dia · ${PARTE_DO_SALARIO * 100}% do salário paga a dívida` : `Limite: ${LIMITE_EMPRESTIMO} moedas`))),
+              CE.el('small', {}, e ? `Juros de ${pct(TAXA.emprestimo)} ao dia · ${pct(PARTE_DO_SALARIO)} do salário paga a dívida` : `Limite: ${LIMITE_EMPRESTIMO} moedas · juros de ${pct(TAXA.emprestimo)} ao dia`))),
           CE.el('div', { class: 'banco-operar' }, CE.el('label', { for: 'cart-valor' }, 'Valor'), campo),
           aviso ? CE.el('p', { class: 'banco-aviso', role: 'alert' }, aviso) : null,
           CE.el('div', { class: 'banco-botoes' },
             botao('⬇ Depositar (da carteira)', banco.depositar, 'depositar', false), botao('⬆ Sacar (para a carteira)', banco.sacar, 'sacar'),
             botao('🐷 Guardar na poupança', banco.guardar, 'guardar'), botao('Tirar da poupança', banco.tirar, 'tirar'),
-            botao(`📈 Aplicar (${TAXA.aplicacao * 100}% ao dia, ${PRAZO_APLICACAO} dias)`, banco.aplicar, 'aplicar'),
+            botao(`📈 Aplicar (${pct(TAXA.aplicacao)} ao dia, ${PRAZO_APLICACAO} dias)`, banco.aplicar, 'aplicar'),
             e ? botao('Pagar o empréstimo', banco.pagar, 'pagar') : botao('📉 Pegar empréstimo', banco.emprestar, 'emprestar')),
           b.aplicacoes.length ? CE.el('div', {}, CE.el('h3', {}, '📈 Aplicações'), CE.el('ul', { class: 'cart-extrato' }, b.aplicacoes.map((a) => CE.el('li', {},
             CE.el('span', { class: 'txt' }, CE.el('span', {}, `Aplicou ${moeda(a.valor)} · hoje vale ${moeda(a.atual)}`), CE.el('small', {}, a.faltam ? `Sai daqui a ${a.faltam} dia${a.faltam > 1 ? 's' : ''}` : 'Já pode resgatar')),
             CE.el('button', { class: 'botao secundario', type: 'button', 'data-resgatar': a.id, disabled: a.faltam > 0, onclick: () => operar(() => banco.resgatar(a.id)) }, 'Resgatar'))))) : null,
-          CE.el('p', { class: 'cart-dica' }, `💡 Juros trabalham a seu favor na poupança e na aplicação, e contra você no empréstimo. Exemplo: pegando 100 moedas emprestadas, a dívida vira ${simula}. Enquanto deve, metade de cada salário vai para o banco.`),
+          CE.el('p', { class: 'cart-dica' }, `💡 Juros trabalham a seu favor na poupança e na aplicação, e contra você no empréstimo. Exemplo: pegando 100 moedas emprestadas, a dívida vira ${simula}. Repare: o banco cobra no empréstimo o dobro do que paga na aplicação (é assim que ele lucra). Enquanto deve, metade de cada salário vai para o banco.`),
           CE.el('h3', {}, 'Extrato do banco'),
           b.extrato.length ? CE.el('ul', { class: 'cart-extrato' }, b.extrato.map((x) => CE.el('li', {},
             CE.el('span', { class: 'txt' }, CE.el('span', {}, x.motivo), CE.el('small', {}, quando(x.em))),

@@ -461,10 +461,21 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
     'praça: a entrevista fica no disco do instrutor, e só o instrutor lê as entrevistas');
   ok(/instrutor/.test((await pedir('praca:criar-vaga', [{ titulo: 'X', prova: 'ditado', texto: 'a b c d e' }], tT7)).erro || ''), 'praça: aluno não cria vaga');
   const vg = (await pedir('praca:criar-vaga', [{ titulo: 'Digitador da Câmara', prova: 'ditado', texto: 'A sessão começa às nove horas.', salario: 500 }], tp)).valor;
-  ok(vg.padrao.length === 4 && vg.extras.length === 1 && vg.extras[0].salario === 100, 'praça: o instrutor cria uma vaga (salário no máximo 100)');
-  ok((await pedir('praca:remover-vaga', [vg.extras[0].id], tp)).valor.extras.length === 0, 'praça: o instrutor apaga a vaga que criou');
+  ok(vg.padrao.length === 6 && vg.padrao.filter((v) => v.requer).length === 2 && vg.extras.length === 1 && vg.extras[0].salario === 100, 'praça: o instrutor cria uma vaga (salário no máximo 100); a cidade tem 2 vagas de promoção');
+  const promo = (await pedir('praca:criar-vaga', [{ titulo: 'Chefe do Cartório', prova: 'contas', requer: 'datilografo' }], tp)).valor.extras.find((v) => v.titulo === 'Chefe do Cartório');
+  ok(promo && promo.requer === 'datilografo' && promo.emoji === '⭐' && /não existe/.test((await pedir('praca:criar-vaga', [{ titulo: 'Y', prova: 'contas', requer: 'vaga-inventada' }], tp)).erro || ''),
+    'praça: o instrutor cria uma promoção (só para quem já foi datilógrafo); vaga de antes inventada é recusada');
+  ok((await pedir('praca:remover-vaga', [vg.extras[0].id], tp)).valor.extras.length === 1 && (await pedir('praca:remover-vaga', [promo.id], tp)).valor.extras.length === 0, 'praça: o instrutor apaga as vagas que criou');
   const sDia = (await pedir('praca:sincronizar', [{ x: 18, y: 15, cracha: '📝' }, 0], tT7)).valor;
-  ok(sDia.dia && sDia.dia.duracao === 900000 && sDia.pessoas.find((x) => x.nome && x.cracha === '📝'), 'praça: o dia da cidade (15 minutos) e o crachá de quem foi contratado');
+  ok(sDia.dia && sDia.dia.duracao === 900000 && sDia.pessoas.find((x) => x.nome && x.cracha === '📝') && sDia.retorno === 0, 'praça: o dia da cidade (15 minutos) e o crachá de quem foi contratado');
+  // O retorno do recrutador: o instrutor comenta a entrevista e o aluno fica sabendo pela sincronização.
+  ok(/instrutor/.test((await pedir('praca:comentar-entrevista', [{ id: entrevistaFeita.id, texto: 'oi' }], tT7)).erro || ''), 'praça: aluno não escreve retorno de entrevista');
+  const com = (await pedir('praca:comentar-entrevista', [{ id: entrevistaFeita.id, texto: 'Gostei da sua pontualidade! Treine a digitação.' }], tp)).valor;
+  const sRet = (await pedir('praca:sincronizar', [{ x: 18, y: 15 }, 0], tT7)).valor;
+  const minha = (await pedir('praca:minha-entrevista', [], tT7)).valor;
+  ok(com.comentario && sRet.retorno === com.comentario.em && minha.comentario.texto === 'Gostei da sua pontualidade! Treine a digitação.' && minha.comentario.por,
+    'praça: o instrutor deixa um retorno na entrevista; o aluno fica sabendo e lê o retorno');
+  ok(/não existe/.test((await pedir('praca:comentar-entrevista', [{ id: 'ninguem', texto: 'x' }], tp)).erro || ''), 'praça: retorno para entrevista que não existe é recusado');
   // Hora da Praça e eventos especiais (a vaquinha da turma; o Professor Virtual conduz).
   ok(/instrutor/.test((await pedir('praca:configurar-horario', [{ fins: ['17:00'] }], tT7)).erro || '') && /instrutor/.test((await pedir('praca:testar-hora', [], tT7)).erro || ''), 'praça: aluno não muda o horário das aulas nem testa a Hora da Praça');
   const hor = (await pedir('praca:configurar-horario', [{ fins: ['17:00', '99:99'], dias: [1, 2, 3, 4, 5] }], tp)).valor;
