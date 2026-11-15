@@ -2473,6 +2473,12 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .pr-vaga.bloqueada .ic { filter: grayscale(1); }
 .pr-requer { font-size: 13px; font-weight: 600; color: #6a45b8; }
 .pr-retorno { display: grid; gap: 4px; margin-top: 6px; }
+.objetivos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; padding: 0 16px 16px; }
+.objetivo-cartao { display: grid; gap: 4px; text-align: left; border: 1px solid var(--borda); border-radius: 12px; padding: 12px; background: var(--fundo-janela); color: var(--texto); font: inherit; cursor: pointer; }
+.objetivo-cartao:hover { border-color: var(--azul, #0067c0); }
+.objetivo-cartao .ic { font-size: 32px; }
+.objetivo-cartao small { color: var(--texto-suave); }
+.objetivo-botoes { margin-top: 6px; }
 .pr-barracas { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
 .pr-barraca { display: flex; gap: 8px; align-items: center; border: 1px solid var(--borda); border-radius: 10px; padding: 6px 8px; }
 .pr-barraca.minha { border-style: dashed; }

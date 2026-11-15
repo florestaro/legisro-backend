@@ -256,7 +256,7 @@ window.CE = window.CE || {};
           retorno.className = 'prof-retorno certo';
           continuar.hidden = false;
           CE.voz.falar('Isso mesmo! ' + (explicacao || ''));
-          CE.emitir('quiz:respondido', { certo: true, primeira: errosNestaPergunta === 0 });
+          CE.emitir('quiz:respondido', { certo: true, primeira: errosNestaPergunta === 0, pergunta, licao: licao && licao.id });
         } else {
           errosNestaPergunta++;
           e.currentTarget.classList.add('errada');

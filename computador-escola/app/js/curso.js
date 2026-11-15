@@ -37,7 +37,7 @@ window.CE = window.CE || {};
     // Intermediário
     'n2-pastas-pesquisar', 'n2-pastas-desafio', 'n2-atalhos-gerais', 'n2-editor-paragrafos', 'n2-editor-requerimento',
     'n2-editor-desafio', 'n2-pl-alca', 'n2-pl-formatar', 'n2-pl-notas', 'n2-pl-desafio', 'n2-email-desafio', 'n2-servicos-desafio',
-    'n2-gov-desafio', 'n2-ia-desafio', 'n2-doc-desafio',
+    'n2-gov-desafio', 'n2-ia-desafio', 'n2-doc-desafio', 'n2-golpe-tarefas', 'n2-golpe-pix', 'n2-golpe-desafio',
     // Avançado
     'n3-ed-colunas', 'n3-ed-substituir', 'n3-ed-desafio', 'n3-pl-destacar', 'n3-pl-procv', 'n3-pl-desafio', 'n3-ap-desafio',
     'n3-cfg-hora-som', 'n3-cfg-atualizar', 'n3-cfg-impressora', 'n3-cfg-desafio', 'n3-seg-desafio', 'n3-tr-desafio',
@@ -53,6 +53,21 @@ window.CE = window.CE || {};
     'cri-foto-tamanho', 'cri-foto-direitos', 'cri-vet-pixel', 'cri-vid-titulo', 'cri-desafio',
   ]);
   const TRILHAS = { essencial: 'Trilha essencial', completa: 'Trilha completa' };
+
+  // Trilhas por objetivo: o aluno escolhe o que quer conseguir e o curso monta o caminho com as aulas que já existem
+  // (as essenciais desses módulos, nesta ordem). As aulas do objetivo abrem uma depois da outra, mesmo fora da ordem
+  // do curso, e viram a "próxima aula". O certificado continua sendo o do nível (o objetivo só muda o caminho).
+  CE.OBJETIVOS = [
+    { id: 'emprego', icone: '💼', nome: 'Arrumar emprego', texto: 'Currículo, e-mail com anexo, documentos em PDF e a prova prática de um processo seletivo.',
+      modulos: ['n1-computador', 'n1-mouse', 'n1-teclado', 'n1-janelas', 'n1-arquivos', 'n1-editor', 'n1-internet', 'n2-email', 'n2-editor', 'n2-documentos', 'n2-emprego', 'n3-trabalho'] },
+    { id: 'govbr', icone: '🏛️', nome: 'Resolver as coisas no gov.br', texto: 'Conta gov.br, serviços públicos pela internet, documentos em PDF e assinatura digital.',
+      modulos: ['n1-computador', 'n1-mouse', 'n1-teclado', 'n1-janelas', 'n1-internet', 'n1-seguranca', 'n2-email', 'n2-gov', 'n2-documentos', 'n2-servicos'] },
+    { id: 'vender', icone: '🛒', nome: 'Vender pelo celular e pela internet', texto: 'Celular, Zap, Pix, golpes, anúncios, dinheiro e MEI.',
+      modulos: ['n1-computador', 'n1-mouse', 'n1-internet', 'n1-seguranca', 'cel-basico', 'cel-mensagens', 'cel-dinheiro', 'cel-golpes', 'n3-dinheiro', 'n3-vendas'] },
+    { id: 'golpes', icone: '🛡️', nome: 'Me proteger dos golpes', texto: 'Senhas, golpes por mensagem, ligação, boleto, Pix e inteligência artificial.',
+      modulos: ['n1-computador', 'n1-mouse', 'n1-internet', 'n1-seguranca', 'n2-golpes-agora', 'n2-ia', 'cel-golpes', 'n3-seguranca'] },
+  ];
+  const objetivoDe = (p) => CE.OBJETIVOS.find((o) => o.id === (p && p.objetivo)) || null;
 
   CE.MODULOS = [];
   CE.LICOES = [];
@@ -99,6 +114,20 @@ window.CE = window.CE || {};
     trilhaPronta: () => carregando || CE.curso.carregarTrilha(),
     trilhaDaEscola: () => trilhaDaEscola,
     trilha: (progresso) => valida(progresso && progresso.trilha) || trilhaDaEscola,
+    objetivo: objetivoDe,
+    // As aulas do objetivo do aluno, na ordem do caminho (sem as provas de nível e sem as de reforço da trilha).
+    aulasDoObjetivo(progresso, obj = objetivoDe(progresso)) {
+      if (!obj) return [];
+      const lista = [];
+      for (const m of obj.modulos) lista.push(...CE.LICOES.filter((l) => l.modulo === m && !l.prova && CE.curso.obrigatoria(l, progresso)));
+      return lista;
+    },
+    // A aula está no caminho do objetivo e a anterior do caminho já foi feita?
+    liberadaPeloObjetivo(licao, progresso) {
+      const lista = CE.curso.aulasDoObjetivo(progresso);
+      const i = lista.indexOf(licao);
+      return i === 0 || (i > 0 && CE.curso.aprovada(lista[i - 1], progresso));
+    },
     // A aula conta para o curso (e para o certificado) na trilha deste aluno?
     obrigatoria(licao, progresso) {
       if (licao.reforco && CE.curso.trilha(progresso) !== 'completa') return false;
@@ -136,6 +165,7 @@ window.CE = window.CE || {};
     liberada(licao, progresso) {
       if (ehInstrutor() || licao.especial || licao.extra) return true;
       if (CE.curso.liberadaPeloInstrutor(licao, progresso)) return true;
+      if (CE.curso.liberadaPeloObjetivo(licao, progresso)) return true;
       const anterior = CE.curso.anteriorNaTrilha(licao, progresso);
       return !anterior || CE.curso.aprovada(anterior, progresso);
     },
@@ -149,6 +179,9 @@ window.CE = window.CE || {};
     // principal terminado, o primeiro curso livre que já abriu.
     proxima(progresso) {
       const falta = (l) => !CE.curso.aprovada(l, progresso);
+      // Com um objetivo escolhido, a próxima aula é a do caminho dele (até terminar o caminho).
+      const doObjetivo = CE.curso.aulasDoObjetivo(progresso).find(falta);
+      if (doObjetivo) return doObjetivo;
       const lista = CE.curso.aulasDaTrilha(progresso);
       const r = (l) => (progresso.licoes && progresso.licoes[l.id]) || {};
       const ultima = CE.LICOES.filter((l) => r(l).em && !r(l).dispensada).sort((a, b) => r(b).em - r(a).em)[0];

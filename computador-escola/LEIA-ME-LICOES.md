@@ -32,9 +32,15 @@ e no chat. Sem `dica`, o professor monta uma pela tarefa (atalho Ctrl+…, `mous
 `destacar` e o programa da janela). Use sempre `destacar` nas tarefas de clique: é para lá que vão a seta, o aviso de
 "Quase!" quando o aluno clica fora e a setinha do "Mostrar como".
 
+**Trilhas por objetivo.** `CE.OBJETIVOS` (em `app/js/curso.js`) lista os objetivos e os módulos de cada um, na ordem
+do caminho. Módulo novo que serve a um objetivo: ponha o id dele na lista. As aulas do caminho (as essenciais, sem as
+provas de nível) abrem uma depois da outra e viram a "próxima aula" (`CE.curso.aulasDoObjetivo`).
+
 **Revisão rápida.** As perguntas (`quiz`) das aulas também servem para a revisão do começo do dia
 (`app/js/licoes/revisao.js`): o professor sorteia até 3 das últimas aulas que o aluno fez. Por isso, escreva perguntas
-que se entendem sozinhas, sem depender da tela da aula (nada de "o botão que você acabou de clicar").
+que se entendem sozinhas, sem depender da tela da aula (nada de "o botão que você acabou de clicar"). A pergunta que o
+aluno não acerta de primeira volta na próxima revisão (`progresso.revisao.voltar`), por isso o texto da pergunta é a
+identidade dela: mudar o texto tira a pergunta da lista de quem errou.
 
 ## Exemplo
 
@@ -154,6 +160,8 @@ Atalhos (`CE.L`): `info`, `quiz`, `esperar`, `abrir`, `fechar`, `editorBotao`, `
 | `pdf:zoom` / `pdf:impresso` | Leitor de PDF | `zoom` / `nome` |
 | `praca:entrou` / `praca:falou` / `praca:votou` / `praca:recado` / `praca:entrou-lugar` / `praca:conquista` / `sala:praca` | Praça Escola: entrou na praça, falou, votou, pregou recado no mural, entrou num prédio (Banco, Correios...), ganhou uma conquista; o instrutor chamou todos | — / `texto` / `opcao` / — / `lugar` / `id` (`visitou`, `ensinou`, `caixa`, `olhoVivo`, `velha`, `detetive`, `tarefas`, `brigada`) / `id`, `emergencia` |
 | `banco:mudou` / `banco:salario` | Banco das moedas: uma operação na conta, poupança, aplicação ou empréstimo / o salário de uma vaga caiu na conta | — / `valor`, `desconto`, `liquido` |
+| `objetivo:escolhido` | O aluno escolheu (ou trocou) o objetivo em Aulas › 🎯 Meu objetivo | `objetivo` (`emprego`, `govbr`, `vender`, `golpes` ou `null`) |
+| `quiz:respondido` | Respondeu uma pergunta | `certo`, `primeira`, `pergunta`, `licao` |
 | `carteira:ganhou` / `carteira:gastou` | O aluno ganhou moedas (aula, missão, medalha, Praça Escola...) / gastou moedas (vaquinha de um evento especial da praça) | `valor`, `saldo`, `tipo`, `motivo` / `valor`, `saldo`, `motivo` |
 | `planilha:classificada` / `planilha:filtro` / `planilha:menu-filtro` / `planilha:filtrada` | Classificar e filtro | `coluna`, `ordem` (`az`, `za`) / `ligado` / `coluna`, `mostrando`, `escondidos`, `visiveis` |
 | `planilha:grafico` / `planilha:grafico-tipo` / `planilha:grafico-movido` / `planilha:condicional` | Gráficos e destaque automático | `tipo`, `intervalo`, `series`, `nomesSeries` / `regra`, `valor`, `cor` |

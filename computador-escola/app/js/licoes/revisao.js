@@ -35,7 +35,23 @@ window.CE = window.CE || {};
 
   CE.ouvir('quiz:respondido', (d) => {
     if (origem && !d.primeira) erros[origem.id] = (erros[origem.id] || 0) + 1;
+    // A pergunta que o aluno não acertou de primeira volta na próxima revisão; acertou de primeira, sai da lista.
+    if (!d.certo || !d.pergunta || !CE.sessao.usuario || CE.sessao.usuario.papel === 'instrutor') return;
+    const aula = origem || CE.curso.licao(d.licao);
+    if (!aula || aula.especial) return;
+    CE.sessao.atualizarProgresso((pr) => {
+      const r = pr.revisao = pr.revisao || {};
+      const v = (Array.isArray(r.voltar) ? r.voltar : []).filter((x) => !(x.aula === aula.id && x.pergunta === d.pergunta));
+      if (!d.primeira) v.unshift({ aula: aula.id, pergunta: d.pergunta, em: Date.now() });
+      r.voltar = v.slice(0, 9);
+    }).catch(() => {});
   });
+  // As perguntas que o aluno errou e ainda existem nas aulas (até 2 por revisão).
+  const paraVoltar = (p) => ((p && p.revisao && p.revisao.voltar) || []).map((x) => {
+    const l = CE.curso.licao(x.aula);
+    const passo = l && l.passos && l.passos.find((s) => s.quiz && s.quiz.pergunta === x.pergunta);
+    return passo ? { aula: l, quiz: passo.quiz, voltou: true } : null;
+  }).filter(Boolean).slice(0, 2);
 
   CE.revisao = {
     // Vem dos dados da escola (o instrutor liga e desliga em Painel › Progresso da turma).
@@ -47,13 +63,16 @@ window.CE = window.CE || {};
       const hoje = CE.frequencia.hoje();
       if (p.revisao && p.revisao.dia === hoje) return false;
       const aulas = recentes(p);
+      if (paraVoltar(p).length) return true;
       return aulas.length > 0 && CE.frequencia.diaDe(new Date(registro(p, aulas[0]).em || Date.now())) !== hoje;
     },
     // Monta a revisão do dia com as perguntas das últimas aulas.
     montar(p) {
-      const aulas = recentes(p);
-      const perguntas = escolherPerguntas(aulas);
+      const voltam = paraVoltar(p);
+      const recentesP = escolherPerguntas(recentes(p)).filter((q) => !voltam.some((v) => v.quiz.pergunta === q.quiz.pergunta));
+      const perguntas = [...voltam, ...recentesP].slice(0, PERGUNTAS);
       if (!perguntas.length) return null;
+      const aulas = [...new Set(perguntas.map((q) => q.aula))];
       erros = {};
       origem = null;
       const nomes = aulas.map((l) => `"${l.titulo}"`);
@@ -61,9 +80,9 @@ window.CE = window.CE || {};
         id: 'revisao', titulo: 'Revisão rápida', icone: '🔁', nivel: aulas[0].nivel, especial: true,
         descricao: 'Perguntas das últimas aulas, para não esquecer.',
         passos: [
-          info(`Revisão rápida! Vamos lembrar o que você aprendeu ${nomes.length > 1 ? `nas aulas ${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}` : `na aula ${nomes[0]}`}. São só ${perguntas.length} pergunta${perguntas.length > 1 ? 's' : ''}. Se errar, tudo bem: é só tentar outra resposta. Clique em "Continuar".`, { emoji: '🔁' }),
-          ...perguntas.map(({ aula, quiz }) => ({
-            quiz: { ...quiz, explicacao: `${quiz.explicacao ? quiz.explicacao + ' ' : ''}(Da aula "${aula.titulo}".)` },
+          info(`Revisão rápida! Vamos lembrar o que você aprendeu ${nomes.length > 1 ? `nas aulas ${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}` : `na aula ${nomes[0]}`}. São só ${perguntas.length} pergunta${perguntas.length > 1 ? 's' : ''}${voltam.length ? `, ${voltam.length === 1 ? 'uma delas' : `${voltam.length} delas`} você errou da outra vez: agora vai!` : ''}. Se errar, tudo bem: é só tentar outra resposta. Clique em "Continuar".`, { emoji: '🔁' }),
+          ...perguntas.map(({ aula, quiz, voltou }) => ({
+            quiz: { ...quiz, explicacao: `${quiz.explicacao ? quiz.explicacao + ' ' : ''}(Da aula "${aula.titulo}"${voltou ? '. Esta você tinha errado antes' : ''}.)` },
             preparar: () => { origem = aula; },
           })),
         ],
@@ -71,7 +90,7 @@ window.CE = window.CE || {};
           origem = null;
           const esquecida = aulas.filter((l) => erros[l.id]).sort((a, b) => erros[b.id] - erros[a.id])[0] || null;
           await CE.sessao.atualizarProgresso((pr) => {
-            pr.revisao = { dia: CE.frequencia.hoje(), em: Date.now(), nota, licoes: aulas.map((l) => l.id) };
+            pr.revisao = { dia: CE.frequencia.hoje(), em: Date.now(), nota, licoes: aulas.map((l) => l.id), voltar: (pr.revisao && pr.revisao.voltar) || [] };
           });
           CE.emitir('revisao:concluida', { nota, licoes: aulas.map((l) => l.id), rever: esquecida && esquecida.id });
           const precisaRever = nota < CE.curso.NOTA_MINIMA && esquecida;
@@ -121,7 +140,7 @@ window.CE = window.CE || {};
     lembrarProgresso(p) { progressoCache = p; },
     // O aluno preferiu ir direto para a aula: não pergunta de novo hoje.
     pular() {
-      return CE.sessao.atualizarProgresso((pr) => { pr.revisao = { dia: CE.frequencia.hoje(), em: Date.now(), pulada: true }; });
+      return CE.sessao.atualizarProgresso((pr) => { pr.revisao = { dia: CE.frequencia.hoje(), em: Date.now(), pulada: true, voltar: (pr.revisao && pr.revisao.voltar) || [] }; });
     },
   };
 })();

@@ -38,6 +38,27 @@
     },
   };
 
+  // O RH da prefeitura de treino (prova prática do processo seletivo): manda a ficha em PDF e confirma a inscrição
+  // quando a ficha volta assinada.
+  const campoPdf = (nome, rotulo, largura = 300) => `<span class="pdf-campo" data-campo="${nome}" data-rotulo="${rotulo}" data-largura="${largura}"></span>`;
+  const fichaSeletivo = () => CE.pdf.montar({}, [`<h1 style="text-align: center;">Processo seletivo</h1><p style="text-align: center;">Prefeitura Escola (treino) · Ficha de inscrição</p><p><br></p>
+    <p><b>Nome completo:</b> ${campoPdf('nome', 'Nome completo', 440)}</p>
+    <p><b>CPF:</b> ${campoPdf('cpf', '123.456.789-09', 200)}</p>
+    <p><b>Telefone:</b> ${campoPdf('telefone', '(69) 99999-1234', 200)}</p>
+    <p><b>Vaga:</b> ${campoPdf('vaga', 'Ex.: Auxiliar administrativo', 300)}</p><p><br></p>
+    <p>${campoPdf('aceito', 'Declaro que as informações são verdadeiras').replace('data-largura', 'data-tipo="marcar" data-largura')} Declaro que as informações acima são verdadeiras.</p>
+    <p><br></p><p style="font-size: 13px; color: #555;">Documento de TREINO. Devolva preenchido e ASSINADO pelo Cidadão Digital.</p>`]);
+  const assinado = (a) => a.tipo === 'pdf' && !!(CE.assinatura && CE.assinatura.ler(a.conteudo || '').length);
+  CONTATOS_TREINO['selecao@prefeituraescola.gov.br'] = {
+    nome: 'RH Prefeitura Escola',
+    responder: (m) => {
+      if (m.anexos.some(assinado)) return { assunto: 'Inscrição confirmada', texto: `Prezado(a) candidato(a),\n\nRecebemos a sua ficha preenchida e assinada. Sua inscrição está CONFIRMADA.\nProtocolo: PS-${String(Date.now()).slice(-6)}.\n\nAtenciosamente,\nRecursos Humanos — Prefeitura Escola (treino)` };
+      if (m.anexos.length) return { assunto: `Re: ${m.assunto || 'Inscrição'}`, texto: 'Prezado(a),\n\nRecebemos o arquivo, mas a ficha precisa voltar ASSINADA pelo Cidadão Digital (no Leitor de PDF, ✍️ Assinar). Envie de novo com o PDF assinado.\n\nAtenciosamente,\nRH — Prefeitura Escola' };
+      return { assunto: 'Ficha de inscrição — processo seletivo', texto: 'Prezado(a),\n\nSegue em anexo a ficha de inscrição. Baixe, preencha todos os campos no Leitor de PDF, salve preenchida, ASSINE pelo Cidadão Digital e responda este e-mail com a ficha assinada.\n\nAtenciosamente,\nRH — Prefeitura Escola (treino)',
+        anexos: [{ nome: 'Ficha do processo seletivo', tipo: 'pdf', conteudo: fichaSeletivo() }] };
+    },
+  };
+
   function mensagensIniciais(conta) {
     const agora = Date.now();
     // Ids fixos: se a criação da conta for repetida (rede lenta), as mensagens de boas-vindas não duplicam.
@@ -408,7 +429,7 @@
         // As respostas de treino chegam depois de alguns segundos; sair do sistema espera por elas.
         const depois = (ms, f) => new Promise((r) => setTimeout(r, ms)).then(f);
         if (bot) {
-          await depois(2500, () => { const r = bot.responder(m); return receber({ de: m.para, deNome: bot.nome, assunto: r.assunto, texto: r.texto }); });
+          await depois(2500, () => { const r = bot.responder(m); return receber({ de: m.para, deNome: bot.nome, assunto: r.assunto, texto: r.texto, anexos: r.anexos || [] }); });
           return;
         }
         const resultado = await CE.api.chamar('email:entregar', { para: m.para, assunto: m.assunto, texto: m.texto, anexos: m.anexos }).catch((e) => ({ erro: e.message }));

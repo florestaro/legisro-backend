@@ -6,7 +6,7 @@ conversa e tira dúvidas. **Funciona sem internet.**
 
 ## O que já tem
 
-### Curso de Informática: 5 níveis e 2 cursos livres (255 aulas)
+### Curso de Informática: 5 níveis e 2 cursos livres (262 aulas)
 - **Nível Iniciante completo: 48 aulas em 10 módulos.** Os módulos são: Conhecendo o computador, Mouse, Teclado,
   Janelas e menu Iniciar, Arquivos e pastas, Editor de Texto, Calculadora e Desenho, **Internet**, Segurança básica e a
   Prova do nível.
@@ -14,11 +14,22 @@ conversa e tira dúvidas. **Funciona sem internet.**
   dispensadas (continuam abertas para revisão).
 - Cada aula tem explicação, prática guiada (com a seta vermelha e o desenho do mouse) e perguntas. Cada módulo termina
   num **desafio sem ajuda**, e o nível termina numa **prova**.
-- **Nível Intermediário completo: 56 aulas em 11 módulos.** Os módulos são: Pastas e organização (com pen drive),
+- **Nível Intermediário completo: 63 aulas em 13 módulos.** Os módulos são: Pastas e organização (com pen drive),
   Atalhos de teclado, Editor de Texto (carta, currículo, requerimento, tabela, imagem, corretor, imprimir),
   **Planilha** (fórmulas, SOMA, alça de preenchimento, notas, orçamento da casa), Internet segura e downloads,
   **E-mail**, **Serviços pela internet** (banco, Pix, boleto, agendamento), **Serviços públicos (gov.br)**,
-  **Inteligência artificial e golpes com IA**, **Documentos e formulários em PDF** e a Prova do nível.
+  **Inteligência artificial e golpes com IA**, **Documentos e formulários em PDF**, **Trabalho: currículo e processo
+  seletivo**, **Golpes de agora** e a Prova do nível.
+- **💼 Trabalho: currículo e processo seletivo**: o aluno monta o **currículo com as respostas da entrevista de emprego
+  da Praça Escola** (nome, experiência e qualidades já vêm prontos; o que ele quer melhorar não entra), põe o nome em
+  negrito, completa telefone e e-mail, salva, faz o **PDF** e manda anexado para uma vaga. Depois, a **prova prática
+  cronometrada** (meta de 15 minutos, sem ajuda): pedir a ficha ao RH da prefeitura de treino por e-mail, baixar a ficha
+  em PDF, preencher, **assinar pelo Cidadão Digital** e devolver; ficha sem assinatura volta com aviso, e a assinada
+  volta com "Inscrição confirmada". No fim, o professor diz em quantos minutos o aluno fez.
+- **🛡️ Golpes de agora (atualizado em novembro de 2026)**: o falso advogado que cobra "custas" para liberar o dinheiro
+  do processo, o emprego falso de "tarefas pagas" (curtir vídeos), o boleto falso e a conta com "desconto" (conferir o
+  beneficiário), o Pix "por engano" com pedido de devolver em outra chave e o comprovante falso, e um desafio "golpe ou
+  verdade?". É para ser revisado de tempos em tempos, com os golpes do momento.
 - **📄 Documentos e formulários em PDF**: preencher uma ficha de inscrição em PDF (campos e caixinha de marcar) e salvar
   preenchida; **juntar** RG frente e verso e o comprovante de residência num PDF só, na ordem certa; **organizar as
   páginas** (girar a que veio deitada, tirar a página em branco); **digitalizar** o documento com o celular (frente e
@@ -92,8 +103,8 @@ conversa e tira dúvidas. **Funciona sem internet.**
   digitação, jogos e os programas instaláveis) e pode **liberar aulas fora da sequência** para um aluno ou para a turma
   (veja "Painel do Instrutor" abaixo).
 - **Trilha essencial (o padrão)**, para turmas com pouco tempo (1 hora por semana): o aluno segue só as aulas essenciais
-  (Iniciante 29, Intermediário 41, Avançado 42, Profissional 24, Assistente Administrativo 19, Celular 12 e Criação
-  digital 11, em vez de 48, 56, 58, 34, 26, 17 e 16). As outras viram **Reforço (opcional)**: abrem
+  (Iniciante 29, Intermediário 45, Avançado 42, Profissional 24, Assistente Administrativo 19, Celular 12 e Criação
+  digital 11, em vez de 48, 63, 58, 34, 26, 17 e 16). As outras viram **Reforço (opcional)**: abrem
   junto com a aula essencial seguinte, não travam o curso, não são pedidas para o certificado nem para as medalhas, e
   o professor oferece "💪 Treinar mais" no fim da aula. Provas e o que elas cobram são sempre essenciais. Na **trilha
   completa**, todas as aulas são obrigatórias. O instrutor escolhe em **Painel › Progresso da turma › 🧭 Trilha do
@@ -104,7 +115,14 @@ conversa e tira dúvidas. **Funciona sem internet.**
 - **🔁 Revisão rápida**: no primeiro login do dia, antes da aula, o professor faz até 3 perguntas das últimas aulas que
   o aluno fez (uns 2 minutos). Errar não reprova nada: com menos de 70% de primeira, ele sugere "↻ Rever" a aula mais
   esquecida; depois, o botão verde começa a aula de hoje. Dá para pular. O resultado aparece no Painel (coluna "Aula
-  atual"), e o instrutor liga ou desliga em **Painel › Progresso da turma**.
+  atual"), e o instrutor liga ou desliga em **Painel › Progresso da turma**. **O que o aluno errou volta**: a pergunta
+  que ele não acertou de primeira (numa aula ou na revisão) entra numa lista e aparece primeiro na próxima revisão
+  ("esta você tinha errado antes"); acertou de primeira, sai da lista.
+- **🎯 Trilhas por objetivo** (Aulas › 🎯 Meu objetivo): o aluno escolhe o que quer conseguir (💼 Arrumar emprego,
+  🏛️ Resolver as coisas no gov.br, 🛒 Vender pelo celular e pela internet ou 🛡️ Me proteger dos golpes) e o professor
+  monta o caminho com as aulas que já existem, na ordem certa. As aulas do caminho abrem uma depois da outra (mesmo
+  fora da ordem do curso) e viram a "próxima aula"; terminado o caminho, volta a ser a do curso. O certificado continua
+  sendo o do nível. Dá para trocar de objetivo quando quiser.
 - **Ícones da área de trabalho em grade, como no Windows**: todos do mesmo tamanho, alinhados em linhas e colunas (enchem
   de cima para baixo e depois a coluna do lado), nos três tamanhos de Exibir. O nome ocupa até duas linhas; o que não
   couber termina em "…" e aparece inteiro com o mouse em cima. Os desenhos (emojis) usados são só os que o Windows 10
@@ -346,6 +364,22 @@ curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela red
     futuro fica comprometido). Os juros são compostos e contam os dias de calendário; a janela mostra quanto uma dívida
     de 100 vira em 1, 7 e 30 dias, e que o banco cobra no empréstimo o dobro do que paga na aplicação (é assim que ele
     lucra).
+  - 🧾 **Contas do mês**: a cada dia da cidade chega uma conta (💡 luz, 🚰 água, 🏠 aluguel), que vence no dia seguinte e
+    se paga no banco, conferindo quem recebe, por onde chegou e o código. Atrasou: multa de 10%. De 3 em 3 dias chega
+    também um **boleto falso** pelo WhatsApp (outro beneficiário, valor estranho, "pague hoje"): quem paga perde o
+    dinheiro; quem aperta "🚫 É golpe" ganha 5 moedas.
+  - 📊 **Meu nome (score de crédito)**: começa em 500. Pagar em dia, recusar boleto falso e quitar empréstimo sobem; atrasar
+    e cair em golpe descem. Nome bom (700+): limite 250 e juros de 1,5% ao dia; regular: 150 e 2%; baixo (menos de 400):
+    60 e 3%. Conta atrasada há 2 dias ou mais: **nome sujo**, e o banco não empresta. A janela mostra "por que meu nome
+    mudou".
+  - 📱 **Golpes do banco**: uma vez por dia da cidade, depois da 1 da tarde, chega o SMS do "empréstimo aprovado, pague a
+    taxa" ou a ligação do falso gerente pedindo transferência para a "conta segura". Quem cai perde as moedas e o nome
+    piora; quem não cai ganha 5 moedas e a lição.
+  - 🧺 **Feira da turma** (na Feira, mesmo com o barracão em obra): cada aluno abre a sua barraca (produto, figura, preço
+    de 1 a 30 e estoque); os colegas compram com **Pix** (a tela mostra para quem vai o dinheiro e pede para conferir o
+    nome), recebem o **comprovante**, e as moedas caem na carteira do dono da barraca. Sem saldo, o Pix é recusado.
+  - 📊 **Dinheiro da turma** (só o professor, em 💼 Vagas ou no Banco): conta, guardado, dívida e nome de cada aluno, com
+    quem está de nome sujo ou devendo primeiro, para puxar a conversa sem expor ninguém.
 - **Atividades na cidade**: ♻️ **coleta seletiva** (lixo aparece no chão da praça e das calçadas; o aluno clica para pegar e leva até a lixeira da cor certa: azul papel, vermelha plástico, verde vidro, amarela metal, marrom orgânico; acerto vale 2 moedas, errar explica a cor certa; 10 acertos dão a medalha ♻️ Cidade limpa), 🏧 **caixa eletrônico** no Banco (sacar R$ 50 com segurança, recusando o desconhecido que pede a senha: golpe da troca de cartão) e 📅 **agendamento de consulta** no Posto (especialidade, Cartão SUS, horário e o SMS falso que cobra taxa). O caixa e o agendamento valem 5 moedas uma vez por dia. A cidade também ficou mais detalhada: asfalto com textura, bueiros, postes de luz, telhados com telhas, janelas com cortina, árvores com volume e desenho mais nítido em telas de alta definição.
 - **Moradores** (personagens do computador, com conversas que ensinam): a Dona Rosa pede ajuda para mandar foto ao neto,
   a Dona Lúcia explica o Pix, o Seu Raimundo desafia no troco da feira, a Enfermeira Cida dá dicas, o Seu Bené conta a

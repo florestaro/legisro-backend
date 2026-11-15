@@ -14,8 +14,8 @@
         await CE.curso.trilhaPronta();
         const p = await CE.sessao.progresso();
         const proxima = CE.curso.proxima(p);
-        aba = aba || (proxima ? proxima.nivel : 'n1');
         const instrutor = CE.sessao.usuario.papel === 'instrutor';
+        aba = aba || (!instrutor && CE.curso.objetivo(p) ? 'objetivo' : proxima ? proxima.nivel : 'n1');
 
         const abas = CE.el('div', { class: 'aulas-abas' },
           ...CE.NIVEIS_CURSO.map((n) => {
@@ -26,12 +26,68 @@
           }),
           CE.LICOES_EXTRAS.length ? CE.el('button', { class: 'chip' + (aba === 'professor' ? ' ativo' : ''), 'data-nivel': 'professor', onclick: () => { aba = 'professor'; desenhar(); } },
             `📌 Do professor · ${CE.LICOES_EXTRAS.filter((l) => CE.curso.aprovada(l, p)).length}/${CE.LICOES_EXTRAS.length}`) : null,
+          instrutor ? null : CE.el('button', { class: 'chip objetivo' + (aba === 'objetivo' ? ' ativo' : ''), 'data-nivel': 'objetivo', onclick: () => { aba = 'objetivo'; desenhar(); } },
+            CE.curso.objetivo(p) ? `🎯 ${CE.curso.objetivo(p).nome} · ${CE.curso.aulasDoObjetivo(p).filter((l) => CE.curso.aprovada(l, p)).length}/${CE.curso.aulasDoObjetivo(p).length}` : '🎯 Meu objetivo'),
           CE.el('button', { class: 'chip' + (aba === 'medalhas' ? ' ativo' : ''), 'data-nivel': 'medalhas', onclick: () => { aba = 'medalhas'; desenhar(); } },
             `🏅 Medalhas · ${Object.keys(p.medalhas || {}).length}/${CE.MEDALHAS.length}`),
           CE.el('button', { class: 'chip' + (aba === 'certificados' ? ' ativo' : ''), 'data-nivel': 'certificados', onclick: () => { aba = 'certificados'; desenhar(); } },
             `🎓 Certificados · ${CE.certificados.conquistados(p).length}/${CE.certificados.cursos().length}`),
         );
 
+        const cartaoAula = (l) => {
+          const r = p.licoes && p.licoes[l.id];
+          const feita = CE.curso.aprovada(l, p);
+          const liberada = CE.curso.liberada(l, p);
+          const reforco = !CE.curso.obrigatoria(l, p);
+          const tipo = l.prova ? 'Prova' : l.desafio ? 'Desafio' : null;
+          const anterior = !liberada && CE.curso.anteriorNaTrilha(l, p);
+          return CE.el('div', { class: 'aula' + (feita ? ' feita' : '') + (l === proxima ? ' proxima' : '') + (!liberada ? ' bloqueada' : '') + (l.prova ? ' prova' : '') + (reforco ? ' reforco' : ''), 'data-licao': l.id, 'data-reforco': reforco ? '' : null },
+            CE.el('span', { class: 'aula-icone' }, !liberada ? '🔒' : feita ? '✅' : l.icone),
+            CE.el('div', { class: 'aula-info' },
+              CE.el('strong', {}, l.titulo, tipo ? CE.el('span', { class: 'aula-tipo' }, tipo) : null,
+                reforco ? CE.el('span', { class: 'aula-tipo reforco', title: 'Aula a mais, para treinar. Não é obrigatória para passar de nível nem para o certificado.' }, l.reforco ? 'Reforço (opcional)' : 'Aula nova (opcional)') : null,
+                l === proxima ? CE.el('span', { class: 'aula-tipo hoje' }, '👉 Sua próxima aula') : null),
+              CE.el('span', {}, l.descricao),
+              r && r.dispensada ? CE.el('small', { class: 'ok' }, 'Dispensada pelo teste de nivelamento') : null,
+              !instrutor && !feita && CE.curso.liberadaPeloInstrutor(l, p) ? CE.el('small', { class: 'ok', 'data-liberada-instrutor': '' }, '🔓 Liberada pelo instrutor') : null,
+              r && r.nota != null ? CE.el('small', { class: r.concluida ? 'ok' : 'abaixo' }, `Nota: ${r.nota}%${r.concluida ? '' : ` (precisa de ${CE.curso.NOTA_MINIMA}%)`}`) : null),
+            liberada
+              ? CE.el('button', { class: 'botao' + (feita ? ' secundario' : ''), onclick: () => CE.professor.comecarLicao(l.id) },
+                  feita ? 'Fazer de novo' : r ? 'Tentar de novo' : l === proxima ? 'Começar ▶' : 'Começar')
+              : CE.el('span', { class: 'aula-bloqueio' }, anterior ? `Antes, faça: ${anterior.titulo}` : 'Termine a aula anterior'),
+          );
+        };
+
+        // A próxima aula fica sempre no topo, com um botão grande: o aluno não precisa procurar.
+        function destaqueProxima() {
+          return !instrutor && proxima ? CE.el('div', { class: 'aulas-proxima', 'data-proxima': proxima.id },
+            CE.el('span', { class: 'aulas-proxima-icone' }, proxima.icone),
+            CE.el('div', {}, CE.el('small', {}, CE.curso.objetivo(p) && CE.curso.aulasDoObjetivo(p).includes(proxima) ? `👉 Sua próxima aula (🎯 ${CE.curso.objetivo(p).nome})` : '👉 Sua próxima aula'), CE.el('strong', {}, proxima.titulo), CE.el('span', {}, proxima.descricao || '')),
+            CE.el('button', { class: 'botao conduzir', 'data-acao': 'comecar-proxima', onclick: () => CE.professor.comecarLicao(proxima.id) }, 'Começar ▶')) : null;
+        }
+        if (aba === 'objetivo') {
+          const obj = CE.curso.objetivo(p);
+          const escolher = async (id) => { await CE.sessao.atualizarProgresso((x) => { if (id) x.objetivo = id; else delete x.objetivo; }); CE.emitir('objetivo:escolhido', { objetivo: id || null }); desenhar(); };
+          if (!obj) {
+            corpo.replaceChildren(abas,
+              CE.el('div', { class: 'aulas-topo' }, CE.el('h2', {}, '🎯 O que você quer conseguir?'),
+                CE.el('p', {}, 'Escolha um objetivo e o professor monta o seu caminho com as aulas certas, na ordem certa. As aulas do caminho abrem uma depois da outra. Dá para trocar quando quiser.')),
+              CE.el('div', { class: 'objetivos' }, ...CE.OBJETIVOS.map((o) => CE.el('button', { class: 'objetivo-cartao', type: 'button', 'data-objetivo': o.id, onclick: () => escolher(o.id) },
+                CE.el('span', { class: 'ic', 'aria-hidden': 'true' }, o.icone), CE.el('strong', {}, o.nome), CE.el('span', {}, o.texto),
+                CE.el('small', {}, `${CE.curso.aulasDoObjetivo(p, o).length} aulas`)))));
+            return;
+          }
+          const lista = CE.curso.aulasDoObjetivo(p);
+          const feitas = lista.filter((l) => CE.curso.aprovada(l, p)).length;
+          corpo.replaceChildren(abas, destaqueProxima(),
+            CE.el('div', { class: 'aulas-topo' }, CE.el('h2', {}, `${obj.icone} Meu objetivo: ${obj.nome}`), CE.el('p', {}, obj.texto),
+              CE.el('div', { class: 'aulas-barra', title: `${feitas} de ${lista.length} aulas` }, CE.el('div', { class: 'aulas-barra-cheia', style: `width:${Math.round((feitas / Math.max(1, lista.length)) * 100)}%` })),
+              CE.el('p', {}, feitas === lista.length ? '🎉 Caminho completo! Agora a próxima aula volta a ser a do curso.' : `${feitas} de ${lista.length} aulas do caminho concluídas`),
+              CE.el('div', { class: 'objetivo-botoes' },
+                CE.el('button', { class: 'botao secundario pequeno', 'data-acao': 'trocar-objetivo', onclick: () => escolher(null) }, 'Trocar de objetivo'))),
+            CE.el('section', { class: 'aulas-modulo' }, ...lista.map(cartaoAula)));
+          return;
+        }
         if (aba === 'certificados') {
           corpo.replaceChildren(abas,
             CE.el('div', { class: 'aulas-topo' }, CE.el('h2', {}, '🎓 Meus certificados'),
@@ -81,35 +137,7 @@
         const essencial = CE.curso.trilha(p) === 'essencial';
         const feitasNivel = aulasNivel.filter((l) => CE.curso.aprovada(l, p)).length;
 
-        const cartaoAula = (l) => {
-          const r = p.licoes && p.licoes[l.id];
-          const feita = CE.curso.aprovada(l, p);
-          const liberada = CE.curso.liberada(l, p);
-          const reforco = !CE.curso.obrigatoria(l, p);
-          const tipo = l.prova ? 'Prova' : l.desafio ? 'Desafio' : null;
-          const anterior = !liberada && CE.curso.anteriorNaTrilha(l, p);
-          return CE.el('div', { class: 'aula' + (feita ? ' feita' : '') + (l === proxima ? ' proxima' : '') + (!liberada ? ' bloqueada' : '') + (l.prova ? ' prova' : '') + (reforco ? ' reforco' : ''), 'data-licao': l.id, 'data-reforco': reforco ? '' : null },
-            CE.el('span', { class: 'aula-icone' }, !liberada ? '🔒' : feita ? '✅' : l.icone),
-            CE.el('div', { class: 'aula-info' },
-              CE.el('strong', {}, l.titulo, tipo ? CE.el('span', { class: 'aula-tipo' }, tipo) : null,
-                reforco ? CE.el('span', { class: 'aula-tipo reforco', title: 'Aula a mais, para treinar. Não é obrigatória para passar de nível nem para o certificado.' }, l.reforco ? 'Reforço (opcional)' : 'Aula nova (opcional)') : null,
-                l === proxima ? CE.el('span', { class: 'aula-tipo hoje' }, '👉 Sua próxima aula') : null),
-              CE.el('span', {}, l.descricao),
-              r && r.dispensada ? CE.el('small', { class: 'ok' }, 'Dispensada pelo teste de nivelamento') : null,
-              !instrutor && !feita && CE.curso.liberadaPeloInstrutor(l, p) ? CE.el('small', { class: 'ok', 'data-liberada-instrutor': '' }, '🔓 Liberada pelo instrutor') : null,
-              r && r.nota != null ? CE.el('small', { class: r.concluida ? 'ok' : 'abaixo' }, `Nota: ${r.nota}%${r.concluida ? '' : ` (precisa de ${CE.curso.NOTA_MINIMA}%)`}`) : null),
-            liberada
-              ? CE.el('button', { class: 'botao' + (feita ? ' secundario' : ''), onclick: () => CE.professor.comecarLicao(l.id) },
-                  feita ? 'Fazer de novo' : r ? 'Tentar de novo' : l === proxima ? 'Começar ▶' : 'Começar')
-              : CE.el('span', { class: 'aula-bloqueio' }, anterior ? `Antes, faça: ${anterior.titulo}` : 'Termine a aula anterior'),
-          );
-        };
-
-        // A próxima aula fica sempre no topo, com um botão grande: o aluno não precisa procurar.
-        const destaque = !instrutor && proxima ? CE.el('div', { class: 'aulas-proxima', 'data-proxima': proxima.id },
-          CE.el('span', { class: 'aulas-proxima-icone' }, proxima.icone),
-          CE.el('div', {}, CE.el('small', {}, '👉 Sua próxima aula'), CE.el('strong', {}, proxima.titulo), CE.el('span', {}, proxima.descricao || '')),
-          CE.el('button', { class: 'botao conduzir', 'data-acao': 'comecar-proxima', onclick: () => CE.professor.comecarLicao(proxima.id) }, 'Começar ▶')) : null;
+        const destaque = destaqueProxima();
 
         corpo.replaceChildren(
           abas,
