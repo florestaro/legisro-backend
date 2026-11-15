@@ -476,6 +476,13 @@ function criarCanais(dados) {
     // O que cada prédio faz (tarefa do dia e desafio da semana) e a novela da cidade.
     'praca:tarefa': (s, lugar) => { exigirSessao(s); return praca.tarefa(s.usuario, lugar); },
     'praca:coleta': (s, acao, dado) => { exigirSessao(s); return praca.coletar(s.usuario, acao, dado || {}); },
+    'praca:feira': (s) => { exigirSessao(s); return praca.feira(s.usuario); },
+    'praca:feira-abrir': (s, d) => { exigirSessao(s); return praca.abrirBarraca(s.usuario, d || {}); },
+    'praca:feira-fechar': (s) => { exigirSessao(s); return praca.fecharBarraca(s.usuario); },
+    'praca:feira-comprar': (s, d) => { exigirSessao(s); return praca.comprar(s.usuario, d || {}); },
+    'praca:feira-desfazer': (s, d) => { exigirSessao(s); return praca.desfazerCompra(s.usuario, d || {}); },
+    'praca:feira-recebido': (s, ids) => { exigirSessao(s); return praca.vendasRecebidas(s.usuario, ids); },
+    'praca:financas': (s) => { exigirInstrutor(s); return praca.financas(s.usuario); },
     'praca:entrevista': (s, respostas) => { exigirSessao(s); return praca.entrevista(s.usuario, respostas || {}); },
     'praca:entrevistas': (s) => { exigirInstrutor(s); return praca.entrevistas(s.usuario); },
     'praca:comentar-entrevista': (s, d) => { exigirInstrutor(s); return praca.comentarEntrevista(s.usuario, d || {}); },

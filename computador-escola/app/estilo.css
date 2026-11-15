@@ -2473,6 +2473,22 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .pr-vaga.bloqueada .ic { filter: grayscale(1); }
 .pr-requer { font-size: 13px; font-weight: 600; color: #6a45b8; }
 .pr-retorno { display: grid; gap: 4px; margin-top: 6px; }
+.pr-barracas { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
+.pr-barraca { display: flex; gap: 8px; align-items: center; border: 1px solid var(--borda); border-radius: 10px; padding: 6px 8px; }
+.pr-barraca.minha { border-style: dashed; }
+.pr-barraca .ic { font-size: 26px; flex: none; }
+.pr-barraca .txt { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.pr-barraca .preco { flex: none; }
+.pr-form-barraca { display: grid; gap: 6px; border-top: 1px solid var(--borda); padding-top: 8px; }
+.pr-form-barraca h4 { margin: 0; }
+.pr-form-barraca .linha { display: flex; gap: 6px; align-items: end; }
+.pr-form-barraca .linha label { display: grid; gap: 2px; flex: 1; }
+.pr-form-barraca input, .pr-form-barraca select { box-sizing: border-box; font: 16px/1.4 var(--fonte); padding: 6px 8px; border: 1px solid var(--borda); border-radius: 8px; background: var(--fundo-janela); color: var(--texto); }
+.pr-form-barraca #feira-produto { flex: 1; min-width: 0; }
+.pr-financas { width: 100%; border-collapse: collapse; font-size: 14px; }
+.pr-financas th, .pr-financas td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--borda); }
+.pr-financas tr.sujo td { background: #fbeceb; color: #5a1410; }
+.pr-financas tr.devendo td { background: #fff8e1; color: #3a2a00; }
 .pr-retorno textarea { width: 100%; box-sizing: border-box; font: 15px/1.4 var(--fonte); padding: 6px 8px; border: 1px solid var(--borda); border-radius: 8px; background: var(--fundo-janela); color: var(--texto); }
 .pr-vaga .ic { font-size: 28px; flex: none; }
 .pr-vaga .txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
@@ -2500,6 +2516,19 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .banco-operar input { flex: 1; font: 18px var(--fonte); padding: 8px 10px; border: 1px solid var(--borda); border-radius: 8px; background: var(--fundo-janela); color: var(--texto); }
 .banco-botoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .banco-aviso { margin: 6px 0 0; color: #b3261e; font-weight: 700; }
+.banco-cartao.score.bom { border-color: #2e7d32; background: #edf7ee; color: #173d19; }
+.banco-cartao.score.baixo, .banco-cartao.score.sujo { border-color: #b3261e; background: #fbeceb; color: #5a1410; }
+.banco-cartao.score.bom small, .banco-cartao.score.baixo small, .banco-cartao.score.sujo small, .banco-cartao.divida small { color: inherit; }
+.banco-contas { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.banco-conta { display: flex; gap: 8px; align-items: center; border: 1px solid var(--borda); border-radius: 10px; padding: 6px 8px; }
+.banco-conta.atrasada { border-color: #b3261e; }
+.banco-conta .ic { font-size: 24px; flex: none; }
+.banco-conta .txt { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.banco-conta .txt small { color: var(--texto-suave); }
+.banco-conta .codigo { font-family: ui-monospace, Consolas, monospace; }
+.banco-conta-botoes { display: grid; gap: 4px; flex: none; }
+.banco-score-log { margin-top: 8px; }
+.banco-score-log ul { margin: 4px 0 0; padding-left: 18px; }
 /* Coleta seletiva: o lixo no chão (balança um pouquinho para chamar a atenção) */
 .pr-lixo { position: absolute; transform: translate(-50%, -50%); font-size: 22px; line-height: 1; pointer-events: none; z-index: 1; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .35)); animation: pr-lixo 1.6s ease-in-out infinite alternate; }
 .pr-lixo::after { content: ''; position: absolute; left: 50%; top: 100%; width: 22px; height: 6px; margin: -2px 0 0 -11px; border-radius: 50%; background: rgba(0, 0, 0, .18); z-index: -1; }

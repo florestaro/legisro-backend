@@ -476,6 +476,26 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   ok(com.comentario && sRet.retorno === com.comentario.em && minha.comentario.texto === 'Gostei da sua pontualidade! Treine a digitação.' && minha.comentario.por,
     'praça: o instrutor deixa um retorno na entrevista; o aluno fica sabendo e lê o retorno');
   ok(/não existe/.test((await pedir('praca:comentar-entrevista', [{ id: 'ninguem', texto: 'x' }], tp)).erro || ''), 'praça: retorno para entrevista que não existe é recusado');
+  // Feira da turma: o Aluno Sete abre a barraca, o Aluno Oito compra com Pix e o Sete recebe na próxima sincronização.
+  const fe = (await pedir('praca:feira-abrir', [{ produto: 'Bolo de milho', emoji: '🍰', preco: 7, estoque: 2 }], tT7)).valor;
+  ok(fe.minha && fe.minha.preco === 7 && fe.barracas.some((b) => b.produto === 'Bolo de milho') && /1 a 30/.test((await pedir('praca:feira-abrir', [{ produto: 'X', preco: 99, estoque: 1 }], tT7)).erro || ''),
+    'praça: o aluno abre uma barraca na feira (preço de 1 a 30)');
+  const idSete = fe.minha.id;
+  ok(/sua/.test((await pedir('praca:feira-comprar', [{ barraca: idSete, preco: 7 }], tT7)).erro || '') && /preço mudou/.test((await pedir('praca:feira-comprar', [{ barraca: idSete, preco: 5 }], tT8)).erro || ''),
+    'praça: ninguém compra da própria barraca, e preço desatualizado é recusado');
+  const compra = (await pedir('praca:feira-comprar', [{ barraca: idSete, preco: 7 }], tT8)).valor;
+  const sVenda = (await pedir('praca:sincronizar', [{ x: 18, y: 15 }, 0], tT7)).valor;
+  ok(compra.venda.valor === 7 && sVenda.vendas.length === 1 && sVenda.vendas[0].produto === 'Bolo de milho', 'praça: o colega compra com Pix e o dono fica sabendo da venda (para receber as moedas)');
+  await pedir('praca:feira-recebido', [[compra.venda.id]], tT7);
+  ok((await pedir('praca:sincronizar', [{ x: 18, y: 15 }, 0], tT7)).valor.vendas.length === 0 && (await pedir('praca:feira', [], tT8)).valor.barracas.find((b) => b.id === idSete).estoque === 1,
+    'praça: a venda recebida sai da lista e o estoque baixa');
+  await pedir('praca:feira-desfazer', [{ barraca: idSete, venda: 'nao-existe' }], tT8);
+  ok((await pedir('praca:feira', [], tT8)).valor.barracas.find((b) => b.id === idSete).estoque === 1, 'praça: desfazer uma compra que não é sua não muda o estoque');
+  // O dinheiro da turma: vai junto na sincronização; só o instrutor vê.
+  await pedir('praca:sincronizar', [{ x: 18, y: 15, fin: { conta: 12.5, poupanca: 30, divida: 50, score: 380, sujo: true, atrasadas: 2 } }, 0], tT7);
+  const fins = (await pedir('praca:financas', [], tp)).valor;
+  ok(/instrutor/.test((await pedir('praca:financas', [], tT7)).erro || '') && fins.some((f) => f.conta === 12.5 && f.divida === 50 && f.sujo && f.atrasadas === 2),
+    'praça: o resumo do dinheiro de cada aluno fica no disco do instrutor, e só ele vê');
   // Hora da Praça e eventos especiais (a vaquinha da turma; o Professor Virtual conduz).
   ok(/instrutor/.test((await pedir('praca:configurar-horario', [{ fins: ['17:00'] }], tT7)).erro || '') && /instrutor/.test((await pedir('praca:testar-hora', [], tT7)).erro || ''), 'praça: aluno não muda o horário das aulas nem testa a Hora da Praça');
   const hor = (await pedir('praca:configurar-horario', [{ fins: ['17:00', '99:99'], dias: [1, 2, 3, 4, 5] }], tp)).valor;

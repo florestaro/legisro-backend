@@ -1294,6 +1294,7 @@ window.CE = window.CE || {};
         emCurso = true;
         try {
           const eu0 = { x: arred(eu.x), y: arred(eu.y), esq: !!eu.esq, andando: !!eu.andando, cracha: meuCracha };
+          if (finResumo) eu0.fin = finResumo;
           if (souInstrutor && typeof turmaEscolhida === 'string') eu0.turma = turmaEscolhida;
           const r = await CE.api.chamar('praca:sincronizar', eu0, desde);
           if (fechouJanela) return;
@@ -1313,6 +1314,7 @@ window.CE = window.CE || {};
         if (r.coleta !== undefined) aplicarColeta(r.coleta);
         if (r.dia) aplicarDia(r.dia);
         if (r.retorno) verRetorno(r.retorno);
+        if (r.vendas && r.vendas.length) receberVendas(r.vendas);
         if (r.hora !== undefined) aplicarHora(r.hora);
         // Pessoas
         const vistos = new Set();
@@ -1504,7 +1506,12 @@ window.CE = window.CE || {};
       if (!souInstrutor) CE.carteira.saldo().then(mostrarMoedas);
       const pararGanho = CE.ouvir('carteira:ganhou', (d) => { mostrarMoedas(d.saldo); botaoMoedas.classList.remove('ganhou'); void botaoMoedas.offsetWidth; botaoMoedas.classList.add('ganhou'); });
       const pararGasto = CE.ouvir('carteira:gastou', (d) => mostrarMoedas(d.saldo));
-      const pararMoedas = () => { pararGanho(); pararGasto(); };
+      // O resumo do dinheiro (conta, poupança, dívida, nome) vai junto na sincronização, para o painel do professor.
+      let finResumo = null;
+      const resumirDinheiro = () => { if (souInstrutor) return; CE.carteira.banco.ver().then((b) => { finResumo = { conta: b.conta, poupanca: b.poupanca + b.aplicacoes.reduce((s, a) => s + a.atual, 0), divida: b.emprestimo ? b.emprestimo.devendo : 0, score: b.score, sujo: !!b.sujo, atrasadas: b.contas.filter((x) => x.atraso > 0).length }; }).catch(() => {}); };
+      resumirDinheiro();
+      const pararBanco = CE.ouvir('banco:mudou', resumirDinheiro);
+      const pararMoedas = () => { pararGanho(); pararGasto(); pararBanco(); };
       function abrirMegafone(abrir) {
         if (!souInstrutor) return;
         popMegafone.hidden = !abrir;
@@ -1664,9 +1671,12 @@ window.CE = window.CE || {};
             souInstrutor ? null : CE.el('p', { class: 'pr-suave' }, l.euFiz ? '✓ Você já concluiu este módulo. Agora é ajudar os colegas!' : 'Você ainda não concluiu este módulo: cada aula sua ajuda a acender o prédio.'),
             pistaAqui(L.id) ? linhaPista(pistaAqui(L.id), 'Uma pista da novela está pregada no tapume da obra.') : null,
           ].filter(Boolean),
-          opcoes: souInstrutor
-            ? [{ rotulo: 'Ver a cidade da turma', principal: true, fica: true, acao: () => abrirCidade('predios') }, { rotulo: 'Fechar' }]
-            : [{ rotulo: 'Ir para as Aulas', principal: true, id: 'aulas', acao: () => CE.janelas.abrir('aulas') }, { rotulo: 'Ver a cidade', fica: true, acao: () => abrirCidade('predios') }, { rotulo: 'Fechar' }],
+          opcoes: [
+            // A feira da turma funciona mesmo com o barracão em obra (as barracas ficam na calçada).
+            ...(L.id === 'feira' ? [{ rotulo: '🧺 Feira da turma (comprar e vender)', principal: true, id: 'feira', fica: true, acao: () => abrirFeira() }] : []),
+            ...(souInstrutor
+              ? [{ rotulo: 'Ver a cidade da turma', principal: L.id !== 'feira', fica: true, acao: () => abrirCidade('predios') }, { rotulo: 'Fechar' }]
+              : [{ rotulo: 'Ir para as Aulas', principal: L.id !== 'feira', id: 'aulas', acao: () => CE.janelas.abrir('aulas') }, { rotulo: 'Ver a cidade', fica: true, acao: () => abrirCidade('predios') }, { rotulo: 'Fechar' }])],
         });
       }
       // Sua casa: o terreno, a casa pronta, os enfeites e as medalhas na parede.
@@ -1822,6 +1832,8 @@ window.CE = window.CE || {};
         if (L.id === 'banco') opcoes.push({ rotulo: '🏧 Caixa eletrônico (treino)', id: 'caixa', fica: true, acao: () => abrirCaixa() });
         if (L.id === 'banco' && !souInstrutor) opcoes.push({ rotulo: '🏦 Minha conta de moedas', id: 'minha-conta', acao: () => { CE.carteira.aba = 'banco'; CE.janelas.abrir('carteira'); } });
         if (L.id === 'empregos') opcoes.push({ rotulo: '💼 Ver as vagas da cidade', principal: true, id: 'vagas', fica: true, acao: () => abrirVagas() });
+        if (L.id === 'feira') opcoes.push({ rotulo: '🧺 Feira da turma (comprar e vender)', principal: true, id: 'feira', fica: true, acao: () => abrirFeira() });
+        if (L.id === 'banco' && souInstrutor) opcoes.push({ rotulo: '📊 Dinheiro da turma', id: 'financas', fica: true, acao: () => abrirFinancas() });
         if (L.id === 'posto') opcoes.push({ rotulo: '📅 Agendar consulta (treino)', principal: true, id: 'agendar', fica: true, acao: () => abrirAgendamento() });
         if (L.morador && presente(porMorador[L.morador])) opcoes.push({ rotulo: `Falar com ${porMorador[L.morador].nome}`, principal: !info.botao, acao: () => chegarPerto(porMorador[L.morador]) });
         opcoes.push({ rotulo: 'Fechar' });
@@ -2182,7 +2194,17 @@ window.CE = window.CE || {};
         return 8 + 10 * Math.max(0, Math.min(1, passou / diaAtual.duracao));
       }
       const vagaDaHora = (h = horaDoDia()) => NOV.VAGAS.find((v) => h >= v.de && h < v.ate) || null;
-      function aplicarDia(d) { diaAtual = d; relogioDia = performance.now(); andarDia(); }
+      let diaDoBanco = 0, golpeDoDia = 0, entrevistaOk = false;
+      function aplicarDia(d) {
+        diaAtual = d; relogioDia = performance.now(); andarDia();
+        // Dia novo na cidade: chega a conta do dia (o banco confere os atrasos e o nome).
+        if (!souInstrutor && d.numero && d.numero !== diaDoBanco) {
+          diaDoBanco = d.numero;
+          CE.carteira.banco.diaDaCidade(d.numero).then((r) => {
+            for (const x of (r && r.novas) || []) avisarNoMapa(x.falso ? `📱 Chegou pelo WhatsApp um boleto de ${x.nome} (${CE.carteira.banco.moeda(x.valor)}). Confira antes de pagar! (💰 › 🏦 Banco)` : `📬 Chegou a ${x.nome.toLowerCase()}: ${CE.carteira.banco.moeda(x.valor)}, vence amanhã. Pague no 🏦 Banco.`, 'cidade');
+          }).catch(() => {});
+        }
+      }
       function andarDia() {
         if (!diaAtual) return;
         const h = horaDoDia(), hh = Math.floor(h), mm = Math.floor((h - hh) * 60 / 10) * 10;
@@ -2202,6 +2224,38 @@ window.CE = window.CE || {};
           if (!primeiraVez && !souInstrutor && v) { avisarNoMapa(`💼 ${v.emoji} Agora: ${v.titulo} está contratando! Vale 50% a mais (💼 Vagas).`, 'cidade'); if (CE.voz) CE.voz.falar(`Atenção: ${v.titulo} está contratando!`); }
           if (!primeiraVez && id === 'fim') avisarNoMapa('🌇 Seis da tarde: fim do expediente na cidade. Amanhã tem mais vagas!', 'cidade');
         }
+        if (!souInstrutor && entrevistaOk && h >= 13 && h < 17.5 && diaAtual.numero && golpeDoDia !== diaAtual.numero && dialogo.hidden && !fechouJanela) {
+          golpeDoDia = diaAtual.numero;
+          mostrarGolpe(diaAtual.numero);
+        }
+      }
+
+      // ---------- Golpes do banco (um por dia da cidade): SMS do empréstimo e o falso gerente ----------
+      const GOLPES = [
+        { id: 'sms', rosto: '📱', titulo: 'Chegou um SMS', valor: 20, motivo: 'taxa do falso empréstimo aprovado',
+          fala: '"BANCO ESCOLA: Parabéns! Seu empréstimo de 500 moedas foi APROVADO. Para liberar hoje, pague a taxa de 20 moedas em: bancoescola-libera.com"',
+          caiu: 'Pagar a taxa e receber os 500', certo: 'Não pago: banco de verdade não cobra taxa adiantada para liberar empréstimo',
+          licao: ['Banco nenhum cobra taxa ANTES de liberar empréstimo.', 'Empréstimo que você não pediu, aprovado por SMS: é golpe.', 'Na dúvida, entre no aplicativo oficial ou vá até a agência.'] },
+        { id: 'gerente', rosto: '📞', titulo: 'Ligação do "gerente"', valor: 30, motivo: 'transferência para a "conta segura" do falso gerente',
+          fala: '"Alô, aqui é o gerente do Banco Escola. Sua conta foi invadida! Para proteger o seu dinheiro, transfira agora o saldo para a nossa conta segura, a 12345-6. É urgente!"',
+          caiu: 'Transferir para a conta segura', certo: 'Desligo e ligo eu mesmo para o banco, no número do cartão',
+          licao: ['Não existe "conta segura": banco nenhum pede para você transferir dinheiro.', 'Desligue e ligue VOCÊ para o número que está atrás do cartão.', 'Banco nunca pede senha nem código por telefone.'] },
+      ];
+      function mostrarGolpe(n) {
+        const g = GOLPES[n % GOLPES.length];
+        if (CE.voz) CE.voz.falar(g.titulo);
+        abrirDialogo({ tipo: 'golpe', rosto: g.rosto, titulo: g.titulo, subtitulo: 'O que você faz?', fala: g.fala,
+          opcoes: [
+            { rotulo: g.caiu, fica: true, id: 'golpe-caiu', acao: async () => {
+              const r = await CE.carteira.banco.golpe(true, g.valor, g.motivo).catch(() => ({ perdeu: 0 }));
+              abrirDialogo({ tipo: 'golpe', rosto: '😱', titulo: 'Era golpe!', fala: `O golpista levou ${CE.carteira.banco.moeda(r.perdeu)} moedas e o seu nome no banco piorou.`, lista: g.licao, opcoes: [{ rotulo: 'Entendi', principal: true }] });
+            } },
+            { rotulo: g.certo, principal: true, fica: true, id: 'golpe-certo', acao: async () => {
+              await CE.carteira.banco.golpe(false, 0, g.titulo).catch(() => {});
+              await CE.carteira.ganhar('golpe', `Não caiu no golpe: ${g.titulo}`, `golpe:${g.id}:${n}`);
+              CE.comemorar('pequena');
+              abrirDialogo({ tipo: 'golpe', rosto: '🛡️', titulo: 'Muito bem: era golpe!', fala: 'Você não caiu. Ganhou 5 moedas e o seu nome no banco melhorou.', lista: g.licao, opcoes: [{ rotulo: 'Fechar', principal: true }] });
+            } }] });
       }
 
       // ---------- Crachá de quem foi contratado ----------
@@ -2217,7 +2271,7 @@ window.CE = window.CE || {};
       const respostas = {};
       async function conferirEntrevista() {
         const pr = await CE.sessao.progresso().catch(() => null);
-        if (pr && pr.praca && pr.praca.entrevista) return;
+        if (pr && pr.praca && pr.praca.entrevista) { entrevistaOk = true; return; }
         setTimeout(async () => {
           // Confere de novo (a entrevista pode ter sido feita nesse meio-tempo, em outra janela).
           const agora = await CE.sessao.progresso().catch(() => null);
@@ -2249,6 +2303,7 @@ window.CE = window.CE || {};
         const r = await chamar('praca:entrevista', respostas);
         if (!r) return;
         await CE.sessao.atualizarProgresso((p) => { p.praca = p.praca || {}; p.praca.entrevista = Date.now(); }).catch(() => {});
+        entrevistaOk = true;
         CE.carteira.ganhar('entrevista', 'Fez a entrevista de emprego', 'entrevista');
         CE.comemorar('grande');
         if (CE.voz) CE.voz.falar(`Parabéns, ${r.nome}! Você foi aprovado na entrevista. Bem-vindo à cidade!`);
@@ -2256,6 +2311,85 @@ window.CE = window.CE || {};
           fala: `Parabéns, ${r.nome}! Seu currículo já está na Agência de Empregos. Agora candidate-se às vagas: cada prova vale salário, que cai na sua conta no banco.`,
           lista: [`Pontos fortes: ${r.fortes.join(', ')}`, `Quer melhorar: ${r.melhorar.join(', ')}`],
           opcoes: [{ rotulo: '💼 Ver as vagas', principal: true, fica: true, id: 'ver-vagas', acao: () => abrirVagas() }, { rotulo: 'Fechar' }] });
+      }
+
+      // ---------- Feira da turma: barraca de cada aluno; os colegas compram com Pix ----------
+      const recebendo = new Set();
+      async function receberVendas(vendas) {
+        const novas = vendas.filter((v) => !recebendo.has(v.id));
+        if (!novas.length || souInstrutor) return;
+        novas.forEach((v) => recebendo.add(v.id));
+        for (const v of novas) {
+          const pago = await CE.carteira.ganhar('feira-venda', `Feira: vendeu ${v.emoji} ${v.produto} para ${v.de} (Pix)`, 'feira:' + v.id, v.valor);
+          if (pago) avisarNoMapa(`🧺 ${v.de} comprou ${v.emoji} ${v.produto} na sua barraca: +${v.valor} moedas por Pix!`, 'cidade');
+        }
+        await CE.api.chamar('praca:feira-recebido', novas.map((v) => v.id)).catch(() => {});
+      }
+      async function abrirFeira(erro = '') {
+        const f = await chamar('praca:feira');
+        if (!f || fechouJanela) return;
+        const cartao = (b) => {
+          const minha = b.id === usuario.id;
+          return CE.el('li', { class: 'pr-barraca' + (minha ? ' minha' : ''), 'data-barraca': b.id },
+            CE.el('span', { class: 'ic', 'aria-hidden': 'true' }, b.emoji),
+            CE.el('div', { class: 'txt' }, CE.el('strong', {}, b.produto), CE.el('span', { class: 'pr-suave' }, `Barraca de ${minha ? 'você' : b.dono} · ${b.estoque > 0 ? `${b.estoque} no estoque` : 'acabou'}${b.vendas ? ` · ${b.vendas} vendido${b.vendas > 1 ? 's' : ''}` : ''}`)),
+            CE.el('strong', { class: 'preco' }, `${b.preco} 💰`),
+            souInstrutor || minha ? null : CE.el('button', { class: 'botao', type: 'button', 'data-comprar': b.id, disabled: b.estoque <= 0, onclick: () => pagarPix(b) }, 'Comprar'));
+        };
+        let form = null;
+        if (!souInstrutor) {
+          const m = f.minha || {};
+          const produto = CE.el('input', { id: 'feira-produto', maxlength: '40', placeholder: 'Ex.: Bolo de macaxeira', value: m.produto || '' });
+          const emoji = CE.el('select', { id: 'feira-emoji', 'aria-label': 'Figura do produto' }, f.produtos.map((e) => { const o = CE.el('option', { value: e }, e); if (e === m.emoji) o.selected = true; return o; }));
+          const preco = CE.el('input', { id: 'feira-preco', type: 'number', min: '1', max: '30', value: String(m.preco || 5) });
+          const estoque = CE.el('input', { id: 'feira-estoque', type: 'number', min: '1', max: '20', value: String(m.estoque || 5) });
+          const salvar = async () => { try { await CE.api.chamar('praca:feira-abrir', { produto: produto.value, emoji: emoji.value, preco: preco.value, estoque: estoque.value }); abrirFeira(); } catch (e) { abrirFeira(e.message); } };
+          form = CE.el('div', { class: 'pr-form-barraca' }, CE.el('h4', {}, f.minha ? '🧺 Minha barraca' : '🧺 Abrir a minha barraca'),
+            CE.el('div', { class: 'linha' }, emoji, produto), CE.el('div', { class: 'linha' }, CE.el('label', { for: 'feira-preco' }, 'Preço', preco), CE.el('label', { for: 'feira-estoque' }, 'Estoque', estoque)),
+            CE.el('div', { class: 'pr-botoes' }, CE.el('button', { class: 'botao', type: 'button', 'data-acao-feira': 'abrir-barraca', onclick: salvar }, f.minha ? 'Atualizar a barraca' : 'Abrir a barraca'),
+              f.minha ? CE.el('button', { class: 'botao secundario', type: 'button', 'data-acao-feira': 'fechar-barraca', onclick: async () => { await chamar('praca:feira-fechar'); abrirFeira(); } }, 'Fechar a barraca') : null));
+        }
+        abrirDialogo({ tipo: 'feira', rosto: '🧺', titulo: 'Feira da turma', subtitulo: `${f.barracas.length} barraca${f.barracas.length === 1 ? '' : 's'} aberta${f.barracas.length === 1 ? '' : 's'}`,
+          fala: erro || (souInstrutor ? 'As barracas da turma. Os alunos vendem uns para os outros e pagam com Pix (as moedas saem da carteira de quem compra e entram na de quem vende).' : 'Compre dos colegas com Pix (sai da sua carteira 💰) ou abra a sua barraca: escolha o produto, o preço e quantos tem.'),
+          extra: CE.el('div', {}, f.barracas.length ? CE.el('ul', { class: 'pr-barracas' }, f.barracas.map(cartao)) : CE.el('p', { class: 'pr-suave' }, 'Nenhuma barraca aberta ainda.'), form),
+          opcoes: [{ rotulo: 'Fechar' }] });
+      }
+      // O Pix: confere o nome de quem vai receber, paga e mostra o comprovante.
+      async function pagarPix(b) {
+        abrirDialogo({ tipo: 'pix', rosto: '📱', titulo: 'Pix', subtitulo: 'Confira antes de confirmar',
+          fala: `Você vai pagar ${b.preco} moedas.`,
+          lista: [`Para: ${b.dono}`, `Pelo quê: ${b.emoji} ${b.produto}`, 'Instituição: Banco Escola'],
+          nota: 'O Pix cai na hora e não tem como desfazer. Sempre confira o NOME de quem vai receber.',
+          opcoes: [{ rotulo: `Confirmar o Pix para ${b.dono}`, principal: true, fica: true, id: 'confirmar-pix', acao: async () => {
+            if ((await CE.carteira.saldo()) < b.preco) return abrirDialogo({ tipo: 'pix', rosto: '💸', titulo: 'Saldo insuficiente', fala: `Você não tem ${b.preco} moedas na carteira. Saque do banco (💰 › 🏦 Banco) ou trabalhe numa vaga.`, opcoes: [{ rotulo: 'Voltar à feira', principal: true, fica: true, id: 'voltar-feira', acao: () => abrirFeira() }] });
+            let r = null;
+            try { r = await CE.api.chamar('praca:feira-comprar', { barraca: b.id, preco: b.preco }); } catch (e) { return abrirFeira(e.message); }
+            try { await CE.carteira.gastar(b.preco, `Feira: ${b.emoji} ${b.produto} de ${b.dono} (Pix)`); } catch (e) { await CE.api.chamar('praca:feira-desfazer', { barraca: b.id, venda: r.venda.id }).catch(() => {}); return abrirFeira(e.message); }
+            await CE.sessao.atualizarProgresso((p) => { p.praca = p.praca || {}; p.praca.compras = (Number(p.praca.compras) || 0) + 1; }).catch(() => {});
+            CE.comemorar('pequena');
+            const agora = new Date();
+            abrirDialogo({ tipo: 'pix', rosto: '✅', titulo: 'Pix enviado', subtitulo: 'Comprovante',
+              lista: [`Valor: ${b.preco} moedas`, `Para: ${b.dono}`, `Produto: ${b.emoji} ${b.produto}`, `Data: ${agora.toLocaleDateString('pt-BR')} às ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`, `Código: ${r.venda.id.toUpperCase()}`],
+              nota: 'Guarde o comprovante: é a prova de que você pagou.',
+              opcoes: [{ rotulo: 'Voltar à feira', principal: true, fica: true, id: 'voltar-feira', acao: () => abrirFeira() }, { rotulo: 'Fechar' }] });
+          } }, { rotulo: 'Cancelar', fica: true, id: 'cancelar-pix', acao: () => abrirFeira() }] });
+      }
+      // ---------- Dinheiro da turma (só o professor) ----------
+      async function abrirFinancas() {
+        const lista = await chamar('praca:financas');
+        if (!lista || fechouJanela) return;
+        const m = (v) => CE.carteira.banco.moeda(v);
+        const atencao = (f) => (f.sujo ? 0 : f.divida > 0 ? 1 : f.poupanca > 0 ? 3 : 2);
+        const ord = lista.slice().sort((a, b) => atencao(a) - atencao(b) || a.nome.localeCompare(b.nome));
+        const sujos = lista.filter((f) => f.sujo).length, devendo = lista.filter((f) => f.divida > 0).length, poupam = lista.filter((f) => f.poupanca > 0).length;
+        abrirDialogo({ tipo: 'financas', rosto: '📊', titulo: 'Dinheiro da turma', subtitulo: 'Só você vê: use para puxar a conversa sem expor ninguém',
+          fala: lista.length ? `🔴 ${sujos} com nome sujo · 🟡 ${devendo} com empréstimo · 🟢 ${poupam} guardando dinheiro` : 'Os alunos aparecem aqui quando entram na praça.',
+          extra: lista.length ? CE.el('table', { class: 'pr-financas' }, CE.el('thead', {}, CE.el('tr', {}, ...['Aluno', 'Conta', 'Guardado', 'Dívida', 'Nome'].map((t) => CE.el('th', {}, t)))),
+            CE.el('tbody', {}, ord.map((f) => CE.el('tr', { class: f.sujo ? 'sujo' : f.divida > 0 ? 'devendo' : '', 'data-aluno': f.nome },
+              CE.el('td', {}, `${f.sujo ? '🔴' : f.divida > 0 ? '🟡' : '🟢'} ${f.nome}`), CE.el('td', {}, m(f.conta)), CE.el('td', {}, m(f.poupanca)), CE.el('td', {}, f.divida ? m(f.divida) : '—'),
+              CE.el('td', {}, `${f.score}${f.sujo ? ' · sujo' : ''}${f.atrasadas ? ` · ${f.atrasadas} atrasada${f.atrasadas > 1 ? 's' : ''}` : ''}`))))) : null,
+          nota: 'Ideias para a conversa: por que o nome sujou? Quanto custa o empréstimo em 30 dias? Quem guardou, ganhou quanto?',
+          opcoes: [{ rotulo: 'Fechar' }] });
       }
 
       // ---------- Retorno do recrutador (o professor comenta a entrevista; o aluno vê na praça) ----------
@@ -2328,7 +2462,7 @@ window.CE = window.CE || {};
           fala: souInstrutor ? 'As vagas da cidade. Crie vagas novas (com o seu texto de ditado, por exemplo) e leia as entrevistas da turma.' : 'Todos podem se candidatar. Cada vaga tem uma prova rápida; quem tira 60 ou mais é contratado e recebe o salário na conta do banco (uma vez por dia em cada vaga).',
           extra: CE.el('ul', { class: 'pr-vagas' }, [...r.padrao, ...r.extras].map(cartao)),
           opcoes: souInstrutor
-            ? [{ rotulo: '➕ Criar vaga', principal: true, fica: true, id: 'criar-vaga', acao: () => abrirCriarVaga() }, { rotulo: '📋 Entrevistas da turma', fica: true, id: 'entrevistas', acao: () => abrirEntrevistas() }, { rotulo: 'Fechar' }]
+            ? [{ rotulo: '➕ Criar vaga', principal: true, fica: true, id: 'criar-vaga', acao: () => abrirCriarVaga() }, { rotulo: '📋 Entrevistas da turma', fica: true, id: 'entrevistas', acao: () => abrirEntrevistas() }, { rotulo: '📊 Dinheiro da turma', fica: true, id: 'financas', acao: () => abrirFinancas() }, { rotulo: 'Fechar' }]
             : [{ rotulo: '🏦 Minha conta no banco', id: 'minha-conta', acao: () => { CE.carteira.aba = 'banco'; CE.janelas.abrir('carteira'); } }, { rotulo: '📄 Minha entrevista', fica: true, id: 'minha-entrevista', acao: () => abrirMinhaEntrevista() }, { rotulo: 'Fechar' }] });
       }
       function abrirCriarVaga(erro = '') {

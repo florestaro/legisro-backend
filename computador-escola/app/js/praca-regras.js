@@ -81,6 +81,10 @@
         // No modo de teste, a turma de demonstração já começou o primeiro capítulo e algumas tarefas da semana.
         if (demonstracao && !lido.novela['Demonstração']) lido.novela['Demonstração'] = { atual: 'barco', abertoEm: relogio(), achados: { 'barco-bilhete': ['demo-ana', 'demo-carla'], 'barco-email': ['demo-lia'] }, resolvido: false, revelado: false, feitos: [] };
         if (demonstracao && !lido.tarefas['Demonstração']) lido.tarefas['Demonstração'] = { semana: nov.semana(relogio()), conta: { horta: 3, estacao: 2, escola: 1 }, selos: [] };
+        if (demonstracao && !Object.keys(lido.feira.barracas).length) {
+          const b = (id, dono, avatar, produto, emoji, preco, estoque) => ({ id, dono, avatar, turma: 'Demonstração', produto, emoji, preco, estoque, vendas: 0, em: relogio() });
+          lido.feira.barracas = { 'demo-ana': b('demo-ana', 'Ana', '🐱', 'Bolo de macaxeira', '🍰', 6, 8), 'demo-carla': b('demo-carla', 'Carla', '🌻', 'Suco de cupuaçu', '🥤', 4, 10), 'demo-jorge': b('demo-jorge', 'Jorge', '🙂', 'Tucumã', '🥥', 3, 0) };
+        }
         if (demonstracao && !lido.loja['Demonstração']) {
           lido.loja['Demonstração'] = {
             festa: { juntado: 60, doadores: { 'demo-ana': 30, 'demo-lia': 30 } }, tesouro: { juntado: 90, doadores: { 'demo-lia': 50, 'demo-carla': 40 } },
@@ -124,6 +128,10 @@
         entrevistas: g.entrevistas && typeof g.entrevistas === 'object' ? g.entrevistas : {},
         vagas: Array.isArray(g.vagas) ? g.vagas.slice(0, 20) : [],
         dias: Number(g.dias) || 0,
+        // A feira da turma (barraca de cada aluno e as vendas que o dono ainda vai receber) e o resumo do dinheiro de
+        // cada aluno (para o painel do professor).
+        feira: { barracas: g.feira && typeof g.feira.barracas === 'object' && g.feira.barracas ? g.feira.barracas : {}, receber: g.feira && typeof g.feira.receber === 'object' && g.feira.receber ? g.feira.receber : {} },
+        financas: g.financas && typeof g.financas === 'object' ? g.financas : {},
       };
     }
     function gravar() {
@@ -163,6 +171,14 @@
     const RESERVADOS = ['__proto__', 'constructor', 'prototype', 'hasOwnProperty', 'toString', 'valueOf'];
     const seguro = (t) => (RESERVADOS.includes(t) ? `turma ${t}` : t);
     const turmaDe = (u) => (demonstracao ? 'Demonstração' : seguro(String((u && u.turma) || '')));
+    const FEIRA_EMOJIS = ['🧺', '🍌', '🥭', '🍍', '🥥', '🍰', '🧁', '🥤', '🍞', '🌽', '🐟', '🧀', '🍯', '🌿', '🥜'];
+    let ultimaVenda = 0;
+    const FINANCAS_DEMO = [
+      { nome: 'Ana', turma: 'Demonstração', conta: 42, poupanca: 60, divida: 0, score: 640, sujo: false, atrasadas: 0 },
+      { nome: 'Bruno', turma: 'Demonstração', conta: 3, poupanca: 0, divida: 118.5, score: 380, sujo: true, atrasadas: 2 },
+      { nome: 'Carla', turma: 'Demonstração', conta: 25, poupanca: 10, divida: 40, score: 520, sujo: false, atrasadas: 0 },
+      { nome: 'Lia', turma: 'Demonstração', conta: 80, poupanca: 150, divida: 0, score: 760, sujo: false, atrasadas: 0 },
+    ];
     const MOEDAS_DEMO = { 'demo-ana': 145, 'demo-carla': 90, 'demo-davi': 60, 'demo-bruno': 75, 'demo-fatima': 40, 'demo-jorge': 20, 'demo-lia': 260 };
     function moedasDe(id) {
       if (demonstracao && MOEDAS_DEMO[id] != null) return MOEDAS_DEMO[id];
@@ -962,6 +978,12 @@
           p.esq = !!eu.esq; p.andando = !!eu.andando;
         }
         if (eu && 'cracha' in eu) p.cracha = typeof eu.cracha === 'string' && CRACHAS.has(eu.cracha) ? eu.cracha : null;
+        if (eu && eu.fin && typeof eu.fin === 'object' && !ehInstrutor(usuario)) {
+          const f = eu.fin, num = (v) => Math.round((Number(v) || 0) * 100) / 100;
+          const novo = { nome: texto(usuario.nome, 40), turma: turmaDe(usuario), conta: num(f.conta), poupanca: num(f.poupanca), divida: num(f.divida), score: Math.round(Number(f.score) || 0), sujo: !!f.sujo, atrasadas: Math.round(Number(f.atrasadas) || 0) };
+          const velho = dados().financas[usuario.id];
+          if (!velho || ['conta', 'poupanca', 'divida', 'score', 'sujo', 'atrasadas', 'turma'].some((k) => velho[k] !== novo[k])) { dados().financas[usuario.id] = { ...novo, em: agora }; gravar(); }
+        }
         Object.assign(p, { nome: texto(usuario.nome, 40), avatar: texto(usuario.avatar, 16) || '🙂', papel: usuario.papel, turma: usuario.turma || '', monitor: !!(extra && extra.monitor), em: agora });
         if (p.mao && agora - p.mao > MAO) p.mao = 0;
         const d = Number(desde) || 0;
@@ -977,6 +999,7 @@
         return {
           dia,
           retorno: minha && minha.comentario ? minha.comentario.em : 0,
+          vendas: ehInstrutor(usuario) ? undefined : (dados().feira.receber[usuario.id] || []).slice(0, 10),
           agora, novo, eu: { x: p.x, y: p.y },
           cidade: { turma, abertos: (dados().abertos[turma] || []).slice(), selos: semanaDa(turma).selos.slice() },
           novela: resumoNovela(usuario, turma),
@@ -1026,6 +1049,72 @@
       },
       minhaEntrevista(usuario) {
         return dados().entrevistas[seguro(usuario.id)] || null;
+      },
+      // ---------- Feira da turma: cada aluno abre a sua barraca; os colegas compram com Pix ----------
+      feira(usuario) {
+        const turma = turmaVista(usuario);
+        const barracas = Object.values(dados().feira.barracas).filter((b) => b.turma === turma).sort((a, b) => a.dono.localeCompare(b.dono));
+        return { barracas, minha: ehInstrutor(usuario) ? null : dados().feira.barracas[usuario.id] || null, produtos: FEIRA_EMOJIS };
+      },
+      abrirBarraca(usuario, d0) {
+        if (ehInstrutor(usuario)) throw new Error('A feira é dos alunos: o professor só visita.');
+        const d = d0 && typeof d0 === 'object' ? d0 : {};
+        const produto = limpo(texto(d.produto, 40));
+        if (!produto) throw new Error('Escreva o que você vai vender.');
+        const preco = Math.round(Number(d.preco)), estoque = Math.round(Number(d.estoque));
+        if (!(preco >= 1 && preco <= 30)) throw new Error('O preço vai de 1 a 30 moedas.');
+        if (!(estoque >= 1 && estoque <= 20)) throw new Error('O estoque vai de 1 a 20 unidades.');
+        const velha = dados().feira.barracas[usuario.id];
+        dados().feira.barracas[usuario.id] = { id: usuario.id, dono: texto(usuario.nome, 40), avatar: texto(usuario.avatar, 16) || '🙂', turma: turmaDe(usuario), produto,
+          emoji: FEIRA_EMOJIS.includes(d.emoji) ? d.emoji : '🧺', preco, estoque, vendas: velha ? velha.vendas || 0 : 0, em: relogio() };
+        gravar();
+        if (!velha) evento({ tipo: 'sistema', texto: `🧺 ${usuario.nome} abriu uma barraca na feira: ${produto} por ${preco} moedas.` });
+        return this.feira(usuario);
+      },
+      fecharBarraca(usuario) {
+        delete dados().feira.barracas[usuario.id];
+        gravar();
+        return this.feira(usuario);
+      },
+      comprar(usuario, d0) {
+        if (ehInstrutor(usuario)) throw new Error('Só os alunos compram na feira (com as moedas deles).');
+        const d = d0 && typeof d0 === 'object' ? d0 : {};
+        const b = dados().feira.barracas[String(d.barraca || '')];
+        if (!b || b.turma !== turmaDe(usuario)) throw new Error('Essa barraca fechou.');
+        if (b.id === usuario.id) throw new Error('Essa barraca é sua: não dá para comprar de você mesmo.');
+        if (b.estoque <= 0) throw new Error('Acabou! A barraca está sem estoque.');
+        if (Number(d.preco) !== b.preco) throw new Error(`O preço mudou: agora é ${b.preco} moedas. Confira de novo.`);
+        b.estoque -= 1; b.vendas = (b.vendas || 0) + 1;
+        ultimaVenda = Math.max(relogio(), ultimaVenda + 1);
+        const venda = { id: 'v' + ultimaVenda, barraca: b.id, de: texto(usuario.nome, 40), deId: usuario.id, produto: b.produto, emoji: b.emoji, valor: b.preco, em: relogio() };
+        if (!String(b.id).startsWith('demo-')) { const l = dados().feira.receber[b.id] || []; l.push(venda); dados().feira.receber[b.id] = l.slice(-50); }
+        gravar();
+        return { venda, dono: b.dono };
+      },
+      // A compra não deu certo do lado do aluno (sem moedas): devolve a mercadoria para a barraca.
+      desfazerCompra(usuario, d0) {
+        const d = d0 && typeof d0 === 'object' ? d0 : {};
+        const b = dados().feira.barracas[String(d.barraca || '')];
+        const l = dados().feira.receber[String(d.barraca || '')] || [];
+        const k = l.findIndex((v) => v.id === d.venda && v.deId === usuario.id);
+        if (k >= 0) l.splice(k, 1);
+        if (b && (k >= 0 || String(b.id).startsWith('demo-'))) { b.estoque += 1; b.vendas = Math.max(0, (b.vendas || 0) - 1); }
+        gravar();
+        return true;
+      },
+      vendasRecebidas(usuario, ids) {
+        const ok = new Set(Array.isArray(ids) ? ids.map(String) : []);
+        const l = dados().feira.receber[usuario.id];
+        if (l) { dados().feira.receber[usuario.id] = l.filter((v) => !ok.has(v.id)); gravar(); }
+        return true;
+      },
+      // ---------- O dinheiro da turma (só o professor vê): conta, poupança, dívida e o nome de cada aluno ----------
+      financas(usuario) {
+        exigirInstrutor(usuario);
+        const turma = turmaVista(usuario);
+        const lista = Object.values(dados().financas).filter((f) => demonstracao || !turma || f.turma === turma);
+        if (demonstracao) lista.push(...FINANCAS_DEMO.filter((f) => !lista.some((x) => x.nome === f.nome)));
+        return lista.sort((a, b) => a.nome.localeCompare(b.nome));
       },
       vagas() {
         return { padrao: nov.VAGAS.map((v) => ({ ...v })), extras: dados().vagas.map((v) => ({ ...v })) };

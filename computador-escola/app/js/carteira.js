@@ -26,9 +26,10 @@ window.CE = window.CE || {};
     { tipo: 'caixa', icone: '🏧', texto: 'Treinar no caixa eletrônico do Banco (uma vez por dia)', valor: 5 },
     { tipo: 'agenda', icone: '📅', texto: 'Agendar consulta no Posto sem cair no golpe (uma vez por dia)', valor: 5 },
     { tipo: 'entrevista', icone: '💼', texto: 'Fazer a entrevista de emprego (primeira vez na praça)', valor: 20 },
+    { tipo: 'golpe', icone: '🛡️', texto: 'Não cair num golpe do banco (SMS, falso gerente ou boleto falso)', valor: 5 },
   ];
   const VALOR = Object.fromEntries(PREMIOS.map((p) => [p.tipo, p.valor]));
-  const ICONE = { ...Object.fromEntries(PREMIOS.map((p) => [p.tipo, p.icone])), gasto: '🎟️', estorno: '↩️', saque: '🏦', deposito: '🏦' };
+  const ICONE = { ...Object.fromEntries(PREMIOS.map((p) => [p.tipo, p.icone])), gasto: '🎟️', estorno: '↩️', saque: '🏦', deposito: '🏦', feira: '🧺', 'feira-venda': '🧺' };
   const MAX_EXTRATO = 60;
   const ehAluno = () => !!(CE.sessao.usuario && CE.sessao.usuario.papel !== 'instrutor');
   const vazia = () => ({ saldo: 0, desde: Date.now(), chaves: {}, extrato: [] });
@@ -95,8 +96,35 @@ window.CE = window.CE || {};
       aplicacoes: Array.isArray(b.aplicacoes) ? b.aplicacoes.filter((a) => a && Number(a.valor) > 0) : [],
       emprestimo: b.emprestimo && Number(b.emprestimo.devendo) > 0.004 ? b.emprestimo : null,
       dia: typeof b.dia === 'string' ? b.dia : hoje(), extrato: Array.isArray(b.extrato) ? b.extrato : [],
+      // Contas do mês, nome (score de crédito) e o dia da cidade (da Praça Escola) em que o aluno está.
+      contas: Array.isArray(b.contas) ? b.contas.filter((x) => x && x.id).slice(-12) : [],
+      score: Number.isFinite(Number(b.score)) ? Number(b.score) : SCORE_INICIAL,
+      scoreLog: Array.isArray(b.scoreLog) ? b.scoreLog.slice(0, 8) : [],
+      diaCidade: Number(b.diaCidade) || 0,
     };
   }
+  // ---------- Contas do mês e o nome (score de crédito) ----------
+  // A cada dia da cidade (15 minutos na Praça Escola) chega uma conta, em rodízio: luz, água e aluguel. Ela vence no
+  // dia seguinte. Paga em dia, o nome melhora; atrasou, paga multa de 10% e o nome piora; 2 dias de atraso: nome sujo
+  // (o banco não empresta). A cada 3 dias chega também um boleto falso (pelo WhatsApp): quem paga perde o dinheiro.
+  const SCORE_INICIAL = 500, MULTA = 0.1, SUJA_COM = 2;
+  const CONTAS = [
+    { tipo: 'luz', icone: '💡', nome: 'Conta de luz', benef: 'Luz da Cidade S.A.', valores: [6, 7, 8, 9] },
+    { tipo: 'agua', icone: '🚰', nome: 'Conta de água', benef: 'Águas da Cidade', valores: [4, 5, 6] },
+    { tipo: 'aluguel', icone: '🏠', nome: 'Aluguel', benef: 'Imobiliária da Praça', valores: [15] },
+  ];
+  function faixa(score) {
+    if (score >= 700) return { id: 'bom', nome: 'Bom pagador', limite: 250, taxa: 0.015 };
+    if (score >= 400) return { id: 'regular', nome: 'Regular', limite: LIMITE_EMPRESTIMO, taxa: TAXA.emprestimo };
+    return { id: 'baixo', nome: 'Baixo', limite: 60, taxa: 0.03 };
+  }
+  const atrasoDe = (b, x) => (x.paga || x.falso || x.recusada ? 0 : Math.max(0, b.diaCidade - x.vence));
+  const nomeSujo = (b) => b.contas.some((x) => atrasoDe(b, x) >= SUJA_COM);
+  function mudarScore(b, d, motivo) {
+    b.score = Math.max(0, Math.min(1000, Math.round(b.score + d)));
+    b.scoreLog = [{ em: Date.now(), d, motivo }, ...b.scoreLog].slice(0, 8);
+  }
+  const codigoDeBarras = (n, k) => { let s = String(2379 + k) + String(n).padStart(4, '0'); while (s.length < 20) s += String((s.length * 7 + n * 3 + k) % 10); return `${s.slice(0, 5)}.${s.slice(5, 10)} ${s.slice(10, 15)}.${s.slice(15, 20)}`; };
   const linhaBanco = (b, motivo, valor, tipo) => { b.extrato = [{ em: Date.now(), motivo, valor: c2(valor), tipo }, ...b.extrato].slice(0, MAX_EXTRATO_BANCO); };
   // Os dias que passaram desde a última visita: rendimento da poupança e juros do empréstimo (juros compostos).
   function passarDias(b) {
@@ -104,7 +132,7 @@ window.CE = window.CE || {};
     b.dia = hoje();
     if (!dias) return b;
     if (b.poupanca > 0) { const r = c2(b.poupanca * (Math.pow(1 + TAXA.poupanca, dias) - 1)); if (r > 0) { b.poupanca = c2(b.poupanca + r); linhaBanco(b, `Rendimento da poupança (${dias} dia${dias > 1 ? 's' : ''})`, r, 'rende'); } }
-    if (b.emprestimo) { const j = c2(b.emprestimo.devendo * (Math.pow(1 + TAXA.emprestimo, dias) - 1)); if (j > 0) { b.emprestimo.devendo = c2(b.emprestimo.devendo + j); linhaBanco(b, `Juros do empréstimo (${dias} dia${dias > 1 ? 's' : ''})`, -j, 'juros'); } }
+    if (b.emprestimo) { const j = c2(b.emprestimo.devendo * (Math.pow(1 + (Number(b.emprestimo.taxa) || TAXA.emprestimo), dias) - 1)); if (j > 0) { b.emprestimo.devendo = c2(b.emprestimo.devendo + j); linhaBanco(b, `Juros do empréstimo (${dias} dia${dias > 1 ? 's' : ''})`, -j, 'juros'); } }
     return b;
   }
   const valorDaAplicacao = (a) => c2(a.valor * Math.pow(1 + TAXA.aplicacao, Math.min(60, diasEntre(a.desde, hoje()))));
@@ -130,7 +158,78 @@ window.CE = window.CE || {};
   };
   const banco = {
     TAXA, PRAZO_APLICACAO, LIMITE_EMPRESTIMO, PARTE_DO_SALARIO, moeda, pct,
-    async ver() { if (!ehAluno()) return lerBanco(null); let r = null; await noBanco((b) => { r = JSON.parse(JSON.stringify(b)); }, true); r.aplicacoes = r.aplicacoes.map((a) => ({ ...a, atual: valorDaAplicacao(a), faltam: liberaEm(a) })); return r; },
+    SCORE_INICIAL, MULTA, faixa,
+    async ver() {
+      if (!ehAluno()) return lerBanco(null);
+      let r = null;
+      await noBanco((b) => { r = JSON.parse(JSON.stringify(b)); r.sujo = nomeSujo(b); r.contas = b.contas.map((x) => ({ ...x, atraso: atrasoDe(b, x) })); }, true);
+      r.aplicacoes = r.aplicacoes.map((a) => ({ ...a, atual: valorDaAplicacao(a), faltam: liberaEm(a) }));
+      r.faixa = faixa(r.score);
+      return r;
+    },
+    // Um dia novo na cidade: confere os atrasos e manda a conta do dia (e, de 3 em 3 dias, um boleto falso).
+    async diaDaCidade(n) {
+      n = Math.floor(Number(n));
+      if (!ehAluno() || !(n > 0)) return null;
+      let novas = [];
+      await noBanco((b) => {
+        if (n <= b.diaCidade) return;
+        b.diaCidade = n;
+        for (const x of b.contas) if (!x.paga && !x.falso && !x.recusada && n > x.vence && !x.atrasou) { x.atrasou = true; mudarScore(b, -40, `${x.nome} atrasou`); }
+        const pendentes = b.contas.filter((x) => !x.paga && !x.recusada).length;
+        if (pendentes >= 6) return;
+        const k = n % CONTAS.length, t = CONTAS[k];
+        const valor = t.valores[n % t.valores.length];
+        const conta = { id: `ct-${n}-${t.tipo}`, tipo: t.tipo, icone: t.icone, nome: t.nome, benef: t.benef, valor, emitida: n, vence: n + 1, codigo: codigoDeBarras(n, k), canal: 'Chegou pelo aplicativo da empresa' };
+        novas.push(conta);
+        if (n % 3 === 0) {
+          const f = CONTAS[(k + 1) % CONTAS.length];
+          novas.push({ id: `ct-${n}-falso`, tipo: f.tipo, icone: f.icone, nome: `${f.nome} (2ª via)`, benef: `${f.benef.split(' ')[0]} Pagamentos Rápidos (CPF 123.456.789-00)`, valor: f.valores[0] * 3, emitida: n, vence: n,
+            codigo: codigoDeBarras(n, 9), canal: 'Chegou pelo WhatsApp, de um número desconhecido: "Pague HOJE ou cortamos o serviço!"', falso: true });
+        }
+        b.contas = [...b.contas, ...novas].slice(-12);
+      });
+      return { novas };
+    },
+    pagarConta: (id) => noBanco((b) => {
+      const x = b.contas.find((c) => c.id === id);
+      if (!x || x.paga || x.recusada) throw new Error('Essa conta já foi resolvida.');
+      if (x.falso) {
+        const perdeu = c2(Math.min(b.conta, x.valor));
+        if (perdeu < x.valor - 1e-9) throw new Error(`Saldo insuficiente na conta: tem ${moeda(b.conta)}.`);
+        b.conta = c2(b.conta - perdeu); x.paga = b.diaCidade || 1; x.caiu = true;
+        linhaBanco(b, `Pagou um boleto FALSO (${x.benef}): o dinheiro foi para o golpista`, -perdeu, 'golpe');
+        mudarScore(b, -30, 'Pagou boleto falso');
+        return { falso: true, perdeu };
+      }
+      const multa = atrasoDe(b, x) > 0 ? c2(x.valor * MULTA) : 0;
+      const total = c2(x.valor + multa);
+      if (b.conta + 1e-9 < total) throw new Error(`Saldo insuficiente na conta: a conta é ${moeda(total)} e você tem ${moeda(b.conta)}. Tire da poupança ou trabalhe numa vaga.`);
+      b.conta = c2(b.conta - total); x.paga = b.diaCidade || 1;
+      linhaBanco(b, `${x.icone} ${x.nome}${multa ? ' (com multa de 10% por atraso)' : ''}`, -total, 'conta');
+      mudarScore(b, multa ? 10 : 25, multa ? `${x.nome} paga com atraso` : `${x.nome} paga em dia`);
+      return { falso: false, total, multa };
+    }),
+    recusarConta: (id) => noBanco((b) => {
+      const x = b.contas.find((c) => c.id === id);
+      if (!x || x.paga || x.recusada) throw new Error('Essa conta já foi resolvida.');
+      if (!x.falso) throw new Error(`Esta conta é de verdade: veio pelo aplicativo da empresa e quem recebe é a ${x.benef}. Pague para não atrasar.`);
+      x.recusada = b.diaCidade || 1;
+      mudarScore(b, 15, 'Desconfiou do boleto falso');
+      linhaBanco(b, `🛡️ Não pagou o boleto falso de ${x.benef}`, 0, 'golpe');
+      return { acertou: true };
+    }),
+    // Golpe do banco (SMS do empréstimo, falso gerente): quem cai perde o dinheiro e o nome piora.
+    golpe: (caiu, valor, motivo) => noBanco((b, c) => {
+      if (!caiu) { mudarScore(b, 10, `Não caiu: ${motivo}`); return { perdeu: 0 }; }
+      let falta = Math.max(0, Math.floor(Number(valor) || 0)), perdeu = 0;
+      const daConta = c2(Math.min(b.conta, falta)); b.conta = c2(b.conta - daConta); falta = c2(falta - daConta); perdeu += daConta;
+      const daCarteira = Math.min(c.saldo, Math.ceil(falta)); c.saldo -= daCarteira; perdeu += daCarteira;
+      if (daCarteira) c.extrato = [{ em: Date.now(), valor: -daCarteira, motivo: `Golpe: ${motivo}`, tipo: 'gasto' }, ...c.extrato].slice(0, MAX_EXTRATO);
+      if (daConta) linhaBanco(b, `Golpe: ${motivo}`, -daConta, 'golpe');
+      mudarScore(b, -40, `Caiu no golpe: ${motivo}`);
+      return { perdeu: c2(perdeu) };
+    }),
     depositar: (v) => noBanco((b, c) => { const n = Math.floor(quanto(v, c.saldo, 'a carteira')); if (n < 1) throw new Error('Deposite moedas inteiras.'); c.saldo -= n; c.extrato = [{ em: Date.now(), valor: -n, motivo: 'Depósito no banco', tipo: 'deposito' }, ...c.extrato].slice(0, MAX_EXTRATO); b.conta = c2(b.conta + n); linhaBanco(b, 'Depósito (da carteira)', n, 'deposito'); }),
     sacar: (v) => noBanco((b, c) => { const n = Math.floor(quanto(v, b.conta, 'a conta')); if (n < 1) throw new Error('Saque moedas inteiras.'); b.conta = c2(b.conta - n); c.saldo += n; c.extrato = [{ em: Date.now(), valor: n, motivo: 'Saque no banco', tipo: 'saque' }, ...c.extrato].slice(0, MAX_EXTRATO); linhaBanco(b, 'Saque (para a carteira)', -n, 'saque'); }),
     guardar: (v) => noBanco((b) => { const n = quanto(v, b.conta, 'a conta'); b.conta = c2(b.conta - n); b.poupanca = c2(b.poupanca + n); linhaBanco(b, 'Guardou na poupança', -n, 'poupanca'); }),
@@ -145,19 +244,21 @@ window.CE = window.CE || {};
       linhaBanco(b, `Resgate da aplicação (rendeu ${moeda(v - a.valor)})`, v, 'aplicacao');
     }),
     // Quanto vai dever depois de N dias, para mostrar antes de pegar.
-    simular: (v, dias) => c2(Number(v) * Math.pow(1 + TAXA.emprestimo, dias)),
+    simular: (v, dias, taxa = TAXA.emprestimo) => c2(Number(v) * Math.pow(1 + taxa, dias)),
     emprestar: (v) => noBanco((b) => {
       if (b.emprestimo) throw new Error('Você já tem um empréstimo. Pague esse antes de pegar outro.');
-      const n = quanto(v, LIMITE_EMPRESTIMO, 'o seu limite');
-      b.emprestimo = { pego: n, devendo: n, desde: hoje() }; b.conta = c2(b.conta + n);
-      linhaBanco(b, `Empréstimo (juros de ${pct(TAXA.emprestimo)} ao dia)`, n, 'emprestimo');
+      if (nomeSujo(b)) throw new Error('Nome sujo: você tem conta atrasada há 2 dias ou mais, e o banco não empresta. Pague as contas atrasadas primeiro.');
+      const f = faixa(b.score);
+      const n = quanto(v, f.limite, `o seu limite (nome ${f.nome.toLowerCase()})`);
+      b.emprestimo = { pego: n, devendo: n, desde: hoje(), taxa: f.taxa }; b.conta = c2(b.conta + n);
+      linhaBanco(b, `Empréstimo (juros de ${pct(f.taxa)} ao dia)`, n, 'emprestimo');
     }),
     pagar: (v) => noBanco((b) => {
       if (!b.emprestimo) throw new Error('Você não tem empréstimo.');
       const n = quanto(Math.min(Number(String(v).replace(',', '.')) || 0, b.emprestimo.devendo), b.conta, 'a conta');
       b.conta = c2(b.conta - n); b.emprestimo.devendo = c2(b.emprestimo.devendo - n);
       linhaBanco(b, 'Pagou parte do empréstimo', -n, 'emprestimo');
-      if (b.emprestimo.devendo <= 0.004) { b.emprestimo = null; linhaBanco(b, '🎉 Empréstimo quitado!', 0, 'emprestimo'); }
+      if (b.emprestimo.devendo <= 0.004) { b.emprestimo = null; linhaBanco(b, '🎉 Empréstimo quitado!', 0, 'emprestimo'); mudarScore(b, 50, 'Quitou o empréstimo'); }
     }),
     // O salário das vagas: cai na conta; com empréstimo, metade vai direto para a dívida. Uma vez por chave.
     async receberSalario(valor, motivo, chave) {
@@ -171,7 +272,7 @@ window.CE = window.CE || {};
         b.conta = c2(b.conta + valor - desconto);
         linhaBanco(b, `Salário: ${motivo}`, valor, 'salario');
         if (desconto) linhaBanco(b, 'Parcela do empréstimo (descontada do salário)', -desconto, 'emprestimo');
-        if (b.emprestimo && b.emprestimo.devendo <= 0.004) { b.emprestimo = null; linhaBanco(b, '🎉 Empréstimo quitado!', 0, 'emprestimo'); }
+        if (b.emprestimo && b.emprestimo.devendo <= 0.004) { b.emprestimo = null; linhaBanco(b, '🎉 Empréstimo quitado!', 0, 'emprestimo'); mudarScore(b, 50, 'Quitou o empréstimo'); }
         r = { valor, desconto, liquido: c2(valor - desconto) };
       });
       if (r) CE.emitir('banco:salario', r);
@@ -272,15 +373,28 @@ window.CE = window.CE || {};
         const campo = CE.el('input', { id: 'cart-valor', inputmode: 'decimal', autocomplete: 'off', placeholder: 'Ex.: 20', 'aria-label': 'Valor em moedas' });
         const v = () => campo.value;
         const botao = (rotulo, acao, id, sec = true) => CE.el('button', { class: 'botao' + (sec ? ' secundario' : ''), type: 'button', 'data-banco': id, onclick: () => operar(() => acao(v())) }, rotulo);
-        const e = b.emprestimo;
-        const simula = [1, 7, 30].map((d) => `${d} dia${d > 1 ? 's' : ''}: ${moeda(banco.simular(100, d))}`).join(' · ');
+        const e = b.emprestimo, f = b.faixa;
+        const simula = [1, 7, 30].map((d) => `${d} dia${d > 1 ? 's' : ''}: ${moeda(banco.simular(100, d, f.taxa))}`).join(' · ');
+        const abertas = b.contas.filter((x) => !x.paga && !x.recusada);
+        const venceTxt = (x) => (x.atraso ? `⚠️ Atrasada há ${x.atraso} dia${x.atraso > 1 ? 's' : ''} da cidade (multa de 10%)` : x.vence <= b.diaCidade ? 'Vence HOJE (até as 18h da cidade)' : 'Vence amanhã (no dia da cidade)');
+        const contaLi = (x) => CE.el('li', { class: 'banco-conta' + (x.atraso ? ' atrasada' : ''), 'data-conta-id': x.id },
+          CE.el('span', { class: 'ic', 'aria-hidden': 'true' }, x.icone),
+          CE.el('span', { class: 'txt' }, CE.el('strong', {}, `${x.nome}: ${moeda(x.valor)}`), CE.el('small', {}, `Quem recebe: ${x.benef}`), CE.el('small', {}, x.canal),
+            CE.el('small', { class: 'codigo' }, `Código: ${x.codigo}`), CE.el('small', {}, venceTxt(x))),
+          CE.el('span', { class: 'banco-conta-botoes' },
+            CE.el('button', { class: 'botao', type: 'button', 'data-pagar-conta': x.id, onclick: () => operar(async () => { const r = await banco.pagarConta(x.id); if (r && r.falso) throw new Error(`😱 Era golpe! O boleto era falso: ${moeda(r.perdeu)} foram para o golpista. Confira sempre quem recebe e por onde a conta chegou.`); }) }, 'Pagar'),
+            CE.el('button', { class: 'botao secundario', type: 'button', 'data-golpe-conta': x.id, onclick: () => operar(async () => { await banco.recusarConta(x.id); await ganhar('golpe', 'Desconfiou do boleto falso', `golpe:${x.id}`); }) }, '🚫 É golpe')));
         corpo.replaceChildren(CE.el('div', { class: 'cart banco' }, abas(),
           CE.el('div', { class: 'banco-cartoes' },
             CE.el('div', { class: 'banco-cartao', 'data-conta': String(b.conta) }, CE.el('span', {}, '🏦 Conta'), CE.el('strong', {}, moeda(b.conta)), CE.el('small', {}, 'O salário das vagas cai aqui')),
             CE.el('div', { class: 'banco-cartao' }, CE.el('span', {}, '🐷 Poupança'), CE.el('strong', {}, moeda(b.poupanca)), CE.el('small', {}, `Rende ${pct(TAXA.poupanca)} ao dia · sai quando quiser`)),
-            CE.el('div', { class: 'banco-cartao' }, CE.el('span', {}, '💰 Carteira'), CE.el('strong', {}, String(c.saldo)), CE.el('small', {}, 'Para gastar na praça (vaquinha)')),
+            CE.el('div', { class: 'banco-cartao' }, CE.el('span', {}, '💰 Carteira'), CE.el('strong', {}, String(c.saldo)), CE.el('small', {}, 'Para gastar na praça (vaquinha e feira)')),
             CE.el('div', { class: 'banco-cartao' + (e ? ' divida' : '') }, CE.el('span', {}, '📉 Empréstimo'), CE.el('strong', {}, e ? moeda(e.devendo) : '—'),
-              CE.el('small', {}, e ? `Juros de ${pct(TAXA.emprestimo)} ao dia · ${pct(PARTE_DO_SALARIO)} do salário paga a dívida` : `Limite: ${LIMITE_EMPRESTIMO} moedas · juros de ${pct(TAXA.emprestimo)} ao dia`))),
+              CE.el('small', {}, e ? `Juros de ${pct(Number(e.taxa) || TAXA.emprestimo)} ao dia · ${pct(PARTE_DO_SALARIO)} do salário paga a dívida` : b.sujo ? 'Nome sujo: o banco não empresta' : `Limite: ${f.limite} moedas · juros de ${pct(f.taxa)} ao dia`)),
+            CE.el('div', { class: 'banco-cartao score ' + (b.sujo ? 'sujo' : f.id), 'data-score': String(b.score) }, CE.el('span', {}, '📊 Meu nome'), CE.el('strong', {}, `${b.score} pontos`),
+              CE.el('small', {}, b.sujo ? '⚠️ NOME SUJO: conta atrasada há 2 dias ou mais' : `${f.nome}: pague as contas em dia para subir`))),
+          abertas.length ? CE.el('div', {}, CE.el('h3', {}, `🧾 Contas a pagar (${abertas.length})`), CE.el('ul', { class: 'banco-contas' }, abertas.map(contaLi)),
+            CE.el('p', { class: 'cart-dica' }, '🔎 Antes de pagar, confira: quem recebe é a empresa certa? A conta chegou pelo aplicativo ou pelo correio (e não por WhatsApp de número desconhecido)? O valor parece com o dos outros meses?')) : null,
           CE.el('div', { class: 'banco-operar' }, CE.el('label', { for: 'cart-valor' }, 'Valor'), campo),
           aviso ? CE.el('p', { class: 'banco-aviso', role: 'alert' }, aviso) : null,
           CE.el('div', { class: 'banco-botoes' },
@@ -291,7 +405,8 @@ window.CE = window.CE || {};
           b.aplicacoes.length ? CE.el('div', {}, CE.el('h3', {}, '📈 Aplicações'), CE.el('ul', { class: 'cart-extrato' }, b.aplicacoes.map((a) => CE.el('li', {},
             CE.el('span', { class: 'txt' }, CE.el('span', {}, `Aplicou ${moeda(a.valor)} · hoje vale ${moeda(a.atual)}`), CE.el('small', {}, a.faltam ? `Sai daqui a ${a.faltam} dia${a.faltam > 1 ? 's' : ''}` : 'Já pode resgatar')),
             CE.el('button', { class: 'botao secundario', type: 'button', 'data-resgatar': a.id, disabled: a.faltam > 0, onclick: () => operar(() => banco.resgatar(a.id)) }, 'Resgatar'))))) : null,
-          CE.el('p', { class: 'cart-dica' }, `💡 Juros trabalham a seu favor na poupança e na aplicação, e contra você no empréstimo. Exemplo: pegando 100 moedas emprestadas, a dívida vira ${simula}. Repare: o banco cobra no empréstimo o dobro do que paga na aplicação (é assim que ele lucra). Enquanto deve, metade de cada salário vai para o banco.`),
+          b.scoreLog.length ? CE.el('details', { class: 'banco-score-log' }, CE.el('summary', {}, '📊 Por que meu nome mudou'), CE.el('ul', {}, b.scoreLog.map((s) => CE.el('li', {}, `${s.d > 0 ? '+' : ''}${s.d} · ${s.motivo}`)))) : null,
+          CE.el('p', { class: 'cart-dica' }, `💡 Juros trabalham a seu favor na poupança e na aplicação, e contra você no empréstimo. Exemplo: pegando 100 moedas emprestadas, a dívida vira ${simula}. Quem paga as contas em dia tem limite maior e juros menores; com nome sujo, o banco não empresta. Repare: o banco cobra no empréstimo o dobro do que paga na aplicação (é assim que ele lucra). Enquanto deve, metade de cada salário vai para o banco.`),
           CE.el('h3', {}, 'Extrato do banco'),
           b.extrato.length ? CE.el('ul', { class: 'cart-extrato' }, b.extrato.map((x) => CE.el('li', {},
             CE.el('span', { class: 'txt' }, CE.el('span', {}, x.motivo), CE.el('small', {}, quando(x.em))),
