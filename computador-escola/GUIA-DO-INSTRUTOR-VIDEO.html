@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guia do Instrutor em Vídeo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style>
+body { margin: 0; }
+[hidden] { display: none !important; }
+/* Layout: um "player" de vídeo (palco 16:9 + controles) e a lista de capítulos embaixo. O palco é escuro nos dois temas, como uma tela de cinema. */
+:root {
+  --fundo: #eef3ef; --papel: #ffffff; --tinta: #17261f; --suave: #4d6157; --linha: #d3ded7;
+  --rio: #0d6b66; --rio-claro: #e1f0ed;
+  --palco: #0f1c18; --palco-2: #17302a; --palco-tinta: #f2f7f3; --palco-suave: #a9c2b7;
+  --ipe: #f2c14e; --fogo: #ff7a3d; --agua: #4fb3e8; --verde: #5fcf8a; --alerta: #ff6b57; --chao: #d8c9a3; --rua: #59626a;
+  --f-titulo: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-texto: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --fundo: #0b1310; --papel: #142019; --tinta: #e5eee8; --suave: #a3b6ac; --linha: #263630; --rio: #5cc4bc; --rio-claro: #19302c; color-scheme: dark } }
+:root[data-theme="dark"] { --fundo: #0b1310; --papel: #142019; --tinta: #e5eee8; --suave: #a3b6ac; --linha: #263630; --rio: #5cc4bc; --rio-claro: #19302c; color-scheme: dark }
+* { box-sizing: border-box; }
+body { background: var(--fundo); color: var(--tinta); font: 16px/1.5 var(--f-texto); }
+.tela { max-width: 1040px; margin: 0 auto; padding-block: 22px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 14px; }
+.topo h1 { font: 800 clamp(24px, 4vw, 34px)/1.1 var(--f-titulo); margin: 0; text-wrap: balance; }
+.topo p { margin: 4px 0 0; color: var(--suave); }
+
+.player { background: var(--palco); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+.palco { position: relative; aspect-ratio: 16 / 9; max-width: 100%; color: var(--palco-tinta); overflow: hidden; background: radial-gradient(120% 90% at 50% 0%, var(--palco-2), var(--palco)); }
+.cena { position: absolute; inset: 0 0 18%; display: grid; place-items: center; padding: 3% 4%; }
+.capitulo-nome { position: absolute; top: 3.5%; left: 3.5%; font: 700 clamp(10px, 1.5vw, 14px)/1 var(--f-texto); letter-spacing: .1em; text-transform: uppercase; color: var(--ipe); }
+.legenda { position: absolute; left: 4%; right: 4%; bottom: 3.5%; min-height: 12%; display: grid; place-items: center; text-align: center; font: 700 clamp(13px, 2.1vw, 21px)/1.35 var(--f-texto); text-wrap: balance; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+.legenda span { background: rgba(0,0,0,.45); padding: .15em .5em; border-radius: 6px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.capa { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(8,16,13,.72); z-index: 5; }
+.capa[hidden] { display: none; }
+.capa button { font: 800 clamp(16px, 2.6vw, 24px)/1 var(--f-titulo); padding: .8em 1.4em; border-radius: 999px; border: 0; background: var(--ipe); color: #1b1404; cursor: pointer; }
+.capa button:focus-visible, .controles button:focus-visible, .caps button:focus-visible { outline: 3px solid var(--ipe); outline-offset: 2px; }
+
+.controles { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 12px; background: #0b1512; color: #e8f0eb; }
+.controles button { font: 700 15px/1 var(--f-texto); color: #e8f0eb; background: #1d2f29; border: 1px solid #2f4840; border-radius: 8px; padding: 8px 11px; cursor: pointer; }
+.controles button[aria-pressed="true"] { background: var(--ipe); color: #1b1404; border-color: var(--ipe); }
+.barra { flex: 1 1 220px; display: flex; gap: 3px; height: 12px; min-width: 0; }
+.barra button { flex: 1; padding: 0; border-radius: 3px; background: #2a3d36; border: 0; position: relative; overflow: hidden; }
+.barra button i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--ipe); }
+.tempo { font-variant-numeric: tabular-nums; font-size: 14px; color: #a9c2b7; white-space: nowrap; }
+
+.caps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px; }
+.caps button { width: 100%; text-align: left; font: 15px/1.3 var(--f-texto); color: var(--tinta); background: var(--papel); border: 1px solid var(--linha); border-radius: 8px; padding: 8px 10px; cursor: pointer; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 6px; }
+.caps button b { font-variant-numeric: tabular-nums; color: var(--rio); }
+.caps button[aria-current="true"] { border-color: var(--rio); background: var(--rio-claro); }
+.nota { color: var(--suave); font-size: 14px; margin: 0; }
+
+/* ---------- peças das cenas ---------- */
+.titulo-grande { text-align: center; }
+.titulo-grande .eyebrow { font: 700 clamp(11px, 1.6vw, 15px)/1 var(--f-texto); letter-spacing: .14em; text-transform: uppercase; color: var(--ipe); }
+.titulo-grande h2 { font: 800 clamp(28px, 6vw, 64px)/1.02 var(--f-titulo); margin: .2em 0; }
+.titulo-grande p { color: var(--palco-suave); font-size: clamp(13px, 2vw, 20px); margin: 0; }
+.fila { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: clamp(8px, 2vw, 22px); }
+.cartao { background: #1b2f29; border: 1px solid #2d4a41; border-radius: 12px; padding: clamp(6px, 1.4vw, 14px) clamp(8px, 1.8vw, 18px); text-align: center; min-width: 0; transition: transform .5s, opacity .5s, border-color .5s, background .5s; }
+.cartao .ic { font-size: clamp(22px, 4.5vw, 48px); line-height: 1.1; display: block; }
+.cartao b { display: block; font: 700 clamp(11px, 1.7vw, 17px)/1.2 var(--f-titulo); }
+.cartao small { display: block; color: var(--palco-suave); font-size: clamp(10px, 1.3vw, 14px); }
+.oculto { opacity: 0; transform: translateY(14px) scale(.96); }
+.aceso { border-color: var(--ipe) !important; background: #3a3215 !important; transform: scale(1.06); }
+.apagado { opacity: .35; }
+.pc { font-size: clamp(26px, 5vw, 54px); line-height: 1; text-align: center; transition: transform .5s, opacity .5s; }
+.pc small { display: block; font-size: clamp(10px, 1.4vw, 14px); color: var(--palco-suave); }
+.linha-tempo { width: min(92%, 760px); display: grid; gap: 6px; }
+.lt-barra { display: flex; height: clamp(22px, 4vw, 40px); border-radius: 8px; overflow: hidden; background: #22362f; }
+.lt-barra div { height: 100%; width: 0; transition: width .9s ease; display: grid; place-items: center; font: 700 clamp(9px, 1.3vw, 13px)/1 var(--f-texto); white-space: nowrap; overflow: hidden; color: #10201a; }
+.lt-rotulo { display: flex; justify-content: space-between; color: var(--palco-suave); font-size: clamp(10px, 1.3vw, 13px); font-variant-numeric: tabular-nums; }
+.janela-mock { width: min(86%, 640px); background: #e9efe9; color: #1a2620; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.janela-mock .barra-t { background: #1c6dc0; color: #fff; font: 700 clamp(10px, 1.4vw, 14px)/1 var(--f-texto); padding: 7px 10px; }
+.janela-mock .corpo { padding: clamp(8px, 1.6vw, 16px); display: grid; gap: 6px; font-size: clamp(10px, 1.5vw, 15px); }
+.linha-aluno { display: flex; justify-content: space-between; gap: 10px; padding: 5px 8px; border-radius: 6px; background: #fff; transition: background .5s, transform .5s; }
+.linha-aluno.ajuda { background: #ffd9a8; transform: scale(1.02); }
+.seta { position: absolute; font-size: clamp(22px, 4vw, 44px); color: var(--alerta); transition: left .9s ease, top .9s ease, opacity .4s; filter: drop-shadow(0 2px 3px rgba(0,0,0,.5)); }
+.placar { width: min(80%, 560px); display: grid; gap: 8px; }
+.placar .eq { display: grid; grid-template-columns: 90px 1fr 46px; gap: 8px; align-items: center; font: 700 clamp(11px, 1.6vw, 15px)/1 var(--f-texto); }
+.placar .eq .b { height: clamp(14px, 2.6vw, 26px); background: #22362f; border-radius: 6px; overflow: hidden; }
+.placar .eq .b i { display: block; height: 100%; width: 0; transition: width 1.2s ease; border-radius: 6px; }
+.mapa { display: grid; gap: 2px; width: min(88%, 720px); max-width: 100%; aspect-ratio: 18 / 9; position: relative; }
+.mapa .c { border-radius: 3px; background: var(--chao); transition: background .6s; position: relative; display: grid; place-items: center; font-size: clamp(9px, 1.9vw, 20px); line-height: 1; }
+.mapa .c.rua { background: var(--rua); }
+.mapa .c.grama { background: #6fae5c; }
+.mapa .c.agua { background: var(--agua); }
+.mapa .c.fogo { background: #ffb36b; animation: tremer .5s infinite alternate; }
+.mapa .c.queimado { background: #5b4637; }
+@keyframes tremer { from { filter: brightness(1); } to { filter: brightness(1.35); } }
+.boneco { position: absolute; font-size: clamp(14px, 2.6vw, 28px); transition: left 1.1s ease, top 1.1s ease; transform: translate(-50%, -60%); filter: drop-shadow(0 2px 2px rgba(0,0,0,.4)); }
+.balao { position: absolute; transform: translate(-50%, -150%); background: #fff; color: #1a2620; border-radius: 10px; padding: 3px 8px; font: 700 clamp(9px, 1.4vw, 14px)/1.2 var(--f-texto); white-space: nowrap; transition: opacity .4s; }
+.alarme { position: absolute; top: 3%; left: 50%; transform: translateX(-50%); background: var(--alerta); color: #fff; border-radius: 999px; padding: 6px 16px; font: 800 clamp(11px, 1.8vw, 18px)/1 var(--f-titulo); white-space: nowrap; animation: pulsar 1s infinite; }
+@keyframes pulsar { 50% { transform: translateX(-50%) scale(1.05); } }
+.redondos { display: grid; gap: clamp(6px, 1.2vw, 12px); }
+.redondo { display: flex; align-items: center; gap: 12px; opacity: .45; transition: opacity .4s, transform .4s; }
+.redondo span:first-child { width: clamp(34px, 5.5vw, 56px); height: clamp(34px, 5.5vw, 56px); border-radius: 50%; background: #fff; display: grid; place-items: center; font-size: clamp(16px, 2.8vw, 28px); flex: none; }
+.redondo span:last-child { font: 700 clamp(12px, 1.9vw, 19px)/1.2 var(--f-texto); }
+.redondo.on { opacity: 1; transform: translateX(8px); }
+.redondo.on span:first-child { box-shadow: 0 0 0 4px var(--ipe); }
+.relogio-cena { font: 800 clamp(30px, 7vw, 76px)/1 var(--f-titulo); font-variant-numeric: tabular-nums; text-align: center; }
+.ceu { position: absolute; inset: 0; transition: background 1.2s; z-index: -1; }
+.medidor { width: min(80%, 520px); }
+.medidor .trilho { height: clamp(16px, 2.8vw, 28px); border-radius: 999px; background: linear-gradient(90deg, #d9483b 0 40%, #f2c14e 40% 70%, #5fcf8a 70%); position: relative; }
+.medidor .ponteiro { position: absolute; top: -40%; width: 6px; height: 180%; background: #fff; border-radius: 3px; left: 50%; transition: left 1.2s ease; box-shadow: 0 0 6px rgba(0,0,0,.6); }
+.medidor .marcas { display: flex; justify-content: space-between; color: var(--palco-suave); font-size: clamp(10px, 1.3vw, 13px); margin-top: 6px; }
+.carimbo { position: absolute; transform: rotate(-12deg) scale(2); opacity: 0; font: 800 clamp(18px, 3.5vw, 36px)/1 var(--f-titulo); color: var(--alerta); border: 4px solid var(--alerta); border-radius: 8px; padding: 4px 12px; transition: transform .35s, opacity .35s; }
+.carimbo.batido { transform: rotate(-12deg) scale(1); opacity: 1; }
+.moeda { position: absolute; font-size: clamp(14px, 2.4vw, 26px); transition: left 1s ease, top 1s ease, opacity .4s; }
+.tabela-mini { width: min(86%, 600px); border-collapse: collapse; font-size: clamp(10px, 1.5vw, 15px); }
+.tabela-mini td, .tabela-mini th { padding: 5px 8px; border-bottom: 1px solid #2d4a41; text-align: left; }
+.tabela-mini tr { transition: background .6s, opacity .6s; }
+.tabela-mini tr.sujo { background: rgba(255,107,87,.25); }
+.tabela-mini tr.devendo { background: rgba(242,193,78,.2); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-duration: .01s !important; } }
+</style>
+
+<div class="tela">
+  <div class="topo">
+    <h1>Guia do Instrutor em vídeo</h1>
+    <p>Aperte ▶ para assistir. O Professor Virtual narra; as legendas aparecem embaixo. Dá para pausar e pular de capítulo.</p>
+  </div>
+
+  <div class="player">
+    <div class="palco" id="palco" aria-live="polite">
+      <div class="capitulo-nome" id="capNome"></div>
+      <div class="cena" id="cena"></div>
+      <div class="legenda" id="legenda"></div>
+      <div class="capa" id="capa"><button type="button" id="assistir">▶ Assistir o guia</button></div>
+    </div>
+    <div class="controles">
+      <button type="button" id="voltar" aria-label="Capítulo anterior">⏮</button>
+      <button type="button" id="tocar" aria-label="Tocar ou pausar">▶</button>
+      <button type="button" id="avancar" aria-label="Próximo capítulo">⏭</button>
+      <div class="barra" id="barra" aria-label="Capítulos"></div>
+      <span class="tempo" id="tempo">1 / 18</span>
+      <button type="button" id="voz" aria-pressed="true" title="Ligar ou desligar a voz">🔊 Voz</button>
+      <button type="button" id="veloc" title="Velocidade">1x</button>
+    </div>
+  </div>
+
+  <ol class="caps" id="caps"></ol>
+  <p class="nota">Sem voz instalada no computador, as legendas passam sozinhas. O guia completo, para ler, está na página "Guia do Instrutor".</p>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+  const depois = (ms, f) => { const t = setTimeout(f, ms); timers.push(t); };
+  let timers = [];
+
+  // Peças reutilizadas
+  const cartao = (ic, b, small, oculto = true) => h('div', 'cartao' + (oculto ? ' oculto' : ''), `<span class="ic">${ic}</span><b>${b}</b>${small ? `<small>${small}</small>` : ''}`);
+  const mostrar = (el) => el && el.classList.remove('oculto');
+  function mapa(cols, rows, pintar) {
+    const m = h('div', 'mapa'); m.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    const cel = [];
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) { const c = h('div', 'c'); pintar && pintar(c, x, y); m.append(c); cel.push(c); }
+    m.cel = (x, y) => cel[y * cols + x];
+    m.pos = (x, y) => ({ left: `${((x + 0.5) / cols) * 100}%`, top: `${((y + 0.5) / rows) * 100}%` });
+    m.boneco = (emoji, x, y) => { const b = h('div', 'boneco', emoji); Object.assign(b.style, m.pos(x, y)); m.append(b); b.ir = (nx, ny) => Object.assign(b.style, m.pos(nx, ny)); return b; };
+    return m;
+  }
+  const pracinha = (c, x, y) => { if (y === 0 || y === 8 || x === 0 || x === 17) c.classList.add('rua'); else if ((x + y) % 7 === 0) c.classList.add('grama'); };
+
+  // ---------- As cenas: cada fala é uma "batida" (beat) da animação ----------
+  const CENAS = [
+    { titulo: 'Abertura', falas: [
+        'Olá, instrutor! Este é o guia em vídeo do Computador Escola.',
+        'Em poucos minutos, você vai ver tudo o que existe no programa e como conduzir cada parte da aula.',
+        'O Professor Virtual faz a maior parte sozinho. Aqui você descobre onde você entra.'],
+      montar(el) {
+        const t = h('div', 'titulo-grande', '<div class="eyebrow">Computador Escola</div><h2>Guia do Instrutor</h2><p>Aulas · Turma · Praça Escola</p>');
+        const f = h('div', 'fila'); f.style.marginTop = '4%';
+        const cs = [cartao('🎓', 'Aulas', '262 aulas'), cartao('👥', 'Turma', 'ao vivo'), cartao('⛲', 'Praça', 'a cidade')];
+        f.append(...cs); const box = h('div'); box.append(t, f); el.append(box);
+        return (i) => { if (i >= 1) cs.forEach((c, k) => depois(k * 350, () => mostrar(c))); if (i === 2) cs.forEach((c) => c.classList.add('aceso')); };
+      } },
+    { titulo: 'Antes da primeira aula', falas: [
+        'Antes da primeira aula, ligue a rede da sala.',
+        'No seu computador, na tela de entrada, clique em Rede da sala e escolha Computador do instrutor. Anote o endereço e o código de seis números.',
+        'Em cada computador de aluno, escolha Computador de aluno, procure o seu computador e digite o código.',
+        'Depois, cadastre os alunos no Painel do Instrutor, na aba Alunos. Tudo fica guardado no seu computador: o aluno pode sentar em qualquer máquina.'],
+      montar(el) {
+        const box = h('div', 'fila'); box.style.width = '100%'; box.style.gap = '6%';
+        const prof = h('div', 'pc', '🖥️<small>Instrutor<br>192.168.0.10 · código 482913</small>');
+        const alunos = h('div', 'fila'); alunos.style.flexDirection = 'column'; alunos.style.gap = '10px';
+        const pcs = [1, 2, 3].map((n) => { const p = h('div', 'pc oculto', `💻<small>Aluno ${n}</small>`); alunos.append(p); return p; });
+        const fio = h('div', 'pc oculto', '🔌<small>rede da sala</small>');
+        box.append(prof, fio, alunos); el.append(box);
+        return (i) => { if (i === 1) prof.style.transform = 'scale(1.12)'; if (i === 2) { mostrar(fio); pcs.forEach((p, k) => depois(400 * k, () => mostrar(p))); } if (i === 3) { prof.innerHTML = '🖥️<small>Instrutor<br>👤 Ana · 👤 Bruno · 👤 Carla…</small>'; } };
+      } },
+    { titulo: 'Roteiro de uma aula', falas: [
+        'Este é um roteiro para uma aula de uma hora.',
+        'Nos primeiros cinco minutos, cada aluno entra e o Professor Virtual faz a revisão rápida, com o que ele errou da outra vez.',
+        'Depois, mande o recado do dia pela Sala ao vivo e comece a aula: o aluno clica no botão verde e o professor ensina.',
+        'Lá pelos quarenta minutos, um treino rápido, como a corrida de digitação.',
+        'E, nos últimos quinze minutos, a Hora da Praça: a cidade abre e chama a turma sozinha.'],
+      montar(el) {
+        const lt = h('div', 'linha-tempo');
+        const barra = h('div', 'lt-barra');
+        const partes = [[8, '#a9c2b7', 'Revisão'], [5, '#f2c14e', 'Recado'], [53, '#5fcf8a', 'Aula do dia'], [8, '#4fb3e8', 'Treino'], [26, '#ff9d6b', 'Hora da Praça']];
+        const ds = partes.map(([, c, t]) => { const d = h('div', null, t); d.style.background = c; barra.append(d); return d; });
+        lt.append(barra, h('div', 'lt-rotulo', '<span>0 min</span><span>15</span><span>30</span><span>45</span><span>60 min</span>'));
+        el.append(lt);
+        return (i) => { const ate = [0, 1, 3, 3, 4][i]; ds.forEach((d, k) => { if (k <= ate) d.style.width = partes[k][0] + '%'; }); if (i === 2) ds[1].style.width = partes[1][0] + '%'; };
+      } },
+    { titulo: 'A aula com o Professor Virtual', falas: [
+        'Na aula, o Professor Virtual explica, mostra com a seta vermelha onde clicar e confere sozinho.',
+        'Você acompanha tudo na Sala ao vivo, no Painel do Instrutor.',
+        'Quem aperta Não entendi aparece primeiro, em laranja. Vá até ele, ou deixe um monitor ajudar.',
+        'E o Painel mostra onde a turma trava: os passos em que mais pediram ajuda. Comece a aula seguinte por ali.'],
+      montar(el) {
+        const j = h('div', 'janela-mock'); j.style.position = 'relative';
+        j.append(h('div', 'barra-t', '🖥️ Sala ao vivo'));
+        const corpo = h('div', 'corpo');
+        const linhas = [['Ana', 'Planilha · passo 4'], ['Bruno', 'E-mail · passo 2'], ['Carla', 'Editor · passo 6'], ['Davi', 'Arquivos · passo 3']].map(([n, a]) => { const l = h('div', 'linha-aluno', `<b>${n}</b><span>${a}</span>`); corpo.append(l); return l; });
+        j.append(corpo); el.append(j);
+        const seta = h('div', 'seta', '➜'); seta.style.left = '10%'; seta.style.top = '10%'; seta.style.opacity = '0'; el.append(seta);
+        return (i) => {
+          if (i === 0) { seta.style.opacity = '1'; depois(100, () => { seta.style.left = '62%'; seta.style.top = '40%'; }); }
+          if (i === 2) { seta.style.opacity = '0'; linhas[1].classList.add('ajuda'); linhas[1].querySelector('span').textContent = '🙋 Não entendi · há 1 min'; corpo.prepend(linhas[1]); }
+          if (i === 3) { j.querySelector('.barra-t').textContent = '🧩 Onde a turma trava'; corpo.innerHTML = '<div class="linha-aluno ajuda"><b>Planilha · passo 4</b><span>6 pedidos de ajuda</span></div><div class="linha-aluno"><b>E-mail · passo 2</b><span>3 pedidos</span></div><div class="linha-aluno"><b>PDF · passo 5</b><span>2 pedidos</span></div>'; }
+        };
+      } },
+    { titulo: 'Atividades da turma', falas: [
+        'Para animar a turma, você tem a gincana ao vivo, com perguntas das aulas e tarefas práticas, em equipes.',
+        'O placar aparece ao vivo: mostre no projetor.',
+        'Tem também o desafio relâmpago, a corrida de digitação, a missão da semana, o jornal da turma e a monitoria.',
+        'Tudo fica no Painel do Instrutor, em Gincana, missão e jornal.'],
+      montar(el) {
+        const p = h('div', 'placar');
+        const eqs = [['🔵 Azul', '#4fb3e8', 82], ['🟢 Verde', '#5fcf8a', 64], ['🟡 Amarela', '#f2c14e', 91]].map(([n, c, v]) => { const e = h('div', 'eq', `<span>${n}</span><div class="b"><i style="background:${c}"></i></div><span>0</span>`); p.append(e); return [e, v]; });
+        const f = h('div', 'fila'); f.style.marginTop = '4%';
+        const cs = [cartao('⚡', 'Relâmpago'), cartao('🏁', 'Corrida'), cartao('🎯', 'Missão'), cartao('📰', 'Jornal'), cartao('💁', 'Monitoria')];
+        f.append(...cs); const box = h('div'); box.style.width = '100%'; box.style.display = 'grid'; box.style.justifyItems = 'center'; box.append(p, f); el.append(box);
+        return (i) => { if (i === 1) eqs.forEach(([e, v]) => { e.querySelector('i').style.width = v + '%'; e.lastChild.textContent = v * 10; }); if (i === 2) cs.forEach((c, k) => depois(250 * k, () => mostrar(c))); };
+      } },
+    { titulo: 'A Praça Escola', falas: [
+        'A Praça Escola é uma cidade de treino. Cada aluno anda com o próprio boneco e encontra os colegas de verdade, pela rede da sala.',
+        'Clicando no chão, treina o mouse. Com as setas, treina o teclado. A fala aparece num balão, para quem está perto.',
+        'A cidade cresce com a turma: cada prédio acende quando metade da turma termina o módulo ligado a ele.',
+        'E cada aluno tem a sua casa na Rua da Turma, com as medalhas na parede.'],
+      montar(el) {
+        const m = mapa(18, 9, pracinha);
+        const predios = [[2, 2, '🏦'], [6, 2, '📮'], [11, 2, '🏛️'], [15, 2, '💼'], [3, 6, '🏥'], [14, 6, '🧺']].map(([x, y, e]) => { const c = m.cel(x, y); c.textContent = '🚧'; c.dataset.p = e; return c; });
+        m.cel(8, 4).textContent = '⛲';
+        const ana = m.boneco('🐱', 5, 5), bruno = m.boneco('🐶', 12, 5);
+        const balao = h('div', 'balao', 'Bom dia!'); balao.style.opacity = '0'; m.append(balao);
+        el.append(m);
+        return (i) => {
+          if (i === 1) { ana.ir(7, 4); bruno.ir(10, 4); depois(1200, () => { Object.assign(balao.style, m.pos(7, 4)); balao.style.opacity = '1'; }); }
+          if (i === 2) { balao.style.opacity = '0'; predios.forEach((c, k) => depois(450 * k, () => { c.textContent = c.dataset.p; c.style.background = '#f2c14e'; })); }
+          if (i === 3) { for (let x = 1; x < 17; x += 3) { const c = m.cel(x, 7); c.textContent = '🏠'; } }
+        };
+      } },
+    { titulo: 'Seus botões na praça', falas: [
+        'Só você vê os botões redondos no canto da praça.',
+        'O megafone manda um recado falado para todos. O chafariz chama todo mundo para a praça.',
+        'O cadeado fecha a praça na hora da aula. E o botão de frases prontas tira o campo de escrever, bom para crianças.',
+        'A sirene dispara os eventos urgentes. E o relógio marca a Hora da Praça, que abre sozinha quinze minutos antes de cada aula acabar.'],
+      montar(el) {
+        const r = h('div', 'redondos');
+        const itens = [['📣', 'Megafone'], ['⛲', 'Chamar todos'], ['🔒', 'Fechar e abrir'], ['🔤', 'Só frases prontas'], ['🚨', 'Evento urgente'], ['⏰', 'Hora da Praça']].map(([e, t]) => { const d = h('div', 'redondo', `<span>${e}</span><span>${t}</span>`); r.append(d); return d; });
+        el.append(r);
+        const marcar = (ks) => itens.forEach((d, k) => d.classList.toggle('on', ks.includes(k)));
+        return (i) => marcar([[], [0, 1], [2, 3], [4, 5]][i]);
+      } },
+    { titulo: 'Incêndio na praça', falas: [
+        'Agora, os eventos urgentes. Você aperta a sirene e escolhe. O alarme toca na tela de todos, e a turma tem três minutos.',
+        'No incêndio, o fogo começa na lata de lixo e se alastra pela praça.',
+        'Cada aluno enche o balde na fonte e joga no fogo. Mas no poste de luz, água não pode: quem liga cento e noventa e três chama os Bombeiros.',
+        'Se o fogo apagar a tempo, a turma vence: moedas e a medalha Brigada da praça.'],
+      montar(el) {
+        const m = mapa(18, 9, pracinha); m.cel(8, 4).textContent = '⛲'; m.cel(12, 3).textContent = '🗑️'; m.cel(13, 2).textContent = '⚡';
+        const alarme = h('div', 'alarme', '🚨 Incêndio na lata de lixo! · ⏱ 2:59'); alarme.style.opacity = '0'; el.append(m); m.append(alarme);
+        const focos = [[12, 3], [13, 3], [12, 4], [11, 3], [13, 4], [11, 4], [12, 2], [10, 3]];
+        const ana = m.boneco('🐱', 6, 5);
+        return (i) => {
+          if (i === 0) alarme.style.opacity = '1';
+          if (i === 1) focos.forEach(([x, y], k) => depois(500 * k, () => m.cel(x, y).classList.add('fogo')));
+          if (i === 2) { ana.ir(8, 5); depois(1300, () => { ana.textContent = '🐱💧'; ana.ir(11, 5); }); depois(2600, () => { [[11, 4], [11, 3], [10, 3]].forEach(([x, y]) => m.cel(x, y).classList.remove('fogo')); const t = m.boneco('🚒', 17, 0); depois(200, () => t.ir(14, 1)); }); }
+          if (i === 3) { focos.forEach(([x, y]) => m.cel(x, y).classList.remove('fogo')); alarme.textContent = '🎉 O fogo apagou! A turma salvou a praça.'; alarme.style.background = '#2e8b57'; }
+        };
+      } },
+    { titulo: 'O rio sobe e a chuva forte', falas: [
+        'No Rio Madeira transbordando, a água sobe fileira por fileira para dentro da cidade.',
+        'A turma leva sacos de areia até a barreira. Quem liga cento e noventa e nove chama o caminhão da Defesa Civil.',
+        'Na chuva forte, árvores caem na rua e às vezes derrubam um fio. Ninguém encosta: chega perto e avisa a Defesa Civil.',
+        'Depois do evento, pergunte à turma: qual era o número? O que não se faz?'],
+      montar(el) {
+        const m = mapa(18, 9, pracinha);
+        el.append(m);
+        let nivel = 8;
+        const subir = () => { if (nivel < 5) return; for (let x = 0; x < 18; x++) m.cel(x, nivel).classList.add('agua'); nivel--; };
+        return (i) => {
+          if (i === 0) { for (let k = 0; k < 3; k++) depois(700 * k, subir); }
+          if (i === 1) { for (let x = 3; x < 15; x += 2) depois(150 * x, () => { m.cel(x, 5).textContent = '🟫'; }); depois(2200, () => { for (let x = 0; x < 18; x++) m.cel(x, 6).classList.remove('agua'); nivel = 6; }); const c = m.boneco('🚚', 0, 4); depois(200, () => c.ir(6, 4)); }
+          if (i === 2) { for (let y = 5; y < 9; y++) for (let x = 0; x < 18; x++) { m.cel(x, y).classList.remove('agua'); m.cel(x, y).textContent = ''; } [[4, 0], [10, 8], [16, 3]].forEach(([x, y], k) => depois(700 * k, () => { m.cel(x, y).textContent = '🌳'; m.cel(x, y).style.transform = 'rotate(80deg)'; })); depois(2300, () => { m.cel(10, 7).textContent = '⚡'; }); }
+          if (i === 3) { const a = h('div', 'alarme', '193 Bombeiros · 199 Defesa Civil · 192 SAMU · 190 Polícia'); a.style.background = '#1c6dc0'; m.append(a); }
+        };
+      } },
+    { titulo: 'Eventos especiais', falas: [
+        'Os eventos especiais a turma compra com moedas, numa vaquinha.',
+        'Festa com fogos, cem moedas. Caça ao tesouro, cento e cinquenta. Bingo, duzentas. Treino de brigada, oitenta.',
+        'Quando a vaquinha chega no valor, o Professor Virtual conduz o evento no coreto, sem precisar de você.',
+        'Dica: combine uma meta com a turma. Se juntarmos duzentas moedas até sexta, tem bingo!'],
+      montar(el) {
+        const box = h('div'); box.style.width = '100%'; box.style.display = 'grid'; box.style.justifyItems = 'center'; box.style.gap = '16px';
+        const f = h('div', 'fila');
+        const cs = [cartao('🎆', 'Festa', '100'), cartao('🎁', 'Tesouro', '150'), cartao('🎱', 'Bingo', '200'), cartao('🚒', 'Brigada', '80')];
+        f.append(...cs);
+        const vaq = h('div', 'placar'); vaq.innerHTML = '<div class="eq"><span>🎱 Bingo</span><div class="b"><i style="background:var(--ipe)"></i></div><span>0</span></div>';
+        box.append(f, vaq); el.append(box);
+        const barra = vaq.querySelector('i'), num = vaq.querySelector('.eq span:last-child');
+        return (i) => {
+          if (i === 1) cs.forEach((c, k) => depois(300 * k, () => mostrar(c)));
+          if (i === 2) { barra.style.width = '100%'; let n = 0; const t = setInterval(() => { n = Math.min(200, n + 10); num.textContent = n; if (n >= 200) { clearInterval(t); cs[2].classList.add('aceso'); } }, 60); timers.push(t); }
+        };
+      } },
+    { titulo: 'A novela da cidade', falas: [
+        'A novela da cidade tem quatro capítulos de mistério. Abra um por semana, no coreto.',
+        'As pistas aparecem com uma lupa no mapa. Cada pista é uma tarefa no computador.',
+        'Quando a turma acha todas, você revela o final no coreto. Ele aparece e é falado na tela de todos, com a moral da história.'],
+      montar(el) {
+        const m = mapa(18, 9, pracinha); m.cel(8, 4).textContent = '🎭'; el.append(m);
+        const pistas = [[3, 2], [14, 2], [5, 6], [12, 7], [16, 5]];
+        return (i) => {
+          if (i === 1) pistas.forEach(([x, y], k) => depois(400 * k, () => { m.cel(x, y).textContent = '🔎'; m.cel(x, y).style.background = '#f2c14e'; }));
+          if (i === 2) { pistas.forEach(([x, y]) => { m.cel(x, y).textContent = '✅'; }); const a = h('div', 'alarme', '📖 O barco do Seu Bené foi encontrado!'); a.style.background = '#7a4fc9'; m.append(a); }
+        };
+      } },
+    { titulo: 'O dia da cidade e as vagas', falas: [
+        'Na praça, o dia passa das oito da manhã às seis da tarde em quinze minutos. A luz muda junto.',
+        'No primeiro acesso, o aluno faz uma entrevista de emprego com o recrutador. Você lê as entrevistas e manda um retorno.',
+        'Depois, ele se candidata às vagas, cada uma com uma prova rápida: ditado, contas do caixa, memória de números e cadastro.',
+        'Com nota sessenta, é contratado: ganha um crachá e o salário cai na conta do banco. E a vaga em destaque, que muda com a hora, paga cinquenta por cento a mais.'],
+      montar(el) {
+        el.style.position = 'absolute';
+        const ceu = h('div', 'ceu'); ceu.style.background = '#2c4a6b'; el.append(ceu);
+        const box = h('div'); box.style.display = 'grid'; box.style.justifyItems = 'center'; box.style.gap = '14px'; box.style.width = '100%';
+        const rel = h('div', 'relogio-cena', '🕗 8:00');
+        const f = h('div', 'fila');
+        const vagas = [cartao('📝', 'Datilógrafo', 'ditado'), cartao('🛒', 'Caixa', 'contas'), cartao('📞', 'Recepção', 'memória'), cartao('🗂️', 'Auxiliar', 'cadastro')];
+        f.append(...vagas); box.append(rel, f); el.append(box);
+        const ent = cartao('👨‍💼', 'Entrevista de emprego', 'nome · experiência · 3 pontos fortes · 3 a melhorar');
+        return (i) => {
+          if (i === 0) { let hh = 8; const t = setInterval(() => { hh++; rel.textContent = `${hh < 11 ? '🕙' : hh < 16 ? '☀️' : '🌇'} ${hh}:00`; ceu.style.background = hh < 11 ? '#3a6d8f' : hh < 16 ? '#4c8db8' : '#a8563a'; if (hh >= 18) clearInterval(t); }, 450); timers.push(t); }
+          if (i === 1) { f.replaceChildren(ent); depois(50, () => mostrar(ent)); }
+          if (i === 2) { f.replaceChildren(...vagas); vagas.forEach((c, k) => depois(300 * k, () => mostrar(c))); rel.textContent = '🕙 10:00'; ceu.style.background = '#3a6d8f'; }
+          if (i === 3) { vagas[0].classList.add('aceso'); vagas[0].querySelector('small').textContent = '⭐ destaque +50%'; }
+        };
+      } },
+    { titulo: 'O banco das moedas', falas: [
+        'O salário cai na conta do banco. Dali, o aluno saca para a carteira, guarda na poupança ou aplica.',
+        'A poupança rende meio por cento ao dia. A aplicação rende um por cento, mas fica presa três dias.',
+        'O empréstimo vem na hora, mas cobra de um e meio a três por cento ao dia, conforme o nome.',
+        'E, enquanto deve, metade de cada salário vai direto para a dívida. É o salário futuro comprometido.'],
+      montar(el) {
+        const f = h('div', 'fila');
+        const cs = [cartao('🏦', 'Conta', '120,00'), cartao('🐷', 'Poupança', '0,5% ao dia'), cartao('📈', 'Aplicação', '1% ao dia · 3 dias'), cartao('📉', 'Empréstimo', '1,5% a 3% ao dia')];
+        f.append(...cs); el.append(f);
+        return (i) => {
+          if (i === 0) mostrar(cs[0]);
+          if (i === 1) { mostrar(cs[1]); depois(500, () => mostrar(cs[2])); }
+          if (i === 2) { mostrar(cs[3]); cs[3].style.borderColor = '#ff6b57'; }
+          if (i === 3) { cs[0].querySelector('small').textContent = 'salário 40 → 20 na conta'; cs[3].querySelector('small').textContent = '20 foram para a dívida'; cs[0].classList.add('aceso'); }
+        };
+      } },
+    { titulo: 'Contas do mês e o nome', falas: [
+        'A cada dia da cidade chega uma conta: luz, água ou aluguel. Vence no dia seguinte.',
+        'De três em três dias chega também um boleto falso, pelo WhatsApp. Quem confere quem recebe aperta É golpe e ganha moedas.',
+        'Pagar em dia limpa o nome. Atrasar ou cair em golpe suja. Nome bom tem limite maior e juros menores.',
+        'Com conta atrasada há dois dias, o nome fica sujo e o banco não empresta. E uma vez por dia chega um golpe do banco: o SMS do empréstimo ou o falso gerente.'],
+      montar(el) {
+        const box = h('div'); box.style.display = 'grid'; box.style.justifyItems = 'center'; box.style.gap = '18px'; box.style.width = '100%'; box.style.position = 'relative';
+        const f = h('div', 'fila'); f.style.position = 'relative';
+        const cs = [cartao('💡', 'Luz · 8,00', 'Luz da Cidade S.A.'), cartao('🚰', 'Água · 5,00', 'Águas da Cidade'), cartao('📱', 'Luz (2ª via) · 18,00', 'pelo WhatsApp: pague HOJE!')];
+        f.append(...cs);
+        const carimbo = h('div', 'carimbo', 'GOLPE'); f.append(carimbo);
+        const med = h('div', 'medidor', '<div class="trilho"><div class="ponteiro"></div></div><div class="marcas"><span>0 · baixo</span><span>400 · regular</span><span>700 · bom</span><span>1000</span></div>');
+        med.style.opacity = '0'; med.style.transition = 'opacity .5s';
+        box.append(f, med); el.append(box);
+        const pont = med.querySelector('.ponteiro'); pont.style.left = '50%';
+        return (i) => {
+          if (i === 0) { mostrar(cs[0]); depois(500, () => mostrar(cs[1])); }
+          if (i === 1) { mostrar(cs[2]); depois(1200, () => { carimbo.style.left = '62%'; carimbo.style.top = '10%'; carimbo.classList.add('batido'); }); }
+          if (i === 2) { med.style.opacity = '1'; depois(300, () => { pont.style.left = '72%'; }); }
+          if (i === 3) { pont.style.left = '30%'; med.querySelector('.marcas span').textContent = '⚠️ nome sujo'; }
+        };
+      } },
+    { titulo: 'A feira da turma', falas: [
+        'Na feira da turma, cada aluno abre a sua barraca: produto, preço e estoque.',
+        'Os colegas compram com Pix. Antes de confirmar, a tela mostra para quem vai o dinheiro: confira sempre o nome!',
+        'O comprador recebe o comprovante, e as moedas caem na carteira do dono da barraca.'],
+      montar(el) {
+        const f = h('div', 'fila'); f.style.position = 'relative'; f.style.width = '100%';
+        const barracas = [cartao('🍰', 'Bolo de macaxeira', 'Ana · 6 moedas'), cartao('🥤', 'Suco de cupuaçu', 'Carla · 4 moedas'), cartao('🌽', 'Farinha d’água', 'Rita · 5 moedas')];
+        f.append(...barracas);
+        const pix = cartao('📱', 'Pix: 6 moedas para Ana', 'Confira o NOME antes de confirmar');
+        el.append(f);
+        return (i) => {
+          if (i === 0) barracas.forEach((c, k) => depois(300 * k, () => mostrar(c)));
+          if (i === 1) { f.append(pix); depois(50, () => { mostrar(pix); pix.classList.add('aceso'); }); }
+          if (i === 2) { pix.querySelector('b').textContent = '✅ Pix enviado · comprovante'; for (let k = 0; k < 6; k++) { const mo = h('div', 'moeda', '🪙'); mo.style.left = '80%'; mo.style.top = '40%'; f.append(mo); depois(150 * k, () => { mo.style.left = '15%'; mo.style.top = '20%'; }); depois(1400 + 150 * k, () => { mo.style.opacity = '0'; }); } }
+        };
+      } },
+    { titulo: 'O dinheiro da turma', falas: [
+        'Só você vê o dinheiro da turma: conta, guardado, dívida e o nome de cada aluno.',
+        'Quem está de nome sujo aparece em vermelho, e quem está devendo, em amarelo, primeiro na lista.',
+        'Use para puxar a conversa sem expor ninguém. Por exemplo: por que o banco cobra o dobro no empréstimo? Quem guardou, ganhou quanto?'],
+      montar(el) {
+        const t = h('table', 'tabela-mini', '<thead><tr><th>Aluno</th><th>Conta</th><th>Guardado</th><th>Dívida</th><th>Nome</th></tr></thead>');
+        const tb = h('tbody'); t.append(tb);
+        const linhas = [['🟢 Ana', '42,00', '60,00', '—', '640', ''], ['🔴 Bruno', '3,00', '0,00', '118,50', '380 · sujo', 'sujo'], ['🟡 Carla', '25,00', '10,00', '40,00', '520', 'devendo'], ['🟢 Lia', '80,00', '150,00', '—', '760', '']].map((r) => { const tr = h('tr', null, r.slice(0, 5).map((c) => `<td>${c}</td>`).join('')); tr.dataset.c = r[5]; tr.style.opacity = '0'; tb.append(tr); return tr; });
+        el.append(t);
+        return (i) => {
+          if (i === 0) linhas.forEach((l, k) => depois(250 * k, () => { l.style.opacity = '1'; }));
+          if (i === 1) { linhas.forEach((l) => { if (l.dataset.c) l.classList.add(l.dataset.c); }); tb.prepend(linhas[2]); tb.prepend(linhas[1]); }
+        };
+      } },
+    { titulo: 'As aulas novas', falas: [
+        'No curso, o aluno pode escolher um objetivo: arrumar emprego, resolver as coisas no gov ponto br, vender pelo celular ou se proteger dos golpes.',
+        'O professor monta o caminho com as aulas certas, na ordem certa.',
+        'E no nível Intermediário tem o currículo montado com a entrevista da praça, a prova prática cronometrada e os golpes de agora.'],
+      montar(el) {
+        const f = h('div', 'fila');
+        const cs = [cartao('💼', 'Arrumar emprego', '46 aulas'), cartao('🏛️', 'gov.br', '37 aulas'), cartao('🛒', 'Vender', '31 aulas'), cartao('🛡️', 'Golpes', 'caminho')];
+        f.append(...cs); el.append(f);
+        return (i) => {
+          if (i === 0) cs.forEach((c, k) => depois(300 * k, () => mostrar(c)));
+          if (i === 1) { cs[0].classList.add('aceso'); cs.slice(1).forEach((c) => c.classList.add('apagado')); }
+          if (i === 2) f.replaceChildren(...[cartao('📄', 'Currículo', 'da entrevista', false), cartao('⏱️', 'Prova prática', 'meta: 15 min', false), cartao('🛡️', 'Golpes de agora', 'advogado · boleto · Pix', false)]);
+        };
+      } },
+    { titulo: 'Para fechar', falas: [
+        'Resumindo: deixe o Professor Virtual ensinar e use o seu tempo com quem está travado.',
+        'Use a praça para praticar a vida real: trabalhar, pagar as contas, não cair em golpe e agir numa emergência.',
+        'E converse com a turma no fim de cada aula. O guia para ler, com todos os detalhes, está na página Guia do Instrutor. Boa aula!'],
+      montar(el) {
+        const t = h('div', 'titulo-grande', '<div class="eyebrow">Boa aula!</div><h2>Ensine. Pratique. Converse.</h2><p>O guia completo, para ler, está na página Guia do Instrutor.</p>');
+        el.append(t);
+        return () => {};
+      } },
+  ];
+
+  // ---------- O "player" ----------
+  const sintese = 'speechSynthesis' in window ? window.speechSynthesis : null;
+  let voz = null;
+  const escolherVoz = () => { if (!sintese) return; const vs = sintese.getVoices(); voz = vs.find((v) => /pt[-_]BR/i.test(v.lang)) || vs.find((v) => /^pt/i.test(v.lang)) || null; };
+  if (sintese) { escolherVoz(); sintese.onvoiceschanged = escolherVoz; }
+  let comVoz = true, velocidade = 1, tocando = false, cena = 0, fala = 0, batida = null, geracao = 0;
+  const barra = $('barra'), caps = $('caps');
+  const segs = CENAS.map((c, k) => {
+    const b = document.createElement('button'); b.type = 'button'; b.title = c.titulo; b.setAttribute('aria-label', `Capítulo ${k + 1}: ${c.titulo}`); b.append(document.createElement('i'));
+    b.style.flex = String(c.falas.join(' ').length); b.onclick = () => irPara(k, true); barra.append(b); return b;
+  });
+  const itens = CENAS.map((c, k) => { const li = document.createElement('li'); const b = document.createElement('button'); b.type = 'button'; b.innerHTML = `<b>${k + 1}</b><span>${c.titulo}</span>`; b.onclick = () => irPara(k, true); li.append(b); caps.append(li); return b; });
+
+  function limpar() { timers.forEach((t) => { clearTimeout(t); clearInterval(t); }); timers = []; if (sintese) sintese.cancel(); }
+  function montarCena(k) {
+    limpar();
+    const el = $('cena'); el.replaceChildren(); el.removeAttribute('style');
+    $('capNome').textContent = `${k + 1}. ${CENAS[k].titulo}`;
+    batida = CENAS[k].montar(el) || (() => {});
+    segs.forEach((s, i) => { s.firstChild.style.width = i < k ? '100%' : '0'; });
+    itens.forEach((b, i) => b.setAttribute('aria-current', String(i === k)));
+    $('tempo').textContent = `${k + 1} / ${CENAS.length}`;
+  }
+  function falar(texto, terminou) {
+    const g = geracao;
+    const fim = () => { if (g === geracao) terminou(); };
+    const ms = Math.max(2600, texto.length * 62) / velocidade;
+    if (comVoz && sintese && voz !== undefined) {
+      const u = new SpeechSynthesisUtterance(texto); u.lang = 'pt-BR'; if (voz) u.voice = voz; u.rate = 1.0 * velocidade;
+      let acabou = false; const uma = () => { if (!acabou) { acabou = true; depois(500, fim); } };
+      u.onend = uma; u.onerror = uma;
+      sintese.speak(u);
+      depois(ms + 6000, uma); // garantia, se o navegador não avisar o fim
+    } else depois(ms, fim);
+  }
+  function tocarFala() {
+    if (!tocando) return;
+    const c = CENAS[cena];
+    if (fala >= c.falas.length) { if (cena + 1 < CENAS.length) { cena++; fala = 0; montarCena(cena); depois(400, tocarFala); } else { tocando = false; $('tocar').textContent = '↻'; segs[cena].firstChild.style.width = '100%'; } return; }
+    $('legenda').innerHTML = `<span>${c.falas[fala]}</span>`;
+    try { batida(fala); } catch (e) { /* uma batida com problema não para o vídeo */ }
+    segs[cena].firstChild.style.transition = 'width .4s'; segs[cena].firstChild.style.width = `${((fala + 1) / c.falas.length) * 100}%`;
+    const agora = fala;
+    falar(c.falas[agora], () => { fala = agora + 1; tocarFala(); });
+  }
+  function tocar() { geracao++; tocando = true; $('capa').hidden = true; $('tocar').textContent = '⏸'; montarCena(cena); for (let i = 0; i < fala; i++) { try { batida(i); } catch (e) { /* segue */ } } tocarFala(); }
+  function pausar() { geracao++; tocando = false; limpar(); $('tocar').textContent = '▶'; }
+  function irPara(k, tocarJa) { geracao++; limpar(); cena = Math.max(0, Math.min(CENAS.length - 1, k)); fala = 0; montarCena(cena); $('legenda').innerHTML = ''; if (tocarJa) tocar(); }
+
+  $('assistir').onclick = () => { cena = 0; fala = 0; tocar(); };
+  $('tocar').onclick = () => { if (tocando) pausar(); else { if (cena === CENAS.length - 1 && fala >= CENAS[cena].falas.length) { cena = 0; fala = 0; } tocar(); } };
+  $('voltar').onclick = () => irPara(cena - 1, tocando);
+  $('avancar').onclick = () => irPara(cena + 1, tocando);
+  $('voz').onclick = () => { comVoz = !comVoz; $('voz').setAttribute('aria-pressed', String(comVoz)); $('voz').textContent = comVoz ? '🔊 Voz' : '🔇 Sem voz'; if (tocando) { const f = fala; pausar(); fala = f; tocar(); } };
+  $('veloc').onclick = () => { velocidade = velocidade === 1 ? 1.25 : velocidade === 1.25 ? 1.5 : 1; $('veloc').textContent = `${velocidade}x`; };
+  document.addEventListener('keydown', (e) => { if (e.target.closest && e.target.closest('button') && e.key === ' ') return; if (e.key === ' ') { e.preventDefault(); $('tocar').click(); } if (e.key === 'ArrowRight') $('avancar').click(); if (e.key === 'ArrowLeft') $('voltar').click(); });
+
+  // Primeiro quadro: a abertura já montada, parada, com a capa "Assistir".
+  montarCena(0); batida(1); batida(2);
+  $('legenda').innerHTML = '<span>Guia do Instrutor em vídeo · 18 capítulos</span>';
+})();
+</script>
+
+</html>

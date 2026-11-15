@@ -432,7 +432,8 @@ de cada um na Praça Escola, em 🏙️ Cidade › Rua da Turma.
 - O aluno vê os certificados que já ganhou em **Aulas → 🎓 Certificados**.
 
 Para criar novas lições, veja [LEIA-ME-LICOES.md](LEIA-ME-LICOES.md). Para conduzir a turma (todas as atividades, os eventos da Praça
-Escola e um roteiro de aula), abra o [Guia do Instrutor](GUIA-DO-INSTRUTOR.html) no navegador.
+Escola e um roteiro de aula), abra o [Guia do Instrutor](GUIA-DO-INSTRUTOR.html) no navegador, ou assista ao
+[Guia do Instrutor em vídeo](GUIA-DO-INSTRUTOR-VIDEO.html) (motion graphics: 18 capítulos animados e narrados, com legendas).
 
 ## Professor Virtual com IA (opcional)
 
