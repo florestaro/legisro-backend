@@ -22,6 +22,9 @@ window.CE = window.CE || {};
     { tipo: 'evento-tentativa', icone: '🚨', texto: 'Ajudar num evento urgente (mesmo sem vencer)', valor: 5 },
     { tipo: 'tesouro', icone: '🎁', texto: 'Achar um baú na caça ao tesouro', valor: 5 },
     { tipo: 'bingo', icone: '🎱', texto: 'Ganhar o bingo do coreto', valor: 30 },
+    { tipo: 'coleta', icone: '♻️', texto: 'Separar o lixo na lixeira certa (coleta seletiva da praça)', valor: 2 },
+    { tipo: 'caixa', icone: '🏧', texto: 'Treinar no caixa eletrônico do Banco (uma vez por dia)', valor: 5 },
+    { tipo: 'agenda', icone: '📅', texto: 'Agendar consulta no Posto sem cair no golpe (uma vez por dia)', valor: 5 },
   ];
   const VALOR = Object.fromEntries(PREMIOS.map((p) => [p.tipo, p.valor]));
   const ICONE = { ...Object.fromEntries(PREMIOS.map((p) => [p.tipo, p.icone])), gasto: '🎟️', estorno: '↩️' };

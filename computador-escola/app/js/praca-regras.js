@@ -136,7 +136,7 @@
     const publica = (p, agora) => ({
       id: p.id, nome: p.nome, avatar: p.avatar, papel: p.papel, turma: p.turma, monitor: !!p.monitor,
       x: p.x, y: p.y, esq: !!p.esq, andando: !!p.andando, mao: !!(p.mao && agora - p.mao < MAO), bot: !!p.bot,
-      carga: emerg && emerg.status === 'ativo' && emerg.carregando[p.id] ? nov.EMERGENCIAS[emerg.tipo].levar.levando : null,
+      carga: emerg && emerg.status === 'ativo' && emerg.carregando[p.id] ? nov.EMERGENCIAS[emerg.tipo].levar.levando : (coleta.carregando.get(p.id) || {}).emoji || null,
       ...casaDe(p.id),
     });
 
@@ -746,6 +746,33 @@
       };
     }
 
+    // ---------- Coleta seletiva ----------
+    // Lixo aparece no chão da praça e das calçadas (um a cada 20 s, até 6); quem pega leva até a lixeira da cor certa.
+    // Fica só na memória; quem acerta ganha moedas no próprio computador (carteira.js).
+    const coleta = { itens: [], seq: 0, proximoEm: 0, carregando: new Map(), separados: 0 };
+    const MAX_LIXO = 6, LIXO_A_CADA = 20000;
+    function soltarLixo(agora) {
+      const ocupado = new Set(coleta.itens.map((i) => i.x + ',' + i.y));
+      const livres = mapa.LUGARES_DO_LIXO.filter(([x, y]) => mapa.andavel(x, y) && !ocupado.has(x + ',' + y));
+      if (!livres.length) return;
+      const [x, y] = sortear(livres), m = sortear(nov.COLETA.itens);
+      coleta.itens.push({ id: `lixo-${agora}-${++coleta.seq}`, tipo: m.tipo, emoji: m.emoji, nome: m.nome, x, y });
+    }
+    function atualizarColeta(agora) {
+      if (!dados().aberta) return;
+      if (!coleta.proximoEm) { for (let k = 0; k < 4; k++) soltarLixo(agora); coleta.proximoEm = agora + LIXO_A_CADA; return; }
+      if (agora >= coleta.proximoEm) { coleta.proximoEm = agora + LIXO_A_CADA; if (coleta.itens.length < MAX_LIXO) soltarLixo(agora); }
+    }
+    const resumoColeta = (usuario) => ({ itens: coleta.itens.map((i) => ({ ...i })), carregando: coleta.carregando.get(usuario.id) || null, separados: coleta.separados });
+    // Quem sai da praça levando um lixo deixa ele no chão, onde estava.
+    function largarLixo(p) {
+      const i = coleta.carregando.get(p.id);
+      if (!i) return;
+      coleta.carregando.delete(p.id);
+      const [x, y] = mapa.maisPerto(p.x, p.y);
+      coleta.itens.push({ ...i, x, y });
+    }
+
     // ---------- Colegas de demonstração (só no modo de teste no navegador) ----------
     const bots = [];
     const pendentes = []; // falas dos colegas de demonstração que saem daqui a pouco
@@ -921,12 +948,14 @@
         atualizarEspecial(agora);
         checarBaus(p);
         const hora = verificarHora(agora);
+        atualizarColeta(agora);
         return {
           agora, novo, eu: { x: p.x, y: p.y },
           cidade: { turma, abertos: (dados().abertos[turma] || []).slice(), selos: semanaDa(turma).selos.slice() },
           novela: resumoNovela(usuario, turma),
           emergencia: resumoEmergencia(usuario, agora),
           especial: resumoEspecial(usuario, agora),
+          coleta: resumoColeta(usuario),
           hora: hora ? { id: hora.id, fimEm: hora.fimEm, agora } : null,
           aberta: dados().aberta, soFrases: dados().soFrases, silenciado: dados().silenciados.includes(usuario.id),
           silenciados: ehInstrutor(usuario) ? dados().silenciados.slice() : undefined,
@@ -936,7 +965,39 @@
           ultimo: ultimoEvento, versao: dados().versao, mesa: mesaPublica(),
         };
       },
-      sair(usuario) { pessoas.delete(usuario.id); levantar(usuario.id); return true; },
+      sair(usuario) { const p = pessoas.get(usuario.id); if (p) largarLixo(p); pessoas.delete(usuario.id); levantar(usuario.id); return true; },
+      // Coleta seletiva: pegar um lixo do chão (do lado dele) e jogar na lixeira (do lado dela). Errou a cor: continua com ele.
+      coletar(usuario, acao, dado = {}) {
+        const p = precisaDe(usuario);
+        if (dado && Number.isFinite(Number(dado.x)) && Number.isFinite(Number(dado.y))) {
+          p.x = Math.min(mapa.W - 1, Math.max(0, arred(dado.x))); p.y = Math.min(mapa.H - 1, Math.max(0, arred(dado.y))); p.em = relogio();
+        }
+        if (acao === 'pegar') {
+          if (coleta.carregando.has(usuario.id)) throw new Error('Uma coisa de cada vez: primeiro jogue o que você está levando.');
+          if (emerg && emerg.status === 'ativo' && emerg.carregando[usuario.id]) throw new Error('Agora você está ajudando no evento urgente!');
+          const i = coleta.itens.find((x) => x.id === (dado && dado.item));
+          if (!i) throw new Error('Alguém já pegou esse.');
+          if (Math.hypot(i.x - p.x, i.y - p.y) > 1.6) throw new Error('Chegue mais perto para pegar.');
+          coleta.itens = coleta.itens.filter((x) => x !== i);
+          coleta.carregando.set(usuario.id, i);
+          return { item: i, ...resumoColeta(usuario) };
+        }
+        if (acao === 'jogar') {
+          const i = coleta.carregando.get(usuario.id);
+          if (!i) throw new Error('Primeiro pegue um lixo do chão.');
+          const L = mapa.porLugar[dado && dado.lixeira];
+          if (!L || !L.coleta) throw new Error('Lixeira desconhecida.');
+          if (Math.hypot(L.r[0] - p.x, L.r[1] - p.y) > 1.8) throw new Error('Chegue mais perto da lixeira.');
+          const certo = L.coleta === i.tipo;
+          if (certo) {
+            coleta.carregando.delete(usuario.id);
+            coleta.separados++;
+            evento({ tipo: 'coleta', de: quem(p), x: p.x, y: p.y, texto: `♻️ ${p.nome} separou ${i.nome} na lixeira ${nov.COLETA.lixeiras[i.tipo]}.` });
+          }
+          return { certo, item: i, explica: nov.COLETA.explica[i.tipo], ...resumoColeta(usuario) };
+        }
+        throw new Error('Ação desconhecida.');
+      },
       // O computador do aluno avisa os módulos que ele concluiu (só os que importam para a cidade).
       informarModulos(usuario, lista) {
         if (ehInstrutor(usuario)) return this.cidade(usuario);

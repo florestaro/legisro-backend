@@ -321,6 +321,7 @@ curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela red
 - **Hora da Praça**: o instrutor informa no ⏰ a que horas cada aula termina (e em que dias). **15 minutos antes**, a praça
   abre e o Professor Virtual chama todo mundo (quem está fora recebe o convite "⏰ Hora da Praça Escola!" e o recado no
   balão do professor); na praça, uma pílula mostra quanto falta. Dá para testar na hora ("Testar agora").
+- **Atividades na cidade**: ♻️ **coleta seletiva** (lixo aparece no chão da praça e das calçadas; o aluno clica para pegar e leva até a lixeira da cor certa: azul papel, vermelha plástico, verde vidro, amarela metal, marrom orgânico; acerto vale 2 moedas, errar explica a cor certa; 10 acertos dão a medalha ♻️ Cidade limpa), 🏧 **caixa eletrônico** no Banco (sacar R$ 50 com segurança, recusando o desconhecido que pede a senha: golpe da troca de cartão) e 📅 **agendamento de consulta** no Posto (especialidade, Cartão SUS, horário e o SMS falso que cobra taxa). O caixa e o agendamento valem 5 moedas uma vez por dia. A cidade também ficou mais detalhada: asfalto com textura, bueiros, postes de luz, telhados com telhas, janelas com cortina, árvores com volume e desenho mais nítido em telas de alta definição.
 - **Moradores** (personagens do computador, com conversas que ensinam): a Dona Rosa pede ajuda para mandar foto ao neto,
   a Dona Lúcia explica o Pix, o Seu Raimundo desafia no troco da feira, a Enfermeira Cida dá dicas, o Seu Bené conta a
   história da Madeira-Mamoré e o **Moço da Oferta** oferece um golpe (quem percebe ganha medalha).
@@ -350,7 +351,7 @@ ganhar. As moedas ficam no progresso do aluno (no modo sala de aula, no computad
 de cada um na Praça Escola, em 🏙️ Cidade › Rua da Turma.
 
 ### Outros
-- **82 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova (também por cumprir missões, ir ao
+- **83 medalhas** e confetes quando o aluno conclui uma aula ou passa numa prova (também por cumprir missões, ir ao
   pódio da gincana, mandar matéria para o jornal, ajudar colegas como monitor e conquistas na Praça Escola).
 - **Painel do Instrutor**: cadastro (com a opção "criança"), aula atual de cada aluno, média, exercício de digitação
   atual, melhor velocidade, provas e medalhas. Também:

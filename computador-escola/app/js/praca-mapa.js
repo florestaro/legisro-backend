@@ -49,6 +49,12 @@
     { id: 'mesa-domino', nome: 'Dominó', emoji: '🎲', r: [21, 13, 1, 1], entradas: [[21, 12], [21, 14]] },
     { id: 'mural', nome: 'Mural de recados', emoji: '📌', r: [21, 8, 2, 1], entradas: [[21, 9], [22, 9]] },
     { id: 'lixeira', nome: 'Lata de lixo', emoji: '🗑️', r: [22, 15, 1, 1], entradas: [[21, 15], [23, 15], [22, 14], [22, 16]] },
+    // Coleta seletiva: cinco lixeiras coloridas na beira da praça (as entradas são calculadas mais abaixo).
+    { id: 'coleta-azul', nome: 'Lixeira azul (papel)', emoji: '🟦', r: [15, 17, 1, 1], coleta: 'papel', cor: '#2F6FD6' },
+    { id: 'coleta-vermelha', nome: 'Lixeira vermelha (plástico)', emoji: '🟥', r: [16, 17, 1, 1], coleta: 'plastico', cor: '#D63B30' },
+    { id: 'coleta-verde', nome: 'Lixeira verde (vidro)', emoji: '🟩', r: [19, 17, 1, 1], coleta: 'vidro', cor: '#2E9B4F' },
+    { id: 'coleta-amarela', nome: 'Lixeira amarela (metal)', emoji: '🟨', r: [20, 17, 1, 1], coleta: 'metal', cor: '#E8B423' },
+    { id: 'coleta-marrom', nome: 'Lixeira marrom (orgânico)', emoji: '🟫', r: [21, 17, 1, 1], coleta: 'organico', cor: '#8A5A35' },
   ];
   // Moradores: personagens do computador, sempre no mesmo lugar (o mesmo para todos os alunos).
   const MORADORES = [
@@ -115,6 +121,9 @@
   porLugar.lote.entradas = porLugar.lote.entradas.slice();
 
   const andavelFixo = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !bloq[y][x] && chao[y][x] !== 'agua';
+  for (const L of OBJETOS) if (L.coleta) { const [x, y] = L.r; L.entradas = [[x, y + 1], [x, y - 1], [x - 1, y], [x + 1, y]].filter(([a, b]) => andavelFixo(a, b)); }
+  // Onde o lixo da coleta seletiva pode aparecer: no chão da praça e nas calçadas (nunca na entrada de um lugar).
+  const LUGARES_DO_LIXO = [];
   // Nos eventos urgentes o mapa muda: árvore caída e fio no chão fecham a rua, e a enchente cobre as fileiras de baixo.
   let fechados = new Set(), aguaDesde = H;
   const livre = (x, y) => y < aguaDesde && !fechados.has(y * W + x);
@@ -237,6 +246,7 @@
   const PRACA = [], RUAS = [];
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     if (!andavelFixo(x, y)) continue;
+    if (!entradaDeLugar.has(y * W + x) && ((x >= 12 && x <= 23 && y >= 8 && y <= 17) || chao[y][x] === 'calcada')) LUGARES_DO_LIXO.push([x, y]);
     if (x >= 11 && x <= 24 && y >= 7 && y <= 18) PRACA.push([x, y]);
     if (chao[y][x] === 'calcada' || chao[y][x] === 'rua') RUAS.push([x, y]);
   }
@@ -248,5 +258,5 @@
 
   return { T, W, H, chao, bloq, dono, LUGARES, OBJETOS, MORADORES, CIDADE, CASA_PRONTA, ENFEITES, MODULOS_DA_CIDADE, BANCOS, BARRACAS, IPES, ARVORES, PALMEIRAS, POSTE, porLugar,
     andavel, andavelFixo, definirBloqueios, caminho, vizinhos, maisPerto, tudoAlcancavel, PRACA, RUAS, RODA, CHEGADA, ZONAS, pertoDaZona,
-    INFLAMAVEIS, PERTO_DO_FOCO, pertoDoPonto, QUEDAS, CAMINHAO_AREIA, CAMINHAO_BOMBEIROS };
+    INFLAMAVEIS, PERTO_DO_FOCO, pertoDoPonto, QUEDAS, CAMINHAO_AREIA, CAMINHAO_BOMBEIROS, LUGARES_DO_LIXO };
 });

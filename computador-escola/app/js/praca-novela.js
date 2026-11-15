@@ -201,6 +201,22 @@
   };
   const temEmergencia = (tipo) => Object.prototype.hasOwnProperty.call(EMERGENCIAS, tipo);
 
+  // ---------- Coleta seletiva (o lixo aparece pela praça; cada um leva até a lixeira da cor certa) ----------
+  const COLETA = {
+    itens: [
+      { tipo: 'papel', emoji: '📰', nome: 'jornal velho' }, { tipo: 'papel', emoji: '📦', nome: 'caixa de papelão' },
+      { tipo: 'plastico', emoji: '🥤', nome: 'copo de plástico' }, { tipo: 'plastico', emoji: '🧴', nome: 'frasco de plástico' },
+      { tipo: 'vidro', emoji: '🍾', nome: 'garrafa de vidro' }, { tipo: 'vidro', emoji: '🥛', nome: 'copo de vidro' },
+      { tipo: 'metal', emoji: '🥫', nome: 'lata de conserva' }, { tipo: 'metal', emoji: '🍳', nome: 'frigideira velha' },
+      { tipo: 'organico', emoji: '🍌', nome: 'casca de banana' }, { tipo: 'organico', emoji: '🍎', nome: 'maçã mordida' },
+    ],
+    lixeiras: { papel: 'azul', plastico: 'vermelha', vidro: 'verde', metal: 'amarela', organico: 'marrom' },
+    explica: {
+      papel: 'Papel e papelão vão na lixeira azul.', plastico: 'Plástico vai na lixeira vermelha.', vidro: 'Vidro vai na lixeira verde.',
+      metal: 'Metal (lata, panela velha) vai na lixeira amarela.', organico: 'Resto de comida e casca vão na lixeira marrom: viram adubo para a horta!',
+    },
+  };
+
   // ---------- Eventos especiais (comprados com as moedas da turma e conduzidos pelo Professor Virtual) ----------
   // A turma junta moedas numa vaquinha; quando chega no preço, o Professor Virtual conduz o evento na praça.
   const ESPECIAIS = {
@@ -258,5 +274,5 @@
     if (t.tipo === 'digitar') return t.numero ? Math.abs(reais(resposta) - t.resposta) < 0.001 : limpo(resposta) === limpo(t.modelo);
     return false;
   }
-  return { TAREFAS, CAPITULOS, EMERGENCIAS, ESPECIAIS, porCapitulo, porPista, temTarefa, temEmergencia, temEspecial, conferirEmergencia, dia, semana, tarefaDoDia, publica, conferir };
+  return { TAREFAS, CAPITULOS, EMERGENCIAS, ESPECIAIS, COLETA, porCapitulo, porPista, temTarefa, temEmergencia, temEspecial, conferirEmergencia, dia, semana, tarefaDoDia, publica, conferir };
 });

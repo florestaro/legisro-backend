@@ -41,7 +41,7 @@ window.CE = window.CE || {};
     banco: { texto: 'O banco de treino: Pix, boleto, cartão e empréstimo, sem dinheiro de verdade.', botao: 'Entrar no Banco Escola', abrir: navegar('https://bancoescola.com.br') },
     correios: { texto: 'Mande uma carta para um colega: ela chega no E-mail dele.', botao: 'Escrever uma carta (E-mail)', abrir: () => CE.janelas.abrir('email') },
     prefeitura: { texto: 'Serviços públicos de treino: CPF, Carteira de Trabalho, documentos e assinatura.', botao: 'Entrar no Cidadão Digital', abrir: navegar('https://cidadaodigital.org.br') },
-    posto: { texto: 'Agendar consulta, ver a carteira de vacinação e aprender a reconhecer mensagem falsa de saúde.' },
+    posto: { texto: 'Agendar consulta (de treino, como no aplicativo da saúde) e aprender a reconhecer mensagem falsa de saúde.' },
     feira: { texto: 'Barracas com açaí, farinha d’água, tucumã e castanha.', botao: 'Vender pela internet (Feira Online)', abrir: navegar('https://feiraonline.com.br') },
     horta: { texto: 'A horta da turma: foi o primeiro lugar que a turma acendeu, com o módulo Conhecendo o computador.' },
     estacao: { texto: 'A estação da estrada de ferro que ligava Porto Velho a Guajará-Mirim.', botao: 'Digitar textos da nossa terra', abrir: () => CE.janelas.abrir('digitacao') },
@@ -73,6 +73,13 @@ window.CE = window.CE || {};
     let nova = false;
     await CE.sessao.atualizarProgresso((p) => { p.praca = p.praca || {}; if (!p.praca[id]) { p.praca[id] = Date.now(); nova = true; } }).catch(() => {});
     if (nova) CE.emitir('praca:conquista', { id });
+  }
+  // Cada lixo separado na lixeira certa conta para a medalha ♻️ Cidade limpa (10).
+  async function contarReciclagem() {
+    if (!CE.sessao.usuario) return;
+    let total = 0;
+    await CE.sessao.atualizarProgresso((p) => { p.praca = p.praca || {}; p.praca.reciclou = total = (Number(p.praca.reciclou) || 0) + 1; }).catch(() => {});
+    if (total >= 10) CE.emitir('praca:conquista', { id: 'reciclou' });
   }
   // Cada tarefa do dia feita conta para a medalha 🧰 Mão na massa (10 tarefas).
   async function contarTarefa() {
@@ -116,10 +123,11 @@ window.CE = window.CE || {};
 
   // ================= Desenho da cidade (uma vez, num canvas com o dobro de pontos) =================
   function desenharCidade(tela) {
-    const Q = 2;
+    const Q = Math.min(3, Math.max(2, Math.ceil((window.devicePixelRatio || 1) * 2)));
     tela.width = W * T * Q; tela.height = H * T * Q;
     const g = tela.getContext('2d');
     g.scale(Q, Q);
+    g.imageSmoothingQuality = 'high';
     let semente = 20251113;
     const acaso = () => (semente = (semente * 16807) % 2147483647) / 2147483647;
     const tom = (hex, q) => {
@@ -131,14 +139,42 @@ window.CE = window.CE || {};
     const emoji = (txt, x, y, tam) => { g.font = `${tam}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, x, y); };
     const ret = (x, y, w, h, r) => { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); };
     const { chao } = M;
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { g.fillStyle = COR[chao[y][x]]; g.fillRect(x * T, y * T, T, T); }
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const t = chao[y][x];
+      g.fillStyle = t === 'grama' ? tom(COR.grama, (acaso() - 0.5) * 12) : t === 'calcada' ? tom(COR.calcada, (x + y) % 2 ? -6 : 3) : COR[t];
+      g.fillRect(x * T, y * T, T, T);
+    }
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const t = chao[y][x], X = x * T, Y = y * T;
-      if (t === 'grama') for (let k = 0; k < 5; k++) { g.fillStyle = acaso() < 0.5 ? '#7EB04D' : '#A2CD6C'; g.fillRect(X + acaso() * 36, Y + acaso() * 36, 3, 2); }
-      if (t === 'calcada') { g.strokeStyle = 'rgba(90, 76, 50, .16)'; g.lineWidth = 1; g.strokeRect(X + 0.5, Y + 0.5, T - 1, T - 1); g.beginPath(); g.moveTo(X + T / 2, Y); g.lineTo(X + T / 2, Y + T); g.moveTo(X, Y + T / 2); g.lineTo(X + T, Y + T / 2); g.stroke(); }
-      if (t === 'terra' || t === 'lote') for (let k = 0; k < 7; k++) { g.fillStyle = acaso() < 0.5 ? 'rgba(120, 50, 20, .25)' : 'rgba(255, 220, 180, .25)'; g.fillRect(X + acaso() * 37, Y + acaso() * 37, 3, 3); }
-      if (t === 'areia') for (let k = 0; k < 6; k++) { g.fillStyle = 'rgba(160, 120, 60, .25)'; g.fillRect(X + acaso() * 37, Y + acaso() * 37, 2, 2); }
-      if (t === 'plataforma') { g.strokeStyle = 'rgba(0, 0, 0, .12)'; g.strokeRect(X + 0.5, Y + 0.5, T - 1, T - 1); }
+      if (t === 'grama') {
+        for (let k = 0; k < 2; k++) { g.fillStyle = acaso() < 0.5 ? 'rgba(70, 120, 40, .13)' : 'rgba(190, 225, 130, .16)'; g.beginPath(); g.ellipse(X + acaso() * T, Y + acaso() * T, 6 + acaso() * 9, 4 + acaso() * 6, acaso() * 3, 0, Math.PI * 2); g.fill(); }
+        g.lineWidth = 1.2; g.lineCap = 'round';
+        for (let k = 0; k < 7; k++) {
+          const tx = X + 3 + acaso() * 34, ty = Y + 5 + acaso() * 32;
+          g.strokeStyle = acaso() < 0.5 ? '#6E9F42' : '#A9D272';
+          g.beginPath(); g.moveTo(tx - 2, ty - 3); g.lineTo(tx, ty); g.lineTo(tx + 2, ty - 4); g.stroke();
+        }
+        if (acaso() < 0.08) { const fx = X + 8 + acaso() * 24, fy = Y + 8 + acaso() * 24, cor = ['#FFFFFF', '#FFE45C', '#F49AC1'][Math.floor(acaso() * 3)]; for (const [dx, dy] of [[0, 0], [5, 3], [-4, 4]]) { circulo(fx + dx, fy + dy, 2, cor); circulo(fx + dx, fy + dy, 0.9, '#E8A21A'); } }
+      }
+      if (t === 'calcada') {
+        g.strokeStyle = 'rgba(90, 76, 50, .18)'; g.lineWidth = 1; g.strokeRect(X + 0.5, Y + 0.5, T - 1, T - 1);
+        g.beginPath(); g.moveTo(X + T / 2, Y); g.lineTo(X + T / 2, Y + T); g.moveTo(X, Y + T / 2); g.lineTo(X + T, Y + T / 2); g.stroke();
+        g.strokeStyle = 'rgba(255, 255, 255, .35)'; g.beginPath(); g.moveTo(X + 1.5, Y + T / 2 - 1); g.lineTo(X + 1.5, Y + 1.5); g.lineTo(X + T / 2 - 1, Y + 1.5); g.moveTo(X + T / 2 + 1.5, Y + T - 1); g.lineTo(X + T / 2 + 1.5, Y + T / 2 + 1.5); g.lineTo(X + T - 1, Y + T / 2 + 1.5); g.stroke();
+      }
+      if (t === 'terra' || t === 'lote') for (let k = 0; k < 10; k++) { g.fillStyle = acaso() < 0.5 ? 'rgba(120, 50, 20, .25)' : 'rgba(255, 220, 180, .25)'; g.fillRect(X + acaso() * 37, Y + acaso() * 37, 2 + acaso() * 2, 2 + acaso() * 2); }
+      if (t === 'areia') {
+        for (let k = 0; k < 8; k++) { g.fillStyle = 'rgba(160, 120, 60, .25)'; g.fillRect(X + acaso() * 37, Y + acaso() * 37, 2, 2); }
+        g.strokeStyle = 'rgba(175, 140, 80, .35)'; g.lineWidth = 1;
+        for (const yy of [Y + 13, Y + 28]) { g.beginPath(); for (let k = 0; k <= T; k += 4) { const py = yy + Math.sin((X + k) / 6) * 1.6; if (k) g.lineTo(X + k, py); else g.moveTo(X + k, py); } g.stroke(); }
+      }
+      if (t === 'plataforma') {
+        g.strokeStyle = 'rgba(0, 0, 0, .13)'; g.lineWidth = 1;
+        for (let k = 0; k < 4; k++) { const yy = Y + k * 10 + 0.5; g.beginPath(); g.moveTo(X, yy); g.lineTo(X + T, yy); g.stroke(); const off = k % 2 ? 10 : 0; for (let bx = X + off; bx < X + T; bx += 20) { g.beginPath(); g.moveTo(bx + 0.5, yy); g.lineTo(bx + 0.5, yy + 10); g.stroke(); } }
+      }
+      if (t === 'rua') {
+        for (let k = 0; k < 26; k++) { g.fillStyle = acaso() < 0.5 ? 'rgba(255, 255, 255, .07)' : 'rgba(0, 0, 0, .1)'; g.fillRect(X + acaso() * 39, Y + acaso() * 39, 1.5, 1.5); }
+        if (acaso() < 0.06) { g.strokeStyle = 'rgba(0, 0, 0, .22)'; g.lineWidth = 1; g.beginPath(); let cx = X + 6 + acaso() * 20, cy = Y + 6 + acaso() * 20; g.moveTo(cx, cy); for (let k = 0; k < 4; k++) { cx += 3 + acaso() * 5; cy += (acaso() - 0.5) * 8; g.lineTo(cx, cy); } g.stroke(); }
+      }
       if (t === 'rua') {
         g.fillStyle = '#4C5155';
         if (y > 0 && chao[y - 1][x] !== 'rua') g.fillRect(X, Y, T, 3);
@@ -147,6 +183,22 @@ window.CE = window.CE || {};
         if (x < W - 1 && chao[y][x + 1] !== 'rua') g.fillRect(X + T - 3, Y, 3, T);
       }
     }
+    for (const [x, y] of [[3, 5], [21, 5], [33, 6], [9, 12], [26, 9], [6, 19], [21, 20], [30, 19]]) {
+      const cx = x * T + T / 2, cy = y * T + T / 2;
+      circulo(cx, cy, 8, '#3F4448'); circulo(cx, cy, 6.5, '#555B60');
+      g.strokeStyle = '#3F4448'; g.lineWidth = 1; for (let k = -4; k <= 4; k += 2.6) { g.beginPath(); g.moveTo(cx - 5, cy + k); g.lineTo(cx + 5, cy + k); g.stroke(); }
+    }
+    const lampiao = (px, py) => {
+      g.fillStyle = 'rgba(0, 0, 0, .2)'; g.beginPath(); g.ellipse(px + 3, py + 4, 5, 3, 0, 0, Math.PI * 2); g.fill();
+      circulo(px, py, 3.2, '#4E5459');
+      const brilho = g.createRadialGradient(px - 6, py - 7, 0, px - 6, py - 7, 9); brilho.addColorStop(0, 'rgba(255, 240, 170, .55)'); brilho.addColorStop(1, 'rgba(255, 240, 170, 0)');
+      g.fillStyle = brilho; g.fillRect(px - 15, py - 16, 18, 18);
+      g.strokeStyle = '#4E5459'; g.lineWidth = 2; g.beginPath(); g.moveTo(px, py); g.lineTo(px - 6, py - 7); g.stroke();
+      circulo(px - 6, py - 7, 3, '#F6E58A');
+    };
+    for (const x of [2, 13, 21, 29, 34]) lampiao(x * T + 6, 4 * T + T - 4);
+    for (const x of [2, 13, 21, 29, 34]) lampiao(x * T + 6, 18 * T + T - 4);
+    for (const x of [3, 14, 23, 33]) lampiao(x * T + 6, 21 * T + T - 4);
     // Faixas do meio das ruas e faixas de pedestre
     g.fillStyle = '#F0CF57';
     const cruz = (x) => (x >= 9 * T && x < 11 * T) || (x >= 25 * T && x < 27 * T);
@@ -225,6 +277,16 @@ window.CE = window.CE || {};
       if (tipo === 'velha') { g.beginPath(); g.moveTo(cx - 3, cy - 8); g.lineTo(cx - 3, cy + 8); g.moveTo(cx + 3, cy - 8); g.lineTo(cx + 3, cy + 8); g.moveTo(cx - 8, cy - 3); g.lineTo(cx + 8, cy - 3); g.moveTo(cx - 8, cy + 3); g.lineTo(cx + 8, cy + 3); g.stroke(); }
       else { g.fillStyle = '#FFFFFF'; g.fillRect(cx - 9, cy - 3, 8, 5); g.fillRect(cx, cy - 3, 8, 5); g.fillRect(cx - 4, cy + 3, 5, 8); }
     }
+    // Coleta seletiva: cinco lixeiras coloridas com tampa e o símbolo da reciclagem
+    for (const L of M.OBJETOS.filter((o) => o.coleta)) {
+      const X = L.r[0] * T, Y = L.r[1] * T;
+      g.fillStyle = 'rgba(0, 0, 0, .22)'; g.fillRect(X + 9, Y + 12, 26, 26);
+      const gb = g.createLinearGradient(X + 6, 0, X + 34, 0); gb.addColorStop(0, tom(L.cor, 25)); gb.addColorStop(1, tom(L.cor, -25));
+      g.fillStyle = gb; ret(X + 7, Y + 8, 26, 27, 4); g.fill();
+      g.fillStyle = tom(L.cor, -40); ret(X + 5, Y + 4, 30, 7, 3); g.fill();
+      g.fillStyle = 'rgba(255, 255, 255, .35)'; g.fillRect(X + 9, Y + 12, 3, 20);
+      emoji('♻️', X + 20, Y + 23, 14);
+    }
     // Poste de luz (na calçada da praça, perto da lata de lixo)
     {
       const cx = M.POSTE[0] * T + T / 2, cy = M.POSTE[1] * T + T / 2;
@@ -244,26 +306,44 @@ window.CE = window.CE || {};
       const [x, y, w, h] = L.r;
       const X = x * T, Y = y * T, PW = w * T, PH = h * T;
       const paredeH = Math.round(T * 1.1), telhadoH = PH - paredeH, topo = Y + telhadoH;
-      g.fillStyle = 'rgba(20, 30, 20, .22)'; g.fillRect(X + 5, Y + 7, PW, PH);
-      g.fillStyle = tom(L.telhado, 16); g.fillRect(X, Y, PW, telhadoH / 2);
-      g.fillStyle = L.telhado; g.fillRect(X, Y + telhadoH / 2, PW, telhadoH / 2);
-      g.strokeStyle = tom(L.telhado, -24); g.lineWidth = 1;
-      for (let k = Y + 6; k < Y + telhadoH - 4; k += 7) { g.beginPath(); g.moveTo(X, k + 0.5); g.lineTo(X + PW, k + 0.5); g.stroke(); }
+      g.save(); g.shadowColor = 'rgba(15, 25, 15, .35)'; g.shadowBlur = 12; g.shadowOffsetX = 6; g.shadowOffsetY = 8;
+      g.fillStyle = L.parede; g.fillRect(X, Y, PW, PH); g.restore();
+      const gt = g.createLinearGradient(0, Y, 0, Y + telhadoH);
+      gt.addColorStop(0, tom(L.telhado, 30)); gt.addColorStop(0.5, tom(L.telhado, 8)); gt.addColorStop(0.51, L.telhado); gt.addColorStop(1, tom(L.telhado, -18));
+      g.fillStyle = gt; g.fillRect(X, Y, PW, telhadoH);
+      // telhas: fileiras de meia-lua, uma fileira deslocada da outra
+      g.strokeStyle = tom(L.telhado, -30); g.lineWidth = 1;
+      for (let k = Y + 6, f = 0; k < Y + telhadoH - 4; k += 7, f++) {
+        g.beginPath(); g.moveTo(X, k + 0.5); g.lineTo(X + PW, k + 0.5); g.stroke();
+        g.beginPath(); for (let sx = X + (f % 2 ? 4 : 0); sx < X + PW; sx += 8) { g.moveTo(sx + 8, k + 0.5); g.arc(sx + 4, k + 0.5, 4, 0, Math.PI); } g.stroke();
+      }
+      if (L.casa) { const cx = X + PW - 16; g.fillStyle = tom(L.parede, -55); g.fillRect(cx, Y + 3, 9, 12); g.fillStyle = tom(L.parede, -75); g.fillRect(cx - 1, Y + 2, 11, 3); }
       g.fillStyle = tom(L.telhado, 40); g.fillRect(X, Y + telhadoH / 2 - 2, PW, 3);
       g.fillStyle = tom(L.telhado, -42); g.fillRect(X - 2, Y + telhadoH - 4, PW + 4, 5);
-      g.fillStyle = L.parede; g.fillRect(X, topo, PW, paredeH);
-      g.fillStyle = 'rgba(0, 0, 0, .1)'; g.fillRect(X, Y + PH - 4, PW, 4);
+      const gp = g.createLinearGradient(0, topo, 0, topo + paredeH); gp.addColorStop(0, tom(L.parede, -4)); gp.addColorStop(1, tom(L.parede, -18));
+      g.fillStyle = gp; g.fillRect(X, topo, PW, paredeH);
+      g.fillStyle = tom(L.parede, -45); g.fillRect(X, Y + PH - 5, PW, 5);
+      g.fillStyle = 'rgba(255, 255, 255, .25)'; g.fillRect(X, topo, PW, 1.5);
       for (let i = 0; i < w; i++) {
         const cx = X + i * T + T / 2;
         if (L.colunas) { g.fillStyle = '#FFFFFF'; g.fillRect(X + i * T, topo, 5, paredeH); g.fillStyle = 'rgba(0, 0, 0, .08)'; g.fillRect(X + i * T + 5, topo, 2, paredeH); }
         if (L.portas.includes(x + i)) {
+          g.fillStyle = tom(L.parede, -60); g.fillRect(cx - 13, topo + 5, 26, paredeH - 5);
           g.fillStyle = '#5B3A22'; g.fillRect(cx - 11, topo + 7, 22, paredeH - 7);
           g.fillStyle = '#8B5B36'; g.fillRect(cx - 9, topo + 9, 8, paredeH - 11); g.fillRect(cx + 1, topo + 9, 8, paredeH - 11);
-          g.fillStyle = '#E8C35A'; g.fillRect(cx - 3, topo + paredeH / 2 + 3, 2, 3);
+          g.fillStyle = 'rgba(255, 255, 255, .18)'; g.fillRect(cx - 9, topo + 9, 2, paredeH - 11); g.fillRect(cx + 1, topo + 9, 2, paredeH - 11);
+          g.fillStyle = '#E8C35A'; g.fillRect(cx - 3, topo + paredeH / 2 + 3, 2, 3); g.fillRect(cx + 2, topo + paredeH / 2 + 3, 2, 3);
+          g.fillStyle = '#B9B2A4'; g.fillRect(cx - 14, Y + PH - 1, 28, 4);
         } else {
-          g.fillStyle = '#5C7887'; g.fillRect(cx - 9, topo + 10, 18, 17);
-          g.fillStyle = '#A8D2E6'; g.fillRect(cx - 7, topo + 12, 14, 13);
-          g.fillStyle = 'rgba(255, 255, 255, .6)'; g.fillRect(cx - 7, topo + 12, 5, 13);
+          g.fillStyle = '#F5F1E8'; g.fillRect(cx - 11, topo + 8, 22, 21);
+          const gv = g.createLinearGradient(0, topo + 10, 0, topo + 27); gv.addColorStop(0, '#CDE9F6'); gv.addColorStop(1, '#7FB3CF');
+          g.fillStyle = gv; g.fillRect(cx - 9, topo + 10, 18, 17);
+          g.fillStyle = 'rgba(255, 255, 255, .55)'; g.beginPath(); g.moveTo(cx - 9, topo + 10); g.lineTo(cx - 2, topo + 10); g.lineTo(cx - 9, topo + 20); g.closePath(); g.fill();
+          g.fillStyle = '#F5F1E8'; g.fillRect(cx - 0.75, topo + 10, 1.5, 17); g.fillRect(cx - 9, topo + 17.5, 18, 1.5);
+          const cortina = ['#E57373', '#7FA7E0', '#F2C14E', '#8CC084'][(x + i) % 4];
+          g.fillStyle = cortina; g.beginPath(); g.moveTo(cx - 9, topo + 10); g.lineTo(cx - 4, topo + 10); g.lineTo(cx - 9, topo + 16); g.closePath(); g.fill();
+          g.beginPath(); g.moveTo(cx + 9, topo + 10); g.lineTo(cx + 4, topo + 10); g.lineTo(cx + 9, topo + 16); g.closePath(); g.fill();
+          g.fillStyle = tom(L.parede, -50); g.fillRect(cx - 12, topo + 29, 24, 2.5);
         }
       }
       if (L.cruz) { const cx = X + PW - 28, cy = Y + telhadoH / 2; circulo(cx, cy, 14, '#FFFFFF'); g.fillStyle = '#2E8B57'; g.fillRect(cx - 3, cy - 9, 6, 18); g.fillRect(cx - 9, cy - 3, 18, 6); }
@@ -271,9 +351,13 @@ window.CE = window.CE || {};
     // Árvores, ipês e palmeiras
     const arvore = (x, y, cor, escura, flor) => {
       const cx = x * T + T / 2, cy = y * T + T / 2;
-      g.fillStyle = 'rgba(0, 0, 0, .22)'; g.beginPath(); g.ellipse(cx + 5, cy + 9, 18, 11, 0, 0, Math.PI * 2); g.fill();
+      g.save(); g.filter = 'blur(2px)'; g.fillStyle = 'rgba(0, 0, 0, .28)'; g.beginPath(); g.ellipse(cx + 6, cy + 10, 19, 12, 0, 0, Math.PI * 2); g.fill(); g.restore();
       circulo(cx, cy, 19, escura);
-      for (const [dx, dy, r] of [[-8, -5, 12], [7, -7, 12], [-6, 7, 11], [8, 6, 11], [0, 0, 13]]) circulo(cx + dx, cy + dy - 2, r, cor);
+      for (const [dx, dy, r] of [[-8, -5, 12], [7, -7, 12], [-6, 7, 11], [8, 6, 11], [0, 0, 13]]) {
+        const gc = g.createRadialGradient(cx + dx - r * 0.35, cy + dy - 2 - r * 0.45, r * 0.15, cx + dx, cy + dy - 2, r);
+        gc.addColorStop(0, tom(cor, 38)); gc.addColorStop(0.6, cor); gc.addColorStop(1, tom(cor, -22));
+        g.fillStyle = gc; g.beginPath(); g.arc(cx + dx, cy + dy - 2, r, 0, Math.PI * 2); g.fill();
+      }
       if (flor) for (let k = 0; k < 9; k++) circulo(cx - 13 + acaso() * 26, cy - 14 + acaso() * 24, 2.2, flor);
       else circulo(cx - 6, cy - 9, 4, 'rgba(255, 255, 255, .22)');
     };
@@ -427,6 +511,7 @@ window.CE = window.CE || {};
       rotuloDe['mesa-domino'] = rotulo('🎲 Dominó', 21.5 * T, 12.9 * T, 'pequeno so-perto');
       rotuloDe.mural = rotulo('📌 Mural de recados', 22 * T, 8.1 * T, 'pequeno so-perto');
       rotuloDe.coreto = rotulo('🎭 Coreto', 18 * T, 11.4 * T, 'pequeno so-perto');
+      rotulo('♻️ Coleta seletiva', 18 * T, 18.15 * T, 'pequeno so-perto');
       rotulo('Cais', 32 * T, 26.5 * T, 'pequeno so-perto');
       rotulo('RUA DA TURMA', 4 * T, 6 * T, 'rua'); rotulo('RUA DA ESCOLA', 31 * T, 6 * T, 'rua'); rotulo('AVENIDA DO RIO', 5 * T, 20 * T, 'rua');
       const objeto = (txt, x, y, classe) => { const o = CE.el('div', { class: 'pr-obj' + (classe ? ' ' + classe : ''), style: `left:${x}px;top:${y}px` }, txt); camadaObjetos.append(o); return o; };
@@ -1068,7 +1153,7 @@ window.CE = window.CE || {};
         if (!e && antes) limparVisual();
         desenharAlarme();
         desenharVisual();
-        marcarCarga(eu, e && e.status === 'ativo' && e.carregando ? EMERG[e.tipo].levar.levando : null);
+        cargaPropria();
         if (souInstrutor && !popEmerg.hidden) desenharPopEmerg();
         verPerto(true);
       }
@@ -1220,6 +1305,7 @@ window.CE = window.CE || {};
         if (r.novela !== undefined) aplicarNovela(r.novela);
         if (r.emergencia !== undefined) aplicarEmergencia(r.emergencia);
         if (r.especial !== undefined) aplicarEspecial(r.especial);
+        if (r.coleta !== undefined) aplicarColeta(r.coleta);
         if (r.hora !== undefined) aplicarHora(r.hora);
         // Pessoas
         const vistos = new Set();
@@ -1339,6 +1425,8 @@ window.CE = window.CE || {};
         } else if (ev.tipo === 'bingo-ganhou') {
           if (ev.de && ev.de.id === usuario.id) CE.carteira.ganhar('bingo', 'Ganhou o bingo do coreto!', `bingo:${ev.idEspecial}`);
           if (!velho) CE.comemorar('grande');
+        } else if (ev.tipo === 'coleta') {
+          if (pertinho) registrar({ classe: 'sistema', texto: ev.texto });
         } else if (ev.tipo === 'emergencia-mapa') {
           registrar({ classe: 'sistema', texto: ev.texto });
           if (!velho) avisarNoMapa(ev.texto, 'urgente');
@@ -1643,8 +1731,8 @@ window.CE = window.CE || {};
           errado: { fala: 'Hum, quase! Faça 20 menos 8,50. Tenta de novo?', opcoes: [['Tentar de novo', 'inicio', true], ['Depois eu volto', null]] },
         },
         cida: {
-          inicio: { fala: 'Bom dia! Aqui no posto você agenda consulta e vê a carteira de vacinação. Lembrete: o posto nunca pede senha de banco por mensagem, viu?',
-            nota: 'Em breve: o agendamento de consulta de treino, com a Enfermeira Cida explicando cada passo.', opcoes: [['Obrigado, Cida!', null, true]] },
+          inicio: { fala: 'Bom dia! Aqui no posto você agenda consulta, como no aplicativo da saúde. Lembrete: o posto nunca pede senha nem cobra taxa por mensagem, viu?',
+            opcoes: [['📅 Agendar uma consulta (treino)', null, true, () => setTimeout(() => abrirAgendamento(), 0)], ['Obrigado, Cida!', null]] },
         },
         bene: {
           inicio: { fala: 'Pescando no Madeira desde menino… Sabia que a Estrada de Ferro Madeira-Mamoré foi construída entre 1907 e 1912, ligando Porto Velho a Guajará-Mirim?', opcoes: [['Conta mais!', 'mais', true], ['Boa pescaria!', null]] },
@@ -1708,6 +1796,7 @@ window.CE = window.CE || {};
         }
         const info = LUGAR[L.id] || {};
         if (NA_CIDADE[L.id] && !aceso(L.id)) return abrirObra(L);
+        if (L.coleta) return abrirLixeira(L);
         if (L.id === 'mesa-velha') return abrirMesa();
         if (L.id === 'mural') return abrirMural();
         if (L.id === 'lote') return abrirCidade('lote');
@@ -1720,6 +1809,8 @@ window.CE = window.CE || {};
         }
         const opcoes = [];
         if (info.botao) opcoes.push({ rotulo: info.botao, principal: true, id: 'entrar', acao: () => { info.abrir(); CE.emitir('praca:entrou-lugar', { lugar: L.id }); } });
+        if (L.id === 'banco') opcoes.push({ rotulo: '🏧 Caixa eletrônico (treino)', id: 'caixa', fica: true, acao: () => abrirCaixa() });
+        if (L.id === 'posto') opcoes.push({ rotulo: '📅 Agendar consulta (treino)', principal: true, id: 'agendar', fica: true, acao: () => abrirAgendamento() });
         if (L.morador && presente(porMorador[L.morador])) opcoes.push({ rotulo: `Falar com ${porMorador[L.morador].nome}`, principal: !info.botao, acao: () => chegarPerto(porMorador[L.morador]) });
         opcoes.push({ rotulo: 'Fechar' });
         const mostrar = (funcoes) => abrirDialogo({ tipo: 'lugar', rosto: L.emoji, titulo: L.nome + (selos.has(L.id) ? ' ⭐' : ''), subtitulo: L.area ? 'Lugar da cidade' : 'Prédio da cidade', fala: info.texto, nota: info.embreve || null, extra: funcoes, opcoes });
@@ -1931,8 +2022,149 @@ window.CE = window.CE || {};
         abrirDialogo({ tipo: 'mural', rosto: '📌', titulo: 'Mural de recados', subtitulo: 'Na praça, ao lado do coreto', extra: [lista, embaixo], nota: LUGAR.mural.texto, opcoes: [{ rotulo: 'Fechar' }] });
       }
 
+      // ---------- Coleta seletiva: lixo no chão, cinco lixeiras coloridas ----------
+      const lixosEl = {};
+      let coletaAtual = null;
+      const COR_LIXEIRA = NOV.COLETA.lixeiras;
+      function cargaPropria() {
+        const e = emergAtiva() && emerg.carregando ? EMERG[emerg.tipo].levar.levando : null;
+        marcarCarga(eu, e || (coletaAtual && coletaAtual.carregando ? coletaAtual.carregando.emoji : null));
+      }
+      function aplicarColeta(c) {
+        coletaAtual = c;
+        const vistos = new Set();
+        for (const i of c.itens || []) {
+          vistos.add(i.id);
+          if (!lixosEl[i.id]) {
+            lixosEl[i.id] = CE.el('div', { class: 'pr-lixo', 'data-lixo': i.id, title: i.nome, style: `left:${(i.x + 0.5) * T}px;top:${(i.y + 0.5) * T}px` }, i.emoji);
+            camadaObjetos.append(lixosEl[i.id]);
+          }
+        }
+        for (const id of Object.keys(lixosEl)) if (!vistos.has(id)) { lixosEl[id].remove(); delete lixosEl[id]; }
+        cargaPropria();
+        verPerto(true);
+      }
+      const lixoPerto = (x, y, raio = 1.05) => (coletaAtual && !coletaAtual.carregando ? (coletaAtual.itens || []).filter((i) => Math.hypot(i.x - x, i.y - y) <= raio).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0] : null) || null;
+      async function pegarLixo(i) {
+        const r = await chamar('praca:coleta', 'pegar', { item: i.id, x: arred(eu.x), y: arred(eu.y) });
+        if (!r || fechouJanela) return;
+        aplicarColeta(r);
+        balao(eu, `${i.emoji} Peguei ${i.nome}! Em qual lixeira vai? ♻️`);
+      }
+      async function jogarLixo(L) {
+        const r = await chamar('praca:coleta', 'jogar', { lixeira: L.id, x: arred(eu.x), y: arred(eu.y) });
+        if (!r || fechouJanela) return;
+        aplicarColeta(r);
+        if (r.certo) {
+          balao(eu, `♻️ Isso! ${r.explica}`);
+          CE.comemorar('pequena');
+          CE.carteira.ganhar('coleta', `Separou ${r.item.nome} na lixeira certa`, `coleta:${r.item.id}`);
+          contarReciclagem();
+        } else balao(eu, `🤔 Hum, não é aqui. ${r.explica}`);
+      }
+      function abrirLixeira(L) {
+        if (coletaAtual && coletaAtual.carregando) return jogarLixo(L);
+        const exemplos = NOV.COLETA.itens.filter((i) => i.tipo === L.coleta).map((i) => `${i.emoji} ${i.nome}`);
+        abrirDialogo({ tipo: 'lugar', rosto: '♻️', titulo: L.nome, subtitulo: 'Coleta seletiva', fala: NOV.COLETA.explica[L.coleta],
+          lista: exemplos, nota: 'Ache o lixo no chão da praça e das calçadas, pegue (clicando nele) e traga para a lixeira da cor certa. Cada acerto vale 2 moedas.',
+          opcoes: [{ rotulo: 'Entendi!', principal: true }] });
+      }
+
+      // ---------- Caixa eletrônico de treino (no Banco Escola) ----------
+      function abrirCaixa(passo = 'inicio', erro = '') {
+        const base = { tipo: 'caixa', rosto: '🏧', titulo: 'Caixa eletrônico 24h', subtitulo: 'Banco Escola · treino (o dinheiro é de mentira)' };
+        const vai = (p) => () => abrirCaixa(p);
+        const menu = { rotulo: '↩ Voltar ao menu', fica: true, id: 'menu', acao: vai('menu') };
+        if (passo === 'inicio') return abrirDialogo({ ...base, fala: 'Missão: sacar R$ 50,00 com segurança. Primeiro, coloque o cartão na máquina.',
+          opcoes: [{ rotulo: '💳 Colocar o cartão', principal: true, fica: true, id: 'cartao', acao: vai('estranho') }, { rotulo: 'Sair' }] });
+        if (passo === 'estranho') return abrirDialogo({ ...base, rosto: '🕴️', papelCor: 'golpista', fala: 'Um moço chega por trás: "Esse caixa está difícil hoje, né? Me fala sua senha que eu faço o saque para você."',
+          opcoes: [{ rotulo: 'Falar a senha para ele', fica: true, id: 'falar-senha', acao: vai('golpe') },
+            { rotulo: 'Não, obrigado. Cubro o teclado e, se precisar, chamo o funcionário do banco', principal: true, fica: true, id: 'recusar', acao: vai('senha') }] });
+        if (passo === 'golpe') return abrirDialogo({ ...base, rosto: '😱', fala: 'Ele decorou a senha, trocou o seu cartão por outro igual e sumiu.',
+          nota: 'Golpe da troca de cartão: nunca fale a senha nem aceite ajuda de desconhecido no caixa. Ajuda, só do funcionário do banco, lá dentro.',
+          opcoes: [{ rotulo: 'Tentar de novo, do jeito certo', principal: true, fica: true, id: 'de-novo', acao: vai('estranho') }] });
+        if (passo === 'senha') {
+          const campo = CE.el('label', { class: 'pr-campo', for: 'pr-campo-senha' }, 'Senha do cartão (4 números)',
+            CE.el('input', { id: 'pr-campo-senha', type: 'password', inputmode: 'numeric', maxlength: '4', autocomplete: 'off' }));
+          const conferir = () => { const v = String(dialogo.querySelector('#pr-campo-senha').value).replace(/\D/g, ''); abrirCaixa(v === '1234' ? 'menu' : 'senha', v === '1234' ? '' : 'Senha errada. Confira número por número.'); };
+          abrirDialogo({ ...base, fala: erro || 'Digite a senha. Dica: cubra o teclado com a outra mão, para ninguém ver.', campo, nota: 'A senha de treino é 1 2 3 4.',
+            opcoes: [{ rotulo: 'Confirmar', principal: true, fica: true, id: 'confirmar-senha', acao: conferir }] });
+          dialogo.querySelector('#pr-campo-senha').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); conferir(); } });
+          return;
+        }
+        if (passo === 'menu') return abrirDialogo({ ...base, fala: erro || 'O que você quer fazer?', opcoes: [
+          { rotulo: '💵 Saque', principal: true, fica: true, id: 'saque', acao: vai('saque') }, { rotulo: '💰 Saldo', fica: true, id: 'saldo', acao: vai('saldo') },
+          { rotulo: '📄 Extrato', fica: true, id: 'extrato', acao: vai('extrato') }, { rotulo: 'Cancelar e tirar o cartão' }] });
+        if (passo === 'saldo') return abrirDialogo({ ...base, fala: 'Saldo disponível: R$ 230,00.', opcoes: [menu] });
+        if (passo === 'extrato') return abrirDialogo({ ...base, fala: 'Últimos lançamentos:', lista: ['05/11 · Salário · + R$ 1.412,00', '06/11 · Conta de luz · − R$ 98,40', '08/11 · Mercado · − R$ 183,60', '10/11 · Pix para Dona Rosa · − R$ 50,00'],
+          nota: 'Confira o extrato de vez em quando: se aparecer um lançamento que você não fez, avise o banco na hora.', opcoes: [menu] });
+        if (passo === 'saque') {
+          const valor = (v) => ({ rotulo: `R$ ${v},00`, principal: v === 50, fica: true, id: 'valor-' + v, acao: () => (v === 50 ? abrirCaixa('retirar') : abrirCaixa('saque', `A missão é sacar R$ 50,00 (não R$ ${v},00).`)) });
+          return abrirDialogo({ ...base, fala: erro || 'Quanto você quer sacar?', opcoes: [valor(20), valor(50), valor(100), menu] });
+        }
+        if (passo === 'retirar') return abrirDialogo({ ...base, rosto: '💵', fala: 'Saque feito! Pegue o dinheiro e o cartão. Guarde o dinheiro antes de sair do caixa.',
+          lista: ['Comprovante: SAQUE R$ 50,00', 'Saldo depois do saque: R$ 180,00'], opcoes: [{ rotulo: '💳 Pegar o dinheiro e o cartão', principal: true, fica: true, id: 'pegar', acao: vai('fim') }] });
+        if (passo === 'fim') {
+          CE.carteira.ganhar('caixa', 'Treinou no caixa eletrônico', `caixa:${NOV.dia(Date.now())}`);
+          return abrirDialogo({ ...base, rosto: '✅', fala: 'Missão cumprida: R$ 50,00 sacados com segurança!',
+            lista: ['Senha é só sua: cubra o teclado e nunca fale para ninguém.', 'Ajuda no caixa, só do funcionário do banco.', 'Pegue o cartão e guarde o dinheiro antes de sair.'],
+            opcoes: [{ rotulo: 'Fechar', principal: true }] });
+        }
+      }
+
+      // ---------- Agendamento de consulta de treino (no Posto de Saúde, com a Enfermeira Cida) ----------
+      const SUS = '898001234567890';
+      function proximosDias(n) {
+        const lista = [], d = new Date();
+        while (lista.length < n) { d.setDate(d.getDate() + 1); if (d.getDay() !== 0 && d.getDay() !== 6) lista.push(new Date(d)); }
+        return lista;
+      }
+      const agenda = {};
+      function abrirAgendamento(passo = 'inicio', erro = '') {
+        const base = { tipo: 'agenda', rosto: '👩‍⚕️', titulo: 'Agendar consulta', subtitulo: 'Posto de Saúde · treino, como no aplicativo da saúde' };
+        const vai = (p) => () => abrirAgendamento(p);
+        if (passo === 'inicio') {
+          const esp = (nome, emoji) => ({ rotulo: `${emoji} ${nome}`, principal: nome === 'Clínico geral', fica: true, id: 'esp-' + nome.split(' ')[0].toLowerCase(), acao: () => { agenda.esp = nome; abrirAgendamento('sus'); } });
+          return abrirDialogo({ ...base, fala: 'Oi! Vamos agendar uma consulta de treino, passo a passo. Qual atendimento você precisa?',
+            opcoes: [esp('Clínico geral', '🩺'), esp('Dentista', '🦷'), esp('Vacina da gripe', '💉'), { rotulo: 'Agora não' }] });
+        }
+        if (passo === 'sus') {
+          const campo = CE.el('label', { class: 'pr-campo', for: 'pr-campo-sus' }, 'Número do Cartão SUS (15 números)',
+            CE.el('input', { id: 'pr-campo-sus', inputmode: 'numeric', autocomplete: 'off', maxlength: '20', placeholder: '000 0000 0000 0000' }));
+          const conferir = () => { const v = String(dialogo.querySelector('#pr-campo-sus').value).replace(/\D/g, ''); if (v === SUS) abrirAgendamento('dia'); else abrirAgendamento('sus', 'O número não confere. Digite com calma, olhando o cartão (os espaços não importam).'); };
+          abrirDialogo({ ...base, fala: erro || 'Digite o número do seu Cartão SUS. O cartão de treino é este:', lista: ['💳 Cartão Nacional de Saúde: 898 0012 3456 7890'], campo,
+            opcoes: [{ rotulo: 'Continuar', principal: true, fica: true, id: 'continuar-sus', acao: conferir }] });
+          dialogo.querySelector('#pr-campo-sus').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); conferir(); } });
+          return;
+        }
+        if (passo === 'dia') {
+          const horas = ['8h', '10h30', '14h'];
+          const opcoes = proximosDias(3).map((d, k) => {
+            const texto = `${d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })} às ${horas[k]}`;
+            return { rotulo: '📅 ' + texto, principal: k === 0, fica: true, id: 'dia-' + k, acao: () => { agenda.dia = texto; abrirAgendamento('confirmar'); } };
+          });
+          return abrirDialogo({ ...base, fala: `Horários livres para ${agenda.esp}:`, opcoes });
+        }
+        if (passo === 'confirmar') return abrirDialogo({ ...base, fala: 'Confira antes de confirmar:', lista: [`Atendimento: ${agenda.esp}`, `Dia: ${agenda.dia}`, 'Local: Posto de Saúde da Praça'],
+          opcoes: [{ rotulo: '✅ Confirmar agendamento', principal: true, fica: true, id: 'confirmar', acao: vai('sms') }, { rotulo: 'Escolher outro dia', fica: true, id: 'outro-dia', acao: vai('dia') }] });
+        if (passo === 'sms') return abrirDialogo({ ...base, rosto: '📱', titulo: 'Chegou uma mensagem', fala: '"POSTO DE SAÚDE: sua consulta foi CANCELADA. Para remarcar, pague a taxa de R$ 25,00 em: posto-agenda-online.com/pagar"',
+          opcoes: [{ rotulo: 'Clicar no link e pagar a taxa', fica: true, id: 'pagar', acao: vai('golpe') },
+            { rotulo: 'Não clico: ligo para o posto ou confiro no aplicativo oficial', principal: true, fica: true, id: 'conferir', acao: vai('fim') }] });
+        if (passo === 'golpe') return abrirDialogo({ ...base, rosto: '😱', fala: 'Era golpe! O dinheiro foi para o golpista e a consulta nunca foi cancelada.',
+          nota: 'O SUS é de graça: o posto não cobra taxa e não manda link para pagar. Na dúvida, ligue para o posto ou vá até lá.',
+          opcoes: [{ rotulo: 'Voltar para a mensagem', principal: true, fica: true, id: 'voltar-sms', acao: vai('sms') }] });
+        if (passo === 'fim') {
+          CE.carteira.ganhar('agenda', 'Agendou uma consulta no Posto (treino)', `agenda:${NOV.dia(Date.now())}`);
+          return abrirDialogo({ ...base, rosto: '✅', fala: 'Muito bem! A consulta está marcada e você não caiu no golpe. Anote no caderno:',
+            lista: [`${agenda.esp}: ${agenda.dia}`, 'Leve o Cartão SUS e um documento com foto.', 'Chegue 15 minutos antes.', 'Mensagem pedindo pagamento ou senha: é golpe.'],
+            opcoes: [{ rotulo: 'Fechar', principal: true }] });
+        }
+      }
+
       // ---------- Perto de quê? ----------
       function oQueEstaPerto() {
+        const lixo = lixoPerto(eu.x, eu.y);
+        if (lixo) return { lixo };
         let achado = null, menor = 1.6;
         for (const m of moradores) { if (!presente(m)) continue; const d = distancia(m, eu); if (d < menor) { menor = d; achado = { morador: m }; } }
         for (const o of outros.values()) { const d = distancia(o, eu); if (d < menor) { menor = d; achado = { pessoa: o }; } }
@@ -1946,6 +2178,7 @@ window.CE = window.CE || {};
         if (a.emergencia === 'poste') return balao(eu, '⚡ Água no poste, não! Água conduz eletricidade. Liguem 193: os Bombeiros desligam a energia.');
         if (a.emergencia === 'balde') return balao(eu, 'Primeiro, encho o balde na fonte! 💧');
         if (a.emergencia) return acaoEmerg(a.emergencia, { ...(a.foco ? { foco: a.foco.id } : {}), ...(a.queda ? { queda: a.queda.id } : {}) });
+        if (a.lixo) return pegarLixo(a.lixo);
         if (a.morador) return abrirNo(a.morador.id, 'inicio');
         if (a.pessoa) return abrirPessoa(a.pessoa);
         if (a.lugar) return abrirLugar(a.lugar);
@@ -1958,12 +2191,14 @@ window.CE = window.CE || {};
           if (a.emergencia === 'entregar') return a.foco ? `💦 Jogar água ${emNome(a.foco.nome)}` : d.levar.entregarTexto;
           return { poste: '⚡ Fogo no poste: água, não!', balde: '💧 Primeiro, encha o balde na fonte', avisar: '📞 Avisar a Defesa Civil (199)' }[a.emergencia];
         }
+        if (a.lixo) return `♻️ Pegar ${a.lixo.nome} ${a.lixo.emoji}`;
         if (a.morador) return `💬 Conversar com ${a.morador.nome}`;
         if (a.pessoa) return `💬 Falar com ${a.pessoa.nomeReal}`;
         return textoDoLugar(a.lugar) + (pistaAqui(a.lugar.id) ? ' · 🔎 pista' : '');
       }
       function textoDoLugar(L) {
         if (NA_CIDADE[L.id] && !aceso(L.id)) return `🚧 Ver a obra: ${nomeDoLugar(L.id)}`;
+        if (L.coleta) return coletaAtual && coletaAtual.carregando ? `${L.emoji} Jogar na lixeira ${COR_LIXEIRA[L.coleta]}` : `${L.emoji} Lixeira ${COR_LIXEIRA[L.coleta]}: ${NOV.COLETA.explica[L.coleta].split(' vai')[0].split(' vão')[0].toLowerCase()}`;
         const fixo = { 'mesa-velha': '❌ Jogar jogo da velha', 'mesa-domino': '🎲 Ver a mesa de dominó', mural: '📌 Ler o mural', coreto: '🎭 Ver a novela no coreto', fonte: '⛲ Ver a fonte', lote: '🚧 Ver o Lote da turma', 'casa-ana': '🏠 Ver a Rua da Turma', 'casa-bruno': '🏠 Ver a Rua da Turma' }[L.id];
         if (fixo) return fixo;
         if (L.id === 'sua-casa') return souInstrutor ? '🏠 Ver a Rua da Turma' : minhaCasa && minhaCasa.casa ? '🏠 Entrar na sua casa' : '🏗️ Ver o seu terreno';
@@ -1973,7 +2208,7 @@ window.CE = window.CE || {};
       function verPerto(forcar) {
         const z = zonaDaAcao();
         const a = z || oQueEstaPerto();
-        const chave = a ? (a.emergencia ? 'e' + a.emergencia + emerg.tipo + (a.foco ? a.foco.id : '') + (a.queda ? a.queda.id : '') : a.morador ? 'm' + a.morador.id : a.pessoa ? 'p' + a.pessoa.id : 'l' + a.lugar.id) : '';
+        const chave = a ? (a.emergencia ? 'e' + a.emergencia + emerg.tipo + (a.foco ? a.foco.id : '') + (a.queda ? a.queda.id : '') : a.lixo ? 'x' + a.lixo.id : a.morador ? 'm' + a.morador.id : a.pessoa ? 'p' + a.pessoa.id : 'l' + a.lugar.id) : '';
         if (chave === pertoAtual && !forcar) return;
         pertoAtual = chave; pertoAlvo = a;
         acao.hidden = !a;
@@ -2023,6 +2258,12 @@ window.CE = window.CE || {};
         const x = Math.floor((e.clientX - r.left - cam.x) / cam.s / T), y = Math.floor((e.clientY - r.top - cam.y) / cam.s / T);
         if (x < 0 || y < 0 || x >= W || y >= H) return;
         if (emergAtiva() && cliqueNoEvento(x, y)) return;
+        const lixo = coletaAtual && (coletaAtual.itens || []).find((i) => i.x === x && i.y === y);
+        if (lixo) {
+          if (coletaAtual.carregando) { balao(eu, `Primeiro jogo ${coletaAtual.carregando.nome} na lixeira certa! ♻️`); return; }
+          irPara([[x, y], ...M.vizinhos(x, y)], () => { const ainda = coletaAtual && (coletaAtual.itens || []).find((i) => i.id === lixo.id); if (ainda) pegarLixo(ainda); });
+          return;
+        }
         const L = M.dono[y][x] && M.porLugar[M.dono[y][x]];
         if (L) { if (!perto) { for (const rt of Object.values(rotuloDe)) rt.classList.remove('destaque'); if (rotuloDe[L.id]) rotuloDe[L.id].classList.add('destaque'); } return chegarAoLugar(L); }
         if (M.andavel(x, y)) irPara([[x, y]]);

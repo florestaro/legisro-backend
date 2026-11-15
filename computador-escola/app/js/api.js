@@ -238,6 +238,7 @@ window.CE = window.CE || {};
         'praca:modulos': () => { if (!atual) throw new Error('Ninguém entrou no sistema.'); return praca().informarModulos(atual, a[0]); },
         'praca:cidade': () => { if (!atual) throw new Error('Ninguém entrou no sistema.'); return praca().cidade(atual, a[0]); },
         'praca:tarefa': () => praca().tarefa(atual, a[0]),
+        'praca:coleta': () => praca().coletar(atual, a[0], a[1] || {}),
         'praca:fazer-tarefa': () => praca().fazerTarefa(atual, a[0], a[1]),
         'praca:novela': () => praca().novela(atual, a[0]),
         'praca:abrir-capitulo': () => praca().abrirCapitulo(atual, a[0], a[1]),

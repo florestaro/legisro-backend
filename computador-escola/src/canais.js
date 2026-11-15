@@ -475,6 +475,7 @@ function criarCanais(dados) {
     'praca:cidade': (s, turma) => { exigirSessao(s); return praca.cidade(s.usuario, turma); },
     // O que cada prédio faz (tarefa do dia e desafio da semana) e a novela da cidade.
     'praca:tarefa': (s, lugar) => { exigirSessao(s); return praca.tarefa(s.usuario, lugar); },
+    'praca:coleta': (s, acao, dado) => { exigirSessao(s); return praca.coletar(s.usuario, acao, dado || {}); },
     'praca:fazer-tarefa': (s, lugar, resposta) => { exigirSessao(s); return praca.fazerTarefa(s.usuario, lugar, resposta); },
     'praca:novela': (s, turma) => { exigirSessao(s); return praca.novela(s.usuario, turma); },
     'praca:abrir-capitulo': (s, id, turma) => { exigirInstrutor(s); return praca.abrirCapitulo(s.usuario, id, turma); },

@@ -2461,6 +2461,10 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .pr-mapa.relampago::after { content: ''; position: absolute; inset: 0; z-index: 4; pointer-events: none; background: rgba(255, 255, 255, .7); opacity: 0; animation: pr-relampago .45s ease-out; }
 @keyframes pr-relampago { 10% { opacity: 1; } 30% { opacity: .15; } 45% { opacity: .8; } 100% { opacity: 0; } }
 .pr-avisos li.urgente { background: #b3261e; color: #fff; }
+/* Coleta seletiva: o lixo no chão (balança um pouquinho para chamar a atenção) */
+.pr-lixo { position: absolute; transform: translate(-50%, -50%); font-size: 22px; line-height: 1; pointer-events: none; z-index: 1; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .35)); animation: pr-lixo 1.6s ease-in-out infinite alternate; }
+.pr-lixo::after { content: ''; position: absolute; left: 50%; top: 100%; width: 22px; height: 6px; margin: -2px 0 0 -11px; border-radius: 50%; background: rgba(0, 0, 0, .18); z-index: -1; }
+@keyframes pr-lixo { to { transform: translate(-50%, -58%) rotate(-6deg); } }
 .pr-emerg .mapa { display: flex; flex-wrap: wrap; gap: 6px; }
 /* Na cidade inteira o alarme fica compacto (a cidade cabe embaixo dele): sem o resumo do mapa, botões menores. */
 .pr-mapa.longe .pr-emerg { gap: 5px; padding: 8px 12px; }
@@ -2511,4 +2515,4 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .pr-loja-item .linha { display: flex; align-items: center; gap: 8px; }
 .cart-dica { margin: 0; font-size: 13px; color: var(--texto-suave); background: var(--fundo-cinza); border-radius: 9px; padding: 8px 10px; }
 .cart-extrato .valor.gasto { color: #a1260f; }
-@media (prefers-reduced-motion: reduce) { .pr-mundo.suave, .pr-obra { transition: none; } .pr-p.andando .corpo, .pr-obj.barco, .pr-mao, .pr-acao, .pr-avisos li, .pr-marca-pista, .pr-marca-ajuda, .pr-emerg, .pr-mapa.alarme, .pr-chuva, .pr-foco::before, .pr-foco .chama, .pr-foco .faisca, .pr-veiculo, .pr-jato, .pr-enchente .onda, .pr-arvore-caida, .pr-arvore-caida.equipe .equipe, .pr-placa-queda, .pr-fio, .pr-mapa.relampago::after, .pr-pilula.moedas.ganhou, .pr-fogos span, .pr-bau, .pr-bingo-num.ainda { animation: none; } .pr-fogos span { opacity: .8; } }
+@media (prefers-reduced-motion: reduce) { .pr-mundo.suave, .pr-obra { transition: none; } .pr-p.andando .corpo, .pr-obj.barco, .pr-mao, .pr-acao, .pr-avisos li, .pr-marca-pista, .pr-marca-ajuda, .pr-emerg, .pr-mapa.alarme, .pr-chuva, .pr-lixo, .pr-foco::before, .pr-foco .chama, .pr-foco .faisca, .pr-veiculo, .pr-jato, .pr-enchente .onda, .pr-arvore-caida, .pr-arvore-caida.equipe .equipe, .pr-placa-queda, .pr-fio, .pr-mapa.relampago::after, .pr-pilula.moedas.ganhou, .pr-fogos span, .pr-bau, .pr-bingo-num.ainda { animation: none; } .pr-fogos span { opacity: .8; } }
