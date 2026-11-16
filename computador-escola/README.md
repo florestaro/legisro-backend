@@ -434,6 +434,8 @@ de cada um na Praça Escola, em 🏙️ Cidade › Rua da Turma.
 Para criar novas lições, veja [LEIA-ME-LICOES.md](LEIA-ME-LICOES.md). Para conduzir a turma (todas as atividades, os eventos da Praça
 Escola e um roteiro de aula), abra o [Guia do Instrutor](GUIA-DO-INSTRUTOR.html) no navegador, ou assista ao
 [Guia do Instrutor em vídeo](GUIA-DO-INSTRUTOR-VIDEO.html) (motion graphics: 18 capítulos animados e narrados, com legendas).
+Para ver uma Hora da Praça inteira acontecendo (13 alunos e a tutora, 15 minutos segundo a segundo, com o motor de verdade
+da praça), rode `node scripts/simular-praca.js simulacao.json simulacao.html` e abra o `simulacao.html` no navegador.
 
 ## Professor Virtual com IA (opcional)
 

@@ -1,0 +1,354 @@
+<title>Simulação da Hora da Praça</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style>
+/* Layout: o mapa da cidade (o replay) com a linha do tempo embaixo e, ao lado, o passo a passo; embaixo, cada aluno. */
+:root {
+  --fundo: #eef2ee; --papel: #ffffff; --tinta: #17261f; --suave: #4f6258; --linha: #d4ded8;
+  --rio: #0d6b66; --rio-claro: #e0efec; --ipe: #c98a00; --ipe-claro: #fff1cc; --alerta: #c2412d; --alerta-claro: #fbe7e2; --ok: #2e7d4f; --ok-claro: #e3f3e8;
+  --f-titulo: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-texto: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --fundo: #0c1411; --papel: #15211c; --tinta: #e4ede7; --suave: #a2b5ab; --linha: #27372f; --rio: #5cc4bc; --rio-claro: #18302b; --ipe: #f2c14e; --ipe-claro: #2f2711; --alerta: #f08a76; --alerta-claro: #3a1f1a; --ok: #6fd39b; --ok-claro: #17301f; color-scheme: dark } }
+:root[data-theme="dark"] { --fundo: #0c1411; --papel: #15211c; --tinta: #e4ede7; --suave: #a2b5ab; --linha: #27372f; --rio: #5cc4bc; --rio-claro: #18302b; --ipe: #f2c14e; --ipe-claro: #2f2711; --alerta: #f08a76; --alerta-claro: #3a1f1a; --ok: #6fd39b; --ok-claro: #17301f; color-scheme: dark }
+* { box-sizing: border-box; }
+body { background: var(--fundo); color: var(--tinta); font: 15px/1.45 var(--f-texto); }
+.tela { max-width: 1320px; margin: 0 auto; padding-block: 18px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 14px; }
+.topo h1 { font: 800 clamp(22px, 3.4vw, 32px)/1.1 var(--f-titulo); margin: 0; text-wrap: balance; }
+.topo p { margin: 4px 0 0; color: var(--suave); max-width: 90ch; }
+.principal { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 900px) { .principal { grid-template-columns: minmax(0, 1fr); } }
+.palco { background: var(--papel); border: 1px solid var(--linha); border-radius: 12px; overflow: hidden; min-width: 0; }
+.relogios { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--linha); font-variant-numeric: tabular-nums; }
+.relogios b { font: 800 22px/1 var(--f-titulo); }
+.relogios small { display: block; color: var(--suave); font-size: 12px; letter-spacing: .05em; text-transform: uppercase; }
+.alarme-barra { margin-left: auto; display: none; align-items: center; gap: 8px; background: var(--alerta-claro); color: var(--alerta); border-radius: 999px; padding: 4px 12px; font-weight: 700; }
+.alarme-barra.on { display: flex; }
+.alarme-barra i { display: inline-block; width: 90px; height: 8px; border-radius: 4px; background: #e9c1b8; overflow: hidden; }
+.alarme-barra i span { display: block; height: 100%; background: var(--alerta); }
+canvas { display: block; width: 100%; height: auto; max-width: 100%; touch-action: manipulation; }
+.controles { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--linha); }
+.controles button { font: 700 14px/1 var(--f-texto); color: var(--tinta); background: var(--fundo); border: 1px solid var(--linha); border-radius: 8px; padding: 7px 10px; cursor: pointer; }
+.controles button[aria-pressed="true"] { background: var(--rio); color: #fff; border-color: var(--rio); }
+.controles button:focus-visible, .lista-evt button:focus-visible, .filtros button:focus-visible, .aluno:focus-visible { outline: 3px solid var(--ipe); outline-offset: 2px; }
+.linha-tempo { position: relative; flex: 1 1 100%; height: 48px; order: 9; }
+.linha-tempo input { width: 100%; margin: 0; }
+.marcos { position: absolute; left: 0; right: 0; top: 20px; height: 14px; pointer-events: none; font-size: 11px; }
+.marcos span { position: absolute; transform: translateX(-50%); white-space: nowrap; color: var(--suave); }
+.marcos span.baixo { top: 13px; }
+.marcos span.baixo::before { height: 19px; margin-top: -13px; }
+.marcos span.inicio { transform: none; }
+.marcos span::before { content: ""; display: block; width: 2px; height: 6px; background: var(--ipe); margin: 0 auto 1px; }
+.tempo { font-variant-numeric: tabular-nums; color: var(--suave); }
+
+.lado { background: var(--papel); border: 1px solid var(--linha); border-radius: 12px; display: grid; grid-template-rows: auto auto minmax(0, 1fr); max-height: 760px; min-width: 0; }
+.lado h2 { font: 700 18px/1.2 var(--f-titulo); margin: 0; padding: 12px 14px 6px; }
+.filtros { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 12px 8px; border-bottom: 1px solid var(--linha); }
+.filtros button { font: 13px/1 var(--f-texto); color: var(--tinta); background: var(--fundo); border: 1px solid var(--linha); border-radius: 999px; padding: 5px 9px; cursor: pointer; }
+.filtros button[aria-pressed="true"] { background: var(--tinta); color: var(--papel); border-color: var(--tinta); }
+.lista-evt { list-style: none; margin: 0; padding: 6px 8px; overflow-y: auto; min-height: 200px; }
+.lista-evt li { margin: 0; }
+.lista-evt button { width: 100%; text-align: left; background: none; border: 0; border-radius: 8px; padding: 6px 6px; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 6px; font: 14px/1.35 var(--f-texto); color: var(--tinta); cursor: pointer; }
+.lista-evt button:hover { background: var(--fundo); }
+.lista-evt .h { font-variant-numeric: tabular-nums; color: var(--suave); font-size: 12.5px; padding-top: 1px; }
+.lista-evt li.tutor button { background: var(--rio-claro); }
+.lista-evt li.emergencia button, .lista-evt li.golpe button { background: var(--alerta-claro); }
+.lista-evt li.marco button { border-left: 4px solid var(--ipe); }
+.lista-evt li.fala button { color: var(--suave); }
+.lista-evt li.novo button { animation: chegar .6s ease; }
+@keyframes chegar { from { background: var(--ipe-claro); } }
+.tabela-evt { margin-top: 4px; width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.tabela-evt td { padding: 2px 4px; border-bottom: 1px solid var(--linha); }
+
+.alunos { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.aluno { text-align: left; background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: 9px 10px; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 4px 8px; font: 13.5px/1.35 var(--f-texto); color: var(--tinta); cursor: pointer; }
+.aluno[aria-pressed="true"] { border-color: var(--ipe); box-shadow: 0 0 0 2px var(--ipe); }
+.aluno .ic { font-size: 26px; line-height: 1; grid-row: span 2; }
+.aluno strong { font-family: var(--f-titulo); font-size: 15.5px; }
+.aluno .perfil { color: var(--suave); font-size: 12.5px; }
+.aluno .nums { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 10px; font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.aluno .nums span b { font-weight: 700; }
+.nome-pts { display: inline-block; padding: 0 6px; border-radius: 999px; background: var(--fundo); }
+.nome-pts.bom { background: var(--ok-claro); color: var(--ok); }
+.nome-pts.baixo, .nome-pts.sujo { background: var(--alerta-claro); color: var(--alerta); }
+h2.secao { font: 800 20px/1.2 var(--f-titulo); margin: 6px 0 0; }
+.resumo { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; }
+.resumo div { background: var(--papel); border: 1px solid var(--linha); border-radius: 10px; padding: 10px 12px; }
+.resumo b { display: block; font: 800 20px/1.15 var(--f-titulo); }
+.resumo span { color: var(--suave); font-size: 13.5px; }
+.nota { color: var(--suave); font-size: 13.5px; margin: 0; }
+</style>
+
+<div class="tela">
+  <div class="topo">
+    <h1>Simulação da Hora da Praça</h1>
+    <p id="sub">Turma da Noite · 13 alunos e a tutora · 15 minutos de praça, segundo a segundo, rodando com o mesmo motor da Praça Escola que roda no computador do instrutor.</p>
+  </div>
+
+  <div class="principal">
+    <div class="palco">
+      <div class="relogios">
+        <div><small>Relógio da aula</small><b id="relAula">19:45</b></div>
+        <div><small>Dia da cidade</small><b id="relCidade">8:00</b></div>
+        <div><small>Na praça</small><b id="naPraca">0</b></div>
+        <div class="alarme-barra" id="alarme">🚨 <span id="alarmeTxt">Incêndio</span> <i><span id="perigo"></span></i></div>
+      </div>
+      <canvas id="mapa" width="1080" height="900" aria-label="Mapa da cidade com os bonecos da turma"></canvas>
+      <div class="controles">
+        <button type="button" id="tocar" aria-label="Tocar ou pausar">▶ Assistir</button>
+        <button type="button" data-vel="1">1x (tempo real)</button>
+        <button type="button" data-vel="3">3x</button>
+        <button type="button" data-vel="6" aria-pressed="true">6x</button>
+        <button type="button" data-vel="15">15x</button>
+        <span class="tempo" id="tempo">00:00 / 15:00</span>
+        <div class="linha-tempo">
+          <input type="range" id="barra" min="0" max="900" step="1" value="0" aria-label="Linha do tempo">
+          <div class="marcos" id="marcos"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lado">
+      <h2>Passo a passo</h2>
+      <div class="filtros" id="filtros">
+        <button type="button" data-f="tudo" aria-pressed="true">Tudo</button>
+        <button type="button" data-f="tutor" aria-pressed="false">Tutora</button>
+        <button type="button" data-f="alunos" aria-pressed="false">Alunos</button>
+        <button type="button" data-f="dinheiro" aria-pressed="false">Dinheiro e golpes</button>
+        <button type="button" data-f="emergencia" aria-pressed="false">Emergência</button>
+        <button type="button" data-f="fala" aria-pressed="false">Conversa</button>
+      </div>
+      <ol class="lista-evt" id="lista" aria-live="off"></ol>
+    </div>
+  </div>
+
+  <h2 class="secao">A turma</h2>
+  <p class="nota">Clique num aluno para seguir o boneco dele no mapa e ver só o que ele fez. Moedas na carteira, saldo no banco, o nome (score) e a dívida mudam ao vivo.</p>
+  <div class="alunos" id="alunos"></div>
+
+  <h2 class="secao">Como terminou</h2>
+  <div class="resumo" id="resumo"></div>
+  <p class="nota">Como foi feita: o tutor e os 13 alunos agem sobre o motor da Praça Escola (as mesmas regras do programa, com um relógio de mentira). A prova das vagas, o banco e as contas seguem as regras do computador do aluno. Cada aluno tem um jeito de ser, e o que acontece (o fogo, as pistas, os baús) sai das regras, não de um roteiro pronto.</p>
+</div>
+
+<script type="application/json" id="dados">/*DADOS*/</script>
+<script>
+(function () {
+  const D = JSON.parse(document.getElementById('dados').textContent);
+  const $ = (id) => document.getElementById(id);
+  const Q = D.quadros, N = Q.length - 1;
+  const W = D.mapa.W, H = D.mapa.H;
+  const cv = $('mapa'), ctx = cv.getContext('2d');
+  const T = cv.width / W; cv.height = Math.round(T * H);
+  const COR = { g: '#7fb069', l: '#c9b48a', c: '#d9d2c3', r: '#5d656c', p: '#e7d9b8', t: '#c8a878', h: '#5f9e4b', f: '#b9b2a6', k: '#8a7967', a: '#ecd9a6', i: '#a07b52', w: '#3f9bd1' };
+  const pessoas = D.pessoas;
+  const mm = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const aula = (s) => { const m = 45 + Math.floor(s / 60); return `${19 + Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`; };
+
+  // ---------- O chão da cidade (desenhado uma vez) ----------
+  const fundo = document.createElement('canvas'); fundo.width = cv.width; fundo.height = cv.height;
+  const fx = fundo.getContext('2d');
+  D.mapa.chao.forEach((linha, y) => { for (let x = 0; x < W; x++) { fx.fillStyle = COR[linha[x]] || COR.g; fx.fillRect(x * T, y * T, T + 0.5, T + 0.5); } });
+  fx.strokeStyle = 'rgba(255,255,255,.55)'; fx.lineWidth = 2; fx.setLineDash([T * 0.4, T * 0.3]);
+  for (const L of D.mapa.lugares) {
+    const [x, y, w, h] = L.r;
+    if (!L.area && w * h > 2) { fx.fillStyle = L.aceso ? '#f3efe6' : '#c9c3b6'; fx.fillRect(x * T + 2, y * T + 2, w * T - 4, h * T - 4); fx.strokeStyle = L.aceso ? '#8a6d3b' : '#b0a68f'; fx.setLineDash(L.aceso ? [] : [T * 0.3, T * 0.2]); fx.strokeRect(x * T + 2, y * T + 2, w * T - 4, h * T - 4); }
+    fx.setLineDash([]);
+    fx.font = `${Math.round(T * (w * h > 2 ? 0.95 : 0.75))}px "Segoe UI Emoji","Noto Color Emoji",sans-serif`; fx.textAlign = 'center'; fx.textBaseline = 'middle';
+    fx.globalAlpha = L.aceso || L.area ? 1 : 0.55;
+    fx.fillText(L.aceso || L.area || w * h <= 2 ? L.emoji : '🚧', (x + w / 2) * T, (y + h / 2) * T - (w * h > 2 ? T * 0.25 : 0));
+    fx.globalAlpha = 1;
+    if (w * h > 2) { fx.font = `700 ${Math.round(T * 0.36)}px "Atkinson Hyperlegible", system-ui, sans-serif`; fx.fillStyle = '#2b2b2b'; fx.fillText(L.nome.replace('Estação Madeira-Mamoré', 'Estação').replace('Cais do Rio Madeira', 'Cais do rio'), (x + w / 2) * T, (y + h / 2) * T + T * 0.55); }
+  }
+  const lugarPor = Object.fromEntries(D.mapa.lugares.map((L) => [L.id, L]));
+
+  // ---------- Desenhar um instante ----------
+  let seguir = null;
+  const emojiFonte = (px) => `${px}px "Segoe UI Emoji","Noto Color Emoji",sans-serif`;
+  function balao(x, y, texto) {
+    ctx.font = `700 ${Math.round(T * 0.38)}px "Atkinson Hyperlegible", system-ui, sans-serif`;
+    const t = texto.length > 34 ? texto.slice(0, 33) + '…' : texto;
+    const w = ctx.measureText(t).width + T * 0.5, h = T * 0.62;
+    const bx = Math.max(2, Math.min(cv.width - w - 2, x - w / 2)), by = Math.max(2, y - T * 1.55);
+    ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(bx, by, w, h, h / 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#1b1b1b'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(t, bx + T * 0.25, by + h / 2);
+  }
+  function desenhar(s) {
+    const i = Math.min(N, Math.floor(s)), j = Math.min(N, i + 1), f = s - i;
+    const a = Q[i], b = Q[j];
+    ctx.drawImage(fundo, 0, 0);
+    ctx.fillStyle = '#000';
+    // Pistas da novela
+    if (a.n) for (const [lugar, achados] of a.n.pistas) {
+      const L = lugarPor[lugar]; if (!L) continue;
+      ctx.font = emojiFonte(Math.round(T * 0.7)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(a.n.revelado ? '✅' : '🔎', (L.r[0] + L.r[2]) * T - T * 0.4, L.r[1] * T + T * 0.45);
+      if (achados) { ctx.font = `700 ${Math.round(T * 0.34)}px system-ui`; ctx.fillStyle = '#7a4fc9'; ctx.fillText(achados, (L.r[0] + L.r[2]) * T - T * 0.4, L.r[1] * T + T * 1.05); }
+    }
+    // Lixo da coleta seletiva
+    ctx.font = emojiFonte(Math.round(T * 0.55)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const [x, y] of a.c || []) ctx.fillText('🧃', (x + 0.5) * T, (y + 0.5) * T);
+    // Evento urgente
+    if (a.e) {
+      for (const [x, y, forca, eletrico] of a.e.focos) {
+        const r = T * (0.35 + Math.min(1.2, forca * 0.22));
+        const g = ctx.createRadialGradient((x + 0.5) * T, (y + 0.5) * T, 1, (x + 0.5) * T, (y + 0.5) * T, r);
+        g.addColorStop(0, 'rgba(255,220,90,.95)'); g.addColorStop(1, 'rgba(255,90,30,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc((x + 0.5) * T, (y + 0.5) * T, r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#000'; ctx.font = emojiFonte(Math.round(T * 0.8)); ctx.fillText(eletrico ? '⚡' : '🔥', (x + 0.5) * T, (y + 0.5) * T);
+      }
+      if (a.e.bombeiros) { ctx.font = emojiFonte(Math.round(T * 1.1)); ctx.fillText('🚒', (a.e.bombeiros.chegou ? 26.5 : 34) * T, 14.5 * T); }
+    }
+    ctx.fillStyle = '#000';
+    // Caça ao tesouro
+    if (a.s && a.s.baus) for (const [x, y, achado] of a.s.baus) { if (achado) continue; ctx.font = emojiFonte(Math.round(T * 0.75)); ctx.fillText('🎁', (x + 0.5) * T, (y + 0.5) * T); }
+    // As pessoas
+    const lista = [];
+    pessoas.forEach((pp, k) => {
+      const pa = a.p[k], pb = b.p[k] || pa;
+      if (!pa) return;
+      const x = (pa[0] + (pb[0] - pa[0]) * f + 0.5) * T, y = (pa[1] + (pb[1] - pa[1]) * f + 0.5) * T;
+      lista.push({ pp, k, x, y, pa });
+    });
+    lista.sort((u, v) => u.y - v.y);
+    for (const { pp, x, y, pa } of lista) {
+      const destaque = seguir === pp.id;
+      if (destaque) { ctx.strokeStyle = '#f2c14e'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y, T * 0.75, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(x, y + T * 0.38, T * 0.32, T * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#000'; ctx.font = emojiFonte(Math.round(T * (pp.tutor ? 0.95 : 0.85))); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(pp.avatar, x, y);
+      if (pa[5]) { ctx.font = emojiFonte(Math.round(T * 0.38)); ctx.fillText(pa[5], x + T * 0.38, y + T * 0.2); }
+      if (pa[2]) { ctx.font = emojiFonte(Math.round(T * 0.45)); ctx.fillText(pa[2], x - T * 0.42, y - T * 0.32); }
+      if (pa[4]) { ctx.font = emojiFonte(Math.round(T * 0.5)); ctx.fillText('🙋', x + T * 0.45, y - T * 0.45); }
+      ctx.font = `700 ${Math.round(T * 0.3)}px "Atkinson Hyperlegible", system-ui, sans-serif`;
+      const nome = pp.tutor ? 'Prof. Rita' : pp.nome;
+      const w = ctx.measureText(nome).width + 8;
+      ctx.fillStyle = pp.tutor ? 'rgba(13,107,102,.92)' : 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.roundRect(x - w / 2, y + T * 0.45, w, T * 0.38, 4); ctx.fill();
+      ctx.fillStyle = pp.tutor ? '#fff' : '#1b1b1b'; ctx.fillText(nome, x, y + T * 0.65);
+    }
+    for (const { x, y, pa } of lista) if (pa[3]) balao(x, y, pa[3]);
+  }
+
+  // ---------- O passo a passo ----------
+  const CLASSE = (e) => (e.quem === 'tutor' ? 'tutor' : e.tipo);
+  const grupo = (e) => (e.quem === 'tutor' ? 'tutor' : e.tipo === 'fala' ? 'fala' : /dinheiro|golpe|feira|vaquinha/.test(e.tipo) ? 'dinheiro' : /emergencia/.test(e.tipo) || /🔥|🚒|⚡|fogo/i.test(e.texto) ? 'emergencia' : 'alunos');
+  let filtro = 'tudo';
+  const lista = $('lista');
+  const itens = D.eventos.map((e) => {
+    const li = document.createElement('li');
+    li.className = CLASSE(e) + (e.marco ? ' marco' : '');
+    li.dataset.g = grupo(e); li.dataset.quem = e.quem;
+    const b = document.createElement('button'); b.type = 'button';
+    const h = document.createElement('span'); h.className = 'h'; h.textContent = aula(e.t);
+    const txt = document.createElement('span'); txt.textContent = e.texto;
+    if (e.tabela) {
+      const tb = document.createElement('table'); tb.className = 'tabela-evt';
+      tb.innerHTML = '<tr><td><b>Aluno</b></td><td><b>Conta</b></td><td><b>Dívida</b></td><td><b>Nome</b></td></tr>' + e.tabela.map((r) => `<tr><td>${r.sujo ? '🔴' : r.divida > 0 ? '🟡' : '🟢'} ${r.nome}</td><td>${r.conta.toFixed(2).replace('.', ',')}</td><td>${r.divida ? r.divida.toFixed(2).replace('.', ',') : '—'}</td><td>${r.score}</td></tr>`).join('');
+      txt.append(tb);
+    }
+    b.append(h, txt); b.onclick = () => { irPara(e.t); };
+    li.append(b); li.hidden = true; lista.append(li);
+    return { e, li };
+  });
+  let mostradosAte = -1;
+  function atualizarLista(s, pular) {
+    const ate = Math.floor(s);
+    let novo = null;
+    for (const it of itens) {
+      const passa = (filtro === 'tudo' || it.li.dataset.g === filtro) && (!seguir || it.e.quem === seguir || (seguir && it.e.texto.includes(nomeDe(seguir))));
+      const visivel = it.e.t <= ate && passa;
+      if (visivel && it.li.hidden) { it.li.hidden = false; if (!pular && it.e.t > mostradosAte) { it.li.classList.remove('novo'); void it.li.offsetWidth; it.li.classList.add('novo'); novo = it.li; } }
+      else if (!visivel && !it.li.hidden) it.li.hidden = true;
+    }
+    mostradosAte = ate;
+    if (novo || pular) lista.scrollTop = lista.scrollHeight;
+  }
+  const nomeDe = (id) => (pessoas.find((p) => p.id === id) || {}).nome || '';
+  $('filtros').addEventListener('click', (ev) => {
+    const b = ev.target.closest('button'); if (!b) return;
+    filtro = b.dataset.f;
+    for (const x of $('filtros').querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b));
+    atualizarLista(tempo, true);
+  });
+
+  // ---------- Os alunos ----------
+  const cards = {};
+  for (const p of pessoas.filter((x) => !x.tutor)) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'aluno'; b.setAttribute('aria-pressed', 'false');
+    b.innerHTML = `<span class="ic">${p.avatar}</span><strong>${p.nome}</strong><span class="perfil">${p.perfil}</span><span class="nums"></span>`;
+    b.onclick = () => { seguir = seguir === p.id ? null : p.id; for (const id in cards) cards[id].setAttribute('aria-pressed', String(id === seguir)); atualizarLista(tempo, true); desenhar(tempo); };
+    $('alunos').append(b); cards[p.id] = b;
+  }
+  const moeda = (v) => Number(v).toFixed(2).replace('.', ',');
+  function atualizarAlunos(s) {
+    const q = Q[Math.min(N, Math.floor(s))];
+    for (const id in cards) {
+      const m = q.m[id]; if (!m) continue;
+      const [carteira, conta, poup, divida, score, sujo] = m;
+      const k = pessoas.findIndex((p) => p.id === id);
+      const cracha = q.p[k] && q.p[k][5];
+      const classe = sujo ? 'sujo' : score >= 700 ? 'bom' : score < 400 ? 'baixo' : '';
+      cards[id].querySelector('.nums').innerHTML = `<span>💰 <b>${carteira}</b></span><span>🏦 <b>${moeda(conta)}</b></span>${poup ? `<span>🐷 <b>${moeda(poup)}</b></span>` : ''}${divida ? `<span>📉 <b>${moeda(divida)}</b></span>` : ''}<span class="nome-pts ${classe}">nome ${score}${sujo ? ' · sujo' : ''}</span>${cracha ? `<span>crachá ${cracha}</span>` : ''}${q.p[k] ? '' : '<span>(ainda não entrou)</span>'}`;
+    }
+  }
+
+  // ---------- Resumo final ----------
+  (function () {
+    const ev = D.eventos, fim = D.final;
+    const fogoIni = ev.find((e) => e.marco === 'Incêndio'), fogoFim = ev.find((e) => e.marco === 'Fogo apagado');
+    const baus = ev.filter((e) => /achou um baú/.test(e.texto)).length;
+    const golpes = ev.filter((e) => e.tipo === 'golpe' && /😱|pagou: perdeu|Davi pagou/.test(e.texto)).length;
+    const contratos = ev.filter((e) => /foi contratado/.test(e.texto)).length;
+    const itensR = [
+      [fogoFim && fogoIni ? `${fogoFim.t - fogoIni.t} segundos` : '—', 'para apagar o incêndio (Bombeiros chamados pelo 193)'],
+      [ev.some((e) => e.marco === 'Final da novela') ? 'Desvendada' : 'Em aberto', 'a novela "O barco do Seu Bené sumiu"'],
+      [`${baus} de 8`, 'baús achados na caça ao tesouro (comprada na vaquinha)'],
+      [`${contratos}`, 'contratações nas vagas (com crachá no boneco)'],
+      [`${golpes}`, 'vezes que alguém caiu em golpe (boleto falso ou SMS)'],
+      [`${fim.filter((f) => f.sujo).length}`, 'alunos de nome sujo no fim (o Bruno limpou o dele)'],
+    ];
+    $('resumo').innerHTML = itensR.map(([b, s]) => `<div><b>${b}</b><span>${s}</span></div>`).join('');
+  })();
+
+  // ---------- Marcos na linha do tempo ----------
+  D.eventos.filter((x) => x.marco).forEach((e, k, todos) => {
+    const s = document.createElement('span'); s.style.left = `${(e.t / 900) * 100}%`; s.textContent = e.marco;
+    if (k > 0 && e.t - todos[k - 1].t < 90 && !todos[k - 1].baixo) { s.classList.add('baixo'); e.baixo = true; }
+    if (e.t < 30) s.classList.add('inicio');
+    $('marcos').append(s);
+  });
+
+  // ---------- O relógio do replay ----------
+  let tempo = 0, tocando = false, vel = 6, ultimo = 0;
+  function mostrar(s, pular) {
+    const q = Q[Math.min(N, Math.floor(s))];
+    desenhar(Math.min(N, s));
+    $('relAula').textContent = aula(s); $('relCidade').textContent = q.h;
+    $('naPraca').textContent = q.p.filter(Boolean).length;
+    $('tempo').textContent = `${mm(s)} / 15:00`; $('barra').value = Math.floor(s);
+    const e = q.e;
+    $('alarme').classList.toggle('on', !!e);
+    if (e) { $('alarmeTxt').textContent = `Incêndio · ${e.focos.length} foco${e.focos.length === 1 ? '' : 's'}${e.bombeiros ? (e.bombeiros.chegou ? ' · Bombeiros aqui' : ' · Bombeiros a caminho') : ''}`; $('perigo').style.width = `${e.perigo}%`; }
+    if (Math.floor(s) !== mostrar.ult || pular) { mostrar.ult = Math.floor(s); atualizarLista(s, pular); atualizarAlunos(s); }
+  }
+  function quadro(ts) {
+    if (!tocando) return;
+    const dt = Math.min(0.25, (ts - (ultimo || ts)) / 1000); ultimo = ts;
+    tempo = Math.min(N, tempo + dt * vel);
+    mostrar(tempo);
+    if (tempo >= N) { tocando = false; $('tocar').textContent = '↻ Ver de novo'; return; }
+    requestAnimationFrame(quadro);
+  }
+  function tocar() { if (tempo >= N) { tempo = 0; mostrar(0, true); } tocando = true; ultimo = 0; $('tocar').textContent = '⏸ Pausar'; requestAnimationFrame(quadro); }
+  function pausar() { tocando = false; $('tocar').textContent = '▶ Continuar'; }
+  function irPara(s) { tempo = Math.max(0, Math.min(N, s)); mostrar(tempo, true); }
+  $('tocar').onclick = () => (tocando ? pausar() : tocar());
+  $('barra').oninput = (e) => irPara(Number(e.target.value));
+  document.querySelectorAll('[data-vel]').forEach((b) => b.addEventListener('click', () => { vel = Number(b.dataset.vel); document.querySelectorAll('[data-vel]').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); }));
+  document.addEventListener('keydown', (e) => { if (e.key === ' ' && !e.target.closest('button, input')) { e.preventDefault(); $('tocar').click(); } });
+  // Primeiro quadro: aos 30 segundos, com a turma chegando (já dá para ver como é).
+  irPara(30); pausar(); $('tocar').textContent = '▶ Assistir do começo'; $('tocar').onclick = () => { if (!tocando && tempo === 30 && !$('tocar').dataset.foi) { $('tocar').dataset.foi = '1'; tempo = 0; mostrar(0, true); } tocando ? pausar() : tocar(); };
+})();
+</script>
