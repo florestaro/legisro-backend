@@ -51,6 +51,10 @@ window.CE = window.CE || {};
       'A dengue é uma doença causada por um vírus e transmitida pela picada do mosquito Aedes aegypti.',
       'Os sintomas mais comuns são febre alta, dor no corpo, dor atrás dos olhos e manchas na pele. Procure o posto de saúde.',
       'Para prevenir, não deixe água parada: vire garrafas, tampe caixas-d\'água e limpe as calhas.'], ['agua'], 'saude mosquito aedes febre prevencao doenca agua parada'],
+    pterossauros: ['Pterossauros (dinossauros voadores)', 'Répteis voadores que viveram no tempo dos dinossauros.', [
+      'Os pterossauros eram répteis voadores que viveram na mesma época dos dinossauros, de 228 a 66 milhões de anos atrás. Apesar do apelido "dinossauros voadores", não eram dinossauros.',
+      'As asas eram uma membrana de pele presa ao quarto dedo da mão, que era muito comprido. Os ossos eram ocos, o que deixava o corpo leve.',
+      'O maior deles, o Quetzalcoatlus, tinha asas com mais de 10 metros de ponta a ponta. No Brasil, a Chapada do Araripe, no Ceará, tem muitos fósseis de pterossauros.'], ['amazonia'], 'dinossauros voadores pterossauro reptil voador asas fosseis pre-historia'],
     alimentacao: ['Alimentação saudável', 'Dicas para comer bem no dia a dia.', [
       'Uma alimentação saudável tem frutas, verduras, legumes, arroz, feijão e pouca comida industrializada.',
       'Beba água durante o dia e evite exagerar no açúcar, no sal e nas frituras.'], ['dengue'], 'saude comida frutas verduras comer bem'],

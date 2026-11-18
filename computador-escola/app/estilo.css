@@ -2590,3 +2590,38 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .cart-dica { margin: 0; font-size: 13px; color: var(--texto-suave); background: var(--fundo-cinza); border-radius: 9px; padding: 8px 10px; }
 .cart-extrato .valor.gasto { color: #a1260f; }
 @media (prefers-reduced-motion: reduce) { .pr-mundo.suave, .pr-obra { transition: none; } .pr-p.andando .corpo, .pr-obj.barco, .pr-mao, .pr-acao, .pr-avisos li, .pr-marca-pista, .pr-marca-ajuda, .pr-emerg, .pr-mapa.alarme, .pr-chuva, .pr-lixo, .pr-foco::before, .pr-foco .chama, .pr-foco .faisca, .pr-veiculo, .pr-jato, .pr-enchente .onda, .pr-arvore-caida, .pr-arvore-caida.equipe .equipe, .pr-placa-queda, .pr-fio, .pr-mapa.relampago::after, .pr-pilula.moedas.ganhou, .pr-fogos span, .pr-bau, .pr-bingo-num.ainda { animation: none; } .pr-fogos span { opacity: .8; } }
+
+/* ---------- Mundo Escolar (site de pesquisa com propagandas piscando) ---------- */
+.me-cabecalho { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #ff9f1c; color: #2b1600; }
+.me-cabecalho a { color: #2b1600; text-decoration: none; font-size: 20px; }
+.me-pagina { display: grid; grid-template-columns: 170px minmax(0, 1fr) 170px; gap: 12px; padding: 12px; background: #fff7e6; color: #222; position: relative; min-height: 100%; }
+.me-lado { display: grid; gap: 12px; align-content: start; }
+.me-artigo { background: #fff; border-radius: 10px; padding: 14px 18px; font-size: 16px; line-height: 1.55; }
+.me-artigo h1 { margin: 0 0 4px; font-size: 24px; color: #7a3d00; }
+.me-fina { color: #8a5a00; font-style: italic; }
+.me-fonte { color: #666; font-size: 13px; }
+.me-li { font: 700 16px system-ui, sans-serif; background: #2e7d4f; color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; cursor: pointer; }
+.me-anuncio { display: grid; gap: 4px; justify-items: center; text-align: center; border: 3px dashed #ff0055; border-radius: 12px; padding: 10px 8px; cursor: pointer; font-family: Impact, "Arial Black", sans-serif; color: #fff; position: relative; animation: me-pisca .7s infinite alternate; }
+.me-anuncio.a0 { background: #7a2cff; } .me-anuncio.a1 { background: #ff4fd8; } .me-anuncio.a2 { background: #00b86b; } .me-anuncio.a3 { background: #ff7a00; }
+.me-anuncio .me-ic { font-size: 40px; animation: me-pula .5s infinite alternate; }
+.me-anuncio b { font-size: 15px; line-height: 1.15; }
+.me-anuncio small { font: 12px system-ui, sans-serif; }
+.me-anuncio em { position: absolute; top: 2px; right: 6px; font: 10px system-ui, sans-serif; opacity: .8; }
+.me-baixar { display: block; margin: 10px auto; font: 900 22px Impact, sans-serif; background: #00e676; color: #003d1a; border: none; padding: 14px 26px; border-radius: 10px; box-shadow: 0 5px 0 #00a152; cursor: pointer; animation: me-pisca .6s infinite alternate; }
+.me-popup { position: absolute; top: 40px; right: 30px; width: 260px; background: #fff; color: #b00020; border: 4px solid #b00020; border-radius: 12px; padding: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.4); animation: me-treme .3s infinite; }
+.me-popup-ic { font-size: 40px; }
+.me-popup-x { position: absolute; top: 2px; right: 4px; background: none; border: 0; font-size: 13px; color: #999; cursor: pointer; }
+.me-popup-botao { font: 900 18px Impact, sans-serif; background: #b00020; color: #fff; border: 0; border-radius: 8px; padding: 10px 14px; cursor: pointer; }
+.me-inicio { padding: 16px; background: #fff7e6; color: #222; display: grid; gap: 12px; }
+.me-lista { display: grid; gap: 6px; font-size: 16px; }
+.me-virus { min-height: 100%; padding: 26px; background: #1a0000; color: #fff; text-align: center; display: grid; justify-items: center; gap: 8px; }
+.me-virus-ic { font-size: 80px; animation: me-pula .4s infinite alternate; }
+.me-virus h1 { margin: 0; color: #ff5252; font: 900 36px Impact, sans-serif; }
+.me-virus ul { text-align: left; }
+.me-virus-mentira { color: #ffd54f; font-weight: 700; }
+.me-regra { background: #fff3c4; color: #3a2a00; border-radius: 10px; padding: 10px 14px; max-width: 520px; }
+.me-voltar { color: #80d8ff; font-size: 18px; }
+@keyframes me-pisca { from { filter: brightness(1); transform: scale(1); } to { filter: brightness(1.35); transform: scale(1.04); } }
+@keyframes me-pula { from { transform: translateY(0); } to { transform: translateY(-6px); } }
+@keyframes me-treme { 0% { transform: translateX(0); } 50% { transform: translateX(2px); } 100% { transform: translateX(-2px); } }
+@media (max-width: 700px) { .me-pagina { grid-template-columns: minmax(0, 1fr); } }

@@ -6,7 +6,7 @@ conversa e tira dúvidas. **Funciona sem internet.**
 
 ## O que já tem
 
-### Curso de Informática: 5 níveis e 2 cursos livres (262 aulas)
+### Curso de Informática: 5 níveis e 3 cursos livres (267 aulas)
 - **Nível Iniciante completo: 48 aulas em 10 módulos.** Os módulos são: Conhecendo o computador, Mouse, Teclado,
   Janelas e menu Iniciar, Arquivos e pastas, Editor de Texto, Calculadora e Desenho, **Internet**, Segurança básica e a
   Prova do nível.
@@ -118,7 +118,17 @@ conversa e tira dúvidas. **Funciona sem internet.**
   atual"), e o instrutor liga ou desliga em **Painel › Progresso da turma**. **O que o aluno errou volta**: a pergunta
   que ele não acertou de primeira (numa aula ou na revisão) entra numa lista e aparece primeiro na próxima revisão
   ("esta você tinha errado antes"); acertou de primeira, sai da lista.
-- **🎯 Trilhas por objetivo** (Aulas › 🎯 Meu objetivo): o aluno escolhe o que quer conseguir (💼 Arrumar emprego,
+- **🎒 Curso livre Trabalhos da escola** (abre desde o começo, pensado para as crianças): a professora manda um bilhete
+  ("faça um resumo sobre os dinossauros voadores") e o Professor Virtual conduz o caminho todo: pesquisar no Procura,
+  abrir o site **Mundo Escolar**, que tem o texto bom cercado de **propagandas piscando** (jogo grátis, unicórnio,
+  prêmio, o botão verde gigante "BAIXAR O TRABALHO PRONTO" e o aviso falso "SEU COMPUTADOR ESTÁ COM 3 VÍRUS" que se fecha
+  pelo X pequenininho). Clicou numa propaganda: aparece a caveira "Ops! Você pegou um vírus!" (de mentira), com a
+  explicação e a regra de ouro, e um link para voltar ao texto. Depois o aluno lê até o fim, escreve o resumo no Editor
+  com as próprias palavras (título em negrito, pelo menos 3 frases e a fonte), salva e imprime. Aulas: resumo dos
+  dinossauros voadores, propagandas e vírus (e o mesmo assunto na enciclopédia Saber Livre, sem propaganda), cartaz
+  "Combata a dengue" (título grande, colorido, centralizado e lista de dicas), capa do trabalho e o desafio sobre a
+  Floresta Amazônica. Certificado próprio (10 horas).
+- **🎯 Trilhas por objetivo** (Aulas › 🎯 Meu objetivo): o aluno escolhe o que quer conseguir (🎒 Fazer os trabalhos da escola, 💼 Arrumar emprego,
   🏛️ Resolver as coisas no gov.br, 🛒 Vender pelo celular e pela internet ou 🛡️ Me proteger dos golpes) e o professor
   monta o caminho com as aulas que já existem, na ordem certa. As aulas do caminho abrem uma depois da outra (mesmo
   fora da ordem do curso) e viram a "próxima aula"; terminado o caminho, volta a ser a do curso. O certificado continua

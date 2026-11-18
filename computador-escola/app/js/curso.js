@@ -23,6 +23,9 @@ window.CE = window.CE || {};
       certificado: { curso: 'Celular no Dia a Dia', nivel: 'Curso livre — uso seguro do smartphone' } },
     { id: 'cri', nome: 'Criação digital', icone: '🎨', paralelo: true, requer: 'n2', descricao: 'Fotos, vídeos e desenho vetorial: cartazes, posts e vídeos curtos',
       certificado: { curso: 'Criação Digital', nivel: 'Curso livre — fotos, vídeos e desenho vetorial' } },
+    // Sem "requer": abre desde o começo (as crianças fazem junto com o Iniciante).
+    { id: 'esc', nome: 'Trabalhos da escola', icone: '🎒', paralelo: true, descricao: 'Pesquisar na internet sem cair em propaganda e fazer trabalhos no Editor: resumo, cartaz e capa',
+      certificado: { curso: 'Trabalhos Escolares no Computador', nivel: 'Curso livre — pesquisa segura e trabalhos no Editor de Texto' } },
   ];
   const nivelDe = (id) => CE.NIVEIS_CURSO.find((n) => n.id === id) || {};
   // Cada aula pertence a uma "cadeia": a do curso principal (n1 a n5) ou a de um curso livre.
@@ -51,6 +54,8 @@ window.CE = window.CE || {};
     'cel-ajustes', 'cel-boato', 'cel-qrcode', 'cel-mapa', 'cel-desafio',
     // Curso livre Criação digital
     'cri-foto-tamanho', 'cri-foto-direitos', 'cri-vet-pixel', 'cri-vid-titulo', 'cri-desafio',
+    // Curso livre Trabalhos da escola
+    'esc-capa', 'esc-desafio',
   ]);
   const TRILHAS = { essencial: 'Trilha essencial', completa: 'Trilha completa' };
 
@@ -64,6 +69,8 @@ window.CE = window.CE || {};
       modulos: ['n1-computador', 'n1-mouse', 'n1-teclado', 'n1-janelas', 'n1-internet', 'n1-seguranca', 'n2-email', 'n2-gov', 'n2-documentos', 'n2-servicos'] },
     { id: 'vender', icone: '🛒', nome: 'Vender pelo celular e pela internet', texto: 'Celular, Zap, Pix, golpes, anúncios, dinheiro e MEI.',
       modulos: ['n1-computador', 'n1-mouse', 'n1-internet', 'n1-seguranca', 'cel-basico', 'cel-mensagens', 'cel-dinheiro', 'cel-golpes', 'n3-dinheiro', 'n3-vendas'] },
+    { id: 'escola', icone: '🎒', nome: 'Fazer os trabalhos da escola', texto: 'Mouse, teclado, pesquisar na internet sem cair em propaganda e fazer o trabalho no Editor.',
+      modulos: ['n1-computador', 'n1-mouse', 'n1-teclado', 'esc-trabalhos', 'n1-editor', 'n1-internet'] },
     { id: 'golpes', icone: '🛡️', nome: 'Me proteger dos golpes', texto: 'Senhas, golpes por mensagem, ligação, boleto, Pix e inteligência artificial.',
       modulos: ['n1-computador', 'n1-mouse', 'n1-internet', 'n1-seguranca', 'n2-golpes-agora', 'n2-ia', 'cel-golpes', 'n3-seguranca'] },
   ];

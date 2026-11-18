@@ -51,7 +51,7 @@ window.CE = window.CE || {};
 
   // ---------- Certificados e relatório ----------
   const CARGAS = [['n1', 'Informática Nível 1'], ['n2', 'Informática Nível 2'], ['n3', 'Informática Nível 3'], ['n4', 'Informática Nível 4'],
-    ['n5', 'Assistente Administrativo'], ['cel', 'Curso livre Celular'], ['cri', 'Curso livre Criação digital'],
+    ['n5', 'Assistente Administrativo'], ['cel', 'Curso livre Celular'], ['cri', 'Curso livre Criação digital'], ['esc', 'Curso livre Trabalhos da escola'],
     ['digitacao1', 'Digitação Nível 1'], ['digitacao2', 'Digitação Nível 2'], ['digitacao3', 'Digitação Nível 3'], ['digitacao4', 'Digitação Nível 4']];
 
   async function certificadosERelatorio(estado, redesenhar) {
