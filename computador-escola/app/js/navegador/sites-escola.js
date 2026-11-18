@@ -32,6 +32,20 @@ window.CE = window.CE || {};
       'A floresta ajuda a fazer chover em várias partes do Brasil: as árvores soltam vapor de água que vira nuvem.',
       'As queimadas e o desmatamento são os maiores perigos. Cuidar da floresta é cuidar da água e do ar que respiramos.'],
       'floresta amazonica amazonia animais arvores rondonia natureza queimadas desmatamento'],
+    'sistema-solar': ['Sistema Solar: o Sol e os 8 planetas', 'A nossa casa no espaço: a Terra é o terceiro planeta a partir do Sol.', [
+      'O Sistema Solar é formado pelo Sol, que é uma estrela, e por tudo que gira em volta dele: planetas, luas, asteroides e cometas.',
+      'São 8 planetas. Do mais perto ao mais longe do Sol: Mercúrio, Vênus, Terra, Marte, Júpiter, Saturno, Urano e Netuno.',
+      'Júpiter é o maior de todos: caberiam mais de mil Terras dentro dele. Saturno é famoso pelos anéis de gelo e pedra.',
+      'A Terra é o único planeta onde sabemos que existe vida, porque tem água líquida e ar para respirar. A Lua gira em volta da Terra.',
+      'A Terra dá uma volta em torno de si mesma em um dia (é por isso que existe dia e noite) e uma volta em torno do Sol em um ano.'],
+      'sistema solar planetas sol terra lua jupiter saturno marte mercurio venus urano netuno espaco astronomia'],
+    'historia-rondonia': ['História de Rondônia', 'Do telégrafo do Marechal Rondon à ferrovia Madeira-Mamoré.', [
+      'Antes da chegada dos europeus, a região já era a casa de muitos povos indígenas, que vivem lá até hoje.',
+      'No começo do século 20 foi construída a Estrada de Ferro Madeira-Mamoré, para levar a borracha. Milhares de trabalhadores de vários países vieram trabalhar nela, e muitos morreram de doenças.',
+      'Na mesma época, o Marechal Cândido Rondon levou as linhas do telégrafo pela floresta, fazendo amizade com os povos indígenas. O estado tem o nome dele.',
+      'Em 1943 foi criado o Território Federal do Guaporé, que em 1956 passou a se chamar Território de Rondônia.',
+      'Em 1981 Rondônia virou estado, e Porto Velho, às margens do rio Madeira, é a capital.'],
+      'historia de rondonia rondon marechal madeira mamore ferrovia telegrafo porto velho territorio guapore 1981 estado'],
   };
 
   // As propagandas que piscam em volta do texto (todas levam ao "vírus").
