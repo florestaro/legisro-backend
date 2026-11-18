@@ -431,7 +431,7 @@ de cada um na Praça Escola, em 🏙️ Cidade › Rua da Turma.
     a conta (bom depois de mudar uma aula).
   - **📜 Certificados e relatório**: dados da escola (nome, cidade, quem assina e a carga horária de cada curso);
     **certificado** de cada nível de Informática, do Assistente Administrativo e dos cursos livres (todas as aulas do
-    curso na trilha do aluno aprovadas) e de Digitação (prova do nível), com 11 certificados no total,
+    curso na trilha do aluno aprovadas) e de Digitação (prova do nível), com 12 certificados no total,
     com número que não muda ao reimprimir, um por um ou todos da turma; **relatório da turma** (frequência em dias e
     horas, aulas aprovadas, digitação, certificados, lista de presença e onde a turma travou) do mês, do mês passado ou
     do curso todo. Tudo dá para imprimir ou **salvar em PDF**, e o relatório também sai em **planilha (CSV)** para o
