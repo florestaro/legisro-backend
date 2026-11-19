@@ -19,11 +19,12 @@
 //   3. os prédios levantam do chão, um de cada vez (Escola e Prefeitura mais altas, casas baixas, árvores médias);
 //      o rio desce um pouco e ondula, e o trem chega pelo trilho;
 //   4. o chafariz da Praça da Turma pulsa e o "Você" aparece;
-//   5. a câmera volta para cima, os pontos se juntam e a maquete some em cima do mapa 2D.
+//   5. a câmera volta para a vista do jogo (a isométrica, com os prédios em pé, na Praça em 3D; de cima, na Praça
+//      em 2D) e a maquete some em cima do mapa.
 // Pular: o botão "Pular", um clique ou toque em qualquer lugar, ou uma tecla.
 //
 // Uso: const c = CE.abertura3d.iniciarAbertura(dadosDoMapa, aoTerminar)
-//   dadosDoMapa = { alvo, mapa, cores, emObra(id), trem(), voce(), enquadramento(), pronto, aoComecar() }
+//   dadosDoMapa = { alvo, mapa, cores, emObra(id), trem(), voce(), enquadramento(), final(), pronto, aoComecar() }
 //   aoTerminar(motivo): 'fim' | 'pulou' | 'parou' | 'cancelada' | 'erro'
 //   c.pular(), c.parar(); c.pausarEm(segundos) e c.continuar() servem para os testes (e para fotografar um momento).
 window.CE = window.CE || {};
@@ -39,7 +40,10 @@ window.CE = window.CE || {};
   // O roteiro, em segundos.
   const T_INCLINA = [0.8, 2.0], T_GIRA = [0.8, 3.45], T_SOBE = 1.2, PASSO = 0.11, DUR_SOBE = 0.75;
   const T_TREM = [1.55, 3.45], T_CHAFARIZ = [2.45, 3.8], T_VOCE = [2.8, 3.15];
-  const T_VOLTA = [3.45, 4.35], T_JUNTA = [3.75, 4.35], T_SOME = [4.25, 4.85];
+  const T_VOLTA = [3.45, 4.35], T_JUNTA = [3.75, 4.35], T_SOME = [4.6, 5.2];
+  // O mapa do jogo volta a ser pintado (embaixo da maquete ainda opaca) quando a câmera para: o primeiro quadro dele
+  // é pesado (no 3D são muitos desenhos) e, com a maquete parada, esse tranco não aparece. Depois vem o crossfade.
+  const T_REVELA = T_VOLTA[1] + 0.01;
   // Altura de cada prédio (em quadrinhos). As casas são baixas; os prédios em obra, mais baixos ainda.
   const ALTURA = { escola: 3.2, prefeitura: 3.2, banco: 2.3, empregos: 2.2, correios: 2, posto: 2, estacao: 1.5 };
   const ALTURA_CASA = 1.25, ALTURA_OBRA = 0.45, FACHADA = 1.1; // no desenho 2D, a fachada tem 1,1 quadrinho
@@ -185,8 +189,9 @@ window.CE = window.CE || {};
       if (!L.telhado || !livre(L.id)) continue;
       const [x0, y0, w, h] = L.r;
       const g = grupoDe[L.id];
-      const Hb = L.casa ? ALTURA_CASA : (ALTURA[L.id] || 2);
-      const bico = L.casa ? 0.45 : L.colunas ? 0 : 0.22;      // a cumeeira do telhado
+      // as mesmas alturas e telhados da Praça em 3D (app/js/praca-mapa.js), para a maquete cair em cima dela
+      const Hb = M.alturaDe ? M.alturaDe(L) : L.casa ? ALTURA_CASA : (ALTURA[L.id] || 2);
+      const bico = M.bicoDe ? M.bicoDe(L) : L.casa ? 0.45 : 0;  // a cumeeira do telhado (duas águas)
       const zona = h - FACHADA;                                // no 2D, o telhado fica no alto e a fachada embaixo
       const nx = Math.round(w * 3), ny = Math.max(2, Math.round(zona * 3)), nf = 4;
       const tel = rgb(L.telhado), par = rgb(L.parede);
@@ -418,36 +423,51 @@ window.CE = window.CE || {};
     let fonte = 'sans-serif';
     try { fonte = getComputedStyle(dados.alvo).fontFamily || fonte; } catch (e) { /* fica a padrão */ }
     const temTrem = typeof dados.trem === 'function' ? !!dados.trem() : !!dados.trem;
+    // No fim: a vista de cima do mapa 2D, ou (Praça em 3D) a vista isométrica do jogo, com os prédios em pé.
+    // (lido só agora, quando a cidade já chegou: o instrutor pode ter posto a Praça em 2D)
+    const pedido = typeof dados.final === 'function' ? dados.final() : dados.final;
+    const final = pedido && Number.isFinite(pedido.yaw) ? pedido : null;
+    let giroFinal = final ? final.yaw : 0;
+    if (final) { while (giroFinal - GIRA > Math.PI) giroFinal -= 2 * Math.PI; while (giroFinal - GIRA < -Math.PI) giroFinal += 2 * Math.PI; }
 
     return desenhar;
     function desenhar(t, cw, ch, dpr) {
       // A câmera: inclina e gira; na volta, tudo isso se desfaz.
       const volta = entraSai(fase(t, T_VOLTA)), desce = 1 - volta;
-      const inc = entraSai(fase(t, T_INCLINA)) * desce;
-      const fi = INCLINA * inc, te = GIRA * suave(fase(t, T_GIRA)) * desce;
+      const incMostra = entraSai(fase(t, T_INCLINA)), giroMostra = GIRA * suave(fase(t, T_GIRA));
+      const inc = incMostra * desce;
+      const fi = final ? INCLINA * incMostra + (final.pitch - INCLINA * incMostra) * volta : INCLINA * inc;
+      const te = final ? giroMostra + (giroFinal - giroMostra) * volta : giroMostra * desce;
       const cf = Math.cos(fi), sf = Math.sin(fi), ct = Math.cos(te), st = Math.sin(te);
       // O enquadramento: da cidade inteira (começo) até o do jogo (fim), com um zoom que mira o ponto certo.
       const sO = Math.min(cw / (M.W + 6), ch / (M.H + 4)) * (1 - 0.06 * inc);
       const en = typeof dados.enquadramento === 'function' ? dados.enquadramento() : null;
       const sF = en && en.s > 0 ? M.T * en.s : sO;
       const cOx = M.W / 2, cOy = M.H / 2 + 2.4 * inc;
-      const cFx = en ? (cw / 2 - en.x) / sF : cOx, cFy = en ? (ch / 2 - en.y) / sF : cOy;
+      let cFx = en ? (cw / 2 - en.x) / sF : cOx, cFy = en ? (ch / 2 - en.y) / sF : cOy;
+      if (en && final) {
+        // a câmera do jogo é girada e achatada: o ponto do chão que fica no meio da tela é a inversa disso
+        const c = Math.cos(final.yaw), s0 = Math.sin(final.yaw), X = cFx, Y = cFy;
+        cFx = c * X + 2 * s0 * Y; cFy = -s0 * X + 2 * c * Y;
+      }
       const s = Math.exp(Math.log(sO) + (Math.log(sF) - Math.log(sO)) * volta);
       let w = volta;
       if (Math.abs(1 / sF - 1 / sO) > 1e-9) w = lim((1 / s - 1 / sO) / (1 / sF - 1 / sO));
       const wcx = cOx + (cFx - cOx) * w, wcy = cOy + (cFy - cOy) * w, scx = cw / 2, scy = ch / 2;
+      const orto = final ? volta : 0;   // no fim da volta para o 3D, a perspectiva some (a Praça é isométrica)
       const projetar = (x, y, h) => {
         const rx = x - wcx, ry = y - wcy, x1 = rx * ct - ry * st, y1 = rx * st + ry * ct;
-        const f = D / Math.max(2, D - y1 * sf - h * cf);
+        const f0 = D / Math.max(2, D - y1 * sf - h * cf), f = f0 + (1 - f0) * orto;
         return [scx + x1 * s * f, scy + (y1 * cf - h * sf) * s * f, f];
       };
       // Quanto cada grupo (prédio, árvore, objeto) já subiu.
       for (let k = 1; k < nv.grupos.length; k++) {
         const gr = nv.grupos[k];
-        subida[k] = gr.ini == null || t <= gr.ini ? 0 : molinha(lim((t - gr.ini) / gr.dur)) * desce;
+        subida[k] = gr.ini == null || t <= gr.ini ? 0 : molinha(lim((t - gr.ini) / gr.dur)) * (final ? 1 : desce);
       }
+      if (final) subida[nv.gAgua] *= desce;   // no 3D os prédios ficam em pé; só o rio volta a ficar liso
       const rio = subida[nv.gAgua];
-      const junta = entraSai(fase(t, T_JUNTA));
+      const junta = final ? 0 : entraSai(fase(t, T_JUNTA));
       const pulso = suave(fase(t, [T_CHAFARIZ[0], T_CHAFARIZ[0] + 0.3])) * (1 - suave(fase(t, [T_CHAFARIZ[1] - 0.35, T_CHAFARIZ[1]])));
       const destinoTrem = temTrem ? nv.trem.x : -6;
       const tremAgora = 40 + (destinoTrem - 40) * (temTrem ? sai(fase(t, T_TREM)) : fase(t, [T_TREM[0], T_TREM[1] + 0.5]));
@@ -488,7 +508,7 @@ window.CE = window.CE || {};
         const x1 = rx * ct - ry * st, y1 = rx * st + ry * ct;
         const z = -y1 * sf - h * cf, dz = D + z;
         if (dz < 2) { nivel[i] = 0; continue; }
-        const f = D / dz, X = scx + x1 * s * f, Y = scy + (y1 * cf - h * sf) * s * f;
+        const f0 = D / dz, f = f0 + (1 - f0) * orto, X = scx + x1 * s * f, Y = scy + (y1 * cf - h * sf) * s * f;
         let l = (tam[i] + (junto[i] - tam[i]) * junta) * s * f;
         if (l < 1.2) l = 1.2;
         if (X < -l || Y < -l || X > cw + l || Y > ch + l) { nivel[i] = 0; continue; }
@@ -515,7 +535,7 @@ window.CE = window.CE || {};
       // 3) Pinta: quadradinhos (fillRect), o fundo mais apagado quando a câmera está inclinada.
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       g.clearRect(0, 0, cw, ch);
-      const fundo = fi / INCLINA;
+      const fundo = Math.min(1, fi / INCLINA) * (final ? desce : 1);
       let bAt = -1, sAt = -1, trocas = 0;
       for (let j = 0; j < vis; j++) {
         const i = ordem[j], k = chave[i], b = (k / NS) | 0, e = k - b * NS;
@@ -532,7 +552,7 @@ window.CE = window.CE || {};
       if (aV > 0 && typeof dados.voce === 'function') {
         const v = dados.voce();
         if (v && Number.isFinite(v.x) && Number.isFinite(v.y)) {
-          const [X, Y, f] = projetar(v.x + 0.5, v.y + 0.45, 0);
+          const [X, Y, f] = projetar(v.x + 0.5, v.y + (final ? 0.5 : 0.45), 0);
           const p = 0.5 + 0.5 * Math.sin((t - T_VOCE[0]) * 8), raio = (0.42 + 0.25 * p) * s * f;
           g.globalAlpha = aV * (0.5 + 0.5 * (1 - p));
           g.lineWidth = 2.5; g.strokeStyle = '#FFFFFF';
@@ -540,7 +560,8 @@ window.CE = window.CE || {};
           g.globalAlpha = aV;
           g.beginPath(); g.arc(X, Y, Math.max(4, 0.16 * s * f), 0, Math.PI * 2);
           g.fillStyle = '#b4502c'; g.fill(); g.lineWidth = 2; g.stroke();
-          const [LX, LY] = projetar(v.x + 0.5, v.y + 1, 0);
+          // o crachá: no 2D fica embaixo do quadrinho; no 3D, logo abaixo do pé (como o do boneco em pé)
+          const [LX, LY] = projetar(v.x + 0.5, v.y + (final ? 0.5 : 1), 0);
           g.font = `700 11.5px ${fonte}`;
           const lw = g.measureText('Você').width + 14, lh = 17.5;
           g.beginPath();
@@ -634,7 +655,7 @@ window.CE = window.CE || {};
         msDesenho += performance.now() - ini; quadros++;
       }
       ultimoT = t;
-      if (t >= T_SOME[0] - 0.05) revelar(); else if (!saindo && pausadoEm != null) alvo.classList.add('com-maquete');
+      if (t >= T_REVELA) revelar(); else if (!saindo && pausadoEm != null) alvo.classList.add('com-maquete');
       if (!saindo) caixa.style.opacity = String(1 - suave(fase(t, T_SOME)));
       raf = requestAnimationFrame(quadro);
     }
@@ -654,8 +675,15 @@ window.CE = window.CE || {};
       }
       if (typeof dados.aoComecar === 'function') dados.aoComecar();
       medir();
-      t0 = performance.now();
-      raf = requestAnimationFrame(quadro);
+      // O mapa do jogo é pintado uma vez agora, coberto pela maquete (ainda parada, só o fundo verde): assim o
+      // navegador já preparou os desenhos dele para o fim, quando ele volta a aparecer.
+      revelar();
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (encerrada) return;
+        if (!saindo) alvo.classList.add('com-maquete');
+        t0 = performance.now();
+        raf = requestAnimationFrame(quadro);
+      }));
     });
 
     Object.assign(ctrl, {

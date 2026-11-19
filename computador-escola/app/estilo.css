@@ -2184,6 +2184,51 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .pr-maquete canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .pr-maquete.saindo { transition: opacity .25s ease; }
 .pr-mapa.com-maquete > :not(.pr-maquete) { visibility: hidden; }
+/* Praça em 3D (isométrica, app/js/praca-iso.js): o plano do mapa é girado e achatado; o que fica em pé desfaz a
+   transformação com var(--anti) e fica de frente para a tela, ancorado no ponto do chão (o z-index é a profundidade). */
+.pr-iso { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; transition: opacity .3s ease; }
+.pr-iso.vazado { opacity: .38; } /* na frente do boneco de quem joga: fica transparente para ele não sumir */
+.pr-iso[data-lugar] { pointer-events: auto; cursor: pointer; }
+.pr-iso.subindo { animation: pr-iso-sobe 1.1s cubic-bezier(.2, .8, .3, 1.15) both; }
+@keyframes pr-iso-sobe { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
+.pr-mapa.iso { background: #4f7a37; }
+.pr-mapa.iso .pr-mundo > canvas { visibility: hidden; } /* no 3D, o chão vem já deitado (praca-iso.js) */
+.pr-mapa.iso .pr-mundo { transition: opacity .17s ease; }
+.pr-mapa.iso .pr-mundo.suave { transition: transform .5s cubic-bezier(.3, .7, .2, 1), opacity .17s ease; }
+.pr-mapa.iso.girando .pr-mundo { opacity: 0; }
+.pr-mapa.iso .pr-p { transform-origin: 0 0; }
+.pr-mapa.iso .pr-obra.predio { display: none; }
+.pr-mapa.iso .pr-rotulo { transform: translate(-50%, -50%) var(--anti) translateY(var(--sobe, 0px)) scale(var(--inv, 1)); z-index: 900000; }
+.pr-mapa.iso .pr-marca-pista { transform: translate(-50%, -50%) var(--anti) translateY(var(--sobe, 0px)) scale(var(--inv, 1)); z-index: 900001; }
+.pr-mapa.iso .pr-obj { transform-origin: 50% 100%; transform: translate(-50%, -100%) var(--anti) translateY(12px); }
+.pr-mapa.iso .pr-foco { transform: var(--anti); }
+.pr-mapa.iso .pr-veiculo { transform-origin: 50% 100%; transform: translate(-50%, -100%) var(--anti) translateY(14px); }
+.pr-mapa.iso .pr-bau { transform-origin: 50% 100%; transform: translate(-50%, -100%) var(--anti) scale(var(--inv, 1)); }
+.pr-mapa.iso .pr-bau.aberto { transform: translate(-50%, -100%) var(--anti) translateY(-24px) scale(1.6); }
+.pr-mapa.iso .pr-lixo { transform-origin: 50% 100%; transform: translate(-50%, -100%) var(--anti) translateY(6px); }
+.pr-mapa.iso .pr-fio { transform: translate(-50%, -50%) var(--anti); }
+.pr-mapa.iso .pr-marca-ajuda { transform: translate(-50%, -100%) var(--anti) scale(var(--inv, 1)); z-index: 900000; }
+.pr-mapa.iso .pr-placa-queda { transform: translate(-50%, -100%) var(--anti) translateY(-28px) scale(var(--inv, 1)); z-index: 900000; }
+/* As que se mexem (lupa da novela, baú, lixo, barco, fio, placas) também ficam em pé enquanto se mexem. */
+.pr-mapa.iso .pr-marca-pista { animation-name: pr-pista-iso-rotulo; }
+.pr-mapa.iso .pr-placa-queda { animation-name: pr-pista-iso-placa; }
+.pr-mapa.iso .pr-marca-ajuda { animation-name: pr-pista-iso-ajuda; }
+.pr-mapa.iso .pr-bau:not(.aberto) { animation-name: pr-pista-iso-bau; }
+.pr-mapa.iso .pr-obj.barco { animation-name: pr-boia-iso; }
+.pr-mapa.iso .pr-fio { animation-name: pr-fio-iso; }
+.pr-mapa.iso .pr-lixo { animation-name: pr-lixo-iso; }
+@keyframes pr-pista-iso-rotulo { to { transform: translate(-50%, -50%) var(--anti) translateY(calc(var(--sobe, 0px) - 5px)) scale(var(--inv, 1)); } }
+@keyframes pr-pista-iso-placa { to { transform: translate(-50%, -100%) var(--anti) translateY(-33px) scale(var(--inv, 1)); } }
+@keyframes pr-pista-iso-ajuda { to { transform: translate(-50%, -100%) var(--anti) translateY(-5px) scale(var(--inv, 1)); } }
+@keyframes pr-pista-iso-bau { to { transform: translate(-50%, -100%) var(--anti) translateY(-5px) scale(var(--inv, 1)); } }
+@keyframes pr-boia-iso { to { transform: translate(-50%, -100%) var(--anti) translateY(16px) rotate(3deg); } }
+@keyframes pr-fio-iso { 50% { filter: brightness(1.7); transform: translate(-50%, -50%) var(--anti) scale(1.15); } }
+@keyframes pr-lixo-iso { to { transform: translate(-50%, -100%) var(--anti) translateY(4px) rotate(-6deg); } }
+.pr-giros { display: flex; gap: 6px; }
+.pr-giros[hidden] { display: none; }
+.pr-giro { min-width: 42px; justify-content: center; font-size: 19px; line-height: 1; }
+.pr-topo-dir-linha { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
+@media (prefers-reduced-motion: reduce) { .pr-iso { transition: none; } .pr-iso.subindo { animation: none; } .pr-mapa.iso .pr-mundo, .pr-mapa.iso .pr-mundo.suave { transition: none; } }
 .pr-maquete-pular { position: absolute; right: 14px; top: 14px; padding: 10px 18px; border: 0; border-radius: 999px; cursor: pointer;
   font: 700 14px/1 var(--fonte); color: #fff; background: rgba(20, 38, 26, .72); box-shadow: 0 2px 8px rgba(0, 0, 0, .3); }
 .pr-maquete-pular:hover { background: rgba(20, 38, 26, .9); }

@@ -107,6 +107,8 @@
       const v = g.votacao && Array.isArray(g.votacao.opcoes) && g.votacao.votos && typeof g.votacao.votos === 'object' ? g.votacao : novaVotacao();
       return {
         aberta: g.aberta !== false, soFrases: !!g.soFrases,
+        // A Praça em 3D (isométrica) ou 2D (de cima): o instrutor escolhe para a turma (2D para computador lento).
+        visual: g.visual === '2d' ? '2d' : 'iso',
         silenciados: Array.isArray(g.silenciados) ? g.silenciados.map(String) : [],
         recados: Array.isArray(g.recados) ? g.recados.slice(0, MAX_RECADOS) : [],
         votacao: v, versao: Number(g.versao) || 1,
@@ -1007,7 +1009,7 @@
           especial: resumoEspecial(usuario, agora),
           coleta: resumoColeta(usuario),
           hora: hora ? { id: hora.id, fimEm: hora.fimEm, agora } : null,
-          aberta: dados().aberta, soFrases: dados().soFrases, silenciado: dados().silenciados.includes(usuario.id),
+          aberta: dados().aberta, soFrases: dados().soFrases, silenciado: dados().silenciados.includes(usuario.id), visual: dados().visual,
           silenciados: ehInstrutor(usuario) ? dados().silenciados.slice() : undefined,
           chamada: chamada && agora - chamada.em < CONVITE ? { id: chamada.id, em: chamada.em } : null,
           pessoas: [...pessoas.values()].map((x) => publica(x, agora)),
@@ -1350,8 +1352,9 @@
           dados().soFrases = c.soFrases;
           evento({ tipo: 'sistema', texto: c.soFrases ? 'Agora a conversa é só com frases prontas.' : 'A conversa está livre de novo.' });
         }
+        if ((c.visual === '2d' || c.visual === 'iso') && c.visual !== dados().visual) dados().visual = c.visual;
         gravar();
-        return { aberta: dados().aberta, soFrases: dados().soFrases };
+        return { aberta: dados().aberta, soFrases: dados().soFrases, visual: dados().visual };
       },
       // "Todo mundo para a praça": quem está na praça vai para perto da fonte; quem não está recebe o convite.
       chamar(usuario) {

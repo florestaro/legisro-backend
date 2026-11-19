@@ -287,12 +287,23 @@ Os arquivos baixados vão para a pasta **Downloads**.
 Um programa da área de trabalho em que a turma se encontra numa **cidade de treino**: cada aluno anda com o seu boneco
 (o avatar do cadastro), conversa com quem está perto, joga com os colegas e entra nos prédios, que levam às partes do
 curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela rede (sem internet).
+- **Em 3D (isométrica)**: a cidade aparece em "2D que parece 3D", como nos jogos de cidade: o chão em losango, os
+  prédios em pé (com janelas, portas, telhados e a altura de cada um: a Escola e a Prefeitura mais altas, as casas
+  baixas; os em obra ficam baixinhos, com a faixa listrada e o 🏗️), as árvores, os postes, as barracas da feira, os
+  bancos e as lixeiras em pé, e os bonecos e os nomes de frente para a tela. Quem passa atrás de um prédio fica atrás
+  dele, e o prédio (ou a árvore) **fica transparente** para o boneco do aluno não sumir. Os botões **↺ ↻** (no alto, à
+  direita) **giram a cidade** de 90 em 90 graus para ver o outro lado (cada computador lembra o seu giro). O nome de
+  cada prédio fica em cima do telhado; o fogo, a árvore caída, a água da enchente, o lixo e as pistas 🔎 também ficam no
+  lugar certo. **O instrutor escolhe 3D ou 2D para a turma toda** (no Painel do Instrutor › 🏁 Gincana, missão e jornal ›
+  ⛲ Praça Escola, ou no botão 🗺️/🧊 da praça dele) e a troca chega em todos na hora: o 2D é o mapa visto de cima, como
+  antes, mais leve para computador lento. Para não pesar, o chão é desenhado uma vez já deitado e os prédios uma vez por
+  giro.
 - **Abertura: a maquete da cidade**: na primeira vez que o aluno entra na praça (em cada sessão), a cidade aparece como
   uma maquete feita de pontos: os pontos caem e formam o mapa visto de cima, a câmera inclina e gira devagar, os prédios
   levantam do chão um de cada vez (a Escola e a Prefeitura mais altas, as casas baixas, as árvores médias; os prédios em
   obra ficam baixos e apagados, com a faixa listrada), o rio ondula, o trem chega na estação, o chafariz pulsa e o
-  "Você" aparece. No fim a câmera volta para cima e os pontos se juntam exatamente em cima do mapa do jogo, que aparece
-  num esmaecer (uns 5 segundos). Tudo é gerado dos dados do mapa, com as cores da cidade. "Pular" (no alto, à direita),
+  "Você" aparece. No fim a câmera volta para a vista do jogo (na Praça em 3D, a isométrica, com os prédios ainda em pé;
+  em 2D, de cima) e os pontos se juntam exatamente em cima do mapa, que aparece num esmaecer (uns 5 segundos). Tudo é gerado dos dados do mapa, com as cores da cidade. "Pular" (no alto, à direita),
   um clique em qualquer lugar ou uma tecla pulam na hora; para rever, 🏙️ Cidade › 🎬 Ver maquete. Quem marcou "reduzir
   movimento" no sistema vai direto para o mapa. É só a abertura: o jogo por baixo continua igual.
 - **Tela limpa**: o mapa ocupa a janela toda. No alto, à esquerda, quantos estão na praça ("👥 8 aqui": tocando, aparecem
@@ -309,8 +320,9 @@ curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela red
 - **Rua da Turma**: cada aluno tem a sua casa, que começa como terreno 🏗️, fica pronta no primeiro módulo e ganha um
   enfeite por nível ou curso concluído (🌻 Iniciante, 📮 Intermediário, 🏪 Avançado, 💼 Profissional, 🗂️ Assistente
   Administrativo, 📱 Celular, 🎨 Criação digital). Na "Sua casa" ficam as medalhas na parede.
-- **Andar**: clicando no chão (treina o mouse) ou com as setas (treina o teclado). "Ver a cidade inteira" mostra o mapa
-  todo; clicar num prédio leva o boneco até a porta.
+- **Andar**: clicando no chão (treina o mouse) ou com as setas (treina o teclado; no 3D, a seta para cima anda para
+  cima na tela, mesmo com a cidade girada). "Ver a cidade inteira" mostra o mapa todo; clicar num prédio leva o boneco
+  até a porta.
 - **Conversar**: frases prontas ("Bom dia!", "Vamos jogar?"...) ou escrevendo; a fala aparece num balão em cima do
   boneco e, no registro da conversa, só para quem está perto. Gestos: 👋 acenar, 👏 aplaudir e 🙋 pedir ajuda (a mão
   levantada aparece para todos, inclusive para o instrutor e os monitores). Palavrões viram asteriscos.
@@ -412,10 +424,11 @@ curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela red
 - **Mural de recados** e **votação**: a turma vota no que construir no Lote da turma (quadra, horta ou biblioteca); o
   **cofre da turma** soma 4 moedas por aula concluída pelos alunos (e 40 por desafio da semana). Prédios, Rua da Turma e
   Lote ficam no "🏙️ Cidade".
-- **O instrutor comanda** (4 botões redondos no canto da praça dele): **📣 megafone** (o recado aparece no mapa de todos e é falado em
+- **O instrutor comanda** (os botões redondos no canto da praça dele): **📣 megafone** (o recado aparece no mapa de todos e é falado em
   voz alta), **chamar todos para a praça** (quem está na praça vai para perto da fonte; quem está fora recebe o convite
   na tela), **fechar e abrir a praça** (por exemplo, só no recreio), **só frases prontas** (bom para crianças),
-  **silenciar** um aluno, tirar recados do mural e encerrar a votação.
+  **🗺️ Praça em 2D / 🧊 Praça em 3D** (a turma toda vê do mesmo jeito), **silenciar** um aluno, tirar recados do mural
+  e encerrar a votação.
 - Onde fica cada coisa: quem está onde e a conversa ficam só na memória do computador do instrutor; o mural, a votação,
   as escolhas do instrutor, os módulos que cada aluno concluiu, os prédios acesos, as tarefas feitas e a novela de cada
   turma ficam no disco dele (`praca.json`; o computador do aluno avisa os módulos no login e a cada aula; as respostas
@@ -528,7 +541,7 @@ npm run teste:sala            # 1 instrutor + 20 alunos usando o sistema ao mesm
 npm run teste:sala -- 5       # o mesmo com 5 alunos
 npm run teste:fase2           # novidades da fase 2: o aluno troca de computador e encontra tudo (uns 3 minutos)
 npm run teste:fase3           # novidades da fase 3: MEI, anúncio e PDF em outro computador, e a monitoria (uns 3 minutos)
-npm run teste:praca           # a Praça Escola em 3 computadores: a abertura (maquete), andar, conversar, a cidade que cresce, tarefas, novela, eventos urgentes e especiais, Hora da Praça, moedas, jogar, mural, votação e comandos do instrutor
+npm run teste:praca           # a Praça Escola em 3 computadores: a abertura (maquete), a cidade em 3D e em 2D, andar, conversar, a cidade que cresce, tarefas, novela, eventos urgentes e especiais, Hora da Praça, moedas, jogar, mural, votação e comandos do instrutor
 npm run teste:perigos         # os eventos urgentes no mapa, sem tela e sem rede (1 segundo): o fogo pulando e os Bombeiros, a enchente subindo e a areia, as árvores caindo e a Defesa Civil
 npm run teste:emojis          # todos os emojis aparecem direito no Windows 10 (sem tela, segundos)
 ```
@@ -667,7 +680,9 @@ app/js/praca-mapa.js     o mapa da Praça Escola (prédios, praça, caminhos); p
                          praca-regras.js: as regras (quem está onde, Hora da Praça, vaquinha, o Professor Virtual conduzindo,
                          conversa, mural, votação, mesa de jogo, comandos do instrutor, colegas de demonstração), usadas
                          pelo servidor da sala e pelo modo navegador; apps/praca.js: a janela da praça;
-                         praca-abertura3d.js: a abertura (a maquete da cidade em pontos, num canvas 2D, sem WebGL)
+                         praca-abertura3d.js: a abertura (a maquete da cidade em pontos, num canvas 2D, sem WebGL);
+                         praca-iso.js: a Praça em 3D isométrica (prédios desenhados em fatias com profundidade,
+                         árvores e postes em pé, o chão já deitado, girar a cidade, prédio transparente na frente)
 testes/                  testes automáticos do modo sala de aula (servidor, turma de 20 alunos, as novidades das
                          fases 2 e 3 e a Praça Escola em 3 computadores) e o dos emojis do Windows 10
 ```

@@ -282,6 +282,14 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
   await p1.screenshot({ path: foto('praca-03-fechada.png') });
   await A.click(Z('[data-acao="abrir-fechar"]'));
   ok(await ate(async () => (await p1.isHidden(Z('.pr-fechada'))) && (await p2.isHidden(Z('.pr-fechada')))), 'praça aberta de novo');
+  // 3D ou 2D: a instrutora escolhe e a troca chega na hora em todos os computadores
+  const em3d = (p) => p.evaluate(() => { const m = document.querySelector('.janela[data-app="praca"] .pr-mapa'); return !!m && m.classList.contains('iso') && !!m.querySelector('.pr-iso[data-lugar]'); });
+  ok(await em3d(A) && await em3d(p1) && await em3d(p2), 'a Praça está em 3D (isométrica) nos três computadores: prédios e árvores em pé');
+  await A.click(Z('[data-acao="visual"]'));
+  ok(await ate(async () => !(await em3d(p1)) && !(await em3d(p2)) && !(await em3d(A))), 'a instrutora põe a Praça em 2D: a Ana e o Bruno passam a ver o mapa de cima');
+  ok(lerDisco('praca.json', {}).visual === '2d', 'disco da instrutora: a escolha "2D" fica guardada');
+  await A.click(Z('[data-acao="visual"]'));
+  ok(await ate(async () => (await em3d(p1)) && (await em3d(p2))), 'e volta para 3D nos dois alunos');
 
   // ================= Chamar todos: quem saiu recebe o convite e vai para a fonte =================
   await p2.evaluate(() => CE.janelas.fecharTodas());

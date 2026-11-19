@@ -100,6 +100,12 @@
   // O poste de luz na calçada da praça, perto da lata de lixo (no incêndio, o fogo pode chegar nele: água, não!).
   const POSTE = [24, 14];
 
+  // A altura de cada prédio (em quadrinhos) na Praça em 3D (isométrica) e na abertura (a maquete): a Escola e a
+  // Prefeitura são as mais altas, as casas baixas. "bico" é o telhado de duas águas (casas e estação).
+  const ALTURAS = { escola: 3, prefeitura: 3, banco: 2.3, empregos: 2.1, correios: 2, posto: 2, estacao: 1.5 };
+  const alturaDe = (L) => (L.casa ? 1.25 : ALTURAS[L.id] || 2);
+  const bicoDe = (L) => (L.casa || L.id === 'estacao' ? 0.45 : 0);
+
   const porLugar = {};
   for (const L of [...LUGARES, ...OBJETOS]) {
     porLugar[L.id] = L;
@@ -257,6 +263,7 @@
   const CHEGADA = [[18, 15], [17, 15], [19, 15], [16, 15], [18, 16], [17, 16], [19, 16], [16, 16], [15, 15], [20, 15], [15, 14], [20, 14]];
 
   return { T, W, H, chao, bloq, dono, LUGARES, OBJETOS, MORADORES, CIDADE, CASA_PRONTA, ENFEITES, MODULOS_DA_CIDADE, BANCOS, BARRACAS, IPES, ARVORES, PALMEIRAS, POSTE, porLugar,
+    ALTURAS, alturaDe, bicoDe,
     andavel, andavelFixo, definirBloqueios, caminho, vizinhos, maisPerto, tudoAlcancavel, PRACA, RUAS, RODA, CHEGADA, ZONAS, pertoDaZona,
     INFLAMAVEIS, PERTO_DO_FOCO, pertoDoPonto, QUEDAS, CAMINHAO_AREIA, CAMINHAO_BOMBEIROS, LUGARES_DO_LIXO };
 });

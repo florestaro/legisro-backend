@@ -156,6 +156,8 @@ Abre o programa de verdade em 3 computadores (a instrutora e dois alunos, a Ana 
 - **A instrutora na praça**: vê os dois em "Na praça agora" e a cidade da turma deles, fala no megafone (aparece no
   mapa dos dois), liga "só frases prontas" (o campo de escrever some e texto livre é recusado), silencia e libera a Ana,
   fecha e abre a praça.
+- **3D ou 2D**: a praça está em 3D (isométrica, com prédios e árvores em pé) nos três computadores; a instrutora põe em
+  2D e a Ana e o Bruno passam a ver o mapa de cima na hora (a escolha fica no disco dela); depois volta para 3D.
 - **Mural e votação** guardados no computador da instrutora; encerrada a votação, o Lote da turma vira "Obra" na tela da
   Ana.
 - **Chamar todos**: o Bruno, que fechou a praça, recebe o convite "Todo mundo para a praça!", volta e vai para perto da

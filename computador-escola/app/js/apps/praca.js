@@ -137,7 +137,9 @@ window.CE = window.CE || {};
   };
 
   // ================= Desenho da cidade (uma vez, num canvas com o dobro de pontos) =================
-  function desenharCidade(tela) {
+  // iso: a Praça em 3D (isométrica, app/js/praca-iso.js). Aí o chão é o mesmo, mas o que fica em pé (prédios,
+  // árvores, bancos, lixeiras, barracas, postes, mural e as plantas da horta) sai daqui e é desenhado em pé.
+  function desenharCidade(tela, iso) {
     const Q = Math.min(3, Math.max(2, Math.ceil((window.devicePixelRatio || 1) * 2)));
     tela.width = W * T * Q; tela.height = H * T * Q;
     const g = tela.getContext('2d');
@@ -211,9 +213,11 @@ window.CE = window.CE || {};
       g.strokeStyle = '#4E5459'; g.lineWidth = 2; g.beginPath(); g.moveTo(px, py); g.lineTo(px - 6, py - 7); g.stroke();
       circulo(px - 6, py - 7, 3, '#F6E58A');
     };
-    for (const x of [2, 13, 21, 29, 34]) lampiao(x * T + 6, 4 * T + T - 4);
-    for (const x of [2, 13, 21, 29, 34]) lampiao(x * T + 6, 18 * T + T - 4);
-    for (const x of [3, 14, 23, 33]) lampiao(x * T + 6, 21 * T + T - 4);
+    if (!iso) {
+      for (const x of [2, 13, 21, 29, 34]) lampiao(x * T + 6, 4 * T + T - 4);
+      for (const x of [2, 13, 21, 29, 34]) lampiao(x * T + 6, 18 * T + T - 4);
+      for (const x of [3, 14, 23, 33]) lampiao(x * T + 6, 21 * T + T - 4);
+    }
     // Faixas do meio das ruas e faixas de pedestre
     g.fillStyle = '#F0CF57';
     const cruz = (x) => (x >= 9 * T && x < 11 * T) || (x >= 25 * T && x < 27 * T);
@@ -249,17 +253,17 @@ window.CE = window.CE || {};
     g.fillStyle = '#5A3A22'; g.fillRect(12 * T, 22 * T, 5 * T, 3 * T);
     g.fillStyle = '#7A5233'; for (let k = 0; k < 3; k++) g.fillRect(12 * T + 6, 22 * T + 8 + k * T, 5 * T - 12, T - 16);
     g.strokeStyle = '#A07848'; g.lineWidth = 3; g.strokeRect(12 * T + 1.5, 22 * T + 1.5, 5 * T - 3, 3 * T - 3);
-    ['🥬', '🌽', '🍅'].forEach((planta, k) => { for (let i = 0; i < 6; i++) emoji(planta, 12 * T + 18 + i * 31, 22 * T + 20 + k * T, 18); });
+    if (!iso) ['🥬', '🌽', '🍅'].forEach((planta, k) => { for (let i = 0; i < 6; i++) emoji(planta, 12 * T + 18 + i * 31, 22 * T + 20 + k * T, 18); });
     g.setLineDash([6, 5]); g.strokeStyle = '#7A4E2A'; g.lineWidth = 3; g.strokeRect(31 * T + 3, 1 * T + 3, 4 * T - 6, 3 * T - 6); g.setLineDash([]);
     circulo(32 * T + 6, 2 * T + 30, 12, '#B07A4E'); circulo(34 * T + 6, 3 * T + 4, 9, '#A86F44');
     // Feira
-    for (const [x, y, cor] of M.BARRACAS) {
+    if (!iso) for (const [x, y, cor] of M.BARRACAS) {
       const X = x * T, Y = y * T;
       g.fillStyle = 'rgba(0, 0, 0, .2)'; g.fillRect(X + 4, Y + 6, T, T);
       for (let k = 0; k < 5; k++) { g.fillStyle = k % 2 ? '#FFFFFF' : cor; g.fillRect(X + k * 8, Y, 8, 22); }
       g.fillStyle = '#8A5A35'; g.fillRect(X, Y + 22, T, 18);
     }
-    ['🍍', '🍌', '🥭', '🌽', '🐟'].forEach((f, i) => emoji(f, M.BARRACAS[i][0] * T + T / 2, 22 * T + 31, 15));
+    if (!iso) ['🍍', '🍌', '🥭', '🌽', '🐟'].forEach((f, i) => emoji(f, M.BARRACAS[i][0] * T + T / 2, 22 * T + 31, 15));
     // Coreto (palco octogonal, sem telhado, para ver quem está lá)
     const oct = (cx, cy, r) => { g.beginPath(); for (let k = 0; k < 8; k++) { const a = Math.PI / 8 + k * Math.PI / 4; const px = cx + Math.cos(a) * r, py = cy + Math.sin(a) * r; if (k) g.lineTo(px, py); else g.moveTo(px, py); } g.closePath(); };
     const ccx = 18 * T, ccy = 9.5 * T;
@@ -278,7 +282,7 @@ window.CE = window.CE || {};
     for (const r of [16, 24]) { g.beginPath(); g.arc(18 * T, 14 * T, r, 0, Math.PI * 2); g.stroke(); }
     circulo(18 * T, 14 * T, 9, '#CDBF9E'); circulo(18 * T, 14 * T, 4, '#FFFFFF');
     // Bancos, mesas e mural
-    for (const [x, y] of M.BANCOS) {
+    if (!iso) for (const [x, y] of M.BANCOS) {
       const X = x * T, Y = y * T;
       g.fillStyle = 'rgba(0, 0, 0, .18)'; g.fillRect(X + 7, Y + 15, 2 * T - 10, 16);
       g.fillStyle = '#7A4E2A'; g.fillRect(X + 4, Y + 10, 2 * T - 8, 5);
@@ -293,7 +297,7 @@ window.CE = window.CE || {};
       else { g.fillStyle = '#FFFFFF'; g.fillRect(cx - 9, cy - 3, 8, 5); g.fillRect(cx, cy - 3, 8, 5); g.fillRect(cx - 4, cy + 3, 5, 8); }
     }
     // Coleta seletiva: cinco lixeiras coloridas com tampa e o símbolo da reciclagem
-    for (const L of M.OBJETOS.filter((o) => o.coleta)) {
+    if (!iso) for (const L of M.OBJETOS.filter((o) => o.coleta)) {
       const X = L.r[0] * T, Y = L.r[1] * T;
       g.fillStyle = 'rgba(0, 0, 0, .22)'; g.fillRect(X + 9, Y + 12, 26, 26);
       const gb = g.createLinearGradient(X + 6, 0, X + 34, 0); gb.addColorStop(0, tom(L.cor, 25)); gb.addColorStop(1, tom(L.cor, -25));
@@ -303,7 +307,7 @@ window.CE = window.CE || {};
       emoji('♻️', X + 20, Y + 23, 14);
     }
     // Poste de luz (na calçada da praça, perto da lata de lixo)
-    {
+    if (!iso) {
       const cx = M.POSTE[0] * T + T / 2, cy = M.POSTE[1] * T + T / 2;
       g.fillStyle = 'rgba(0, 0, 0, .22)'; g.beginPath(); g.ellipse(cx + 4, cy + 6, 9, 5, 0, 0, Math.PI * 2); g.fill();
       circulo(cx, cy, 7, '#5B6168'); circulo(cx, cy, 4, '#8A9199');
@@ -311,12 +315,14 @@ window.CE = window.CE || {};
       circulo(cx - 12, cy - 10, 6, '#F6E27A'); circulo(cx - 12, cy - 10, 2.5, '#FFFBE0');
     }
     const mx = 21 * T, my = 8 * T;
+    if (!iso) {
     g.fillStyle = 'rgba(0, 0, 0, .2)'; g.fillRect(mx + 7, my + 9, 2 * T - 10, 26);
     g.fillStyle = '#8A5A35'; g.fillRect(mx + 4, my + 5, 2 * T - 8, 26);
     g.fillStyle = '#C9A06A'; g.fillRect(mx + 7, my + 8, 2 * T - 14, 20);
     ['#FFF39A', '#BFE2FF', '#FFC9D6', '#CFF2C7', '#FFF39A'].forEach((c, i) => { g.fillStyle = c; g.fillRect(mx + 10 + i * 13, my + 11 + (i % 2) * 5, 10, 10); });
+    }
     // Prédios
-    for (const L of M.LUGARES) {
+    if (!iso) for (const L of M.LUGARES) {
       if (!L.telhado) continue;
       const [x, y, w, h] = L.r;
       const X = x * T, Y = y * T, PW = w * T, PH = h * T;
@@ -363,7 +369,12 @@ window.CE = window.CE || {};
       }
       if (L.cruz) { const cx = X + PW - 28, cy = Y + telhadoH / 2; circulo(cx, cy, 14, '#FFFFFF'); g.fillStyle = '#2E8B57'; g.fillRect(cx - 3, cy - 9, 6, 18); g.fillRect(cx - 9, cy - 3, 18, 6); }
     }
-    // Árvores, ipês e palmeiras
+    // Árvores, ipês e palmeiras (na Praça em 3D, elas ficam em pé; aqui no chão fica só a sombra)
+    if (iso) {
+      for (const [x, y] of [...M.ARVORES, ...M.IPES, ...M.PALMEIRAS]) { g.save(); g.filter = 'blur(2px)'; g.fillStyle = 'rgba(0, 0, 0, .22)'; g.beginPath(); g.ellipse(x * T + T / 2 + 4, y * T + T / 2 + 4, 17, 17, 0, 0, Math.PI * 2); g.fill(); g.restore(); }
+      for (const L of M.LUGARES) if (L.telhado) { const [x, y, w, h] = L.r; g.fillStyle = 'rgba(0, 0, 0, .16)'; g.fillRect(x * T - 3, y * T - 3, w * T + 10, h * T + 10); }
+      return;
+    }
     const arvore = (x, y, cor, escura, flor) => {
       const cx = x * T + T / 2, cy = y * T + T / 2;
       g.save(); g.filter = 'blur(2px)'; g.fillStyle = 'rgba(0, 0, 0, .28)'; g.beginPath(); g.ellipse(cx + 6, cy + 10, 19, 12, 0, 0, Math.PI * 2); g.fill(); g.restore();
@@ -402,10 +413,12 @@ window.CE = window.CE || {};
 
       // ---------- Montagem da tela: o mapa ocupa tudo; o resto aparece por cima, só quando importa ----------
       const tela = CE.el('canvas', { 'aria-hidden': 'true' });
+      // Na Praça em 3D (isométrica): os prédios, as árvores e o que fica em pé (app/js/praca-iso.js).
+      const camadaIso = CE.el('div', { class: 'pr-camada pr-camada-iso' });
       const camadaObjetos = CE.el('div', { class: 'pr-camada', 'aria-hidden': 'true' });
       const camadaRotulos = CE.el('div', { class: 'pr-camada', 'aria-hidden': 'true' });
       const camadaGente = CE.el('div', { class: 'pr-camada' });
-      const mundo = CE.el('div', { class: 'pr-mundo' }, tela, camadaObjetos, camadaRotulos, camadaGente);
+      const mundo = CE.el('div', { class: 'pr-mundo' }, tela, camadaIso, camadaObjetos, camadaRotulos, camadaGente);
 
       // No alto, à esquerda: quantos estão na praça (tocando, aparecem os rostos) e como está a cidade.
       const botaoGente = CE.el('button', { class: 'pr-pilula', type: 'button', 'data-acao': 'gente', 'aria-expanded': 'false', title: 'Quem está na praça agora' }, '👥 1 aqui');
@@ -447,6 +460,8 @@ window.CE = window.CE || {};
       const btAbrir = comando('abrir-fechar', '🔒', 'Fechar a praça', () => chamar('praca:configurar', { aberta: !estado.aberta }).then(sincronizar));
       const btFrases = comando('so-frases', '🔤', 'Só frases prontas', () => chamar('praca:configurar', { soFrases: !estado.soFrases }).then(sincronizar));
       btFrases.setAttribute('aria-pressed', 'false');
+      // 🧊 / 🗺️ A Praça da turma em 3D (isométrica) ou 2D (de cima); também no Painel do Instrutor.
+      const btVisual = comando('visual', '🗺️', 'Praça em 2D (de cima)', () => chamar('praca:configurar', { visual: visao === 'iso' ? '2d' : 'iso' }).then(sincronizar));
       // 🚨 Evento urgente: o instrutor escolhe a emergência e a turma inteira ajuda junta.
       const popEmerg = CE.el('div', { class: 'pr-pop emergencia', role: 'dialog', 'aria-label': 'Evento urgente' });
       popEmerg.hidden = true;
@@ -457,8 +472,11 @@ window.CE = window.CE || {};
       popHora.hidden = true;
       const btHora = comando('horario', '⏰', 'Hora da Praça (horário das aulas)', () => abrirPopHora(popHora.hidden));
       btHora.setAttribute('aria-expanded', 'false');
-      const comandos = souInstrutor ? CE.el('div', { class: 'pr-comandos', 'data-pr': 'instrutor' }, btMegafone, btChamar, btAbrir, btFrases, btEmerg, btHora, popMegafone, popEmerg, popHora) : null;
-      const topoDir = CE.el('div', { class: 'pr-hud pr-topo-dir' }, botaoMapa, comandos);
+      const comandos = souInstrutor ? CE.el('div', { class: 'pr-comandos', 'data-pr': 'instrutor' }, btMegafone, btChamar, btAbrir, btFrases, btVisual, btEmerg, btHora, popMegafone, popEmerg, popHora) : null;
+      const botaoGiroEsq = CE.el('button', { class: 'pr-pilula escura pr-giro', type: 'button', 'data-acao': 'girar-esq', title: 'Girar a cidade', 'aria-label': 'Girar a cidade para a esquerda' }, '↺');
+      const botaoGiroDir = CE.el('button', { class: 'pr-pilula escura pr-giro', type: 'button', 'data-acao': 'girar-dir', title: 'Girar a cidade', 'aria-label': 'Girar a cidade para a direita' }, '↻');
+      const giros = CE.el('div', { class: 'pr-giros' }, botaoGiroEsq, botaoGiroDir);
+      const topoDir = CE.el('div', { class: 'pr-hud pr-topo-dir' }, CE.el('div', { class: 'pr-topo-dir-linha' }, giros, botaoMapa), comandos);
 
       // No meio, no alto: o megafone e os avisos da praça (somem sozinhos).
       const megafoneEl = CE.el('div', { class: 'pr-megafone', role: 'status' }); megafoneEl.hidden = true;
@@ -513,17 +531,26 @@ window.CE = window.CE || {};
       // clique chegar ao mapa, e aí o boneco sairia andando).
       for (const camada of [topoEsq, topoDir, centro, avisoRede, chat, baixo, bingoEl, acao, dialogo, finalEl, fechadaEl]) camada.addEventListener('click', (e) => e.stopPropagation());
       corpo.replaceChildren(CE.el('div', { class: 'pr-caixa' }, mapa));
-      desenharCidade(tela);
+      // ---------- Praça em 3D (isométrica) ou 2D (de cima): o instrutor escolhe para a turma (Painel do Instrutor);
+      // este computador lembra a última escolha e o giro da cidade. ----------
+      const lerLocal = (k, padrao) => { try { const v = localStorage.getItem(k); return v == null ? padrao : v; } catch (e) { return padrao; } };
+      const gravarLocal = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* sem localStorage */ } };
+      let visao = lerLocal('ce-praca-visual', 'iso') === '2d' ? '2d' : 'iso';
+      let iso = visao === 'iso' && !!CE.pracaIso;
+      let giro = Number(lerLocal('ce-praca-giro', '0')) || 0;
+      let cena = null;
+      desenharCidade(tela, iso);
 
       // ---------- Rótulos e objetos do mapa ----------
       const rotuloDe = {};
-      const rotulo = (texto, x, y, classe) => { const r = CE.el('div', { class: 'pr-rotulo' + (classe ? ' ' + classe : ''), style: `left:${x}px;top:${y}px` }, texto); camadaRotulos.append(r); return r; };
+      const rotulo = (texto, x, y, classe) => { const r = CE.el('div', { class: 'pr-rotulo' + (classe ? ' ' + classe : ''), style: `left:${x}px;top:${y}px`, 'data-x': String(x), 'data-y': String(y) }, texto); camadaRotulos.append(r); return r; };
       const nomeNoRotulo = (L) => (L.id === 'rio' ? 'Rio Madeira' : L.casa ? (L.id === 'sua-casa' && !souInstrutor ? 'Sua casa' : 'Casa') : L.nome);
       for (const L of M.LUGARES) {
         const [x, y, w, h] = L.r;
         const pos = { feira: [5.5 * T, 24.6 * T], rio: [18 * T, 28.5 * T], lote: [33 * T, 1.3 * T] }[L.id]
           || [(x + w / 2) * T, L.telhado ? y * T + (h * T - Math.round(T * 1.1)) / 2 : (y + h / 2) * T];
         rotuloDe[L.id] = rotulo(`${L.emoji} ${nomeNoRotulo(L)}`, pos[0], pos[1], L.casa ? 'pequeno' : '');
+        rotuloDe[L.id].dataset.lugar = L.id;
       }
       rotuloDe.praca = rotulo('⛲ Praça da Turma', 18 * T, 7.5 * T);
       rotuloDe['mesa-velha'] = rotulo('❌ Jogo da velha', 14.5 * T, 12.9 * T, 'pequeno so-perto');
@@ -548,7 +575,15 @@ window.CE = window.CE || {};
         posicionar(p);
         return p;
       }
-      function posicionar(p) { p.el.style.transform = `translate(${p.x * T}px, ${p.y * T}px)`; p.el.style.zIndex = String(10 + Math.round(p.y * 10)); }
+      function posicionar(p) {
+        if (iso && cena) {
+          // Em pé no centro do quadrinho, de frente para a tela (o primeiro translate continua sendo o lugar no mapa).
+          p.el.style.transform = `translate(${p.x * T}px, ${p.y * T}px) translate(${T / 2}px, ${T / 2}px) var(--anti) translate(${-T / 2}px, ${-T}px)`;
+          p.el.style.zIndex = String(cena.zDe(cena.prof(p.x + 0.5, p.y + 0.5)) + 40);
+          return;
+        }
+        p.el.style.transform = `translate(${p.x * T}px, ${p.y * T}px)`; p.el.style.zIndex = String(10 + Math.round(p.y * 10));
+      }
       function balao(p, texto, classe) {
         if (!p || !p.el) return;
         if (p.balaoEl) p.balaoEl.remove();
@@ -578,12 +613,34 @@ window.CE = window.CE || {};
         const cw = mapa.clientWidth, ch = mapa.clientHeight;
         if (!cw || !ch) return;
         const MW = W * T, MH = H * T;
-        if (!perto) {
-          // A cidade inteira cabe entre os botões de cima e os de baixo (nada fica escondido atrás deles) e, num
-          // evento, abaixo do alarme (a parte de cima da cidade, com o Lote da turma, não fica escondida).
+        // A cidade inteira cabe entre os botões de cima e os de baixo (nada fica escondido atrás deles) e, num
+        // evento, abaixo do alarme (a parte de cima da cidade, com o Lote da turma, não fica escondida).
+        const faixaLivre = () => {
           const topoMapa = mapa.getBoundingClientRect().top;
           const faixa = [emergEl, especialEl].filter((el) => !el.hidden).reduce((m, el) => Math.max(m, el.getBoundingClientRect().bottom - topoMapa + 8), 0);
-          const cima = Math.max(Math.min(58, ch * 0.1), Math.min(faixa, ch * 0.45)), baixo = Math.min(62, ch * 0.1), livre = Math.max(80, ch - cima - baixo);
+          const cima = Math.max(Math.min(58, ch * 0.1), Math.min(faixa, ch * 0.45)), baixo = Math.min(62, ch * 0.1);
+          return { cima, livre: Math.max(80, ch - cima - baixo) };
+        };
+        if (iso && cena) {
+          if (!perto) {
+            // os quatro cantos do mapa na tela, com espaço em cima para o prédio mais alto
+            const cantos = [[0, 0], [W, 0], [W, H], [0, H]].map(([x, y]) => cena.tela(x, y, 0));
+            const xs = cantos.map((c) => c[0]), ys = cantos.map((c) => c[1]);
+            const x1 = Math.min(...xs), x2 = Math.max(...xs), y1 = Math.min(...ys) - 3.4 * cena.HZ * T, y2 = Math.max(...ys);
+            const { cima, livre } = faixaLivre();
+            cam.s = Math.min(cw / (x2 - x1), livre / (y2 - y1)) * 0.98;
+            cam.x = (cw - (x2 - x1) * cam.s) / 2 - x1 * cam.s; cam.y = cima + (livre - (y2 - y1) * cam.s) / 2 - y1 * cam.s;
+          } else {
+            cam.s = Math.max(0.75, Math.min(1.3, Math.min(cw / 880, ch / 600)));
+            const [X, Y] = cena.tela(eu.x + 0.5, eu.y + 0.5, 0);
+            cam.x = cw / 2 - X * cam.s; cam.y = ch / 2 - (Y - T * 0.6) * cam.s;
+          }
+          mundo.style.transform = `translate(${cam.x}px, ${cam.y}px) scale(${cam.s}) ${cena.G.css}`;
+          mundo.style.setProperty('--inv', String(1 / cam.s));
+          return;
+        }
+        if (!perto) {
+          const { cima, livre } = faixaLivre();
           cam.s = Math.min(cw / MW, livre / MH); cam.x = (cw - MW * cam.s) / 2; cam.y = cima + (livre - MH * cam.s) / 2;
         }
         else {
@@ -623,10 +680,23 @@ window.CE = window.CE || {};
         if (!c.length && aoChegar) { eu.aoChegar = null; aoChegar(); }
         return true;
       }
+      // A seta do teclado: no 2D, o passo é o da seta; no 3D, o passo vai para onde a tela mostra (a diagonal do mapa)
+      // e, se ali não dá, para um dos lados dela.
+      function passosDaSeta([sx, sy]) {
+        if (!iso || !cena) return [[sx, sy]];
+        const { c, s } = cena.G, px = c * sx + 2 * s * sy, py = -s * sx + 2 * c * sy;
+        const dx = Math.abs(px) > 0.3 ? Math.sign(px) : 0, dy = Math.abs(py) > 0.3 ? Math.sign(py) : 0;
+        return dx && dy ? [[dx, dy], [dx, 0], [0, dy]] : [[dx, dy]];
+      }
       function mover(dt) {
         if (!eu.caminho.length && seta && !bloqueado()) {
-          const [x, y] = M.maisPerto(eu.x, eu.y), nx = x + seta[0], ny = y + seta[1];
-          if (M.andavel(nx, ny)) { eu.caminho.push([nx, ny]); if (!andouUmaVez) { andouUmaVez = true; mostrarDica(); } }
+          const [x, y] = M.maisPerto(eu.x, eu.y);
+          for (const [dx, dy] of passosDaSeta(seta)) {
+            const nx = x + dx, ny = y + dy;
+            if (!M.andavel(nx, ny) || (dx && dy && (!M.andavel(x + dx, y) || !M.andavel(x, y + dy)))) continue; // não corta quina
+            eu.caminho.push([nx, ny]); if (!andouUmaVez) { andouUmaVez = true; mostrarDica(); }
+            break;
+          }
         }
         if (!eu.caminho.length) {
           if (eu.andando) { eu.andando = false; eu.el.classList.remove('andando'); const f = eu.aoChegar; eu.aoChegar = null; if (f) f(); }
@@ -695,19 +765,23 @@ window.CE = window.CE || {};
         const L = M.porLugar[id];
         if (sim && !obras[id]) {
           const [x, y, w, h] = L.r;
-          obras[id] = CE.el('div', { class: 'pr-obra', 'data-obra': id, style: `left:${x * T}px;top:${y * T}px;width:${w * T}px;height:${h * T}px` },
+          // (no 3D, a obra de um prédio é o tapume em pé, desenhado pela cena; a de uma área continua no chão)
+          obras[id] = CE.el('div', { class: 'pr-obra' + (L.telhado || L.casa ? ' predio' : ''), 'data-obra': id, style: `left:${x * T}px;top:${y * T}px;width:${w * T}px;height:${h * T}px` },
             CE.el('span', { class: 'placa' }, '🏗️'));
           camadaObjetos.append(obras[id]);
+          if (cena) cena.atualizar(id, false);
         } else if (!sim && obras[id]) {
           const o = obras[id];
           delete obras[id];
           if (animar) { o.classList.add('abrindo'); setTimeout(() => o.remove(), 1000); } else o.remove();
+          if (cena) cena.atualizar(id, !!animar);
         }
       }
       function mostrarPredio(id, ligado, animar) {
         const L = M.porLugar[id];
         obra(id, !ligado, animar);
         atualizarRotulo(id);
+        if (iso && cena) posicionarRotulos();
         for (const m of moradores) if (m.lugar === id) m.el.classList.toggle('fora', !ligado);
         for (const o of enfeiteDe[id] || []) o.hidden = !ligado;
       }
@@ -766,6 +840,7 @@ window.CE = window.CE || {};
           marcas[id] = CE.el('div', { class: 'pr-marca-pista', 'data-marca': id, style: `left:${r.style.left};top:calc(${r.style.top} - 30px)` }, '🔎');
           camadaRotulos.append(marcas[id]);
         }
+        if (iso && cena) posicionarRotulos();
         if (n && n.revelado && n.participei && !detetiveDado && !souInstrutor) { detetiveDado = true; conquista('detetive'); CE.carteira.ganhar('final', `Desvendou “${n.titulo}”`, `final:${n.id}:${n.aberto}`); }
         if (!dialogo.hidden && dialogo.dataset.tipo === 'novela') abrirNovela();
         verPerto(true);
@@ -940,7 +1015,7 @@ window.CE = window.CE || {};
         const arvore = CE.el('div', { class: 'pr-arvore-caida' + (q.palmeira ? ' palmeira' : ''), 'data-queda': q.id, style: `left:${cx * T}px;top:${cy * T}px;--ang:${ang}rad` },
           CE.el('span', { class: 'tronco' }), CE.el('span', { class: 'folhas', 'aria-hidden': 'true' }, '🍃🍂🍃'), CE.el('span', { class: 'copa', 'aria-hidden': 'true' }, q.palmeira ? '🌴' : '🌳'),
           CE.el('span', { class: 'equipe', 'aria-hidden': 'true' }, '👷'));
-        const toco = CE.el('div', { class: 'pr-toco', style: `left:${ax * T}px;top:${ay * T}px;background:${chao}` });
+        const toco = CE.el('div', { class: 'pr-toco', 'data-arvore': `${ax},${ay}`, style: `left:${ax * T}px;top:${ay * T}px;background:${chao}` });
         const placa = CE.el('div', { class: 'pr-placa-queda', style: `left:${cx * T}px;top:${(cy - 0.55) * T}px` });
         const fio = q.fio ? CE.el('div', { class: 'pr-fio', 'data-fio': q.id, style: `left:${(q.fio[0] + 0.5) * T}px;top:${(q.fio[1] + 0.5) * T}px` }, CE.el('span', { 'aria-hidden': 'true' }, '⚡')) : null;
         camadaObjetos.append(toco, arvore, ...(fio ? [fio] : []));
@@ -1362,6 +1437,7 @@ window.CE = window.CE || {};
         // Escolhas do instrutor
         const mudouConfig = estado.aberta !== r.aberta || estado.soFrases !== r.soFrases || estado.silenciado !== r.silenciado;
         estado = { aberta: r.aberta, soFrases: r.soFrases, silenciado: r.silenciado, silenciados: r.silenciados || [] };
+        if ((r.visual === '2d' || r.visual === 'iso') && r.visual !== visao) aplicarVisual(r.visual);
         fechadaEl.hidden = !bloqueado();
         if (bloqueado()) { eu.caminho = []; fecharDialogo(); abrirConversa(false); }
         formConversa.hidden = (estado.soFrases && !souInstrutor) || estado.silenciado;
@@ -1553,8 +1629,11 @@ window.CE = window.CE || {};
         btFrases.setAttribute('aria-label', rotuloFrases);
         btFrases.setAttribute('aria-pressed', String(!!estado.soFrases));
         btFrases.classList.toggle('ligado', !!estado.soFrases);
+        const rotuloVisual = visao === 'iso' ? 'Praça em 2D (de cima)' : 'Praça em 3D (isométrica)';
+        btVisual.querySelector('.icone').textContent = visao === 'iso' ? '🗺️' : '🧊';
+        btVisual.querySelector('.rotulo').textContent = rotuloVisual;
+        btVisual.setAttribute('aria-label', rotuloVisual);
       }
-      desenharInstrutor();
 
       // Quem está na praça: um número no canto; tocando nele, aparecem os rostos.
       let chaveGente = '';
@@ -2741,10 +2820,14 @@ window.CE = window.CE || {};
         acao.classList.toggle('escondida', !mostrar);
         if (!mostrar) return;
         const cw = mapa.clientWidth, meia = acao.offsetWidth / 2, alto = acao.offsetHeight;
-        const x = Math.max(meia + 8, Math.min(cw - meia - 8, cam.x + (eu.x + 0.5) * T * cam.s));
-        let y = cam.y + (eu.y * T - 8) * cam.s - (eu.balaoEl ? eu.balaoEl.offsetHeight + 12 : 0);
+        // onde o boneco está na tela: o meio, o alto da cabeça e o pé
+        let meio, cabeca, pe;
+        if (iso && cena) { const [X, Y] = cena.tela(eu.x + 0.5, eu.y + 0.5, 0); meio = cam.x + X * cam.s; pe = cam.y + Y * cam.s; cabeca = pe - (T + 8) * cam.s; }
+        else { meio = cam.x + (eu.x + 0.5) * T * cam.s; cabeca = cam.y + (eu.y * T - 8) * cam.s; pe = cam.y + (eu.y + 1) * T * cam.s; }
+        const x = Math.max(meia + 8, Math.min(cw - meia - 8, meio));
+        let y = cabeca - (eu.balaoEl ? eu.balaoEl.offsetHeight + 12 : 0);
         const embaixo = y - alto < 58;
-        if (embaixo) y = cam.y + ((eu.y + 1) * T + 24) * cam.s;
+        if (embaixo) y = pe + 24 * cam.s;
         acao.classList.toggle('embaixo', embaixo);
         acao.style.transform = `translate(${Math.round(x - meia)}px, ${Math.round(embaixo ? y : y - alto)}px)`;
       }
@@ -2773,14 +2856,36 @@ window.CE = window.CE || {};
           if (alvo) return chegarPerto(alvo);
         }
         const r = mapa.getBoundingClientRect();
-        const x = Math.floor((e.clientX - r.left - cam.x) / cam.s / T), y = Math.floor((e.clientY - r.top - cam.y) / cam.s / T);
-        if (x < 0 || y < 0 || x >= W || y >= H) return;
-        if (emergAtiva() && cliqueNoEvento(x, y)) return;
-        const lixo = coletaAtual && (coletaAtual.itens || []).find((i) => i.x === x && i.y === y);
+        const [mx, my] = planoDaTela(e.clientX - r.left, e.clientY - r.top);
+        const x = Math.floor(mx), y = Math.floor(my);
+        const dentro = (a, b) => a >= 0 && b >= 0 && a < W && b < H;
+        // No 3D, o fogo, o lixo e o que mais fica em pé aparecem um pouco acima do chão: o clique nessa altura também vale.
+        const [ax, ay] = iso && cena ? planoDaTela(e.clientX - r.left, e.clientY - r.top + 0.55 * cena.HZ * T * cam.s).map(Math.floor) : [x, y];
+        // No evento urgente, o lugar do evento vale mesmo atrás de um prédio em pé (a placa dele fica por cima de tudo).
+        if (emergAtiva() && ((dentro(x, y) && cliqueNoEvento(x, y)) || ((ax !== x || ay !== y) && dentro(ax, ay) && cliqueNoEvento(ax, ay)))) return;
+        if (iso && cena) {
+          // um prédio em pé: o clique vai para ele (se acertou o desenho, e não o vazio em volta)
+          const predio = e.target.closest && e.target.closest('.pr-iso[data-lugar]');
+          if (predio && pontoOpaco(predio, e)) {
+            const P = M.porLugar[predio.dataset.lugar];
+            if (P) {
+              if (!perto) { for (const rt of Object.values(rotuloDe)) rt.classList.remove('destaque'); if (rotuloDe[P.id]) rotuloDe[P.id].classList.add('destaque'); }
+              return chegarAoLugar(P);
+            }
+          }
+        }
+        if (!dentro(x, y)) return;
+        const lixo = coletaAtual && (coletaAtual.itens || []).find((i) => (i.x === x && i.y === y) || (i.x === ax && i.y === ay));
         if (lixo) {
           if (coletaAtual.carregando) { balao(eu, `Primeiro jogo ${coletaAtual.carregando.nome} na lixeira certa! ♻️`); return; }
-          irPara([[x, y], ...M.vizinhos(x, y)], () => { const ainda = coletaAtual && (coletaAtual.itens || []).find((i) => i.id === lixo.id); if (ainda) pegarLixo(ainda); });
+          irPara([[lixo.x, lixo.y], ...M.vizinhos(lixo.x, lixo.y)], () => { const ainda = coletaAtual && (coletaAtual.itens || []).find((i) => i.id === lixo.id); if (ainda) pegarLixo(ainda); });
           return;
+        }
+        // No 3D, a pessoa fica em pé em cima do quadrinho: clicar no chão onde ela pisa também vale (como no 2D; o lixo
+        // no chão vem antes).
+        if (iso) {
+          const pisando = [...moradores.filter(presente), ...outros.values()].find((q) => q.el && Math.round(q.x) === x && Math.round(q.y) === y);
+          if (pisando) return chegarPerto(pisando);
         }
         const L = M.dono[y][x] && M.porLugar[M.dono[y][x]];
         if (L) { if (!perto) { for (const rt of Object.values(rotuloDe)) rt.classList.remove('destaque'); if (rotuloDe[L.id]) rotuloDe[L.id].classList.add('destaque'); } return chegarAoLugar(L); }
@@ -2810,6 +2915,92 @@ window.CE = window.CE || {};
       aoRedimensionar.observe(emergEl); aoRedimensionar.observe(especialEl);
       aoRedimensionar.observe(mapa);
 
+      // ---------- Praça em 3D (isométrica): trocar 2D ↔ 3D, girar, rótulos em cima dos prédios, profundidade ----------
+      function planoDaTela(sx, sy) {
+        if (iso && cena) return cena.chao((sx - cam.x) / cam.s, (sy - cam.y) / cam.s);
+        return [(sx - cam.x) / cam.s / T, (sy - cam.y) / cam.s / T];
+      }
+      function pontoOpaco(el, e) {
+        try {
+          const k = el.width / (el.clientWidth || 1);
+          return el.getContext('2d').getImageData(Math.floor(e.offsetX * k), Math.floor(e.offsetY * k), 1, 1).data[3] > 24;
+        } catch (erro) { return true; }
+      }
+      function posicionarRotulos() {
+        for (const r of camadaRotulos.querySelectorAll('.pr-rotulo[data-x]')) {
+          const L = r.dataset.lugar && M.porLugar[r.dataset.lugar];
+          if (iso && cena && L && (L.telhado || L.casa)) {
+            const [x, y, w, h] = L.r, alto = obras[L.id] ? 1.2 : M.alturaDe(L) + M.bicoDe(L);
+            r.style.left = `${(x + w / 2) * T}px`; r.style.top = `${(y + h / 2) * T}px`;
+            r.style.setProperty('--sobe', `${-Math.round(alto * cena.HZ * T + 18)}px`);
+          } else {
+            r.style.left = `${r.dataset.x}px`; r.style.top = `${r.dataset.y}px`;
+            r.style.setProperty('--sobe', iso ? '-6px' : '0px');
+          }
+        }
+        for (const [id, m] of Object.entries(marcas)) {
+          const r = rotuloDe[id];
+          if (!r) continue;
+          m.style.left = r.style.left;
+          m.style.top = iso ? r.style.top : `calc(${r.style.top} - 30px)`;
+          m.style.setProperty('--sobe', iso ? `calc(${r.style.getPropertyValue('--sobe') || '0px'} - 42px)` : '0px');
+        }
+      }
+      // As coisas do evento e os objetos ficam em pé no 3D: cada um com a profundidade do lugar onde está.
+      const DEITADOS = ['pr-obra', 'pr-enchente', 'pr-sacos', 'pr-arvore-caida', 'pr-toco', 'pr-jato'];
+      function profundidadesIso() {
+        if (!iso || !cena) return;
+        for (const el of camadaObjetos.children) {
+          if (DEITADOS.some((c) => el.classList.contains(c))) continue;
+          const x = parseFloat(el.style.left), y = parseFloat(el.style.top);
+          if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+          const z = String(cena.zDe(cena.prof(x / T, y / T)) + 30);
+          if (el.style.zIndex !== z) el.style.zIndex = z;
+        }
+        cena.arvoresCaidas([...camadaObjetos.querySelectorAll('.pr-toco[data-arvore]')].map((t) => t.dataset.arvore));
+        // Atrás de um prédio alto (ou de uma árvore), o boneco de quem joga não some: o que está na frente fica transparente.
+        const [X, Y] = cena.tela(eu.x + 0.5, eu.y + 0.5);
+        cena.vazar({ x: X, y: Y, z: cena.zDe(cena.prof(eu.x + 0.5, eu.y + 0.5)) + 40 });
+      }
+      function aplicarVisual(modo, inicio) {
+        visao = modo === '2d' ? '2d' : 'iso';
+        gravarLocal('ce-praca-visual', visao);
+        desenharInstrutor();
+        const novo = visao === 'iso' && !!CE.pracaIso;
+        if (!inicio && novo === iso) return;
+        const mudou = novo !== iso;
+        iso = novo;
+        mapa.classList.toggle('iso', iso);
+        giros.hidden = !iso;
+        if (mudou) desenharCidade(tela, iso);
+        if (iso && !cena) cena = CE.pracaIso.criarCena({ mapa: M, T, camada: camadaIso, cores: CORES_DA_MAQUETE, emObra: (id) => !!obras[id], giro, chao: tela });
+        else if (!iso && cena) { cena.destruir(); cena = null; }
+        if (cena) mundo.style.setProperty('--anti', cena.G.anti);
+        if (!iso) for (const el of camadaObjetos.children) el.style.zIndex = '';
+        posicionarRotulos();
+        for (const p of [eu, ...moradores, professorEl, ...outros.values()]) posicionar(p);
+        profundidadesIso();
+        enquadrar();
+      }
+      function girar(passo) {
+        if (!iso || !cena || mapa.classList.contains('girando')) return;
+        mapa.classList.add('girando');
+        setTimeout(() => {
+          if (cena) {
+            giro = (cena.giro + passo + 4) % 4;
+            gravarLocal('ce-praca-giro', String(giro));
+            cena.girar(giro);
+            mundo.style.setProperty('--anti', cena.G.anti);
+            for (const p of [eu, ...moradores, professorEl, ...outros.values()]) posicionar(p);
+            profundidadesIso();
+            enquadrar();
+          }
+          requestAnimationFrame(() => requestAnimationFrame(() => mapa.classList.remove('girando')));
+        }, 170);
+      }
+      botaoGiroEsq.addEventListener('click', () => girar(-1));
+      botaoGiroDir.addEventListener('click', () => girar(1));
+
       // ---------- Laço ----------
       let antes = performance.now(), ultimoPerto = 0, ultimaSincronia = 0, quadroId = 0;
       function quadro(agora) {
@@ -2818,7 +3009,7 @@ window.CE = window.CE || {};
         if (!bloqueado()) mover(dt);
         moverOutros(dt);
         if (perto) enquadrar();
-        if (agora - ultimoPerto > 200) { ultimoPerto = agora; verPerto(); andarRelogio(); }
+        if (agora - ultimoPerto > 200) { ultimoPerto = agora; verPerto(); andarRelogio(); profundidadesIso(); }
         posicionarAcao();
         const minimizada = janela.elemento ? janela.elemento.classList.contains('minimizada') : corpo.closest('.janela') && corpo.closest('.janela').classList.contains('minimizada');
         if (agora - ultimaSincronia > (minimizada ? SINCRONIA_LONGE : SINCRONIA)) { ultimaSincronia = agora; sincronizar(); }
@@ -2827,6 +3018,7 @@ window.CE = window.CE || {};
       sistema('Você chegou na Praça Escola. Clique no chão para andar e chegue perto das pessoas para conversar.');
       verPerto(true);
       mostrarDica();
+      aplicarVisual(visao, true);
       enquadrar();
       sincronizar();
       CE.praca.informar();
@@ -2846,6 +3038,7 @@ window.CE = window.CE || {};
           trem: () => !enfeiteDe.estacao[0].hidden,
           voce: () => ({ x: eu.x, y: eu.y }),
           enquadramento: () => ({ x: cam.x, y: cam.y, s: cam.s }),
+          final: () => (iso && cena ? { yaw: cena.G.th, pitch: Math.PI / 3, ergue: true } : null), // termina no 3D (ou de cima, no 2D)
           aoComecar: () => { if (primeiraVez) CE.abertura3d.marcarVista(); },
         }, () => {
           maquete = null;

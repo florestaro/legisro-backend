@@ -144,6 +144,23 @@ window.CE = window.CE || {};
       j.publicadas.length ? CE.el('p', { class: 'ft-dica' }, `Já publicadas: ${j.publicadas.length} matéria(s) em ${new Set(j.publicadas.map((m) => m.edicao)).size} edição(ões).`) : '');
   }
 
+  // ---------- Praça Escola: em 3D (isométrica) ou 2D (de cima) ----------
+  async function praca(redesenhar) {
+    const atual = await CE.api.chamar('praca:configurar', {}).catch(() => null);
+    const visual = atual && atual.visual === '2d' ? '2d' : 'iso';
+    const escolher = (v) => CE.api.chamar('praca:configurar', { visual: v }).then(() => {
+      CE.avisar(v === '2d' ? '🗺️ A Praça da turma ficou em 2D (de cima).' : '🧊 A Praça da turma ficou em 3D (isométrica).');
+      redesenhar();
+    }).catch((e) => CE.avisar(e.message));
+    const opcao = (v, rotulo, dica) => CE.el('button', { class: 'chip' + (visual === v ? ' ativo' : ''), type: 'button', 'data-visual-praca': v, 'aria-pressed': String(visual === v), title: dica, onclick: () => escolher(v) }, rotulo);
+    return CE.el('section', { class: 'pt-secao', 'data-secao-turma': 'praca' },
+      CE.el('h3', {}, '⛲ Praça Escola'),
+      CE.el('p', {}, 'Como a cidade aparece para a turma. Em 3D os prédios ficam em pé e dá para girar a cidade. Se algum computador da sala ficar lento, ponha em 2D (vista de cima): a troca chega em todos na hora.'),
+      CE.el('div', { class: 'painel-sala-acoes' },
+        opcao('iso', '🧊 3D (isométrica)', 'Prédios em pé, botões para girar a cidade'),
+        opcao('2d', '🗺️ 2D (de cima)', 'O mapa visto de cima, mais leve')));
+  }
+
   async function tela(estado, redesenhar) {
     const usuarios = await CE.api.chamar('usuarios:listar');
     const todos = alunosDe(usuarios, '');
@@ -153,6 +170,7 @@ window.CE = window.CE || {};
     seletor.value = estado.turma || '';
     return CE.el('div', { class: 'painel-turma' },
       CE.el('div', { class: 'painel-sala-acoes' }, CE.el('strong', {}, '🏁 Gincana, missão e jornal'), seletor),
+      await praca(redesenhar),
       await gincana(),
       await missao(alunos, redesenhar),
       monitores(alunos),
