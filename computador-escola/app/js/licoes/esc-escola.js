@@ -4,6 +4,13 @@
 // próprias palavras, dizer a fonte, salvar e imprimir para entregar.
 (function () {
   const { info, quiz, esperar, abrir, naJanela, editorBotao, editorSalvar } = CE.L;
+  const ap = (s) => naJanela('apresentacoes', s);
+  const slides = () => (CE.apresentacaoAtiva ? CE.apresentacaoAtiva.slides() : []);
+  const slideAtual = () => slides()[(CE.apresentacaoAtiva ? CE.apresentacaoAtiva.atual() : 1) - 1] || {};
+  const escreverSlide = (texto, campo, teste) => esperar(texto, 'apresentacao:texto', (d) => d.campo === campo && teste(d), { destacar: ap(`.ap-moldura [data-campo="${campo}"]`), mouse: 'esquerdo' });
+  const novoSlide = (layout, nome) => esperar(`Clique em "➕ Novo slide ▾" e escolha "${nome}".`, 'apresentacao:slide-novo', (d) => d.layout === layout, {
+    destacar: [ap(`[data-layout="${layout}"]`), ap('[data-comando="novo-slide"]')], mouse: 'esquerdo',
+  });
   const nav = (s) => naJanela('navegador', s);
   const ed = (s) => naJanela('editor', s);
   const palavras = (t) => String(t || '').trim().split(/\s+/).filter(Boolean).length;
@@ -156,6 +163,64 @@
           quiz('Por que é bom saber a história do nosso estado?', ['Para conhecer e valorizar o lugar onde a gente vive', 'Não serve para nada'], 0),
         ],
         conclusao: 'Trabalho de História pronto! Agora você conhece a história de Rondônia. 🚂🌳',
+      },
+      {
+        id: 'esc-ciclo-agua', titulo: 'Trabalho: o ciclo da água', icone: '💧',
+        descricao: 'Pesquisar e explicar as 4 etapas do ciclo da água, numa lista numerada no Editor.',
+        passos: [
+          bilhete('Trabalho de Ciências: explique o CICLO DA ÁGUA. Faça uma lista com as 4 etapas, na ordem, e uma frase sobre os rios voadores da Amazônia.'),
+          ...pesquisar('ciclo da agua', 'ciclo-agua', 'O ciclo da água'),
+          ...lerSemCair('ciclo-agua'),
+          quiz('Quando o sol esquenta a água e ela vira vapor, isso se chama...', ['Evaporação', 'Precipitação', 'Congelamento'], 0),
+          quiz('As nuvens são feitas de...', ['Gotinhas de água', 'Fumaça', 'Algodão'], 0),
+          quiz('A chuva é a etapa chamada...', ['Precipitação', 'Evaporação', 'Condensação'], 0),
+          abrir('editor', 'Editor de Texto'),
+          esperar('Escreva o título:  O ciclo da água  e aperte Enter.', 'editor:texto', (d) => /ciclo da [aá]gua/i.test(d.texto), { destacar: ed('.editor-pagina') }),
+          editorBotao('Selecione o título e pinte de azul: clique no quadradinho de cor e escolha azul.', 'foreColor', null, { mouse: 'arrastar', dica: 'Depois de escolher a cor, clique fora da janelinha de cores.' }),
+          esperar('Clique no fim do título, aperte Enter e clique no botão “Lista numerada” (1, 2, 3).', 'editor:formatado', (d) => d.comando === 'insertOrderedList', {
+            destacar: ed('[data-comando="insertOrderedList"]'), mouse: 'esquerdo',
+          }),
+          esperar('Escreva as 4 etapas, uma em cada linha, explicando com as suas palavras. Ex.: Evaporação: o sol esquenta a água e ela vira vapor.', 'editor:texto',
+            (d) => (d.html.match(/<li/gi) || []).length >= 4 && /evapora/i.test(d.texto) && /condensa/i.test(d.texto) && /precipita|chuva/i.test(d.texto) && /infiltra|escoa|rio/i.test(d.texto), {
+              destacar: ed('.editor-pagina'), dica: 'As 4 etapas: Evaporação, Condensação, Precipitação (chuva) e Infiltração (a água entra na terra e volta aos rios).',
+            }),
+          esperar('Aperte Enter duas vezes para sair da lista e escreva uma frase sobre os rios voadores da Amazônia.', 'editor:texto', (d) => /voador/i.test(d.texto), { destacar: ed('.editor-pagina') }),
+          esperar('No fim, escreva a fonte:  Fonte: Mundo Escolar', 'editor:texto', (d) => /fonte/i.test(d.texto), { destacar: ed('.editor-pagina') }),
+          editorSalvar('Trabalho ciclo da água'),
+          esperar('Imprima: clique em “🖨️ Imprimir” e depois em “Imprimir”.', 'editor:impresso', null, { destacar: ['[data-acao="confirmar-impressao"]', ed('[data-comando="imprimir"]')], mouse: 'esquerdo' }),
+          quiz('Por que não devemos desperdiçar água?', ['Porque a água limpa é preciosa e todo mundo precisa dela', 'Porque ela acaba amanhã'], 0),
+        ],
+        conclusao: 'Trabalho pronto! Agora você sabe o caminho da água: do rio para a nuvem e de volta para o rio. 💧☁️🌧️',
+      },
+      {
+        id: 'esc-slides', titulo: 'Trabalho em slides: animais da Amazônia', icone: '📽️',
+        descricao: 'Pesquisar e montar uma apresentação de slides para mostrar à turma.',
+        passos: [
+          bilhete('Trabalho em grupo: monte uma APRESENTAÇÃO DE SLIDES sobre os ANIMAIS DA AMAZÔNIA para mostrar à turma. Capa, um slide com os animais e um com a sua opinião.'),
+          ...pesquisar('floresta amazonica', 'amazonia', 'Floresta Amazônica para crianças'),
+          ...lerSemCair('amazonia'),
+          quiz('Qual destes animais vive na Amazônia?', ['O boto-cor-de-rosa', 'O pinguim', 'O urso polar'], 0),
+          info('Slide é uma tela com POUCO texto e letras grandes, para a turma ler de longe. Vamos montar no programa Apresentações (parecido com o PowerPoint).', { emoji: '📽️' }),
+          abrir('apresentacoes', 'Apresentações'),
+          escreverSlide('Slide 1, a capa: clique em “Clique para escrever o título” e escreva:  Animais da Amazônia', 'titulo', (d) => /animais da amaz/i.test(d.texto)),
+          escreverSlide('No subtítulo, escreva o seu nome.', 'texto', (d) => d.slide === 1 && d.texto.trim().length >= 2),
+          novoSlide('conteudo', 'Título e tópicos'),
+          escreverSlide('Escreva o título deste slide:  Quem vive lá', 'titulo', (d) => /quem vive/i.test(d.texto)),
+          esperar('Clique na caixa de tópicos e escreva 3 animais da Amazônia, apertando Enter depois de cada um.', 'apresentacao:texto', (d) => d.campo === 'texto' && ((slideAtual().texto || '').match(/<li>(?!<br>)/g) || []).length >= 3, {
+            destacar: ap('.ap-moldura [data-campo="texto"]'), mouse: 'esquerdo', dica: 'Exemplo: Onça-pintada (Enter) Boto-cor-de-rosa (Enter) Arara',
+          }),
+          novoSlide('conteudo', 'Título e tópicos'),
+          escreverSlide('Título do último slide:  Por que cuidar', 'titulo', (d) => /cuidar/i.test(d.texto)),
+          esperar('Nos tópicos, escreva 2 motivos para cuidar da floresta (um em cada linha).', 'apresentacao:texto', (d) => d.campo === 'texto' && ((slideAtual().texto || '').match(/<li>(?!<br>)/g) || []).length >= 2, {
+            destacar: ap('.ap-moldura [data-campo="texto"]'), mouse: 'esquerdo', dica: 'Exemplo: A floresta faz chover (Enter) É a casa de muitos animais',
+          }),
+          esperar('Deixe bonito: na caixa de temas (🎨), escolha um tema que você goste.', 'apresentacao:tema', null, { destacar: ap('[data-comando="tema"]'), mouse: 'esquerdo' }),
+          esperar('Salve: clique em “💾 Salvar” e use o nome  Animais da Amazônia', 'arquivo:salvo', (d) => d.tipo === 'apresentacao' && /amaz/i.test(d.nome), { destacar: ap('[data-comando="salvar"]'), mouse: 'esquerdo' }),
+          esperar('Hora de apresentar para a turma! Clique em “▶ Apresentar”.', 'apresentacao:iniciada', null, { destacar: ap('[data-comando="apresentar"]'), mouse: 'esquerdo' }),
+          esperar('Passe os slides até o fim (seta → ou clique) e aperte Esc para sair.', 'apresentacao:fim', (d) => d.completa, { dica: 'Se saiu antes do fim, clique em “▶ Apresentar” de novo.' }),
+          quiz('Na hora de apresentar, o melhor é...', ['Olhar para a turma e explicar com as suas palavras', 'Ler tudo de costas para a turma'], 0),
+        ],
+        conclusao: 'Apresentação feita! Você pesquisou, montou os slides e apresentou como gente grande. 📽️🐆',
       },
       {
         id: 'esc-capa', titulo: 'Capa do trabalho', icone: '📘',

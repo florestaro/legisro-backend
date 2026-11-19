@@ -55,7 +55,7 @@ window.CE = window.CE || {};
     // Curso livre Criação digital
     'cri-foto-tamanho', 'cri-foto-direitos', 'cri-vet-pixel', 'cri-vid-titulo', 'cri-desafio',
     // Curso livre Trabalhos da escola
-    'esc-capa', 'esc-desafio',
+    'esc-capa', 'esc-desafio', 'esc-cartaz',
   ]);
   const TRILHAS = { essencial: 'Trilha essencial', completa: 'Trilha completa' };
 

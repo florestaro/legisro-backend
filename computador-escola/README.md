@@ -6,7 +6,7 @@ conversa e tira dúvidas. **Funciona sem internet.**
 
 ## O que já tem
 
-### Curso de Informática: 5 níveis e 3 cursos livres (269 aulas)
+### Curso de Informática: 5 níveis e 3 cursos livres (271 aulas)
 - **Nível Iniciante completo: 48 aulas em 10 módulos.** Os módulos são: Conhecendo o computador, Mouse, Teclado,
   Janelas e menu Iniciar, Arquivos e pastas, Editor de Texto, Calculadora e Desenho, **Internet**, Segurança básica e a
   Prova do nível.
@@ -128,7 +128,10 @@ conversa e tira dúvidas. **Funciona sem internet.**
   dinossauros voadores, propagandas e vírus (e o mesmo assunto na enciclopédia Saber Livre, sem propaganda), cartaz
   "Combata a dengue" (título grande, colorido, centralizado e lista de dicas), trabalho do **Sistema Solar** (lista
   numerada com os 8 planetas na ordem e uma frase sobre a Terra), trabalho da **história de Rondônia** (Marechal Rondon,
-  Madeira-Mamoré e 1981, com título centralizado e grande e a data em negrito), capa do trabalho e o desafio sobre a
+  Madeira-Mamoré e 1981, com título centralizado e grande e a data em negrito), trabalho do **ciclo da água** (título
+  azul e lista numerada com evaporação, condensação, precipitação e infiltração, mais os rios voadores da Amazônia),
+  **trabalho em slides** "Animais da Amazônia" no programa Apresentações (capa com o nome, slide de tópicos com 3
+  animais, slide "Por que cuidar", tema, salvar e apresentar até o fim), capa do trabalho e o desafio sobre a
   Floresta Amazônica. Certificado próprio (10 horas).
 - **🎯 Trilhas por objetivo** (Aulas › 🎯 Meu objetivo): o aluno escolhe o que quer conseguir (🎒 Fazer os trabalhos da escola, 💼 Arrumar emprego,
   🏛️ Resolver as coisas no gov.br, 🛒 Vender pelo celular e pela internet ou 🛡️ Me proteger dos golpes) e o professor

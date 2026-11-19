@@ -46,6 +46,14 @@ window.CE = window.CE || {};
       'Em 1943 foi criado o Território Federal do Guaporé, que em 1956 passou a se chamar Território de Rondônia.',
       'Em 1981 Rondônia virou estado, e Porto Velho, às margens do rio Madeira, é a capital.'],
       'historia de rondonia rondon marechal madeira mamore ferrovia telegrafo porto velho territorio guapore 1981 estado'],
+    'ciclo-agua': ['O ciclo da água', 'A água da chuva é a mesma que estava no rio: ela anda em círculo!', [
+      'A água do planeta está sempre mudando de lugar, num caminho que não acaba: é o ciclo da água.',
+      '1. EVAPORAÇÃO: o sol esquenta a água dos rios, lagos e mares, e ela vira vapor, que sobe para o céu. As plantas também soltam vapor pelas folhas.',
+      '2. CONDENSAÇÃO: lá no alto é frio, e o vapor vira gotinhas, que juntas formam as nuvens.',
+      '3. PRECIPITAÇÃO: quando as gotinhas ficam pesadas, cai a chuva (ou neve e granizo, em lugares frios).',
+      '4. INFILTRAÇÃO E ESCOAMENTO: a água da chuva entra na terra ou corre para os rios, e o ciclo começa de novo.',
+      'Na Amazônia, a floresta solta tanto vapor que forma "rios voadores": nuvens que levam chuva para outras partes do Brasil.'],
+      'ciclo da agua chuva evaporacao condensacao precipitacao infiltracao nuvem vapor rios voadores'],
   };
 
   // As propagandas que piscam em volta do texto (todas levam ao "vírus").
