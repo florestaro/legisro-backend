@@ -287,6 +287,14 @@ Os arquivos baixados vão para a pasta **Downloads**.
 Um programa da área de trabalho em que a turma se encontra numa **cidade de treino**: cada aluno anda com o seu boneco
 (o avatar do cadastro), conversa com quem está perto, joga com os colegas e entra nos prédios, que levam às partes do
 curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela rede (sem internet).
+- **Abertura: a maquete da cidade**: na primeira vez que o aluno entra na praça (em cada sessão), a cidade aparece como
+  uma maquete feita de pontos: os pontos caem e formam o mapa visto de cima, a câmera inclina e gira devagar, os prédios
+  levantam do chão um de cada vez (a Escola e a Prefeitura mais altas, as casas baixas, as árvores médias; os prédios em
+  obra ficam baixos e apagados, com a faixa listrada), o rio ondula, o trem chega na estação, o chafariz pulsa e o
+  "Você" aparece. No fim a câmera volta para cima e os pontos se juntam exatamente em cima do mapa do jogo, que aparece
+  num esmaecer (uns 5 segundos). Tudo é gerado dos dados do mapa, com as cores da cidade. "Pular" (no alto, à direita),
+  um clique em qualquer lugar ou uma tecla pulam na hora; para rever, 🏙️ Cidade › 🎬 Ver maquete. Quem marcou "reduzir
+  movimento" no sistema vai direto para o mapa. É só a abertura: o jogo por baixo continua igual.
 - **Tela limpa**: o mapa ocupa a janela toda. No alto, à esquerda, quantos estão na praça ("👥 8 aqui": tocando, aparecem
   os rostos) e como está a cidade ("🏙️ Cidade 3/9"); à direita, "Ver a cidade inteira". A conversa fica fechada no 💬
   (a fala aparece no balão em cima do boneco) e os avisos aparecem no alto do mapa e somem sozinhos. Chegou perto de
@@ -520,7 +528,7 @@ npm run teste:sala            # 1 instrutor + 20 alunos usando o sistema ao mesm
 npm run teste:sala -- 5       # o mesmo com 5 alunos
 npm run teste:fase2           # novidades da fase 2: o aluno troca de computador e encontra tudo (uns 3 minutos)
 npm run teste:fase3           # novidades da fase 3: MEI, anúncio e PDF em outro computador, e a monitoria (uns 3 minutos)
-npm run teste:praca           # a Praça Escola em 3 computadores: andar, conversar, a cidade que cresce, tarefas, novela, eventos urgentes e especiais, Hora da Praça, moedas, jogar, mural, votação e comandos do instrutor
+npm run teste:praca           # a Praça Escola em 3 computadores: a abertura (maquete), andar, conversar, a cidade que cresce, tarefas, novela, eventos urgentes e especiais, Hora da Praça, moedas, jogar, mural, votação e comandos do instrutor
 npm run teste:perigos         # os eventos urgentes no mapa, sem tela e sem rede (1 segundo): o fogo pulando e os Bombeiros, a enchente subindo e a areia, as árvores caindo e a Defesa Civil
 npm run teste:emojis          # todos os emojis aparecem direito no Windows 10 (sem tela, segundos)
 ```
@@ -658,7 +666,8 @@ app/js/praca-mapa.js     o mapa da Praça Escola (prédios, praça, caminhos); p
                          lugar, os capítulos da novela, os eventos urgentes e os especiais (textos, preços e respostas);
                          praca-regras.js: as regras (quem está onde, Hora da Praça, vaquinha, o Professor Virtual conduzindo,
                          conversa, mural, votação, mesa de jogo, comandos do instrutor, colegas de demonstração), usadas
-                         pelo servidor da sala e pelo modo navegador; apps/praca.js: a janela da praça
+                         pelo servidor da sala e pelo modo navegador; apps/praca.js: a janela da praça;
+                         praca-abertura3d.js: a abertura (a maquete da cidade em pontos, num canvas 2D, sem WebGL)
 testes/                  testes automáticos do modo sala de aula (servidor, turma de 20 alunos, as novidades das
                          fases 2 e 3 e a Praça Escola em 3 computadores) e o dos emojis do Windows 10
 ```

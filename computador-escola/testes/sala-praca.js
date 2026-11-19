@@ -96,7 +96,15 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
 
   // ================= Os dois na praça, cada um no seu computador =================
   ok(await p1.isVisible('#icones .icone[data-icone="praca"]'), 'o ícone da Praça Escola está na área de trabalho do aluno');
+  // A abertura da Praça (a maquete da cidade em pontos) passa só na primeira entrada da sessão: a Ana (PC 1) já viu;
+  // o Bruno (PC 2) vê e pula.
+  const jaViuAbertura = (p) => p.evaluate(() => sessionStorage.setItem('ce-praca-maquete', '1'));
+  await jaViuAbertura(p1);
   await p1.evaluate(() => CE.janelas.abrir('praca')); await p2.evaluate(() => CE.janelas.abrir('praca'));
+  ok(await p2.waitForSelector(Z('.pr-maquete'), { timeout: 8000 }).then(() => true, () => false), 'PC 2: na primeira entrada, a abertura (a maquete da cidade em pontos) aparece por cima do mapa');
+  await p2.click(Z('.pr-maquete-pular'));
+  ok(await p2.waitForSelector(Z('.pr-maquete'), { state: 'detached', timeout: 3000 }).then(() => true, () => false), 'PC 2: o botão "Pular" tira a abertura e mostra o mapa');
+  ok(!(await p1.$(Z('.pr-maquete'))), 'PC 1: quem já viu a abertura nesta sessão entra direto no mapa');
   const viu1 = await p1.waitForSelector(Z(`.pr-p[data-pessoa="${idBruno}"]`), { timeout: 15000 }).then(() => true).catch(() => false);
   const viu2 = await p2.waitForSelector(Z(`.pr-p[data-pessoa="${idAna}"]`), { timeout: 15000 }).then(() => true).catch(() => false);
   ok(viu1 && viu2, 'PC 1 vê o boneco do Bruno e o PC 2 vê o boneco da Ana');
@@ -223,6 +231,7 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
   ok(await ate(() => Promise.resolve(!!((lerDisco(`progresso-${idAna}.json`, {}).medalhas || {})['praca-velha'])), 10000), 'disco da instrutora: a Ana ganhou a medalha ❌ Bom de jogo');
 
   // ================= A instrutora entra na praça =================
+  await jaViuAbertura(A);
   await A.evaluate(() => CE.janelas.abrir('praca'));
   ok(await ate(async () => !!(await A.$(Z(`.pr-gente [data-gente="${idAna}"]`))) && !!(await A.$(Z(`.pr-gente [data-gente="${idBruno}"]`)))), 'instrutora: "Na praça agora" mostra a Ana e o Bruno');
   ok(await ate(async () => (await A.textContent(Z('[data-acao="cidade"]'))).includes('2/9')), 'instrutora: vê a cidade da turma que está na praça (Manhã, 2 de 9)');

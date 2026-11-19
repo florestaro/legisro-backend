@@ -121,6 +121,21 @@ window.CE = window.CE || {};
   };
   CE.ouvir('licao:concluida', () => { CE.praca.informar(); });
 
+  // As cores do chão da cidade: o desenho abaixo e a abertura em pontos (a maquete) usam as mesmas.
+  const COR_DO_CHAO = { grama: '#8DBE5A', rua: '#5E6468', calcada: '#D9D1C0', praca: '#ECDFC0', terra: '#C47A48', horta: '#6E4B2E', lote: '#C98E5E', plataforma: '#C8C0B0', trilho: '#9D9285', areia: '#E9D49F', agua: '#8A6C45', pier: '#9C6E44' };
+  // As cores dos detalhes, tiradas do mesmo desenho, para a maquete da abertura (app/js/praca-abertura3d.js).
+  // Os prédios usam o telhado e a parede de cada um, que ficam no mapa (app/js/praca-mapa.js).
+  const CORES_DA_MAQUETE = {
+    chao: COR_DO_CHAO, ruaBorda: '#4C5155', faixa: '#F0CF57', pracaAneis: ['#E5D4AE', '#EFE3C6'], pracaBorda: '#C2AE84',
+    dormente: '#6B4A33', trilho: '#C9CED3', plataformaBeira: '#E3C23A', horta: ['#5A3A22', '#7A5233'], hortaBorda: '#A07848',
+    loteBorda: '#7A4E2A', montes: ['#B07A4E', '#A86F44'], balcao: '#8A5A35', porta: '#5B3A22', janela: '#7FB3CF', cruz: '#2E8B57',
+    arvore: ['#4E9A43', '#2F6E2A'], ipeAmarelo: ['#F2C12E', '#C5960F', '#FFE27A'], ipeRoxo: ['#C2569E', '#8C3A72', '#F0A6D6'],
+    palmeira: '#3F8F3A', coco: '#7A5A2E', coretoPiso: '#C89A62', coretoBeira: '#F4EFE6', coretoEscada: '#E8E0D2',
+    fontePedra: '#CDBF9E', fonteAgua: '#7CC4E2', bancoEncosto: '#7A4E2A', bancoAssento: '#A26C3D', mesa: '#B7834A', mesaPe: '#6E4B2E',
+    muralMoldura: '#8A5A35', muralFundo: '#C9A06A', notas: ['#FFF39A', '#BFE2FF', '#FFC9D6', '#CFF2C7', '#FFF39A'],
+    poste: '#5B6168', luz: '#F6E27A', lampiao: '#4E5459', lampiaoLuz: '#F6E58A', obra: '#CEC5B2', obraFaixa: ['#F5B400', '#2B2B2B'],
+  };
+
   // ================= Desenho da cidade (uma vez, num canvas com o dobro de pontos) =================
   function desenharCidade(tela) {
     const Q = Math.min(3, Math.max(2, Math.ceil((window.devicePixelRatio || 1) * 2)));
@@ -134,7 +149,7 @@ window.CE = window.CE || {};
       const n = parseInt(hex.slice(1), 16); const f = (c) => Math.max(0, Math.min(255, Math.round(c + q)));
       return `rgb(${f(n >> 16)}, ${f((n >> 8) & 255)}, ${f(n & 255)})`;
     };
-    const COR = { grama: '#8DBE5A', rua: '#5E6468', calcada: '#D9D1C0', praca: '#ECDFC0', terra: '#C47A48', horta: '#6E4B2E', lote: '#C98E5E', plataforma: '#C8C0B0', trilho: '#9D9285', areia: '#E9D49F', agua: '#8A6C45', pier: '#9C6E44' };
+    const COR = COR_DO_CHAO;
     const circulo = (x, y, r, cor) => { g.fillStyle = cor; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); };
     const emoji = (txt, x, y, tam) => { g.font = `${tam}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, x, y); };
     const ret = (x, y, w, h, r) => { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); };
@@ -640,6 +655,9 @@ window.CE = window.CE || {};
 
       // ---------- Estado que vem do computador do instrutor ----------
       let desde = 0, versaoVista = -1, chamadaVista = undefined, primeira = true, emCurso = false, fechouJanela = false;
+      // A abertura (a maquete em pontos) espera a primeira resposta: os prédios acesos e onde você chegou.
+      let avisarChegada = null;
+      const chegouCidade = new Promise((ok) => { avisarChegada = ok; });
       let estado = { aberta: true, soFrases: false, silenciado: false, silenciados: [] };
       let mesa = null, votacao = null;
       const conversa = [];
@@ -1369,6 +1387,7 @@ window.CE = window.CE || {};
         }
         desenharGente();
         if (primeira) { primeira = false; conquista('visitou'); CE.emitir('praca:entrou', {}); if (!souInstrutor) conferirEntrevista(); }
+        if (avisarChegada) { avisarChegada(!bloqueado()); avisarChegada = null; }
       }
       function marcarMao(p, ligada) {
         if (ligada && !p.maoEl) { p.maoEl = CE.el('span', { class: 'pr-mao', 'aria-label': 'pediu ajuda' }, '🙋'); p.el.append(p.maoEl); }
@@ -1651,7 +1670,8 @@ window.CE = window.CE || {};
         abrirDialogo({
           tipo: 'cidade', rosto: '🏙️', titulo: 'A cidade da turma',
           subtitulo: `${r.turma ? 'Turma ' + r.turma : 'Sem turma'} · ${r.alunos} aluno${r.alunos === 1 ? '' : 's'} · cada prédio acende quando ${r.precisa} concluírem o módulo dele`,
-          extra: [seletor, abas, ...conteudo].filter(Boolean), opcoes: [{ rotulo: 'Fechar' }], foco: `[data-aba="${abaCidade}"]`,
+          extra: [seletor, abas, ...conteudo].filter(Boolean), foco: `[data-aba="${abaCidade}"]`,
+          opcoes: [{ rotulo: '🎬 Ver maquete', id: 'ver-maquete', acao: () => verMaquete(false) }, { rotulo: 'Fechar' }],
         });
       }
       // Prédio em obra: quanto falta e o que cada um pode fazer.
@@ -2812,10 +2832,36 @@ window.CE = window.CE || {};
       CE.praca.informar();
       quadroId = requestAnimationFrame(quadro);
 
+      // ---------- Abertura: a maquete da cidade em pontos (app/js/praca-abertura3d.js) ----------
+      // Só na primeira entrada da sessão; dá para rever no 🏙️ Cidade (🎬 Ver maquete). Ela fica por cima do mapa e
+      // some num crossfade no mesmo enquadramento: o jogo por baixo continua igual (só os cliques e teclas da
+      // abertura não chegam nele).
+      let maquete = null;
+      function verMaquete(primeiraVez) {
+        if (maquete || fechouJanela || !CE.abertura3d) return;
+        maquete = CE.abertura3d.iniciarAbertura({
+          alvo: mapa, mapa: M, cores: CORES_DA_MAQUETE,
+          pronto: primeiraVez ? chegouCidade : true,
+          emObra: (id) => !!obras[id],
+          trem: () => !enfeiteDe.estacao[0].hidden,
+          voce: () => ({ x: eu.x, y: eu.y }),
+          enquadramento: () => ({ x: cam.x, y: cam.y, s: cam.s }),
+          aoComecar: () => { if (primeiraVez) CE.abertura3d.marcarVista(); },
+        }, () => {
+          maquete = null;
+          const foco = document.activeElement;
+          if (fechouJanela || (foco && foco !== document.body && !mapa.contains(foco))) return; // o foco está em outro lugar: fica lá
+          const noDialogo = !dialogo.hidden && dialogo.querySelector('input:not([type="checkbox"]), button');
+          (noDialogo || mapa).focus({ preventScroll: true });
+        });
+      }
+      if (CE.abertura3d && CE.abertura3d.deveMostrar()) verMaquete(true);
+
       return {
         receber() { mudarZoom(true); },
         aoFechar() {
           fechouJanela = true;
+          if (maquete) maquete.parar();
           limparVisual();
           M.definirBloqueios([], null);
           pracaNaTela = false;

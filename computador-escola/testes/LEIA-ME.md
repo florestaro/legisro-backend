@@ -123,6 +123,8 @@ npm run teste:praca
 ```
 
 Abre o programa de verdade em 3 computadores (a instrutora e dois alunos, a Ana e o Bruno, que é monitor) e confere:
+- **Abertura (a maquete da cidade em pontos)**: na primeira entrada da sessão, o Bruno vê a abertura por cima do mapa e
+  pula no botão "Pular"; a Ana, que já tinha visto nesta sessão, entra direto no mapa.
 - **Os dois na praça**: cada um vê o boneco do outro; a Ana anda com as setas e o computador do Bruno vê ela andar; o
   "Bom dia!" da Ana chega na conversa do Bruno (estão perto); o 🙋 do Bruno aparece em cima dele no computador da Ana.
 - **Entrevista de emprego**: no primeiro acesso, o Professor Virtual (recrutador) abre a entrevista na tela da Ana; os
