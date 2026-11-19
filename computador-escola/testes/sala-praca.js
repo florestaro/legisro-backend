@@ -206,14 +206,18 @@ const ate = async (f, ms = 8000) => { const fim = Date.now() + ms; while (Date.n
   const MAPA = require('../app/js/praca-mapa.js');
   let r = ligou, vez = 0;
   const limite = Date.now() + 70000;
+  // O estado do evento no computador da instrutora (sem mexer em ninguém): no fim, o balde de um pode chegar depois que
+  // o fogo já apagou, e aí a resposta é "não tem evento acontecendo".
+  const estadoDoEvento = async () => ({ emergencia: (await A.evaluate(() => CE.api.chamar('praca:sincronizar', {}, Number.MAX_SAFE_INTEGER))).emergencia });
   while (r && r.emergencia && r.emergencia.status === 'ativo' && Date.now() < limite) {
     const p = vez++ % 2 ? p2 : p1;
     await ajuda(p, 'pegar', { x: 16, y: 13 }); await espera(1300);
     const f = (r.emergencia.focos || []).find((x) => x.forca > 0 && !x.eletrico);
-    if (!f) { await espera(1000); r = await ajuda(p, 'pegar', { x: 16, y: 13 }); continue; }
+    if (!f) { await espera(1000); r = await ajuda(p, 'pegar', { x: 16, y: 13 }); if (!r.emergencia) r = await estadoDoEvento(); continue; }
     const [x, y] = MAPA.pertoDoPonto(f.x, f.y)[0];
     const novo = await ajuda(p, 'entregar', { x, y, foco: f.id });
     r = novo.emergencia ? novo : await ajuda(p, 'pegar', { x: 16, y: 13 });
+    if (!r.emergencia) r = await estadoDoEvento();
   }
   ok(r && r.emergencia && r.emergencia.status === 'salvo', `os dois apagaram foco por foco (e os Bombeiros o poste): ${r && r.emergencia && r.emergencia.status}`);
   ok(await ate(async () => /O fogo apagou!/.test(await p1.textContent(Z('.pr-emerg'))) && /O fogo apagou!/.test(await p2.textContent(Z('.pr-emerg')))), 'a turma apagou o fogo: o resultado aparece na tela dos dois');
