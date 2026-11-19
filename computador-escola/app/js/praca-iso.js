@@ -111,6 +111,18 @@ window.CE = window.CE || {};
       const n = 5;
       for (let i = 0; i < n; i++) if (i % 2) poli([[x0 + (i / n) * w, y0, h + 0.005], [x0 + ((i + 1) / n) * w, y0, h + 0.005], [x0 + ((i + 1) / n) * w, y0 + d, h + 0.005], [x0 + (i / n) * w, y0 + d, h + 0.005]], '#FFFFFF');
     }
+    if (e.placa && !e.obra) {
+      // a placa da lanchonete em cima do telhado: um poste e o letreiro redondo com o lanche
+      const cx = x0 + w / 2, cy = y0 + d / 2;
+      const [Xb, Yb] = P([cx, cy, h]), [Xt, Yt] = P([cx, cy, h + 0.55]);
+      g.strokeStyle = '#6B6B6B'; g.lineWidth = Math.max(2, T * 0.08); g.beginPath(); g.moveTo(Xb, Yb); g.lineTo(Xt, Yt); g.stroke();
+      const r = T * 0.42;
+      g.fillStyle = '#C62828'; g.beginPath(); g.arc(Xt, Yt - r * 0.6, r, 0, Math.PI * 2); g.fill();
+      g.lineWidth = Math.max(2, T * 0.07); g.strokeStyle = '#F2B705'; g.stroke();
+      g.font = `${Math.round(r * 1.15)}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+      g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#000';
+      g.fillText(e.placa, Xt, Yt - r * 0.55);
+    }
     if (e.obra) {
       // placa da obra em cima do tapume
       const [X, Y] = P([x0 + w / 2, y0 + d / 2, h]);
@@ -157,7 +169,7 @@ window.CE = window.CE || {};
 
   // Desenha a caixa num canvas e corta em fatias (cada fatia com a profundidade do ponto mais à frente nela).
   function fatiarCaixa(G, T, x0, y0, w, d, e, base) {
-    const alto = e.h + (e.bico || 0) + (e.chamine ? 0.3 : 0) + (e.obra ? 0.7 : 0);
+    const alto = e.h + (e.bico || 0) + (e.chamine ? 0.3 : 0) + (e.obra ? 0.7 : 0) + (e.placa ? 1.1 : 0);
     const cantos = [[x0, y0], [x0 + w, y0], [x0 + w, y0 + d], [x0, y0 + d]];
     const tela = cantos.flatMap(([x, y]) => [G.tela(x, y, 0), G.tela(x, y, alto)]).map(([X, Y]) => [X * T, Y * T]);
     const bx1 = Math.floor(Math.min(...tela.map((p) => p[0])) - 3), bx2 = Math.ceil(Math.max(...tela.map((p) => p[0])) + 3);
@@ -285,6 +297,7 @@ window.CE = window.CE || {};
       return {
         h: M.alturaDe(L), bico: M.bicoDe(L), parede: L.parede, teto: L.telhado, platibanda: !M.bicoDe(L),
         janelas: true, portas: L.portas || [], colunas: !!L.colunas, cruz: !!L.cruz, chamine: !!L.casa,
+        placa: L.placa || null, listras: L.faixa ? [[0, 1, M.alturaDe(L) - 0.4, M.alturaDe(L) - 0.1, L.faixa]] : null,
       };
     }
     function montarPredio(L, subir) {

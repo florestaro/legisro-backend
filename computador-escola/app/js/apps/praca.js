@@ -37,6 +37,7 @@ window.CE = window.CE || {};
     'casa-bruno': { texto: 'Uma casa da Rua da Turma: cada aluno tem a sua.' },
     'sua-casa': { texto: 'A sua casa na Rua da Turma, com as medalhas que você ganhou na parede.' },
     empregos: { texto: 'Vagas de emprego de treino, currículo e entrevista.', botao: 'Ver as vagas (Emprega Já)', abrir: navegar('https://empregaja.com.br') },
+    lanchonete: { texto: 'A hamburgueria da turma! Aqui é o jogo Do Campo ao Balcão: da roça e do pasto até o balcão, cada um cuida de um setor e todos conversam.' },
     lote: { texto: 'Terreno da turma. Todos votam no que construir aqui; as moedas vêm das aulas concluídas.' },
     banco: { texto: 'O banco de treino: Pix, boleto, cartão e empréstimo, sem dinheiro de verdade.', botao: 'Entrar no Banco Escola', abrir: navegar('https://bancoescola.com.br') },
     correios: { texto: 'Mande uma carta para um colega: ela chega no E-mail dele.', botao: 'Escrever uma carta (E-mail)', abrir: () => CE.janelas.abrir('email') },
@@ -367,6 +368,9 @@ window.CE = window.CE || {};
           g.fillStyle = tom(L.parede, -50); g.fillRect(cx - 12, topo + 29, 24, 2.5);
         }
       }
+      // A lanchonete: o toldo amarelo em cima da fachada e o letreiro redondo com o lanche no telhado
+      if (L.faixa) { g.fillStyle = L.faixa; g.fillRect(X - 2, topo, PW + 4, 6); g.fillStyle = 'rgba(0, 0, 0, .15)'; g.fillRect(X - 2, topo + 6, PW + 4, 2); }
+      if (L.placa) { const cx = X + PW / 2, cy = Y + telhadoH / 2; circulo(cx, cy, 16, L.faixa || '#F2B705'); circulo(cx, cy, 13, '#C62828'); emoji(L.placa, cx, cy + 1, 17); }
       if (L.cruz) { const cx = X + PW - 28, cy = Y + telhadoH / 2; circulo(cx, cy, 14, '#FFFFFF'); g.fillStyle = '#2E8B57'; g.fillRect(cx - 3, cy - 9, 6, 18); g.fillRect(cx - 9, cy - 3, 18, 6); }
     }
     // Árvores, ipês e palmeiras (na Praça em 3D, elas ficam em pé; aqui no chão fica só a sombra)
@@ -1922,6 +1926,12 @@ window.CE = window.CE || {};
         if (RUA.includes(L.id) || (L.id === 'sua-casa' && souInstrutor)) return abrirCidade('rua');
         if (L.id === 'sua-casa') return abrirCasa();
         if (L.id === 'coreto') return abrirNovela();
+        if (L.id === 'lanchonete') {
+          // O jogo Do Campo ao Balcão: o professor abre para a turma; o aluno entra (quando o professor já abriu).
+          return abrirDialogo({ tipo: 'lugar', rosto: '🍔', titulo: 'Do Campo ao Balcão', subtitulo: 'A hamburgueria da turma', fala: info.texto,
+            nota: souInstrutor ? 'Você escolhe o modo, o nível e quem faz o quê. Os alunos entram por aqui ou pelo convite.' : 'Se o professor ainda não abriu o jogo, a janela avisa.',
+            opcoes: [{ rotulo: souInstrutor ? '🍔 Abrir o jogo para a turma' : '🍔 Entrar no jogo', principal: true, id: 'entrar-negocio', acao: () => { CE.janelas.abrir('negocio'); CE.emitir('praca:entrou-lugar', { lugar: L.id }); } }, { rotulo: 'Fechar' }] });
+        }
         if (L.id === 'fonte') {
           return abrirDialogo({ tipo: 'lugar', rosto: '⛲', titulo: 'Fonte', subtitulo: 'No meio da praça', fala: info.texto,
             opcoes: [{ rotulo: 'Jogar uma moedinha e fazer um pedido', principal: true, acao: () => falar('✨ Fiz um pedido na fonte!') }, { rotulo: 'Fechar' }] });
@@ -2930,7 +2940,7 @@ window.CE = window.CE || {};
         for (const r of camadaRotulos.querySelectorAll('.pr-rotulo[data-x]')) {
           const L = r.dataset.lugar && M.porLugar[r.dataset.lugar];
           if (iso && cena && L && (L.telhado || L.casa)) {
-            const [x, y, w, h] = L.r, alto = obras[L.id] ? 1.2 : M.alturaDe(L) + M.bicoDe(L);
+            const [x, y, w, h] = L.r, alto = obras[L.id] ? 1.2 : M.alturaDe(L) + M.bicoDe(L) + (L.placa ? 1.25 : 0);
             r.style.left = `${(x + w / 2) * T}px`; r.style.top = `${(y + h / 2) * T}px`;
             r.style.setProperty('--sobe', `${-Math.round(alto * cena.HZ * T + 18)}px`);
           } else {

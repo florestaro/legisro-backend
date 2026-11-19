@@ -39,6 +39,8 @@
     { id: 'feira', nome: 'Feira', emoji: '🧺', area: true, r: [0, 22, 11, 3], morador: 'raimundo' },
     { id: 'horta', nome: 'Horta comunitária', emoji: '🥬', area: true, r: [12, 22, 5, 3], entradas: [[13, 21], [14, 21], [15, 21]] },
     { id: 'estacao', nome: 'Estação Madeira-Mamoré', emoji: '🚂', r: [19, 22, 9, 2], portas: [23], telhado: '#A13A2C', parede: '#E7C26A' },
+    // A hamburgueria da turma: clicando nela, o jogo "Do Campo ao Balcão" (app/js/apps/negocio.js).
+    { id: 'lanchonete', nome: 'Do Campo ao Balcão', emoji: '🍔', r: [33, 22, 3, 2], portas: [34], telhado: '#C62828', parede: '#FFF3D6', faixa: '#F2B705', placa: '🍔' },
     { id: 'rio', nome: 'Cais do Rio Madeira', emoji: '⛵', area: true, r: [29, 26, 7, 4], morador: 'bene', entradas: [[31, 26], [32, 26], [31, 27], [32, 27], [31, 28]] },
   ];
   // Coisas da praça.
@@ -95,14 +97,14 @@
   const BARRACAS = [[1, 22, '#D9483B'], [3, 22, '#2F7DC0'], [5, 22, '#3B9A57'], [7, 22, '#E2A02A'], [9, 22, '#B65AA8']];
   const IPES = [[12, 8, 'amarelo'], [23, 8, 'roxo'], [12, 17, 'roxo'], [23, 17, 'amarelo']];
   const ARVORES = [[0, 0], [7, 0], [11, 0], [24, 0], [29, 0], [35, 0], [4, 2], [8, 2], [12, 2], [23, 2], [30, 2], [35, 2],
-    [0, 9], [0, 16], [35, 10], [35, 16], [11, 23], [17, 23], [29, 23], [34, 23]];
+    [0, 9], [0, 16], [35, 10], [35, 16], [11, 23], [17, 23], [29, 23]];
   const PALMEIRAS = [[3, 26], [15, 26], [26, 26]];
   // O poste de luz na calçada da praça, perto da lata de lixo (no incêndio, o fogo pode chegar nele: água, não!).
   const POSTE = [24, 14];
 
   // A altura de cada prédio (em quadrinhos) na Praça em 3D (isométrica) e na abertura (a maquete): a Escola e a
   // Prefeitura são as mais altas, as casas baixas. "bico" é o telhado de duas águas (casas e estação).
-  const ALTURAS = { escola: 3, prefeitura: 3, banco: 2.3, empregos: 2.1, correios: 2, posto: 2, estacao: 1.5 };
+  const ALTURAS = { escola: 3, prefeitura: 3, banco: 2.3, empregos: 2.1, correios: 2, posto: 2, estacao: 1.5, lanchonete: 1.4 };
   const alturaDe = (L) => (L.casa ? 1.25 : ALTURAS[L.id] || 2);
   const bicoDe = (L) => (L.casa || L.id === 'estacao' ? 0.45 : 0);
 

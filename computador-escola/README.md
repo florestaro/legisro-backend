@@ -435,6 +435,38 @@ curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela red
   das tarefas e das pistas são conferidas no computador do instrutor); as medalhas, no progresso de cada aluno. No modo de
   teste pelo navegador, a praça tem **colegas de demonstração** andando e conversando.
 
+### 🍔 Do Campo ao Balcão: o jogo da hamburgueria da turma (na rede da sala)
+Um jogo de gerenciar uma hamburgueria com a cadeia inteira: a **roça** planta o milho e guarda a silagem, o **pasto**
+engorda o boi, o **veterinário** vacina e faz a guia (GTA), o **caminhão** leva o boi ao **frigorífico** e o hambúrguer
+à **lanchonete**, que vende; o **escritório** compra pão e queijo, paga as contas, faz propaganda, contrata e cuida do
+meio ambiente. Entra pelo prédio da lanchonete na Praça Escola (🍔, no canto de baixo, perto da estação): clicando nele,
+o boneco vai até a porta e o jogo abre (o aluno também recebe o convite na tela).
+- **O mundo anda sozinho** (no computador do instrutor): os dias passam (à noite, mais rápido), a seca chega, o capim
+  cresce e acaba, o boi engorda ou emagrece, o hambúrguer vence na câmara fria e os clientes chegam conforme o preço, a
+  fama, a fila, a propaganda e o dia da semana (pico no almoço e à noite; sábado e domingo, mais). Os alunos só decidem.
+- **14 funções**: Agricultor(a), Pecuarista, Veterinário(a), Logística, Frigorífico, Compras, Chapeiro(a), Caixa,
+  Gerente da lanchonete, Marketing, RH, Qualidade e meio ambiente, Financeiro e Diretor(a) geral. Cada função vê só o
+  seu setor ("ninguém vê tudo"): para saber se tem boi pronto, a lanchonete pergunta pela **conversa** ou faz um
+  **pedido** com prazo para o outro setor (aceito, feito ou recusado). A função sem aluno, **a IA faz** (simples e
+  mediana). O Caixa atende a fila **digitando os pedidos** e o Chapeiro **monta os lanches** clicando na ordem.
+- **Como o professor joga**: a **turma é uma empresa só** (cada um num setor) ou **cada aluno com a sua empresa**
+  (mexendo em tudo, como no jogo antigo); as funções podem ser **sorteadas**, **escolhidas pelo professor** ou
+  **escolhidas por cada aluno**, com **rodízio** opcional (a cada 3, 5 ou 10 dias); a **fase** escolhe que setores
+  ficam com a turma (1: só a lanchonete; 5: a cadeia completa); duração de 10, 20 ou 30 dias do jogo.
+- **Dificuldade**: Fácil, Médio ou Difícil, e um **termômetro de 1 a 10** que o professor muda durante o jogo, sem
+  reiniciar: muda a velocidade do dia, quantos eventos sorteados, as dicas do Professor Virtual, a validade do estoque,
+  os dilemas e se a empresa pode falir. O jogo sugere ("tudo verde há 2 dias: subir?") e os alunos votam (😴 👍 🥵).
+- **O Professor Virtual** narra: avisa antes ("a seca chega em 2 dias: guardem silagem"), explica o que deu errado
+  ("faltou hambúrguer às 12h") e fecha cada dia com vendas, clientes perdidos e lucro.
+- **Eventos**: seca forte, foco de queimada, doença no rebanho, BR-364 fechada, falta de luz, fiscalização sanitária,
+  avaliação ruim, concorrente, feriado, jogo do Brasil, boleto falso e combustível caro (sorteados ou disparados pelo
+  professor). **Dilemas** com consequência: derrubar a mata (multa do IBAMA), ração barata sem nota, usar o lote vencido
+  (cliente passa mal), não pagar a hora extra (processo), propaganda enganosa (PROCON) e, no difícil, o "jeitinho" com o
+  fiscal (sempre descoberto: corrupção é crime).
+- **Quatro medidores**: 💰 Caixa, 😊 Clientes, 👷 Equipe e 🌳 Natureza. No fim, a empresa que chega com os quatro em 50 ou
+  mais ganha o **Selo Empresa Saudável**; o professor vê a participação de cada aluno (ações, lanches atendidos,
+  pedidos e mensagens). O professor também pausa (reunião), pula para o dia seguinte e acelera.
+
 ### 💰 Moedas de cada aluno
 Todo aluno começa com **zero moedas** e ganha com o que faz: aula concluída (10), prova de nível (50), missão da semana
 (30), exercício de digitação aprovado (5), medalha nova (10), ajudar um colega como monitor (15), gincana (10, e o
@@ -541,6 +573,7 @@ npm run teste:sala            # 1 instrutor + 20 alunos usando o sistema ao mesm
 npm run teste:sala -- 5       # o mesmo com 5 alunos
 npm run teste:fase2           # novidades da fase 2: o aluno troca de computador e encontra tudo (uns 3 minutos)
 npm run teste:fase3           # novidades da fase 3: MEI, anúncio e PDF em outro computador, e a monitoria (uns 3 minutos)
+npm run teste:negocio         # o jogo Do Campo ao Balcão em 3 computadores: convite, funções, relógio, pedidos, conversa, caixa, eventos, termômetro, pausa e resultado
 npm run teste:praca           # a Praça Escola em 3 computadores: a abertura (maquete), a cidade em 3D e em 2D, andar, conversar, a cidade que cresce, tarefas, novela, eventos urgentes e especiais, Hora da Praça, moedas, jogar, mural, votação e comandos do instrutor
 npm run teste:perigos         # os eventos urgentes no mapa, sem tela e sem rede (1 segundo): o fogo pulando e os Bombeiros, a enchente subindo e a areia, as árvores caindo e a Defesa Civil
 npm run teste:emojis          # todos os emojis aparecem direito no Windows 10 (sem tela, segundos)
@@ -683,6 +716,9 @@ app/js/praca-mapa.js     o mapa da Praça Escola (prédios, praça, caminhos); p
                          praca-abertura3d.js: a abertura (a maquete da cidade em pontos, num canvas 2D, sem WebGL);
                          praca-iso.js: a Praça em 3D isométrica (prédios desenhados em fatias com profundidade,
                          árvores e postes em pé, o chão já deitado, girar a cidade, prédio transparente na frente)
+app/js/negocio-regras.js as regras do jogo Do Campo ao Balcão (o mundo que anda sozinho, as 14 funções, a IA,
+                         os eventos e o termômetro), usadas pelo servidor da sala e pelo modo navegador;
+                         apps/negocio.js: a janela do jogo (professor e alunos)
 testes/                  testes automáticos do modo sala de aula (servidor, turma de 20 alunos, as novidades das
                          fases 2 e 3 e a Praça Escola em 3 computadores) e o dos emojis do Windows 10
 ```

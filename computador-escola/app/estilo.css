@@ -2680,3 +2680,102 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 @keyframes me-pula { from { transform: translateY(0); } to { transform: translateY(-6px); } }
 @keyframes me-treme { 0% { transform: translateX(0); } 50% { transform: translateX(2px); } 100% { transform: translateX(-2px); } }
 @media (max-width: 700px) { .me-pagina { grid-template-columns: minmax(0, 1fr); } }
+
+/* ===== Do Campo ao Balcão (app/js/apps/negocio.js) ===== */
+.ng-app { display: flex; flex-direction: column; height: 100%; overflow: auto; background: #f6f3ea; color: #2b2b2b; font-size: 14px; }
+.ng-app h2 { margin: 0 0 8px; }
+.ng-config, .ng-espera, .ng-fim, .ng-vazio { padding: 18px 22px; max-width: 980px; }
+.ng-vazio { text-align: center; margin: 40px auto; } .ng-grande { font-size: 64px; }
+.ng-config-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px 16px; margin: 12px 0; }
+.ng-config-grade label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
+.ng-funcs { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 12px; margin: 8px 0 14px; }
+.ng-part-lista { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+.ng-part { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 10px; padding: 6px 10px; flex-wrap: wrap; }
+.ng-avatar { font-size: 22px; }
+.ng-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.ng-minhas { background: #fff; border-radius: 12px; padding: 10px 14px; margin: 10px 0; }
+.ng-minha { display: flex; flex-direction: column; margin-top: 6px; }
+.ng-aguarde { font-size: 18px; margin-top: 18px; }
+.ng-jogo { display: flex; flex-direction: column; min-height: 100%; }
+.ng-controles { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 10px; background: #2f3b2a; color: #fff; }
+.ng-controles .botao { padding: 5px 10px; font-size: 13px; }
+.ng-termo { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.ng-sugestao { background: #ffe9a8; color: #5a4300; border-radius: 8px; padding: 3px 8px; font-weight: 600; }
+.ng-votos { background: rgba(255, 255, 255, .15); border-radius: 8px; padding: 3px 8px; }
+.ng-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 8px 12px; background: #fff; border-bottom: 2px solid #e5dfcf; }
+.ng-relogio { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.ng-estacao.seca { color: #b25a00; font-weight: 700; } .ng-estacao.chuva { color: #1f6aa5; font-weight: 700; }
+.ng-pausa { background: #ffd54f; border-radius: 8px; padding: 2px 8px; font-weight: 700; }
+.ng-meds { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.ng-med { display: grid; grid-template-columns: auto 90px auto; align-items: center; gap: 6px; font-size: 13px; }
+.ng-barra { height: 10px; background: #e7e2d4; border-radius: 6px; overflow: hidden; min-width: 60px; }
+.ng-barra i { display: block; height: 100%; background: #e2a72e; border-radius: 6px; transition: width .4s; }
+.ng-med.alto .ng-barra i { background: #3b9a57; } .ng-med.baixo .ng-barra i, .ng-barra.ruim i { background: #d9483b; }
+.ng-caixa { font-weight: 800; font-size: 16px; } .ng-caixa.negativo, .negativo { color: #c62828; }
+.ng-meta { background: #fff7d6; padding: 5px 12px; font-weight: 600; border-bottom: 1px solid #eadfb5; }
+.ng-corpo { display: grid; grid-template-columns: 190px 1fr 280px; gap: 10px; padding: 10px; flex: 1; min-height: 0; }
+.ng-abas { display: flex; flex-direction: column; gap: 4px; }
+.ng-aba { text-align: left; border: 0; background: #fff; border-radius: 8px; padding: 8px 10px; cursor: pointer; font: inherit; }
+.ng-aba.ativa { background: #c62828; color: #fff; font-weight: 700; }
+.ng-painel { background: #fff; border-radius: 12px; padding: 12px 14px; overflow: auto; min-width: 0; }
+.ng-cab h3 { margin: 0; } .ng-cab p { margin: 2px 0 10px; color: #666; }
+.ng-grade4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-bottom: 10px; }
+.ng-talhao, .ng-piquete { background: #f4f0e4; border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; border: 2px solid transparent; }
+.ng-piquete.ativo { border-color: #3b9a57; background: #eaf5e5; }
+.ng-talhao.fogo, .ng-piquete.fogo { border-color: #d9483b; background: #fdeceb; }
+.ng-talhao.pronto { background: #fff3c4; }
+.ng-icone { font-size: 28px; }
+.ng-linha { display: flex; flex-wrap: wrap; gap: 8px; }
+.ng-linha > * { flex: 1 1 220px; }
+.ng-cartao { background: #faf8f2; border: 1px solid #ece6d6; border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+.ng-cartao h4 { margin: 0; }
+.ng-cartao .botao, .ng-funcao .botao.secundario { padding: 5px 10px; font-size: 13px; }
+.ng-num-grande { font-size: 24px; font-weight: 800; margin: 0; }
+.ng-form { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ng-form-pedido label { display: flex; flex-direction: column; font-size: 12px; font-weight: 600; }
+.ng-num { width: 90px; }
+.ng-alerta { background: #fdeceb; color: #9b1c12; border-radius: 8px; padding: 6px 10px; font-weight: 600; }
+.ng-rebanho { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.ng-boi { display: inline-flex; flex-direction: column; align-items: center; background: #f4f0e4; border-radius: 8px; padding: 2px 6px; font-size: 20px; }
+.ng-boi small { font-size: 10px; } .ng-boi.pronto { background: #e3f3dc; } .ng-boi.doente { background: #fdeceb; }
+.ng-lotes { display: flex; flex-wrap: wrap; gap: 4px; }
+.ng-lote { background: #e8f1fb; border-radius: 6px; padding: 2px 8px; font-size: 12px; } .ng-lote.vencido { background: #fdeceb; color: #9b1c12; font-weight: 700; }
+.ng-loja { display: flex; flex-wrap: wrap; gap: 4px 12px; background: #fff3d6; border-radius: 10px; padding: 6px 10px; margin-bottom: 8px; font-size: 13px; }
+.ng-receita { font-weight: 700; } .ng-montado.errado { color: #c62828; }
+.ng-ings { display: flex; flex-wrap: wrap; gap: 6px; } .ng-ings .chip { font-size: 15px; padding: 8px 12px; }
+.ng-pedido { font-size: 18px; font-weight: 700; color: #6b3b00; }
+.ng-contas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.ng-contas li { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between; background: #fff; border-radius: 8px; padding: 5px 8px; }
+.ng-contas li.atrasada { background: #fdeceb; }
+.ng-grafico { display: flex; align-items: flex-end; gap: 4px; height: 90px; width: 100%; }
+.ng-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; }
+.ng-col i { display: block; width: 100%; background: #3b9a57; border-radius: 4px 4px 0 0; } .ng-col.neg i { background: #d9483b; }
+.ng-col small { font-size: 10px; }
+.ng-cadeia { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; margin: 6px 0 10px; }
+.ng-etapa { flex: 1 1 130px; background: #f4f0e4; border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 3px; font-size: 13px; }
+.ng-etapa.oculta { background: #eee; color: #777; } .ng-etapa small { color: #555; }
+.ng-seta { align-self: center; font-size: 20px; color: #b0a58a; }
+.ng-lista-pedidos { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.ng-ped { background: #faf8f2; border-left: 5px solid #e2a72e; border-radius: 8px; padding: 6px 10px; display: flex; flex-direction: column; gap: 3px; }
+.ng-ped.aceito { border-color: #1f6aa5; } .ng-ped.feito { border-color: #3b9a57; opacity: .8; } .ng-ped.recusado { border-color: #d9483b; opacity: .8; }
+.ng-opcoes { display: flex; flex-wrap: wrap; gap: 4px; }
+.ng-msgs { list-style: none; margin: 0 0 8px; padding: 0; max-height: 340px; overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+.ng-msgs li { background: #faf8f2; border-radius: 8px; padding: 4px 8px; } .ng-msgs li.prof { background: #e8f1fb; }
+.ng-msgs small { display: block; color: #777; font-size: 11px; }
+.ng-lado { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ng-dilema { background: #fff3c4; border: 2px solid #e2a72e; border-radius: 12px; padding: 8px 10px; }
+.ng-dilema p { margin: 4px 0; font-size: 13px; } .ng-dilema .botao { font-size: 12px; padding: 5px 8px; }
+.ng-eventos { display: flex; flex-wrap: wrap; gap: 4px; }
+.ng-evento { background: #fdeceb; border-radius: 8px; padding: 2px 8px; font-size: 12px; font-weight: 600; }
+.ng-prof { background: #fff; border-radius: 12px; padding: 8px 10px; flex: 1; min-height: 0; overflow: auto; }
+.ng-avisos { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.ng-aviso { font-size: 12.5px; border-left: 4px solid #bbb; padding: 2px 6px; display: flex; flex-direction: column; }
+.ng-aviso small { color: #888; font-size: 10.5px; }
+.ng-aviso.urgente { border-color: #d9483b; background: #fdf3f2; } .ng-aviso.importante { border-color: #e2a72e; } .ng-aviso.dia { border-color: #1f6aa5; background: #f1f6fc; }
+.ng-voto { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; background: #fff; border-radius: 10px; padding: 6px 8px; }
+.ng-result { background: #fff; border-radius: 12px; padding: 10px 14px; margin: 10px 0; } .ng-result.saudavel { border: 3px solid #3b9a57; }
+.ng-tabela { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 8px; }
+.ng-tabela th, .ng-tabela td { border-bottom: 1px solid #eee; padding: 4px 6px; text-align: left; }
+@media (max-width: 900px) { .ng-corpo { grid-template-columns: 1fr; } .ng-abas { flex-direction: row; flex-wrap: wrap; } }
+.ng-controles .campo { width: auto; max-width: 260px; color: #222; background: #fff; padding: 4px 8px; }
+.ng-controles .botao.secundario { color: #222; }

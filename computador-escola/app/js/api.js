@@ -43,6 +43,10 @@ window.CE = window.CE || {};
   const progressoAtual = () => (atual && ler('progresso:' + atual.id, null)) || {};
   // Cofre: as aulas concluídas de quem usa este navegador, mais as dos colegas de demonstração.
   const cofreTeste = () => { const aulas = 300 + Object.values(progressoAtual().licoes || {}).filter((r) => r && r.concluida && !r.dispensada).length; const bonus = praca().bonus(); return { aulas, bonus, moedas: aulas * 4 + bonus, meta: 1500 }; };
+  // "Do Campo ao Balcão" no navegador de teste: só este computador (a função sem aluno, a IA faz).
+  let negocioTeste = null;
+  const negocio = () => (negocioTeste = negocioTeste || CE.negocioRegras());
+  const soInstrutor = () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); };
   const guardarResumoGincana = (estado) => { if (estado && estado.fase === 'fim') { const r = gincanas().resumo(); if (r && r.participantes) gravar('gincana-ultima', r); } return estado; };
 
   async function simulado(canal, ...a) {
@@ -104,7 +108,7 @@ window.CE = window.CE || {};
         'sala:presenca': () => {
           if (!atual) throw new Error('Ninguém entrou no sistema.');
           salaTeste.presencas[atual.id] = { usuario: atual, pc: 'Este computador', atividade: a[0] || {}, em: Date.now() };
-          return { pausada: salaTeste.pausada && atual.papel !== 'instrutor', mensagem: atual.papel !== 'instrutor' ? salaTeste.mensagem : null, corrida: atual.papel !== 'instrutor' ? corridas().convite(atual) : null, gincana: atual.papel !== 'instrutor' ? gincanas().convite(atual) : null, praca: atual.papel !== 'instrutor' && pracaTeste ? pracaTeste.convite(atual) : null };
+          return { pausada: salaTeste.pausada && atual.papel !== 'instrutor', mensagem: atual.papel !== 'instrutor' ? salaTeste.mensagem : null, corrida: atual.papel !== 'instrutor' ? corridas().convite(atual) : null, gincana: atual.papel !== 'instrutor' ? gincanas().convite(atual) : null, negocio: atual.papel !== 'instrutor' && negocioTeste ? negocioTeste.convite(atual) : null, praca: atual.papel !== 'instrutor' && pracaTeste ? pracaTeste.convite(atual) : null };
         },
         'sala:turma': () => ({ pausada: salaTeste.pausada, mensagem: salaTeste.mensagem, alunos: Object.values(salaTeste.presencas).filter((x) => Date.now() - x.em < 45000).map((x) => ({ ...x, ha: Math.round((Date.now() - x.em) / 1000), ajudaHa: x.atividade.ajuda ? Math.round((Date.now() - x.atividade.ajuda) / 1000) : null })) }),
         'escola:ler': () => {
@@ -182,6 +186,27 @@ window.CE = window.CE || {};
         'gincana:responder': () => gincanas().responder(atual, a[0]),
         'gincana:tarefa': () => gincanas().tarefa(atual, a[0]),
         'gincana:ultima': () => ler('gincana-ultima', null),
+        // Do Campo ao Balcão (regras em negocio-regras.js)
+        'negocio:estado': () => (negocioTeste ? negocioTeste.estado(atual) : null),
+        'negocio:criar': () => { soInstrutor(); return negocio().criar(atual, a[0] || {}); },
+        'negocio:entrar': () => negocio().entrar(atual),
+        'negocio:sair': () => negocio().sair(atual),
+        'negocio:sortear': () => { soInstrutor(); return negocio().sortear(atual); },
+        'negocio:atribuir': () => { soInstrutor(); return negocio().atribuir(atual, a[0] || {}); },
+        'negocio:escolher': () => negocio().escolherFuncao(atual, a[0] || {}),
+        'negocio:comecar': () => { soInstrutor(); return negocio().comecar(atual); },
+        'negocio:pausar': () => { soInstrutor(); return negocio().pausar(atual, a[0]); },
+        'negocio:acelerar': () => { soInstrutor(); return negocio().acelerar(atual, a[0]); },
+        'negocio:pular': () => { soInstrutor(); return negocio().pular(atual, a[0] || {}); },
+        'negocio:nivel': () => { soInstrutor(); return negocio().nivel(atual, a[0]); },
+        'negocio:evento': () => { soInstrutor(); return negocio().evento(atual, a[0] || {}); },
+        'negocio:encerrar': () => { soInstrutor(); const r = negocio().encerrar(atual); const z = negocio().resumo(); if (z) gravar('negocio-ultimo', z); return r; },
+        'negocio:fechar': () => { soInstrutor(); return negocio().fechar(); },
+        'negocio:votar': () => negocio().votar(atual, a[0]),
+        'negocio:acao': () => negocio().acao(atual, a[0] || {}),
+        'negocio:pedido': () => negocio().pedido(atual, a[0] || {}),
+        'negocio:responder': () => negocio().responderPedido(atual, a[0] || {}),
+        'negocio:falar': () => negocio().falar(atual, a[0] || {}),
         // Monitoria (no navegador de teste, os pedidos vêm das presenças guardadas aqui).
         'monitor:definir': () => {
           if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.');

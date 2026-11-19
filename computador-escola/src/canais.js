@@ -6,6 +6,7 @@ const criarCorridas = require('../app/js/corrida-regras');
 const criarGincanas = require('../app/js/gincana-regras');
 const jornalRegras = require('../app/js/jornal-regras');
 const criarPraca = require('../app/js/praca-regras');
+const criarNegocio = require('../app/js/negocio-regras');
 
 // Chaves que a tela pode usar: "progresso:<id>", "arquivos:<id>", "email:<id>" (a caixa de e-mail do aluno) e
 // "empresa:<id>" (a empresa de treino do Gestão Fácil).
@@ -86,6 +87,7 @@ function criarCanais(dados) {
   const sala = { pausada: false, mensagens: [] };
   const corridas = criarCorridas(); // corrida de digitação da turma (só na memória, como a sala ao vivo)
   const gincanas = criarGincanas(); // gincana ao vivo (na memória; o resultado final fica guardado para o jornal)
+  const negocio = criarNegocio(); // Do Campo ao Balcão: o jogo da hamburgueria (na memória; o resultado final fica guardado)
   const ajudasContadas = new Set(); // monitor > colega : pedido (cada ajuda conta uma vez só)
   const exigirMonitor = (s) => {
     exigirSessao(s);
@@ -350,6 +352,7 @@ function criarCanais(dados) {
         pausada: sala.pausada && aluno, mensagens: aluno ? mensagensAtuais() : [], mensagem: aluno ? mensagemAtual() : null,
         corrida: aluno ? corridas.convite(s.usuario) : null,
         gincana: aluno ? gincanas.convite(s.usuario) : null,
+        negocio: aluno ? negocio.convite(s.usuario) : null, // o professor abriu o Do Campo ao Balcão
         praca: aluno ? praca.convite(s.usuario) : null, // o instrutor chamou todos para a Praça Escola
         ajudante: ajudante ? ajudante.nome : null, // o monitor que está vindo ajudar
       };
@@ -397,6 +400,27 @@ function criarCanais(dados) {
     'gincana:responder': (s, d) => { exigirSessao(s); return gincanas.responder(s.usuario, d); },
     'gincana:tarefa': (s, d) => { exigirSessao(s); return gincanas.tarefa(s.usuario, d); },
     'gincana:ultima': (s) => { exigirSessao(s); return dados.ler('gincana-ultima', null); },
+    // ---------- Do Campo ao Balcão (regras em app/js/negocio-regras.js) ----------
+    'negocio:estado': (s) => { exigirSessao(s); return negocio.estado(s.usuario); },
+    'negocio:criar': (s, c = {}) => { exigirInstrutor(s); return negocio.criar(s.usuario, c); },
+    'negocio:entrar': (s) => { exigirSessao(s); return negocio.entrar(s.usuario); },
+    'negocio:sair': (s) => { exigirSessao(s); return negocio.sair(s.usuario); },
+    'negocio:sortear': (s) => { exigirInstrutor(s); return negocio.sortear(s.usuario); },
+    'negocio:atribuir': (s, d = {}) => { exigirInstrutor(s); return negocio.atribuir(s.usuario, d); },
+    'negocio:escolher': (s, d = {}) => { exigirSessao(s); return negocio.escolherFuncao(s.usuario, d); },
+    'negocio:comecar': (s) => { exigirInstrutor(s); return negocio.comecar(s.usuario); },
+    'negocio:pausar': (s, sim) => { exigirInstrutor(s); return negocio.pausar(s.usuario, sim); },
+    'negocio:acelerar': (s, sim) => { exigirInstrutor(s); return negocio.acelerar(s.usuario, sim); },
+    'negocio:pular': (s, d = {}) => { exigirInstrutor(s); return negocio.pular(s.usuario, d); },
+    'negocio:nivel': (s, n) => { exigirInstrutor(s); return negocio.nivel(s.usuario, n); },
+    'negocio:evento': (s, d = {}) => { exigirInstrutor(s); return negocio.evento(s.usuario, d); },
+    'negocio:encerrar': (s) => { exigirInstrutor(s); const r = negocio.encerrar(s.usuario); const z = negocio.resumo(); if (z) dados.salvar('negocio-ultimo', z); return r; },
+    'negocio:fechar': (s) => { exigirInstrutor(s); return negocio.fechar(); },
+    'negocio:votar': (s, v) => { exigirSessao(s); return negocio.votar(s.usuario, v); },
+    'negocio:acao': (s, d = {}) => { exigirSessao(s); return negocio.acao(s.usuario, d); },
+    'negocio:pedido': (s, d = {}) => { exigirSessao(s); return negocio.pedido(s.usuario, d); },
+    'negocio:responder': (s, d = {}) => { exigirSessao(s); return negocio.responderPedido(s.usuario, d); },
+    'negocio:falar': (s, d = {}) => { exigirSessao(s); return negocio.falar(s.usuario, d); },
 
     // ---------- Monitoria: alunos que ajudam os colegas que apertaram "🙋 Não entendi" ----------
     'monitor:definir': (s, ids, ligar) => {

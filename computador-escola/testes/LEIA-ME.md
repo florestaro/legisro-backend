@@ -166,6 +166,25 @@ Abre o programa de verdade em 3 computadores (a instrutora e dois alunos, a Ana 
 
 Leva uns 3 minutos e usa a porta 47123 (ou outra: `PORTA=47130 npm run teste:praca`).
 
+## Teste do jogo Do Campo ao Balcão em 3 computadores
+
+```
+npm run teste:negocio
+```
+
+A instrutora e dois alunos (Ana e Bruno), com o programa de verdade:
+- a instrutora abre o jogo (a turma é uma empresa só) e os dois recebem o convite e entram;
+- ela escolhe quem faz o quê: a Ana fica com o campo (roça, pasto, veterinário, transporte e frigorífico) e o Bruno com
+  a cidade (compras, chapeiro, caixa e gerente); o resto, a IA faz;
+- o tempo anda sozinho e os dois veem o mesmo dia e hora; a Ana vê o pasto e não as contas, o Bruno vê a lanchonete e
+  não o pasto; a Ana não consegue mudar o preço da lanchonete (não é a função dela);
+- o Bruno faz um pedido de 500 hambúrgueres para a Logística, a Ana manda o caminhão e marca como feito; a conversa chega;
+- o Bruno (caixa) digita o pedido do cliente e atende a fila; a doença no rebanho chega para a Ana, que trata;
+- o termômetro e o voto da turma, a pausa (ninguém mexe), o resultado no fim para os dois (guardado no disco da
+  instrutora) e nada guardado nos computadores dos alunos.
+
+Leva uns 2 minutos e usa a porta 47124 (ou outra: `PORTA=47131 npm run teste:negocio`).
+
 ## Eventos urgentes no mapa (rápido, sem tela e sem rede)
 
 ```

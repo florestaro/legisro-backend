@@ -96,6 +96,25 @@ window.CE = window.CE || {};
     CE.voz.falar('O professor abriu uma gincana! Clique em Entrar na gincana.');
   }
 
+  // Do Campo ao Balcão: o professor abriu o jogo da hamburgueria (o convite aparece uma vez por jogo).
+  const negociosVistos = new Map();
+  function convidarParaNegocio(convite) {
+    const quem = CE.sessao.usuario && CE.sessao.usuario.id;
+    if (!quem || !convite || convite.entrou || negociosVistos.get(quem) === convite.id || CE.janelas.estaAberta('negocio')) return;
+    negociosVistos.set(quem, convite.id);
+    document.querySelectorAll('.negocio-convite').forEach((d) => d.remove());
+    const fundo = CE.el('div', { class: 'dialogo-fundo negocio-convite', 'data-convite-negocio': convite.id },
+      CE.el('div', { class: 'dialogo' },
+        CE.el('h3', {}, '🍔 Do Campo ao Balcão'),
+        CE.el('p', {}, 'O professor abriu o jogo da hamburgueria da turma: roça, pasto, frigorífico, caminhão e lanchonete. Cada um cuida de um setor. Vamos?'),
+        CE.el('div', { class: 'dialogo-botoes' },
+          CE.el('button', { class: 'botao secundario', onclick: () => fundo.remove() }, 'Agora não'),
+          CE.el('button', { class: 'botao', 'data-acao': 'entrar-negocio', onclick: () => { fundo.remove(); CE.janelas.abrir('negocio'); } }, 'Entrar no jogo ▶'))));
+    document.body.append(fundo);
+    CE.emitir('sala:negocio', { id: convite.id });
+    CE.voz.falar('O professor abriu o jogo da hamburgueria! Clique em Entrar no jogo.');
+  }
+
   // Praça Escola: o instrutor chamou todos para a praça (uma vez por chamada; quem já está na praça não recebe).
   const pracasVistas = new Map(); // aluno -> chamada já mostrada
   function convidarParaPraca(convite) {
@@ -149,6 +168,7 @@ window.CE = window.CE || {};
       mostrarMensagens(r.mensagens || (r.mensagem ? [r.mensagem] : []));
       if (r.corrida && !document.getElementById('tela-pausa')) convidarParaCorrida(r.corrida);
       if (r.gincana && !document.getElementById('tela-pausa')) convidarParaGincana(r.gincana);
+      if (r.negocio && !document.getElementById('tela-pausa')) convidarParaNegocio(r.negocio);
       if (r.praca && !document.getElementById('tela-pausa')) convidarParaPraca(r.praca);
       avisarMonitor(r.ajudante);
     } catch (e) {
@@ -173,7 +193,7 @@ window.CE = window.CE || {};
       timer = setInterval(avisar, 8000);
     },
     // Ao sair: a pausa e a mensagem do instrutor não ficam na frente da tela de entrada.
-    parar() { clearInterval(timer); geracao++; ajudaEm = 0; pausar(false); document.querySelectorAll('.sala-mensagem, .corrida-convite, .gincana-convite, .praca-convite').forEach((d) => d.remove()); },
+    parar() { clearInterval(timer); geracao++; ajudaEm = 0; pausar(false); document.querySelectorAll('.sala-mensagem, .corrida-convite, .gincana-convite, .negocio-convite, .praca-convite').forEach((d) => d.remove()); },
     avisarAgora: avisar,
     // "Não entendi": avisa o instrutor na hora (sem esperar a próxima presença).
     pedirAjuda() { ajudaEm = Date.now(); avisar(); },
