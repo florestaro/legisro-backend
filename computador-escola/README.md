@@ -441,6 +441,15 @@ engorda o boi, o **veterinário** vacina e faz a guia (GTA), o **caminhão** lev
 à **lanchonete**, que vende; o **escritório** compra pão e queijo, paga as contas, faz propaganda, contrata e cuida do
 meio ambiente. Entra pelo prédio da lanchonete na Praça Escola (🍔, no canto de baixo, perto da estação): clicando nele,
 o boneco vai até a porta e o jogo abre (o aluno também recebe o convite na tela).
+- **Cenas animadas, clicando nas coisas**: cada setor é um lugar desenhado que se mexe: a **roça** (o milho cresce e
+  balança, o trator, o silo enchendo, a irrigação pingando), o **pasto** (os bois andando no piquete, o capim verde ou
+  seco, o cocho, o boi pronto 🐂 e o doente 🤒), o **mapa** (fazenda, BR-364, frigorífico soltando fumaça, posto e o
+  caminhão andando na estrada), o **frigorífico** (o curral, o moedor girando, a esteira com os hambúrgueres e a câmara
+  fria com os lotes vencendo), a **lanchonete** (a placa ABERTO, o quadro de preços, a fila, os clientes entrando e os
+  que desistem 😠) e o **escritório** (o gráfico do lucro, as contas, o banco, o outdoor). Tem dia e noite e chuva na
+  época das águas. Clicar numa coisa abre o que dá para fazer ali (clicar no talhão vazio: "Plantar milho"; no outro
+  piquete: "Levar o rebanho para cá"; no quadro: o preço); se a coisa é de outro setor, diz quem cuida dela. Os botões
+  e números de sempre ficam em "📋 Mais detalhes e botões", embaixo da cena.
 - **O mundo anda sozinho** (no computador do instrutor): os dias passam (à noite, mais rápido), a seca chega, o capim
   cresce e acaba, o boi engorda ou emagrece, o hambúrguer vence na câmara fria e os clientes chegam conforme o preço, a
   fama, a fila, a propaganda e o dia da semana (pico no almoço e à noite; sábado e domingo, mais). Os alunos só decidem.
@@ -718,6 +727,7 @@ app/js/praca-mapa.js     o mapa da Praça Escola (prédios, praça, caminhos); p
                          árvores e postes em pé, o chão já deitado, girar a cidade, prédio transparente na frente)
 app/js/negocio-regras.js as regras do jogo Do Campo ao Balcão (o mundo que anda sozinho, as 14 funções, a IA,
                          os eventos e o termômetro), usadas pelo servidor da sala e pelo modo navegador;
+                         negocio-cenas.js: as cenas animadas de cada setor (clicar nas coisas);
                          apps/negocio.js: a janela do jogo (professor e alunos)
 testes/                  testes automáticos do modo sala de aula (servidor, turma de 20 alunos, as novidades das
                          fases 2 e 3 e a Praça Escola em 3 computadores) e o dos emojis do Windows 10

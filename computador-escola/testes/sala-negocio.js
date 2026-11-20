@@ -108,6 +108,7 @@ const estadoDe = (p) => p.evaluate(() => CE.api.chamar('negocio:estado'));
   ok(e1.dia === e2.dia && Math.abs(e1.hora - e2.hora) <= 1, `os dois veem o mesmo dia e hora (dia ${e1.dia}, ${e1.hora}h e ${e2.hora}h)`);
   ok(!!e1.empresa.pasto && !e1.empresa.escritorio, 'a Ana vê o pasto, mas não as contas do escritório');
   ok(!!e2.empresa.loja && !e2.empresa.pasto, 'o Bruno vê a lanchonete, mas não o pasto');
+  ok(await ate(async () => !!(await p1.$(N('.ng-cena canvas'))) && !!(await p2.$(N('.ng-cena canvas')))), 'cada um vê a cena animada do seu setor (pasto, lanchonete...)');
   await p1.screenshot({ path: foto('negocio-02-ana.png') });
   // Cada um só mexe no seu setor
   const preco = await p1.evaluate(() => CE.api.chamar('negocio:acao', { funcao: 'gerente', tipo: 'preco', valor: 30 }).then(() => 'mudou', (e) => e.message));

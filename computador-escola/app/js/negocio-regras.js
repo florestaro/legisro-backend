@@ -690,7 +690,7 @@
           bois: e.pasto.bois.length, prontos: prontos(e).length, doentes: e.pasto.bois.filter((b) => b.doente).length, semVacina: e.pasto.bois.filter((b) => !b.vacinado).length,
           pesoMedio: e.pasto.bois.length ? arred(e.pasto.bois.reduce((s, b) => s + b.peso, 0) / e.pasto.bois.length, 1) : 0, rebanho: e.pasto.bois.map((b) => ({ peso: arred(b.peso, 1), doente: b.doente, vacinado: b.vacinado })) } : null,
         frig: ve('frig') ? { bois: e.frig.bois, carne: e.frig.carne, estoque: estoqueFrig(e), lotes: e.frig.lotes.map((l) => ({ qtd: l.qtd, vence: l.vence, vencido: l.vence < dia })), producao: e.frig.producao, higiene: e.frig.higiene } : null,
-        caminhao: ve('caminhao') ? { combustivel: Math.round(e.caminhao.combustivel), viagem: e.caminhao.viagem ? { rota: e.caminhao.viagem.rota, nome: ROTAS[e.caminhao.viagem.rota].nome, chega: e.caminhao.viagem.chega, carga: Array.isArray(e.caminhao.viagem.carga) ? `${e.caminhao.viagem.carga.reduce((s, l) => s + l.qtd, 0)} hambúrgueres` : `${e.caminhao.viagem.carga} boi(s)` } : null, br364: ativa(e, 'br364') } : null,
+        caminhao: ve('caminhao') ? { combustivel: Math.round(e.caminhao.combustivel), viagem: e.caminhao.viagem ? { rota: e.caminhao.viagem.rota, nome: ROTAS[e.caminhao.viagem.rota].nome, sai: e.caminhao.viagem.sai, chega: e.caminhao.viagem.chega, carga: Array.isArray(e.caminhao.viagem.carga) ? `${e.caminhao.viagem.carga.reduce((s, l) => s + l.qtd, 0)} hambúrgueres` : `${e.caminhao.viagem.carga} boi(s)` } : null, br364: ativa(e, 'br364') } : null,
         loja: ve('loja') ? { estoque: estoqueLoja(e), lotes: e.loja.lotes.map((l) => ({ qtd: l.qtd, vence: l.vence, vencido: l.vence < dia })), pao: e.loja.pao, queijo: e.loja.queijo, embalagem: e.loja.embalagem, preco: e.loja.preco, aberta: e.loja.aberta, fechadaAte: e.loja.fechadaAte, fechada: h < e.loja.fechadaAte || ativa(e, 'greve'),
           atendentes: e.loja.atendentes, treino: e.loja.treino, fila: e.loja.fila, promocao: e.loja.promocao, horaExtra: h < e.loja.horaExtraAte, hoje: { ...e.hoje, vendas: Math.round(e.hoje.vendas) } } : null,
         escritorio: ve('escritorio') ? { contas: e.escritorio.contas.filter((c) => !c.paga && !c.recusada).map((c) => ({ id: c.id, nome: c.nome, valor: c.valor, vence: c.vence, suspeita: !!c.falsa })), compras: e.escritorio.compras.filter((c) => !c.chegou).map((c) => ({ qtd: c.qtd, chega: c.chega })),
@@ -715,7 +715,7 @@
       const h = partida.horas, dia = diaDe(h), p = params(partida.nivel);
       const base = {
         id: partida.id, estado: partida.estado, modo: partida.modo, nivel: partida.nivel, nomeNivel: nomeNivel(partida.nivel), dias: partida.dias,
-        dia: Math.min(dia, partida.dias), hora: horaDe(h), minuto: Math.floor((h % 1) * 60), estacao: estacao(dia), inicioSeca: inicioSeca(), fimSeca: fimSeca(),
+        dia: Math.min(dia, partida.dias), hora: horaDe(h), minuto: Math.floor((h % 1) * 60), horas: h, estacao: estacao(dia), inicioSeca: inicioSeca(), fimSeca: fimSeca(),
         msPorDia: p.msPorDia / (partida.acelerar ? 2 : 1), acelerar: !!partida.acelerar, agora: relogio(), ativas: partida.ativas.slice(), distribuicao: partida.distribuicao, rodizio: partida.rodizio,
         participantes: partida.participantes.map((x) => ({ id: x.id, nome: x.nome, avatar: x.avatar, funcoes: partida.funcoesDe[x.id] || [] })),
         eu: eu ? { funcoes, empresa: minha ? minha.id : null, voto: partida.votos[eu.id] || null } : null,

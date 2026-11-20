@@ -16,7 +16,7 @@ window.CE = window.CE || {};
   const horaTexto = (h) => { const d = Math.floor(h / 24) + 1, hh = Math.floor(h) % 24; return `dia ${d}, ${hh}h`; };
 
   CE.registrarApp({
-    id: 'negocio', nome: 'Do Campo ao Balcão', icone: '🍔', semIcone: true, largura: 1060, altura: 690,
+    id: 'negocio', nome: 'Do Campo ao Balcão', icone: '🍔', semIcone: true, largura: 1240, altura: 700,
     abrir(corpo, janela) {
       corpo.classList.add('ng-app');
       const usuario = CE.sessao.usuario;
@@ -24,6 +24,23 @@ window.CE = window.CE || {};
       let estado = null, timer = null, aba = null, empresaVista = null, fechou = false, entrou = false, ultimaChave = '';
       // Os mini-jogos guardam o que está no meio (o pedido do caixa e o lanche do chapeiro).
       const mini = { pedido: null, receita: null, montado: [] };
+      // As cenas animadas (negocio-cenas.js): uma de cada tipo, guardada para a animação não recomeçar a cada segundo.
+      const cenas = {};
+      let detalhesAbertos = false;
+      const ctxCena = {
+        acao: (f, t, d) => acao(f, t, d),
+        pode: (f) => minhasFuncoes().includes(f),
+        quem: (f) => { const e = empresaAtual(); return e ? quemFaz(e, f) || nomeF(f) : nomeF(f); },
+        nome: nomeF,
+        irPara: (f) => { aba = 'f:' + f; desenhar(true); },
+        avisar: (m) => CE.avisar(m),
+      };
+      function cena(tipo, e) {
+        if (!CE.negocioCenas) return null;
+        if (!cenas[tipo]) cenas[tipo] = CE.negocioCenas.criar(tipo, ctxCena);
+        cenas[tipo].atualizar(estado, e);
+        return cenas[tipo].el;
+      }
 
       async function atualizar(forcar) {
         if (fechou) return;
@@ -170,7 +187,7 @@ window.CE = window.CE || {};
         let painel;
         if (!e) painel = CE.el('p', {}, 'Escolha uma empresa.');
         else if (aba.startsWith('f:')) painel = painelFuncao(aba.slice(2), e);
-        else if (aba === 'cadeia') painel = painelCadeia(e);
+        else if (aba === 'cadeia') painel = CE.el('div', {}, cena('mundo', e) || '', painelCadeia(e));
         else if (aba === 'pedidos') painel = painelPedidos(e);
         else if (aba === 'conversa') painel = painelConversa(e);
         else painel = painelTurma();
@@ -229,9 +246,20 @@ window.CE = window.CE || {};
       const cartao = (titulo, ...f) => CE.el('div', { class: 'ng-cartao' }, CE.el('h4', {}, titulo), ...f);
       const nao = (t) => CE.el('p', { class: 'ft-dica' }, t);
       function cabecalho(f) { return CE.el('div', { class: 'ng-cab' }, CE.el('h3', {}, nomeF(f)), CE.el('p', {}, porId[f].faz)); }
+      // Cada função: a cena animada (clique nas coisas) e, embaixo, os detalhes em texto (recolhidos).
+      // O caixa e o chapeiro têm o seu trabalho embaixo da cena, sempre à mostra.
       function painelFuncao(f, e) {
         const P = PAINEIS[f];
-        return CE.el('div', { class: 'ng-funcao', 'data-funcao': f }, cabecalho(f), P ? P(e, f) : nao('...'));
+        const tipo = CE.negocioCenas && CE.negocioCenas.CENA_DA_FUNCAO[f];
+        const el = tipo ? cena(tipo, e) : null;
+        const corpoP = P ? P(e, f) : nao('...');
+        if (!el) return CE.el('div', { class: 'ng-funcao', 'data-funcao': f }, cabecalho(f), corpoP);
+        const sempre = f === 'caixa' || f === 'chapeiro';
+        const det = CE.el('details', { class: 'ng-detalhes', open: detalhesAbertos }, CE.el('summary', {}, '📋 Mais detalhes e botões'), corpoP);
+        det.addEventListener('toggle', () => { detalhesAbertos = det.open; });
+        return CE.el('div', { class: 'ng-funcao', 'data-funcao': f },
+          CE.el('div', { class: 'ng-cab ng-cab-curto' }, CE.el('h3', {}, nomeF(f)), CE.el('p', {}, `${porId[f].faz} Clique nas coisas da cena!`)),
+          el, sempre ? corpoP : det);
       }
       const num = (campo, valor, min, max, passo = 1) => CE.el('input', { class: 'campo ng-num', type: 'number', 'data-campo': campo, value: String(valor), min: String(min), max: String(max), step: String(passo) });
       const PAINEIS = {
@@ -490,7 +518,7 @@ window.CE = window.CE || {};
 
       atualizar(true);
       timer = setInterval(() => atualizar(false), 1000);
-      return { aoFechar() { fechou = true; clearInterval(timer); return true; } };
+      return { aoFechar() { fechou = true; clearInterval(timer); Object.values(cenas).forEach((c) => c.destruir()); return true; } };
     },
   });
 })();

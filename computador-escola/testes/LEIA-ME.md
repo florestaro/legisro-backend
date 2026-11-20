@@ -177,7 +177,8 @@ A instrutora e dois alunos (Ana e Bruno), com o programa de verdade:
 - ela escolhe quem faz o quê: a Ana fica com o campo (roça, pasto, veterinário, transporte e frigorífico) e o Bruno com
   a cidade (compras, chapeiro, caixa e gerente); o resto, a IA faz;
 - o tempo anda sozinho e os dois veem o mesmo dia e hora; a Ana vê o pasto e não as contas, o Bruno vê a lanchonete e
-  não o pasto; a Ana não consegue mudar o preço da lanchonete (não é a função dela);
+  não o pasto; cada um vê a cena animada do seu setor; a Ana não consegue mudar o preço da lanchonete (não é a função
+  dela);
 - o Bruno faz um pedido de 500 hambúrgueres para a Logística, a Ana manda o caminhão e marca como feito; a conversa chega;
 - o Bruno (caixa) digita o pedido do cliente e atende a fila; a doença no rebanho chega para a Ana, que trata;
 - o termômetro e o voto da turma, a pausa (ninguém mexe), o resultado no fim para os dois (guardado no disco da
