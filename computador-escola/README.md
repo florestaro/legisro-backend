@@ -450,6 +450,30 @@ o boneco vai até a porta e o jogo abre (o aluno também recebe o convite na tel
   época das águas. Clicar numa coisa abre o que dá para fazer ali (clicar no talhão vazio: "Plantar milho"; no outro
   piquete: "Levar o rebanho para cá"; no quadro: o preço); se a coisa é de outro setor, diz quem cuida dela. Os botões
   e números de sempre ficam em "📋 Mais detalhes e botões", embaixo da cena.
+- **Decisões de perto, como num jogo de gerenciar**:
+  - **Cada boi tem nome** (Pintado, Malhado, Trovão...). Clicando nele, a pessoa vê o peso, a vacina e a saúde. Dá para
+    vacinar ou tratar só aquele boi, ou **separá-lo para o frigorífico**: ele vai primeiro no caminhão. Com 15 arrobas já
+    pode ir, mas rende menos hambúrguer que o boi pronto, com 18.
+  - **A terra cansa**: cada piquete tem o **solo** (de 0 a 100%). Pasto pelado e pisoteado cansa a terra, e o pasto
+    aberto na mata derrubada cansa ainda mais rápido, porque o solo da Amazônia é fraco sem a floresta. Com o solo
+    cansado, o capim cresce pouco e chega a menos. Deixar o piquete descansar recupera devagar; a **reforma** (adubo e
+    semente, R$ 2.500, 1 dia sem gado) devolve a força. Abaixo de 30%, o pasto fica degradado, com cupinzeiros na cena.
+  - **A equipe tem nome, posto e ânimo**: cada pessoa fica no **caixa** (registra), na **chapa** (faz o lanche) ou no
+    **salão** (organiza a fila e limpa). O mais lento manda: com mais gente no caixa que na chapa, a chapa vira o
+    **gargalo** e o jogo avisa. O Gerente muda as pessoas de posto clicando nelas. O RH contrata para um posto, elogia
+    (com bônus, uma vez por dia) e demite pelo nome. Quem fica muito desanimado trabalha devagar e pede demissão.
+  - **As vozes da cidade**: quatro grupos ficam de olho na empresa:
+    - 🌳 Ambientalistas: mata derrubada, queimada e pasto pelado;
+    - 🩺 Consumidores: comida vencida, sujeira e propaganda enganosa;
+    - 👷 Sindicato: equipe desanimada, demissão e salário atrasado;
+    - 🏘️ Vizinhos: fila na calçada.
+
+    A pressão de cada grupo sobe com o que a empresa faz de errado e desce sozinha. Em 50 eles reclamam. Em 80,
+    **protestam na porta** com cartazes e vêm menos clientes. Em 100, se ninguém conversou com eles, fazem **boicote**
+    por um dia. O Marketing ou o Diretor podem **conversar** com o grupo, mas só resolver o motivo faz o grupo parar de
+    vez. O quadro fica no escritório, e o professor também pode disparar um protesto.
+  - **Reunião dos sócios**: no fim de cada semana do jogo sai o balanço, com o que entrou, o que saiu, o que sobrou e se
+    foi melhor que a semana anterior.
 - **O mundo anda sozinho** (no computador do instrutor): os dias passam (à noite, mais rápido), a seca chega, o capim
   cresce e acaba, o boi engorda ou emagrece, o hambúrguer vence na câmara fria e os clientes chegam conforme o preço, a
   fama, a fila, a propaganda e o dia da semana (pico no almoço e à noite; sábado e domingo, mais). Os alunos só decidem.
@@ -468,7 +492,7 @@ o boneco vai até a porta e o jogo abre (o aluno também recebe o convite na tel
 - **O Professor Virtual** narra: avisa antes ("a seca chega em 2 dias: guardem silagem"), explica o que deu errado
   ("faltou hambúrguer às 12h") e fecha cada dia com vendas, clientes perdidos e lucro.
 - **Eventos**: seca forte, foco de queimada, doença no rebanho, BR-364 fechada, falta de luz, fiscalização sanitária,
-  avaliação ruim, concorrente, feriado, jogo do Brasil, boleto falso e combustível caro (sorteados ou disparados pelo
+  avaliação ruim, concorrente, feriado, jogo do Brasil, boleto falso, combustível caro e o protesto dos grupos da cidade (sorteados ou disparados pelo
   professor). **Dilemas** com consequência: derrubar a mata (multa do IBAMA), ração barata sem nota, usar o lote vencido
   (cliente passa mal), não pagar a hora extra (processo), propaganda enganosa (PROCON) e, no difícil, o "jeitinho" com o
   fiscal (sempre descoberto: corrupção é crime).

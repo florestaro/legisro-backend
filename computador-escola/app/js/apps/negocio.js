@@ -286,18 +286,21 @@ window.CE = window.CE || {};
             CE.el('div', { class: 'ng-grade4' }, ...e.pasto.piquetes.map((p, i) => CE.el('div', { class: 'ng-piquete' + (i === e.pasto.ativo ? ' ativo' : '') + (p.foco ? ' fogo' : ''), 'data-piquete': i },
               CE.el('strong', {}, `Piquete ${i + 1}${p.novo ? ' (novo)' : ''}`), CE.el('div', { class: 'ng-icone' }, p.foco ? '🔥' : i === e.pasto.ativo ? '🐄' : '🌿'),
               CE.el('span', {}, `Capim: ${p.capim}%`), barra(p.capim, 100, p.capim < 20 ? 'ruim' : ''),
-              i === e.pasto.ativo ? CE.el('small', {}, 'O rebanho está aqui') : botao('Levar o rebanho', () => acao('pecuarista', 'piquete', { i }).catch(() => {}), { 'data-levar-piquete': i })))),
+              CE.el('span', {}, `Solo: ${p.solo}%${p.degradado ? ' (cansado!)' : ''}`), barra(p.solo, 100, p.solo < 40 ? 'ruim' : ''),
+              p.reforma ? CE.el('small', {}, `🔧 Em reforma até ${horaTexto(p.reforma)}`)
+                : i === e.pasto.ativo ? CE.el('small', {}, 'O rebanho está aqui') : botao('Levar o rebanho', () => acao('pecuarista', 'piquete', { i }).catch(() => {}), { 'data-levar-piquete': i }),
+              !p.reforma && i !== e.pasto.ativo && p.solo < 85 ? botao('🔧 Reformar (R$ 2.500)', () => acao('pecuarista', 'reformar', { i }).catch(() => {}), { 'data-reformar': i }) : null))),
             linha(cartao('🐂 Rebanho', CE.el('p', {}, `${e.pasto.bois} bois · peso médio ${e.pasto.pesoMedio} arrobas`), CE.el('p', {}, `✅ ${e.pasto.prontos} pronto(s) (18 arrobas) · 🤒 ${e.pasto.doentes} doente(s)`),
               CE.el('div', { class: 'ng-form' }, qtd, botao('Comprar bezerros (R$ 2.200 cada)', () => acao('pecuarista', 'comprar', { qtd: Number(qtd.value) }).catch(() => {}), { 'data-acao': 'comprar-bezerros' }))),
               cartao('🥣 Cocho com silagem', CE.el('p', {}, e.pasto.cocho ? 'Ligado: o gado come silagem quando o capim acaba' : 'Desligado'), e.roca ? CE.el('p', {}, `Silagem na roça: ${e.roca.silagem} t`) : null,
                 botao(e.pasto.cocho ? 'Desligar o cocho' : 'Ligar o cocho', () => acao('pecuarista', 'cocho', { ligar: !e.pasto.cocho }).catch(() => {}), { 'data-acao': 'cocho' }),
                 botao('🌽 Comprar ração de fora', () => acao('pecuarista', 'racao').catch(() => {}), { 'data-acao': 'racao' }))),
-            nao('Rodízio: deixe o rebanho num piquete e troque quando o capim baixar; o outro descansa e cresce de novo (na seca, quase não cresce).'));
+            nao('Rodízio: deixe o rebanho num piquete e troque quando o capim baixar; o outro descansa e cresce de novo (na seca, quase não cresce). Pasto pelado e pisoteado cansa o solo; a reforma (adubo e semente) devolve a força. Clique num boi na cena para ver o nome e separar para o frigorífico.'));
         },
         veterinario(e) {
           if (!e.pasto) return nao('Sem acesso ao pasto.');
           return CE.el('div', {},
-            CE.el('div', { class: 'ng-rebanho' }, ...e.pasto.rebanho.map((b) => CE.el('span', { class: 'ng-boi' + (b.doente ? ' doente' : '') + (b.peso >= 18 ? ' pronto' : ''), title: `${b.peso} arrobas${b.vacinado ? ', vacinado' : ', sem vacina'}${b.doente ? ', doente' : ''}` }, b.doente ? '🤒' : b.peso >= 18 ? '🐂' : '🐄', CE.el('small', {}, `${b.peso}@${b.vacinado ? '💉' : ''}`)))),
+            CE.el('div', { class: 'ng-rebanho' }, ...e.pasto.rebanho.map((b) => CE.el('span', { class: 'ng-boi' + (b.doente ? ' doente' : '') + (b.peso >= 18 ? ' pronto' : ''), title: `${b.nome}: ${b.peso} arrobas${b.vacinado ? ', vacinado' : ', sem vacina'}${b.doente ? ', doente' : ''}${b.separado ? ', separado' : ''}` }, b.doente ? '🤒' : b.peso >= 18 ? '🐂' : '🐄', CE.el('small', {}, `${b.nome} ${b.peso}@${b.vacinado ? '💉' : ''}${b.separado ? '🏷️' : ''}`)))),
             linha(cartao('💉 Vacina', CE.el('p', {}, `${e.pasto.semVacina} sem vacina`), botao('Vacinar todos (R$ 40 cada)', () => acao('veterinario', 'vacinar').catch(() => {}), { 'data-acao': 'vacinar' })),
               cartao('🩺 Tratamento', CE.el('p', {}, `${e.pasto.doentes} doente(s)`), botao('Tratar os doentes (R$ 150 cada)', () => acao('veterinario', 'tratar').catch(() => {}), { 'data-acao': 'tratar' })),
               cartao('📄 Guia de transporte (GTA)', CE.el('p', {}, `${e.pasto.prontos} pronto(s) · ${e.pasto.gta} com guia`), botao('Fazer a guia dos prontos (R$ 20 cada)', () => acao('veterinario', 'gta').catch(() => {}), { 'data-acao': 'gta' }))),
@@ -385,11 +388,13 @@ window.CE = window.CE || {};
               nao('Mais caro: cada lanche dá mais lucro, mas vêm menos clientes. Acima de R$ 24 a fama cai.')),
               cartao('🚪 Loja', CE.el('p', {}, e.loja.fechada ? '⛔ Fechada (falta de luz, fiscalização ou greve)' : e.loja.aberta ? 'Aberta (10h às 22h)' : 'Fechada por você'),
                 botao(e.loja.aberta ? 'Fechar a loja' : 'Abrir a loja', () => acao('gerente', 'abrir', { aberta: !e.loja.aberta }).catch(() => {}), { 'data-acao': 'abrir-loja' }),
-                botao(e.loja.promocao ? 'Tirar a promoção' : '🏷️ Promoção (15% mais barato)', () => acao('gerente', 'promocao', { ligar: !e.loja.promocao }).catch(() => {}), { 'data-acao': 'promocao' }))));
+                botao(e.loja.promocao ? 'Tirar a promoção' : '🏷️ Promoção (15% mais barato)', () => acao('gerente', 'promocao', { ligar: !e.loja.promocao }).catch(() => {}), { 'data-acao': 'promocao' }))),
+            cartao('👷 Quem fica onde', listaEquipe(e, 'gerente'), nao('O caixa registra e a chapa faz o lanche: o mais lento manda (é o gargalo). Equilibre os dois; quem sobrar cuida do salão (a fila aguenta mais e a fama sobe).')));
         },
         marketing(e) {
           const esc = e.escritorio || {};
           return CE.el('div', {},
+            painelVozes(e, 'marketing'),
             cartao('📣 Propaganda', esc.marketing ? CE.el('p', {}, `No ar: ${esc.marketing.tipo === 'honesta' ? 'propaganda honesta' : '"100% natural!" (enganosa)'} até ${horaTexto(esc.marketing.ate)}`) : CE.el('p', {}, 'Nenhuma propaganda no ar.'),
               botao('✅ Honesta: "Hambúrguer fresquinho da nossa fazenda" (R$ 1.200, 3 dias, +25% clientes)', () => acao('marketing', 'campanha', { tipo: 'honesta' }).catch(() => {}), { 'data-acao': 'campanha-honesta' }),
               botao('⚠️ Enganosa: "100% natural, sem nada químico!" (R$ 600, 3 dias, +40% clientes)', () => acao('marketing', 'campanha', { tipo: 'enganosa' }).catch(() => {}), { 'data-acao': 'campanha-enganosa' }),
@@ -402,9 +407,10 @@ window.CE = window.CE || {};
           if (!e.loja) return nao('Sem acesso.');
           return CE.el('div', {},
             lojaStatus(e),
+            cartao('👷 A equipe', listaEquipe(e, 'rh')),
             linha(cartao('👷 Atendentes', CE.el('p', { class: 'ng-num-grande' }, String(e.loja.atendentes)), CE.el('p', {}, `Treinamento: ${'⭐'.repeat(e.loja.treino) || 'nenhum'}`),
               botao('➕ Contratar (R$ 400)', () => acao('rh', 'contratar').catch(() => {}), { 'data-acao': 'contratar' }), botao('➖ Demitir (R$ 800 de rescisão)', () => acao('rh', 'demitir').catch(() => {}), { 'data-acao': 'demitir' }),
-              nao('Cada atendente atende uns 10 clientes por hora (12 treinado). O salário entra na conta da semana.')),
+              nao(`Hoje a lanchonete atende uns ${e.loja.capacidade} clientes por hora. Quem está desanimado trabalha mais devagar e, muito triste, pede demissão: elogie! O salário entra na conta da semana.`)),
               cartao('💪 Ânimo da equipe', barra(e.medidores.equipe, 100, e.medidores.equipe < 30 ? 'ruim' : ''), CE.el('p', {}, `${e.medidores.equipe} de 100`),
                 botao('🎓 Treinar a equipe (R$ 700)', () => acao('rh', 'treinar').catch(() => {}), { 'data-acao': 'treinar' }),
                 botao('⏰ Hora extra paga agora (2 horas, R$ 300)', () => acao('rh', 'horaExtra').catch(() => {}), { 'data-acao': 'hora-extra' }),
@@ -438,10 +444,30 @@ window.CE = window.CE || {};
           const meta = CE.el('input', { class: 'campo', 'data-campo': 'meta', placeholder: 'Ex.: nenhum cliente sem lanche no almoço!', value: e.meta || '' });
           return CE.el('div', {},
             cartao('🎯 Meta do dia (todos veem)', CE.el('div', { class: 'ng-form' }, meta, botao('Publicar', () => acao('diretor', 'meta', { texto: meta.value }).catch(() => {}), { 'data-acao': 'meta' }))),
+            painelVozes(e, 'diretor'),
             painelCadeia(e),
             nao('As decisões difíceis de todos os setores aparecem para você também, na coluna do Professor Virtual.'));
         },
       };
+      const NOME_POSTO = { caixa: '🧾 Caixa', chapa: '🔥 Chapa', salao: '🧹 Salão' };
+      const carinha = (a) => (a >= 70 ? '😀' : a >= 45 ? '🙂' : a >= 25 ? '😐' : '😞');
+      function listaEquipe(e, f) {
+        return CE.el('ul', { class: 'ng-contas' }, ...(e.loja.equipe || []).map((w) => CE.el('li', { 'data-atendente': w.id },
+          CE.el('span', {}, `${w.icone} ${w.nome} · ${NOME_POSTO[w.posto]} · ânimo ${w.animo} ${carinha(w.animo)}${w.elogiado ? ' 🏅' : ''}`),
+          ...(f === 'gerente' ? Object.keys(NOME_POSTO).filter((p) => p !== w.posto).map((p) => botao(`→ ${NOME_POSTO[p]}`, () => acao('gerente', 'posto', { id: w.id, posto: p }).catch(() => {}), { 'data-posto': p })) : []),
+          ...(f === 'rh' ? [botao('🏅 Elogiar (R$ 150)', () => acao('rh', 'elogiar', { id: w.id }).catch(() => {}), { 'data-elogiar': w.id, disabled: !!w.elogiado }), botao('📤 Demitir', () => acao('rh', 'demitir', { id: w.id }).catch(() => {}), { 'data-demitir': w.id })] : []))),
+          e.loja.gargalo ? CE.el('li', { class: 'atrasada' }, CE.el('span', {}, e.loja.gargalo === 'chapa' ? '⚠️ A chapa não dá conta (gargalo)' : '⚠️ O caixa não dá conta (gargalo)')) : null);
+      }
+      const GRUPOS_TXT = REF.GRUPOS || {};
+      function painelVozes(e, f) {
+        const v = e.vozes || {};
+        return cartao('📣 Vozes da cidade', CE.el('ul', { class: 'ng-contas' }, ...Object.entries(GRUPOS_TXT).map(([k, G]) => {
+          const prot = (e.protestos || []).find((p) => p.grupo === k);
+          return CE.el('li', { 'data-voz': k, class: prot ? 'atrasada' : '' }, CE.el('span', {}, `${G.icone} ${G.nome}: ${v[k] || 0} de 100${prot ? (prot.tipo === 'boicote' ? ' · 🚫 BOICOTE' : ' · ✊ PROTESTANDO') : ''}`),
+            barra(v[k] || 0, 100, (v[k] || 0) >= 50 ? 'ruim' : ''),
+            (v[k] || 0) >= 30 || prot ? botao('🤝 Conversar (R$ 500)', () => acao(f, 'dialogar', { grupo: k }).catch(() => {}), { 'data-dialogar': k }) : null);
+        })), nao('Cada grupo se importa com uma coisa (natureza, comida segura, trabalhadores, vizinhança). Em 80 eles protestam na porta e vêm menos clientes; conversar acalma, mas só resolver o motivo faz parar de vez.'));
+      }
       function lojaStatus(e) {
         const l = e.loja;
         return CE.el('div', { class: 'ng-loja' },

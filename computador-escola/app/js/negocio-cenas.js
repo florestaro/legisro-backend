@@ -14,6 +14,16 @@ window.CE = window.CE || {};
   const mistura = (a, b, k) => { const x = hex(a), y = hex(b); k = lim(k, 0, 1); return `rgb(${x.map((v, i) => Math.round(v + (y[i] - v) * k)).join(',')})`; };
   const sorte = (i) => { const s = Math.sin(i * 12.9898 + 78.233) * 43758.5453; return s - Math.floor(s); }; // "acaso" fixo por índice
   const GENTE = ['🧑', '👩', '👨', '👧', '👵', '🧒', '👴', '🧔', '👱'];
+  // Os grupos da cidade (o mesmo das regras): ícone, cartaz, nome, motivo e quem resolve o motivo
+  const GRUPOS = {
+    ambiente: ['🌳', 'Salve a floresta!', 'Ambientalistas', 'mata derrubada, queimada e pasto pelado', 'qualidade'],
+    saude: ['🩺', 'Comida segura!', 'Consumidores', 'comida vencida, sujeira e propaganda enganosa', 'marketing'],
+    trabalho: ['👷', 'Respeito ao trabalhador!', 'Sindicato dos trabalhadores', 'equipe desanimada, demissão, hora extra e salário atrasado', 'rh'],
+    vizinhos: ['🏘️', 'Fila na calçada não!', 'Vizinhos', 'fila enorme na calçada e bagunça na porta', 'gerente'],
+  };
+  const POSTOS = { caixa: ['🧾', 'o caixa', 'No caixa: registra os pedidos.'], chapa: ['🔥', 'a chapa', 'Na chapa: faz os lanches.'], salao: ['🧹', 'o salão', 'No salão: organiza a fila e limpa (cabe mais gente na fila e a fama sobe).'] };
+  const cara = (a) => (a >= 70 ? '😀' : a >= 45 ? '🙂' : a >= 25 ? '😐' : '😞');
+  const quando = (h) => `dia ${Math.floor(h / 24) + 1}, ${Math.floor(h % 24)}h`;
 
   // ctx: { acao(funcao, tipo, dados) → Promise, pode(funcao), quem(funcao), irPara(funcao), avisar(msg), aoMudar() }
   function criar(tipo, ctx) {
@@ -143,13 +153,19 @@ window.CE = window.CE || {};
       if (!p) { semAcesso(LW / 2, 200, '❓ O pasto é com o(a) Pecuarista'); return; }
       const t = performance.now() / 1000, n = p.piquetes.length;
       p.piquetes.forEach((q, i) => {
-        const a = areaPiquete(i, n);
+        const a = areaPiquete(i, n), solo = q.solo == null ? 100 : q.solo;
         ret(a.x, a.y, a.w, a.h, mistura('#C9B27A', '#4E9A43', q.capim / 100), 6);
+        // solo cansado: manchas de terra pelada e, quando degrada, cupinzeiros
+        for (let k = 0; k < Math.round((100 - solo) / 6); k++) { const x = a.x + 12 + sorte(i * 70 + k + 300) * (a.w - 30), y = a.y + 24 + sorte(i * 70 + k + 400) * (a.h - 38); g.fillStyle = 'rgba(150,100,55,.55)'; g.beginPath(); g.ellipse(x, y, 9 + sorte(k) * 8, 4 + sorte(k + 9) * 3, 0, 0, 7); g.fill(); }
+        if (solo < 40) for (let k = 0; k < 3; k++) { const x = a.x + 22 + sorte(i * 13 + k + 600) * (a.w - 44), y = a.y + 42 + sorte(i * 13 + k + 700) * (a.h - 58); g.fillStyle = '#8A5A33'; g.beginPath(); g.moveTo(x - 7, y + 6); g.quadraticCurveTo(x, y - 16, x + 7, y + 6); g.fill(); }
         for (let k = 0; k < Math.round(q.capim / 4); k++) { const x = a.x + 8 + sorte(i * 100 + k) * (a.w - 16), y = a.y + 10 + sorte(i * 100 + k + 50) * (a.h - 20); linha([[x - 3, y], [x, y - 6], [x + 3, y]], mistura('#8A9A4A', '#2F7A2A', q.capim / 100), 1.6); }
         g.save(); g.strokeStyle = i === p.ativo ? '#FFF3B0' : '#7A4E2A'; g.lineWidth = i === p.ativo ? 4 : 3; g.strokeRect(a.x, a.y, a.w, a.h); g.restore();
         for (let k = 0; k <= a.w; k += 30) ret(a.x + k - 2, a.y - 4, 4, 10, '#6B4423');
+        if (q.reforma) { g.fillStyle = 'rgba(120,80,40,.35)'; g.fillRect(a.x, a.y, a.w, a.h); em('🚜', a.x + a.w / 2 + Math.sin(t * 0.8) * (a.w / 3), a.y + a.h / 2 + 6, 30, 1, Math.cos(t * 0.8) < 0); }
         if (q.foco) fogo(a.x + a.w / 2, a.y + a.h / 2);
-        etiqueta(`${i === p.ativo ? '🐄 ' : ''}Piquete ${i + 1}${q.novo ? ' (mata derrubada)' : ''}: capim ${q.capim}%`, a.x + a.w / 2, a.y + 12, { tam: 11, borda: q.capim < 20 ? '#D9483B' : null });
+        etiqueta(`${i === p.ativo ? '🐄 ' : ''}${n <= 4 ? 'Piquete ' : 'P'}${i + 1}${q.novo ? ' 🪓' : ''} · capim ${q.capim}% · solo ${solo}%`, a.x + a.w / 2, a.y + 12, { tam: 11, borda: q.capim < 20 || solo < 30 ? '#D9483B' : null });
+        if (q.reforma) etiqueta(`🔧 Reforma até ${quando(q.reforma)}`, a.x + a.w / 2, a.y + a.h - 12, { tam: 10, fundo: '#FFF3C4' });
+        else if (q.degradado) etiqueta('🏜️ Solo cansado: reforme!', a.x + a.w / 2, a.y + a.h - 12, { tam: 10, fundo: '#FDECEB', cor: '#9B1C12' });
         alvo(a.x, a.y, a.w, a.h, 'piquete', `Piquete ${i + 1}`, { i, q });
       });
       const at = areaPiquete(p.ativo, n);
@@ -159,12 +175,16 @@ window.CE = window.CE || {};
       alvo(cx - 4, cy - 8, 58, 26, 'cocho', p.cocho ? 'Cocho com silagem (ligado)' : 'Cocho vazio');
       // as vacas: cada boi do rebanho é uma vaca andando no piquete ativo
       const reb = p.rebanho || [];
-      while (L.vacas.length < reb.length) L.vacas.push({ x: 690, y: 120, tx: at.x + at.w / 2, ty: at.y + at.h / 2, espera: 0 });
-      if (L.vacas.length > reb.length) L.vacas.length = reb.length;
-      if (L.ativo !== p.ativo) { L.ativo = p.ativo; L.vacas.forEach((v) => { v.tx = at.x + 20 + Math.random() * (at.w - 40); v.ty = at.y + 30 + Math.random() * (at.h - 45); v.espera = 0; }); }
+      const V = (L.vacasId = L.vacasId || new Map()), vivas = new Set(reb.map((b) => b.id));
+      for (const id of [...V.keys()]) if (!vivas.has(id)) V.delete(id);
+      // na primeira vez, o rebanho já está espalhado no piquete; depois, o bezerro comprado chega pelo lado
+      const primeira = !V.size;
+      for (const b of reb) if (!V.has(b.id)) { const x = primeira ? at.x + 20 + Math.random() * (at.w - 40) : 690, y = primeira ? at.y + 30 + Math.random() * (at.h - 45) : 120; V.set(b.id, { x, y, tx: x, ty: y, espera: Math.random() * 3 }); }
+      if (primeira) L.ativo = p.ativo;
+      if (L.ativo !== p.ativo) { L.ativo = p.ativo; V.forEach((v) => { v.tx = at.x + 20 + Math.random() * (at.w - 40); v.ty = at.y + 30 + Math.random() * (at.h - 45); v.espera = 0; }); }
       const dt = L.dt;
-      L.vacas.forEach((v, i) => {
-        const b = reb[i];
+      reb.forEach((b) => {
+        const v = V.get(b.id);
         const vel = b.doente ? 10 : 34;
         const dx = v.tx - v.x, dy = v.ty - v.y, d = Math.hypot(dx, dy);
         if (d > 2) { v.x += (dx / d) * Math.min(d, vel * dt); v.y += (dy / d) * Math.min(d, vel * dt); v.dir = dx; }
@@ -175,15 +195,17 @@ window.CE = window.CE || {};
           v.espera = 1 + Math.random() * 4;
         }
       });
-      [...L.vacas.keys()].sort((a, b2) => L.vacas[a].y - L.vacas[b2].y).forEach((i) => {
-        const v = L.vacas[i], b = reb[i], s = 15 + (lim(b.peso, 12, 20) - 12) * 1.4;
+      reb.slice().sort((a, b2) => V.get(a.id).y - V.get(b2.id).y).forEach((b) => {
+        const v = V.get(b.id), s = 15 + (lim(b.peso, 12, 20) - 12) * 1.4;
         em(b.peso >= 18 ? '🐂' : '🐄', v.x, v.y, s, 1, (v.dir || -1) > 0);
-        if (b.doente) { em('🤒', v.x + 8, v.y - s * 0.6, 12); alvo(v.x - 12, v.y - 14, 24, 26, 'doente', 'Boi doente: clique para tratar'); }
+        if (b.doente) em('🤒', v.x + 8, v.y - s * 0.6, 12);
+        if (b.separado) etiqueta(`🏷️ ${b.nome}`, v.x, v.y - s * 0.75, { tam: 9, fundo: '#FFF3C4' });
+        alvo(v.x - 13, v.y - 14, 26, 28, 'boi', `${b.nome}: ${b.peso} arrobas${b.doente ? ' (doente!)' : b.peso >= 18 ? ' (pronto)' : ''}${b.separado ? ' · separado' : ''}`, b);
       });
       // o curral e os itens do lado
       ret(596, 96, 196, 252, 'rgba(255,255,255,.55)', 10);
       const lado = [
-        ['🚚', 'Comprar bezerros', 'bezerros', `${p.bois} bois no pasto`],
+        ['🚚', 'Comprar bezerros', 'bezerros', `${p.bois} bois · ${p.separados || 0} separado(s)`],
         ['💉', 'Vacinas e remédios', 'vacina', `${p.semVacina} sem vacina · ${p.doentes} doente(s)`],
         ['📄', 'Guia (GTA)', 'gta', `${p.prontos} pronto(s) · ${p.gta} com guia`],
         ['🌽', 'Ração de fora', 'racao', emp.roca ? `Silagem: ${emp.roca.silagem} t` : 'Comprar ração'],
@@ -237,6 +259,8 @@ window.CE = window.CE || {};
       etiqueta(emp.loja ? `🍔 ${emp.loja.estoque} · fila ${emp.loja.fila}` : '🍔 Lanchonete (❓)', 688, 280, { tam: 11 });
       if (emp.loja) for (let i = 0; i < Math.min(8, emp.loja.fila); i++) em(GENTE[i % GENTE.length], 640 - i * 14, 300, 14);
       alvo(612, 160, 152, 130, 'lanchonete', 'A lanchonete');
+      const prot = (emp.protestos || [])[0];
+      if (prot) { for (let i = 0; i < 4; i++) { em(GENTE[i + 2], 726 + i * 16, 312, 16); em('✊', 732 + i * 16, 298 + Math.abs(Math.sin(t * 4 + i)) * -4, 10); } etiqueta(`${prot.tipo === 'boicote' ? '🚫' : '✊'} ${GRUPOS[prot.grupo][2]}`, 752, 334, { tam: 10, fundo: '#FDECEB', cor: '#9B1C12' }); alvo(716, 290, 80, 52, 'protesto', 'Protesto na porta!', prot); }
       ret(600, 100, 100, 54, '#DDE6F0', 4); for (let i = 0; i < 4; i++) ret(608 + i * 23, 110, 16, 14, '#8EC3DE', 2);
       etiqueta(emp.escritorio ? `🏢 ${emp.escritorio.contas.length} conta(s)` : '🏢 Escritório (❓)', 650, 92, { tam: 11 });
       alvo(600, 84, 100, 72, 'escritorio', 'O escritório');
@@ -318,6 +342,16 @@ window.CE = window.CE || {};
       g.save(); g.beginPath(); g.rect(110, 30, 150, 90); g.clip(); ceu(120); chuva(); g.restore(); g.strokeStyle = '#B23B2E'; g.lineWidth = 6; g.strokeRect(110, 30, 150, 90);
       if (!l) { semAcesso(LW / 2, 200, '❓ A lanchonete é com o Gerente'); noite(0.6); return; }
       const t = performance.now() / 1000, fechada = l.fechada || !l.aberta;
+      const prot = (emp.protestos || [])[0];
+      if (prot) {
+        const G = GRUPOS[prot.grupo];
+        g.save(); g.beginPath(); g.rect(110, 30, 150, 90); g.clip();
+        ret(122, 38, 126, 24, '#FFFFFF', 3); g.fillStyle = prot.tipo === 'boicote' ? '#C62828' : '#333'; g.font = `800 11px ${TEXTO}`; g.textAlign = 'center'; g.fillText(prot.tipo === 'boicote' ? 'BOICOTE!' : G[1], 185, 54);
+        for (let i = 0; i < 4; i++) { em(GENTE[(i + 4) % GENTE.length], 130 + i * 36, 104, 24); em('✊', 140 + i * 36, 82 - Math.abs(Math.sin(t * 4 + i)) * 5, 14); }
+        g.restore();
+        etiqueta(`${prot.tipo === 'boicote' ? '🚫 Boicote' : '✊ Protesto'}: ${G[0]} ${G[2]}`, 185, 132, { tam: 10, fundo: '#FDECEB', cor: '#9B1C12' });
+        alvo(104, 24, 162, 116, 'protesto', 'Protesto lá fora!', prot);
+      }
       // porta e placa
       ret(20, 130, 70, 160, '#8B5A2B', 4); ret(28, 140, 54, 70, '#BFE0F2', 3);
       etiqueta(fechada ? 'FECHADO' : 'ABERTO', 55, 118, { fundo: fechada ? '#C62828' : '#2E7D32', cor: '#fff', tam: 11 });
@@ -333,11 +367,26 @@ window.CE = window.CE || {};
       const barras = [['🍔', l.estoque, 1000], ['🍞', l.pao, 1000], ['🧀', l.queijo, 1000], ['📦', l.embalagem, 1000]];
       barras.forEach(([ic, v, max], i) => { const x = 612 + i * 42; em(ic, x + 14, 48, 18); ret(x + 4, 62, 20, 60, 'rgba(0,0,0,.2)', 3); const h = 60 * lim(v / max, 0, 1); ret(x + 4, 122 - h, 20, h, v < 150 ? '#D9483B' : '#3B9A57', 3); });
       alvo(600, 30, 180, 100, 'prateleira', 'Estoque: pão, queijo, embalagem e hambúrguer');
-      // balcão e atendentes
+      // balcão: o caixa (à esquerda), a chapa (à direita) e o salão (na frente, perto da porta)
       ret(430, 178, 350, 18, '#7A4E2A', 3); ret(440, 196, 330, 80, '#A0703F', 4);
-      for (let i = 0; i < l.atendentes; i++) { const x = 470 + i * (300 / Math.max(1, l.atendentes)); em(i % 2 ? '👩' : '👨', x, 160 + Math.sin(t * 3 + i) * (fechada ? 0 : 2), 30); }
-      if (l.horaExtra) etiqueta('⏰ Hora extra', 600, 140, { tam: 10, fundo: '#FFF3C4' });
-      alvo(430, 130, 350, 66, 'equipe', `${l.atendentes} atendente(s)`);
+      ret(446, 160, 30, 18, '#3A3A3A', 3); ret(640, 172, 134, 8, '#555', 2);
+      etiqueta('🧾 CAIXA', 515, 222, { tam: 10, fundo: 'rgba(255,255,255,.75)' }); etiqueta('🔥 CHAPA', 705, 222, { tam: 10, fundo: 'rgba(255,255,255,.75)' });
+      alvo(440, 196, 330, 80, 'equipe', `Equipe: ${l.atendentes} pessoa(s) · atende uns ${l.capacidade || '?'} clientes por hora`);
+      alvo(440, 126, 170, 52, 'posto-caixa', 'O caixa'); alvo(626, 126, 154, 52, 'posto-chapa', 'A chapa'); alvo(116, 190, 190, 46, 'posto-salao', 'O salão');
+      const eq = l.equipe || [], por = { caixa: [], chapa: [], salao: [] };
+      eq.forEach((w) => (por[w.posto] || por.caixa).push(w));
+      Object.entries(por).forEach(([posto, lista]) => lista.forEach((w, k) => {
+        const n = lista.length, x = posto === 'caixa' ? 500 + k * Math.min(48, 96 / Math.max(1, n - 1 || 1)) : posto === 'chapa' ? 668 + k * Math.min(44, 88 / Math.max(1, n - 1 || 1)) : 140 + k * 48;
+        const y = posto === 'salao' ? 212 : 158, pula = fechada ? 0 : Math.sin(t * 3 + k + (posto === 'chapa' ? 2 : 0)) * 2;
+        em(w.icone, x, y + pula, 28);
+        if (posto === 'salao') em('🧹', x + 15, y + 9, 15);
+        em(cara(w.animo), x + 13, y - 17, 12);
+        if (w.elogiado) em('🏅', x - 13, y - 15, 11);
+        etiqueta(w.nome, x, y + 20, { tam: 9, fundo: 'rgba(255,255,255,.85)' });
+        alvo(x - 17, y - 22, 34, 48, 'atendente', `${w.nome} (${POSTOS[w.posto][1]}) · ânimo ${w.animo}`, w);
+      }));
+      if (l.gargalo) etiqueta(l.gargalo === 'chapa' ? '⚠️ A chapa não dá conta' : '⚠️ O caixa não dá conta', l.gargalo === 'chapa' ? 705 : 520, 130, { tam: 10, fundo: '#FFF3C4', borda: '#E2A72E' });
+      if (l.horaExtra) etiqueta('⏰ Hora extra', 600, 112, { tam: 10, fundo: '#FFF3C4' });
       // chapa com fumaça
       if (!fechada && l.fila > 0) for (let i = 0; i < 3; i++) { const k = (t * 0.7 + i / 3) % 1; g.fillStyle = `rgba(200,200,200,${0.6 - k * 0.6})`; g.beginPath(); g.arc(740 + Math.sin(k * 5) * 6, 172 - k * 50, 6 + k * 8, 0, 7); g.fill(); }
       // a fila
@@ -400,6 +449,18 @@ window.CE = window.CE || {};
       g.fillStyle = '#333'; g.font = `700 11px ${TEXTO}`; g.textAlign = 'center'; g.fillText('ALVARÁ', 95, 190); g.font = `11px ${TEXTO}`; g.fillText(`vale até o dia ${e.alvara || 8}`, 95, 210);
       alvo(40, 160, 110, 80, 'alvara', 'Alvará de funcionamento');
       em('🌿', 180, 262, 34);
+      // As vozes da cidade: a pressão de cada grupo (em 50 reclamam, em 80 protestam, em 100 boicotam)
+      const vozes = emp.vozes || {};
+      ret(168, 290, 432, 64, 'rgba(255,255,255,.92)', 8);
+      g.fillStyle = '#333'; g.font = `800 10px ${TEXTO}`; g.textAlign = 'left'; g.fillText('📣 VOZES DA CIDADE', 176, 302);
+      Object.entries(GRUPOS).forEach(([k, G], i) => {
+        const x0 = 176 + i * 106, v = vozes[k] || 0, prot = (emp.protestos || []).some((p) => p.grupo === k);
+        em(G[0], x0 + 9, 320, 16);
+        g.fillStyle = '#333'; g.font = `700 10px ${TEXTO}`; g.textAlign = 'left'; g.fillText(G[2].split(' ')[0], x0 + 20, 324);
+        ret(x0, 332, 96, 9, 'rgba(0,0,0,.12)', 4); ret(x0, 332, 96 * v / 100, 9, v >= 80 ? '#D9483B' : v >= 50 ? '#E2A72E' : '#3B9A57', 4);
+        if (prot) em('✊', x0 + 90, 318, 14);
+        alvo(x0 - 4, 308, 104, 40, 'voz', `${G[2]}: pressão ${v} de 100`, { grupo: k, v });
+      });
       noite(0.5);
     }
 
@@ -465,8 +526,25 @@ window.CE = window.CE || {};
               : [{ texto: `Crescendo: ${a.dados.tl.cresc}%. ${est.estacao === 'seca' && !emp.roca.irrigacao ? 'Na seca, sem irrigação, cresce bem devagar.' : 'Com chuva, cresce rápido.'}` }]) }),
       silo: () => ({ titulo: '🌽 Silagem', lista: [{ texto: `${emp.roca.silagem} toneladas guardadas. O gado come no cocho quando o capim acaba (na seca!).` }] }),
       irrigacao: () => ({ titulo: '💧 Irrigação', lista: deQuem('agricultor', [{ rotulo: emp.roca.irrigacao ? 'Desligar a irrigação' : 'Ligar a irrigação (R$ 8 por hora)', id: 'irrigar', f: fazer('agricultor', 'irrigar', { ligar: !emp.roca.irrigacao }) }]) }),
-      piquete: (a) => ({ titulo: `🌿 Piquete ${a.dados.i + 1}: capim ${a.dados.q.capim}%`, lista: a.dados.i === emp.pasto.ativo ? [{ texto: 'O rebanho está aqui. Quando o capim baixar, leve para outro piquete (o rodízio deixa este descansar).' }]
-        : deQuem('pecuarista', [{ rotulo: '🐄 Levar o rebanho para cá', id: 'levar', f: fazer('pecuarista', 'piquete', { i: a.dados.i }) }]) }),
+      piquete: (a) => {
+        const { i, q } = a.dados, solo = q.solo == null ? 100 : q.solo, titulo = `🌿 Piquete ${i + 1}: capim ${q.capim}% · solo ${solo}%`;
+        const sobreSolo = { texto: solo < 30 ? '🏜️ Solo cansado (degradado): o capim quase não volta. Só a reforma resolve.' : solo < 60 ? '⚠️ O solo está ficando fraco: pasto pelado e pisoteado cansa a terra. Deixe descansar ou reforme.' : '✅ Solo forte. Para continuar assim: troque o rebanho antes de o capim acabar.' };
+        if (q.reforma) return { titulo, lista: [{ texto: `🔧 Em reforma (adubo, calcário e semente) até ${quando(q.reforma)}. Volta forte!` }] };
+        const reformar = solo < 85 ? [{ rotulo: '🔧 Reformar o pasto (R$ 2.500, 1 dia sem gado)', id: 'reformar', f: fazer('pecuarista', 'reformar', { i }) }] : [];
+        if (i === emp.pasto.ativo) return { titulo, lista: [{ texto: 'O rebanho está aqui. Quando o capim baixar, leve para outro piquete (o rodízio deixa este descansar).' }, sobreSolo] };
+        return { titulo, lista: deQuem('pecuarista', [{ rotulo: '🐄 Levar o rebanho para cá', id: 'levar', f: fazer('pecuarista', 'piquete', { i }) }, ...reformar, sobreSolo]) };
+      },
+      boi: (a) => {
+        const b = a.dados, lista = [{ texto: `${b.peso} arrobas (fica pronto com 18) · ${b.vacinado ? '💉 vacinado' : 'sem vacina'}${b.doente ? ' · 🤒 doente' : ''}${b.separado ? ' · 🏷️ separado para o frigorífico' : ''}` }];
+        if (ctx.pode('pecuarista')) lista.push(b.separado ? { rotulo: '↩️ Tirar da separação', id: 'separar', f: fazer('pecuarista', 'separar', { id: b.id }) }
+          : { rotulo: b.peso >= 18 ? '🏷️ Separar para o frigorífico (vai primeiro)' : '🏷️ Separar já (com menos peso, rende menos hambúrguer)', id: 'separar', desligado: b.doente || b.peso < 15, f: fazer('pecuarista', 'separar', { id: b.id }) });
+        if (ctx.pode('veterinario')) {
+          if (b.doente) lista.push({ rotulo: '🩺 Tratar este boi (R$ 150)', id: 'tratar', f: fazer('veterinario', 'tratar', { id: b.id }) });
+          if (!b.vacinado) lista.push({ rotulo: '💉 Vacinar este boi (R$ 40)', id: 'vacinar-um', f: fazer('veterinario', 'vacinar', { id: b.id }) });
+        }
+        if (!ctx.pode('pecuarista') && !ctx.pode('veterinario')) lista.push({ texto: `O rebanho é com ${ctx.quem('pecuarista')}; vacina e remédio, com ${ctx.quem('veterinario')}.` });
+        return { titulo: `${b.peso >= 18 ? '🐂' : '🐄'} ${b.nome}`, lista };
+      },
       cocho: () => ({ titulo: '🥣 Cocho', lista: deQuem('pecuarista', [{ rotulo: emp.pasto.cocho ? 'Tirar a silagem do cocho' : 'Pôr silagem no cocho', id: 'cocho', f: fazer('pecuarista', 'cocho', { ligar: !emp.pasto.cocho }) }]) }),
       doente: () => ({ titulo: '🤒 Boi doente', lista: deQuem('veterinario', [{ rotulo: `🩺 Tratar os ${emp.pasto.doentes} doente(s) (R$ 150 cada)`, id: 'tratar', f: fazer('veterinario', 'tratar') }]) }),
       bezerros: () => ({ titulo: '🚚 Comprar bezerros (R$ 2.200 cada)', lista: deQuem('pecuarista', [1, 3, 5].map((n) => ({ rotulo: `Comprar ${n}`, id: `bezerros-${n}`, f: fazer('pecuarista', 'comprar', { qtd: n }) }))) }),
@@ -494,12 +572,33 @@ window.CE = window.CE || {};
         .concat([{ rotulo: emp.loja.promocao ? 'Tirar a promoção' : '🏷️ Promoção (15% mais barato)', id: 'promocao', f: fazer('gerente', 'promocao', { ligar: !emp.loja.promocao }) }])) }),
       prateleira: () => ({ titulo: '🍞 Pão, queijo e embalagem', lista: deQuem('compras', [300, 600, 1000, 2000].map((n) => ({ rotulo: `Comprar ${n} de cada (R$ ${(n * 3).toLocaleString('pt-BR')})`, id: `comprar-${n}`, f: fazer('compras', 'comprar', { qtd: n }) }))
         .concat([{ texto: 'O fornecedor entrega em 14 horas.' }])) }),
+      atendente: (a) => {
+        const w = a.dados, lista = [{ texto: `${POSTOS[w.posto][2]} Ânimo: ${w.animo} ${cara(w.animo)}` }];
+        if (ctx.pode('gerente')) Object.keys(POSTOS).filter((p) => p !== w.posto).forEach((p) => lista.push({ rotulo: `${POSTOS[p][0]} Mandar para ${POSTOS[p][1]}`, id: `posto-${p}`, f: fazer('gerente', 'posto', { id: w.id, posto: p }) }));
+        if (ctx.pode('rh')) { lista.push({ rotulo: w.elogiado ? '🏅 Já foi elogiado(a) hoje' : '🏅 Elogiar com um bônus (R$ 150)', id: 'elogiar', desligado: !!w.elogiado, f: fazer('rh', 'elogiar', { id: w.id }) }); lista.push({ rotulo: '📤 Demitir (R$ 800 de rescisão)', id: 'demitir-um', f: fazer('rh', 'demitir', { id: w.id }) }); }
+        if (!ctx.pode('gerente') && !ctx.pode('rh')) lista.push({ texto: `Mudar de posto é com ${ctx.quem('gerente')}; elogiar e contratar, com ${ctx.quem('rh')}.` });
+        return { titulo: `${w.icone} ${w.nome}`, lista };
+      },
+      'posto-caixa': () => menuPosto('caixa'), 'posto-chapa': () => menuPosto('chapa'), 'posto-salao': () => menuPosto('salao'),
+      protesto: (a) => {
+        const pr = a.dados, G = GRUPOS[pr.grupo], quem = ['marketing', 'diretor'].find((f) => ctx.pode(f));
+        const lista = [{ texto: `"${G[1]}" O motivo: ${G[3]}. Quem resolve o motivo: ${ctx.quem(G[4])}.` }];
+        if (pr.tipo === 'protesto') lista.push(quem ? { rotulo: '🤝 Conversar com eles (reunião, R$ 500)', id: 'dialogar', f: fazer(quem, 'dialogar', { grupo: pr.grupo }) } : { texto: `Quem conversa com o grupo: ${ctx.quem('marketing')} ou ${ctx.quem('diretor')}.` });
+        else lista.push({ texto: 'O boicote dura o dia todo. Resolvam o motivo para não acontecer de novo!' });
+        return { titulo: `${pr.tipo === 'boicote' ? '🚫 Boicote' : '✊ Protesto'}: ${G[0]} ${G[2]}`, lista };
+      },
+      voz: (a) => {
+        const G = GRUPOS[a.dados.grupo], v = a.dados.v, quem = ['marketing', 'diretor'].find((f) => ctx.pode(f));
+        return { titulo: `${G[0]} ${G[2]}: ${v} de 100`, lista: [{ texto: `Eles se importam com: ${G[3]}. Em 50 reclamam, em 80 protestam na porta, em 100 fazem boicote. A pressão desce sozinha quando o motivo some.` },
+          ...(quem && v >= 30 ? [{ rotulo: '🤝 Conversar com eles (reunião, R$ 500)', id: 'dialogar', f: fazer(quem, 'dialogar', { grupo: a.dados.grupo }) }] : [])] };
+      },
       equipe: () => ({ titulo: `👷 ${emp.loja.atendentes} atendente(s)`, lista: deQuem('rh', [
         { rotulo: '➕ Contratar (R$ 400)', id: 'contratar', f: fazer('rh', 'contratar') }, { rotulo: '🎓 Treinar (R$ 700)', id: 'treinar', f: fazer('rh', 'treinar') },
         { rotulo: '⏰ Hora extra paga (2 h, R$ 300)', id: 'hora-extra', f: fazer('rh', 'horaExtra') }, { rotulo: '🏖️ Folga (R$ 500)', id: 'folga', f: fazer('rh', 'folga') },
         { rotulo: '➖ Demitir (R$ 800)', id: 'demitir', f: fazer('rh', 'demitir') }]) }),
       fila: () => ({ titulo: `🧍 Fila: ${emp.loja.fila}`, lista: [{ texto: ctx.pode('caixa') || ctx.pode('chapeiro') ? 'Atenda na mão logo abaixo: cada pedido digitado (caixa) ou lanche montado (chapeiro) atende um cliente!' : 'Fila grande? O RH contrata, o Caixa e o Chapeiro atendem na mão.' }] }),
-      computador: () => ({ titulo: '📊 Lucro', lista: [{ texto: (emp.dias || []).slice(-3).map((d) => `Dia ${d.dia}: R$ ${d.lucro.toLocaleString('pt-BR')}`).join(' · ') || 'Aparece no fim do primeiro dia.' }] }),
+      computador: () => ({ titulo: '📊 Lucro', lista: [{ texto: (emp.dias || []).slice(-3).map((d) => `Dia ${d.dia}: R$ ${d.lucro.toLocaleString('pt-BR')}`).join(' · ') || 'Aparece no fim do primeiro dia.' },
+        ...(emp.semanas || []).map((b) => ({ texto: `📊 Semana ${b.semana}: entrou R$ ${Math.round(b.entrou).toLocaleString('pt-BR')}, saiu R$ ${Math.round(b.saiu).toLocaleString('pt-BR')}, ${b.sobrou >= 0 ? 'sobrou' : 'faltou'} R$ ${Math.abs(Math.round(b.sobrou)).toLocaleString('pt-BR')}` }))] }),
       contas: () => ({ titulo: '🧾 Contas', lista: emp.escritorio.contas.length ? emp.escritorio.contas.flatMap((c) => [
         ...(ctx.pode('financeiro') ? [{ rotulo: `Pagar: ${c.nome.slice(0, 40)} (R$ ${c.valor.toLocaleString('pt-BR')}, vence dia ${c.vence})`, id: `pagar-${c.id}`, f: fazer('financeiro', 'pagar', { id: c.id }) }] : []),
         ...(ctx.pode('compras') ? [{ rotulo: `🛡️ Recusar: ${c.nome.slice(0, 40)}`, id: `recusar-${c.id}`, f: fazer('compras', 'recusar', { id: c.id }) }] : []),
@@ -511,6 +610,14 @@ window.CE = window.CE || {};
       avaliacoes: () => { const a = (emp.escritorio.avaliacoes || [])[0]; return { titulo: '⭐ Avaliações', lista: a ? deQuem('marketing', [{ texto: `"${a.texto}"` }, { rotulo: '🙂 Responder com educação e oferecer outro lanche', id: 'responder-educada', f: fazer('marketing', 'responder', { id: a.id, resposta: 'educada' }) }, { rotulo: '😠 Responder brigando', id: 'responder-grossa', f: fazer('marketing', 'responder', { id: a.id, resposta: 'grossa' }) }]) : [{ texto: 'Nenhuma avaliação esperando resposta.' }] }; },
       alvara: () => ({ titulo: '📄 Alvará', lista: deQuem('qualidade', [{ rotulo: 'Renovar pelo gov.br (R$ 800)', id: 'alvara', f: fazer('qualidade', 'alvara') }]) }),
     };
+    function menuPosto(posto) {
+      const P = POSTOS[posto], l = emp.loja, aqui = (l.equipe || []).filter((w) => w.posto === posto), outros = (l.equipe || []).filter((w) => w.posto !== posto);
+      const lista = [{ texto: `${P[2]} ${aqui.length ? `Aqui: ${aqui.map((w) => w.nome).join(', ')}.` : 'Ninguém aqui agora!'}${l.gargalo === posto ? ' ⚠️ Este posto não dá conta: é o gargalo!' : ''}` }];
+      if (ctx.pode('gerente')) outros.forEach((w) => lista.push({ rotulo: `${w.icone} Trazer ${w.nome} para ${P[1]}`, id: `trazer-${w.id}`, f: fazer('gerente', 'posto', { id: w.id, posto }) }));
+      if (ctx.pode('rh')) lista.push({ rotulo: `➕ Contratar alguém para ${P[1]} (R$ 400)`, id: `contratar-${posto}`, f: fazer('rh', 'contratar', { posto }) });
+      if (!ctx.pode('gerente') && !ctx.pode('rh')) lista.push({ texto: `Quem muda as pessoas de posto é ${ctx.quem('gerente')}; quem contrata é ${ctx.quem('rh')}.` });
+      return { titulo: `${P[0]} ${P[1][0].toUpperCase()}${P[1].slice(1)}`, lista };
+    }
     function irPara(funcoes) { return funcoes.filter((f) => ctx.pode(f)).map((f) => ({ rotulo: `Ir para ${ctx.nome(f)}`, id: `ir-${f}`, f: () => ctx.irPara(f) })); }
 
     return {

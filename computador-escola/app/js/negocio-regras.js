@@ -76,7 +76,22 @@
     jogo_brasil: { titulo: '⚽ Jogo do Brasil', texto: 'Jogo do Brasil hoje à noite: das 18h às 21h o movimento triplica!' },
     boleto_falso: { titulo: '🎣 Boleto suspeito', texto: 'Chegou um boleto de fornecedor com dados estranhos. Confira antes de pagar!' },
     combustivel_caro: { titulo: '⛽ Combustível mais caro', texto: 'O diesel subiu: abastecer o caminhão custa 50% a mais por 3 dias.', dias: 3 },
+    protesto: { titulo: '✊ Protesto na porta', texto: 'Um grupo da cidade está protestando na porta da lanchonete: vêm menos clientes. Conversem com eles (Marketing ou Diretor) e resolvam o motivo!' },
+    boicote: { titulo: '🚫 Boicote', texto: 'A cidade combinou de não comprar da empresa por 1 dia: os clientes caem pela metade.', dias: 1 },
   };
+  // Os grupos da cidade: cada um fica de olho num jeito de a empresa agir. A pressão sobe com o que a empresa faz
+  // de errado e desce sozinha com o tempo; em 50 eles reclamam, em 80 protestam na porta e em 100 fazem boicote.
+  const GRUPOS = {
+    ambiente: { nome: 'Ambientalistas', icone: '🌳', cartaz: 'Salve a floresta!', para: 'qualidade', causa: 'mata derrubada, queimada e pasto pelado' },
+    saude: { nome: 'Consumidores', icone: '🩺', cartaz: 'Comida segura!', para: 'marketing', causa: 'comida vencida, sujeira e propaganda enganosa' },
+    trabalho: { nome: 'Sindicato dos trabalhadores', icone: '👷', cartaz: 'Respeito ao trabalhador!', para: 'rh', causa: 'equipe desanimada, demissão, hora extra e salário atrasado' },
+    vizinhos: { nome: 'Vizinhos', icone: '🏘️', cartaz: 'Fila na calçada não!', para: 'gerente', causa: 'fila enorme na calçada e bagunça na porta' },
+  };
+  const POSTOS = { caixa: { nome: 'Caixa', icone: '🧾' }, chapa: { nome: 'Chapa', icone: '🔥' }, salao: { nome: 'Salão', icone: '🧹' } };
+  const NOMES_BOIS = ['Pintado', 'Malhado', 'Trovão', 'Valente', 'Estrela', 'Chuvisco', 'Pipoca', 'Cacau', 'Fubá', 'Paçoca', 'Tição', 'Baio', 'Faísca', 'Coroado', 'Sereno',
+    'Cometa', 'Café', 'Biscoito', 'Pirata', 'Tufão', 'Canela', 'Jatobá', 'Ipê', 'Boto', 'Tucumã', 'Açaí', 'Pequi', 'Murici', 'Bacuri', 'Caju', 'Guaraná', 'Cupuaçu'];
+  const NOMES_EQUIPE = [['Caio', '👨'], ['Rita', '👩'], ['Davi', '👨'], ['Gabi', '👩'], ['Hugo', '👨'], ['Íris', '👩'], ['Léo', '👨'], ['Mel', '👩'], ['Nando', '👨'], ['Olga', '👵'],
+    ['Téo', '👨'], ['Kátia', '👩'], ['Paulo', '👴'], ['Lia', '👩'], ['Fábio', '👨'], ['Duda', '👧']];
   const ROTAS = { pasto_frig: { nome: 'Pasto → Frigorífico', horas: 6 }, frig_loja: { nome: 'Frigorífico → Lanchonete', horas: 2 } };
   // Movimento da lanchonete por hora (clientes com a fama em 60 e o preço de R$ 18).
   const MOVIMENTO = { 10: 6, 11: 18, 12: 30, 13: 22, 14: 8, 15: 6, 16: 6, 17: 10, 18: 22, 19: 30, 20: 26, 21: 12 };
@@ -114,22 +129,34 @@
 
     // ---------- Uma empresa nova ----------
     function novaEmpresa(nome, membros) {
+      const nomes = { bois: 0, equipe: 0 };
       const bois = [];
-      for (let i = 0; i < 14; i++) bois.push({ id: novoId('b'), peso: arred(12.5 + acaso() * 5, 1), doente: false, vacinado: i % 3 !== 0, doenteH: 0 });
+      for (let i = 0; i < 14; i++) bois.push(novoBoi(nomes, arred(12.5 + acaso() * 5, 1), i % 3 !== 0));
+      const equipe = [novoAtendente(nomes, 'caixa'), novoAtendente(nomes, 'chapa')];
       return {
+        nomes,
         id: novoId('e'), nome, membros: membros || [], falida: false,
         caixa: 30000, emprestimo: 0, fama: 60, moral: 70, natureza: 80,
         roca: { talhoes: [0, 1, 2, 3].map((i) => ({ estado: i < 2 ? 'crescendo' : 'vazio', cresc: i === 0 ? 60 : i === 1 ? 20 : 0, prontoH: 0, foco: false })), silagem: 30, irrigacao: false },
-        pasto: { piquetes: [80, 60, 45, 70].map((c) => ({ capim: c, foco: false, novo: false })), ativo: 0, bois, cocho: false, gta: 0, embargoAte: 0, compradosHoje: 0 },
-        frig: { bois: 0, carne: 900, lotes: [{ qtd: 500, vence: 4 }], producao: 400, higiene: true },
+        pasto: { piquetes: [[80, 95], [60, 80], [45, 60], [70, 90]].map(([c, f]) => ({ capim: c, foco: false, novo: false, fert: f, reformaAte: 0 })), ativo: 0, bois, cocho: false, gta: 0, embargoAte: 0, compradosHoje: 0 },
+        frig: { bois: 0, arrobas: 0, carne: 900, lotes: [{ qtd: 500, vence: 4 }], producao: 400, higiene: true },
         caminhao: { viagem: null, combustivel: 80 },
-        loja: { lotes: [{ qtd: 450, vence: 4 }], pao: 600, queijo: 600, embalagem: 600, preco: 18, aberta: true, atendentes: 2, fila: 0, promocao: false, fechadaAte: 0, horaExtraAte: 0, treino: 0 },
+        loja: { lotes: [{ qtd: 450, vence: 4 }], pao: 600, queijo: 600, embalagem: 600, preco: 18, aberta: true, atendentes: equipe.length, equipe, fila: 0, promocao: false, fechadaAte: 0, horaExtraAte: 0, treino: 0 },
         escritorio: { contas: [], compras: [], marketing: null, avaliacoes: [], alvara: 0, meta: '', propinaEm: 0, ibamaEm: 0, procon: 0, processoEm: 0 },
         hoje: { vendas: 0, clientes: 0, perdidos: 0, faltou: 0, custos: 0 },
+        vozes: { ambiente: 0, saude: 0, trabalho: 0, vizinhos: 0 }, semanas: [],
         dias: [], total: { vendas: 0, custos: 0, clientes: 0, perdidos: 0 },
         pedidos: [], conversa: [], avisos: [], dilemas: [], eventos: [],
         ultimosAvisos: {}, stats: {},
       };
+    }
+    function novoBoi(nomes, peso, vacinado) {
+      const k = nomes.bois++, base = NOMES_BOIS[k % NOMES_BOIS.length], volta = Math.floor(k / NOMES_BOIS.length);
+      return { id: novoId('b'), nome: volta ? `${base} ${volta + 1}` : base, peso, doente: false, vacinado: !!vacinado, doenteH: 0, separado: false };
+    }
+    function novoAtendente(nomes, posto) {
+      const k = nomes.equipe++, [nome, icone] = NOMES_EQUIPE[k % NOMES_EQUIPE.length];
+      return { id: novoId('t'), nome: k >= NOMES_EQUIPE.length ? `${nome} ${Math.floor(k / NOMES_EQUIPE.length) + 1}` : nome, icone, posto, ajuste: 0, base: Math.round((acaso() - 0.5) * 20), elogioDia: 0 };
     }
     const agoraJogo = () => (partida ? partida.horas : 0);
     const diaDe = (h) => Math.floor(h / 24) + 1;
@@ -158,7 +185,22 @@
     const humano = (e, funcao) => partida.ativas.includes(funcao) && (partida.modo === 'cada' || e.membros.some((m) => (partida.funcoesDe[m] || []).includes(funcao)));
     const estoqueLoja = (e) => e.loja.lotes.reduce((s, l) => s + l.qtd, 0);
     const estoqueFrig = (e) => e.frig.lotes.reduce((s, l) => s + l.qtd, 0);
-    const prontos = (e) => e.pasto.bois.filter((b) => b.peso >= 18 && !b.doente);
+    // Prontos para viajar: com 18 arrobas, ou separados pelo Pecuarista com 15 ou mais (rendem menos hambúrguer).
+    const prontos = (e) => e.pasto.bois.filter((b) => !b.doente && (b.peso >= 18 || (b.separado && b.peso >= 15))).sort((a, b) => (b.separado - a.separado) || (b.peso - a.peso));
+    const animoDe = (e, t) => Math.round(lim(e.moral + t.base + t.ajuste, 0, 100));
+    function capacidadeDe(e, t) { return (10 + e.loja.treino * 2) * (0.7 + 0.5 * animoDe(e, t) / 100); }
+    // Quantos clientes por hora a lanchonete atende: o caixa registra e a chapa faz; o mais lento manda (o gargalo).
+    function capacidadeLoja(e) {
+      let cx = 0, ch = 0;
+      for (const t of e.loja.equipe) { if (t.posto === 'caixa') cx += capacidadeDe(e, t); else if (t.posto === 'chapa') ch += capacidadeDe(e, t); }
+      // quem sobra num posto ajuda o outro só de vez em quando; sozinho(s) num posto só, fazem tudo devagar
+      const base = cx > 0 && ch > 0 ? 2 * Math.min(cx, ch) + 0.35 * Math.abs(cx - ch) : (cx + ch) * 0.7;
+      const gargalo = cx > 0 && ch > 0 ? (cx < ch * 0.7 ? 'caixa' : ch < cx * 0.7 ? 'chapa' : null) : cx > 0 ? 'chapa' : ch > 0 ? 'caixa' : null;
+      return { total: base, caixa: cx, chapa: ch, gargalo };
+    }
+    const noSalao = (e) => e.loja.equipe.filter((t) => t.posto === 'salao').length;
+    function pressao(e, grupo, v) { e.vozes[grupo] = lim(e.vozes[grupo] + v, 0, 100); }
+    const protestando = (e, grupo, h = agoraJogo()) => e.eventos.some((x) => x.tipo === 'protesto' && x.grupo === grupo && !x.resolvido && h >= x.em && h < x.ate);
     function tirarDosLotes(lotes, qtd) { // FIFO: o mais velho primeiro; devolve os vencidos que saíram
       let resta = qtd, vencidos = 0;
       lotes.sort((a, b) => a.vence - b.vence);
@@ -186,6 +228,12 @@
       if (tipo === 'avaliacao_ruim') { e.escritorio.avaliacoes.push({ id: novoId('r'), estrelas: 1, texto: 'Demorou demais e o lanche veio frio. Não volto mais!', respondida: false, em: h, prazo: h + 6 }); }
       if (tipo === 'feriado') { ev.em = (diaDe(h)) * 24; ev.ate = ev.em + 24; }
       if (tipo === 'jogo_brasil') { const d0 = (diaDe(h) - 1) * 24; ev.em = d0 + 18; ev.ate = d0 + 21; if (horaDe(h) >= 21) { ev.em += 24; ev.ate += 24; } }
+      if (tipo === 'protesto' || tipo === 'boicote') {
+        const grupo = GRUPOS[extra.grupo] ? extra.grupo : Object.keys(GRUPOS).sort((a, b) => e.vozes[b] - e.vozes[a])[0];
+        const gr = GRUPOS[grupo];
+        Object.assign(ev, { grupo, titulo: `${d.titulo}: ${gr.icone} ${gr.nome}`, texto: tipo === 'protesto' ? `${gr.icone} ${gr.nome} na porta com cartazes ("${gr.cartaz}"), por causa de ${gr.causa}. Menos clientes até alguém conversar com eles (Marketing ou Diretor) ou por 6 horas.` : `${gr.icone} ${gr.nome} pediram para a cidade não comprar da empresa hoje (${gr.causa}). Os clientes caem pela metade.`, ate: h + (tipo === 'protesto' ? 6 : 24) });
+        if (tipo === 'protesto') e.vozes[grupo] = Math.max(e.vozes[grupo], 80);
+      }
       if (tipo === 'boleto_falso') e.escritorio.contas.push({ id: novoId('c'), nome: 'Fornecedor "Pão Bom" (boleto novo, CNPJ diferente)', valor: 4800, vence: diaDe(h) + 1, paga: false, falsa: true });
       e.eventos.push(ev);
       if (e.eventos.length > 40) e.eventos.splice(0, e.eventos.length - 40);
@@ -208,8 +256,8 @@
       d.escolha = escolha; d.por = quem || 'IA';
       const h = agoraJogo();
       if (d.tipo === 'desmatar') {
-        if (escolha === 'derrubar') { e.pasto.piquetes.push({ capim: 100, foco: false, novo: true }); e.natureza = lim(e.natureza - 35, 0, 100); e.escritorio.ibamaEm = h + 36; registrar(e, '🪓 A mata foi derrubada para pasto novo. A natureza sentiu.'); }
-        else { e.natureza = lim(e.natureza + 5, 0, 100); registrar(e, '🌳 A mata ficou em pé. Rodízio do pasto e silagem resolvem.'); }
+        if (escolha === 'derrubar') { e.pasto.piquetes.push({ capim: 100, foco: false, novo: true, fert: 70, reformaAte: 0 }); e.natureza = lim(e.natureza - 35, 0, 100); pressao(e, 'ambiente', 35); e.escritorio.ibamaEm = h + 36; registrar(e, '🪓 A mata foi derrubada para pasto novo. A natureza sentiu (e o solo da Amazônia, sem a floresta, cansa rápido).'); }
+        else { e.natureza = lim(e.natureza + 5, 0, 100); pressao(e, 'ambiente', -10); registrar(e, '🌳 A mata ficou em pé. Rodízio do pasto, reforma e silagem resolvem.'); }
       } else if (d.tipo === 'racao_barata') {
         if (escolha === 'barata') { custo(e, 500); e.roca.silagem += 10; if (acaso() < 0.6) e.escritorio.racaoRuimEm = h + 24; }
         else if (escolha === 'nota') { custo(e, 1500); e.roca.silagem += 10; }
@@ -219,8 +267,8 @@
         else for (const l of vencidos) l.qtd = 0;
         e.frig.lotes = e.frig.lotes.filter((l) => l.qtd > 0);
       } else if (d.tipo === 'hora_extra') {
-        if (escolha === 'pagar') { custo(e, 600); e.moral = lim(e.moral + 10, 0, 100); }
-        else { e.moral = lim(e.moral - 25, 0, 100); if (params(partida.nivel).falencia) e.escritorio.processoEm = h + 48; }
+        if (escolha === 'pagar') { custo(e, 600); e.moral = lim(e.moral + 10, 0, 100); pressao(e, 'trabalho', -10); }
+        else { e.moral = lim(e.moral - 25, 0, 100); pressao(e, 'trabalho', 30); if (params(partida.nivel).falencia) e.escritorio.processoEm = h + 48; }
       } else if (d.tipo === 'jeitinho') {
         if (escolha === 'aceitar') { custo(e, 2000); e.escritorio.propinaEm = h + 24; }
         else { custo(e, 3000, '🧾 Multa da fiscalização paga do jeito certo. Honestidade conta pontos com a cidade.'); e.fama = lim(e.fama + 5, 0, 100); }
@@ -239,7 +287,10 @@
       }
       if (!humano(e, 'pecuarista')) {
         const pq = e.pasto.piquetes;
-        if (pq[e.pasto.ativo].capim < 20) { const melhor = pq.reduce((m, x, i) => (x.capim > pq[m].capim ? i : m), 0); e.pasto.ativo = melhor; }
+        const nota = (x) => (x.foco || x.reformaAte > h ? -1 : x.capim + x.fert * 0.3);
+        if (pq[e.pasto.ativo].capim < 20) { const melhor = pq.reduce((m, x, i) => (nota(x) > nota(pq[m]) ? i : m), 0); if (nota(pq[melhor]) >= 0) e.pasto.ativo = melhor; }
+        const cansado = pq.findIndex((x, i) => i !== e.pasto.ativo && x.fert < 35 && !(x.reformaAte > h) && !x.foco);
+        if (cansado >= 0 && e.caixa > 12000) faz(() => acoes.pecuarista.reformar(e, { i: cansado }));
         e.pasto.cocho = pq[e.pasto.ativo].capim < 20 && e.roca.silagem > 0;
         if (e.pasto.bois.length < 10 && e.caixa > 15000 && h > e.pasto.embargoAte && diaDe(h) < partida.dias - 8) faz(() => acoes.pecuarista.comprar(e, { qtd: 5 }));
       }
@@ -263,12 +314,20 @@
         if (Math.min(e.loja.pao, e.loja.queijo, e.loja.embalagem) < 350 && !e.escritorio.compras.some((c) => !c.chegou)) faz(() => acoes.compras.comprar(e, { qtd: 800 }));
         for (const c of e.escritorio.contas) if (c.falsa && !c.paga && !c.recusada) c.recusada = true;
       }
-      if (!humano(e, 'gerente')) { e.loja.aberta = true; if (e.loja.preco < 14 || e.loja.preco > 24) e.loja.preco = 18; }
+      if (!humano(e, 'gerente')) {
+        e.loja.aberta = true; if (e.loja.preco < 14 || e.loja.preco > 24) e.loja.preco = 18;
+        // reparte a equipe: metade no caixa, metade na chapa; quem sobra (número ímpar) vai para o salão
+        const eq = e.loja.equipe, sal = eq.length >= 3 && eq.length % 2 ? 1 : 0, cx = Math.ceil((eq.length - sal) / 2);
+        eq.forEach((t, i) => { t.posto = i < sal ? 'salao' : i < sal + cx ? 'caixa' : 'chapa'; });
+      }
       if (!humano(e, 'marketing')) for (const a of e.escritorio.avaliacoes) if (!a.respondida && h - a.em >= 3) faz(() => acoes.marketing.responder(e, { id: a.id, resposta: 'educada' }));
       if (!humano(e, 'rh') && horaDe(h) === 9) {
         const ontem = e.dias[e.dias.length - 1];
         if (ontem && ontem.perdidos > 40 && e.loja.atendentes < 5 && e.caixa > 8000) faz(() => acoes.rh.contratar(e, {}));
+        const triste = e.loja.equipe.slice().sort((a, b) => animoDe(e, a) - animoDe(e, b))[0];
+        if (triste && animoDe(e, triste) < 40 && e.caixa > 3000) faz(() => acoes.rh.elogiar(e, { id: triste.id }));
       }
+      if (!humano(e, 'marketing') && !humano(e, 'diretor')) for (const ev of e.eventos) if (ev.tipo === 'protesto' && !ev.resolvido && h < ev.ate && h - ev.em >= 2) faz(() => acoes.marketing.dialogar(e, { grupo: ev.grupo }));
       if (!humano(e, 'qualidade')) {
         for (const ev of e.eventos) if (ev.tipo === 'queimada' && !ev.resolvido && h - ev.em >= 3) faz(() => acoes.qualidade.combater(e, { id: ev.id }));
         if (e.escritorio.alvara && e.escritorio.alvara - diaDe(h) <= 1) faz(() => acoes.qualidade.alvara(e, {}));
@@ -300,20 +359,40 @@
         irrigar(e, { ligar }) { e.roca.irrigacao = !!ligar; },
       },
       pecuarista: {
-        piquete(e, { i }) { if (!e.pasto.piquetes[i]) throw new Error('Piquete não existe.'); if (e.pasto.piquetes[i].foco) throw new Error('Esse piquete está pegando fogo!'); e.pasto.ativo = i; },
+        piquete(e, { i }) {
+          const q = e.pasto.piquetes[i]; if (!q) throw new Error('Piquete não existe.');
+          if (q.foco) throw new Error('Esse piquete está pegando fogo!');
+          if (q.reformaAte > agoraJogo()) throw new Error('Esse piquete está em reforma: o capim novo ainda está nascendo.');
+          e.pasto.ativo = i;
+        },
+        // Reforma do pasto cansado: adubo, calcário e semente; o piquete fica 1 dia sem gado e o solo volta a ficar forte.
+        reformar(e, { i }) {
+          const q = e.pasto.piquetes[i]; if (!q) throw new Error('Piquete não existe.');
+          if (i === e.pasto.ativo) throw new Error('Tire o rebanho desse piquete antes de reformar.');
+          if (q.reformaAte > agoraJogo()) throw new Error('Esse piquete já está em reforma.');
+          if (q.fert >= 85) throw new Error('O solo desse piquete ainda está bom: não precisa reformar.');
+          custo(e, 2500); q.reformaAte = agoraJogo() + 24; pressao(e, 'ambiente', -15);
+        },
+        // Separar um boi para o frigorífico: vai primeiro no caminhão (com 15 arrobas ou mais já pode ir, mas rende menos).
+        separar(e, { id }) {
+          const b = e.pasto.bois.find((x) => x.id === id); if (!b) throw new Error('Esse boi não está no pasto.');
+          if (!b.separado && b.doente) throw new Error(`O ${b.nome} está doente: precisa ser tratado antes.`);
+          if (!b.separado && b.peso < 15) throw new Error(`O ${b.nome} tem só ${arred(b.peso, 1)} arrobas: ainda é magro demais (mínimo 15).`);
+          b.separado = !b.separado;
+        },
         cocho(e, { ligar }) { if (ligar && e.roca.silagem <= 0) throw new Error('Não tem silagem guardada.'); e.pasto.cocho = !!ligar; },
         comprar(e, { qtd }) {
           const n = lim(Math.round(Number(qtd) || 1), 1, 10);
           if (agoraJogo() < e.pasto.embargoAte) throw new Error('O pasto está embargado pelo IBAMA: não pode comprar gado agora.');
           if (e.pasto.bois.length + n > 40) throw new Error('O pasto não aguenta mais que 40 bois.');
           custo(e, n * 2200);
-          for (let i = 0; i < n; i++) e.pasto.bois.push({ id: novoId('b'), peso: 12, doente: false, vacinado: false, doenteH: 0 });
+          for (let i = 0; i < n; i++) e.pasto.bois.push(novoBoi(e.nomes, 12, false));
         },
         racao(e) { novoDilema(e, 'racao_barata'); },
       },
       veterinario: {
-        vacinar(e) { const n = e.pasto.bois.filter((b) => !b.vacinado).length; if (!n) throw new Error('Todo o rebanho já está vacinado.'); custo(e, n * 40); e.pasto.bois.forEach((b) => { b.vacinado = true; }); },
-        tratar(e) { const d = e.pasto.bois.filter((b) => b.doente); if (!d.length) throw new Error('Nenhum boi doente.'); custo(e, d.length * 150); d.forEach((b) => { b.doente = false; b.doenteH = 0; }); },
+        vacinar(e, { id } = {}) { const l = e.pasto.bois.filter((b) => !b.vacinado && (!id || b.id === id)); if (!l.length) throw new Error(id ? 'Esse boi já está vacinado.' : 'Todo o rebanho já está vacinado.'); custo(e, l.length * 40); l.forEach((b) => { b.vacinado = true; }); },
+        tratar(e, { id } = {}) { const d = e.pasto.bois.filter((b) => b.doente && (!id || b.id === id)); if (!d.length) throw new Error('Nenhum boi doente.'); custo(e, d.length * 150); d.forEach((b) => { b.doente = false; b.doenteH = 0; }); },
         gta(e) { const n = prontos(e).length - e.pasto.gta; if (n <= 0) throw new Error('Não há boi pronto sem guia.'); custo(e, n * 20); e.pasto.gta += n; },
       },
       logistica: {
@@ -322,12 +401,13 @@
           if (e.caminhao.viagem) throw new Error('O caminhão já está viajando.');
           if (e.caminhao.combustivel < 15) throw new Error('Sem combustível: abasteça antes.');
           if (rota === 'pasto_frig' && ativa(e, 'br364')) throw new Error('A BR-364 está fechada hoje.');
-          let carga;
+          let carga, arrobas = 0, nomes = null;
           if (rota === 'pasto_frig') {
             const n = lim(Math.round(Number(qtd) || 0), 1, 6);
             const lista = prontos(e).slice(0, Math.min(n, e.pasto.gta));
             if (!lista.length) throw new Error(prontos(e).length ? 'Os bois prontos ainda não têm a guia (GTA) do Veterinário.' : 'Não há boi pronto (18 arrobas) no pasto.');
             e.pasto.bois = e.pasto.bois.filter((b) => !lista.includes(b)); e.pasto.gta -= lista.length; carga = lista.length;
+            arrobas = arred(lista.reduce((s, b) => s + b.peso, 0), 1); nomes = lista.map((b) => b.nome);
           } else {
             const n = lim(Math.round(Number(qtd) || 0), 1, 1500);
             if (!estoqueFrig(e)) throw new Error('A câmara fria do frigorífico está vazia.');
@@ -337,12 +417,16 @@
             e.frig.lotes = e.frig.lotes.filter((l) => l.qtd > 0); carga = lotes;
           }
           e.caminhao.combustivel -= 15;
-          e.caminhao.viagem = { rota, carga, sai: agoraJogo(), chega: agoraJogo() + r.horas };
+          e.caminhao.viagem = { rota, carga, sai: agoraJogo(), chega: agoraJogo() + r.horas, ...(rota === 'pasto_frig' ? { arrobas, nomes } : {}) };
         },
         abastecer(e) { custo(e, Math.round((100 - e.caminhao.combustivel) * 8 * (ativa(e, 'combustivel_caro') ? 1.5 : 1))); e.caminhao.combustivel = 100; },
       },
       frigorifico: {
-        abater(e, { qtd }) { const n = lim(Math.round(Number(qtd) || e.frig.bois), 1, e.frig.bois || 1); if (!e.frig.bois) throw new Error('Não chegou boi no frigorífico.'); e.frig.bois -= n; e.frig.carne += n * LANCHES_POR_BOI; custo(e, n * 150); },
+        abater(e, { qtd }) {
+          const n = lim(Math.round(Number(qtd) || e.frig.bois), 1, e.frig.bois || 1); if (!e.frig.bois) throw new Error('Não chegou boi no frigorífico.');
+          const media = e.frig.arrobas / e.frig.bois || 18; // o boi mais leve rende menos hambúrguer
+          e.frig.bois -= n; e.frig.arrobas = Math.max(0, arred(e.frig.arrobas - n * media, 1)); e.frig.carne += Math.round(n * LANCHES_POR_BOI * Math.min(1.1, media / 18)); custo(e, n * 150);
+        },
         producao(e, { qtd }) { e.frig.producao = lim(Math.round(Number(qtd) || 0), 0, 1200); },
         higiene(e, { ligar }) { e.frig.higiene = !!ligar; },
         descartar(e) { const v = e.frig.lotes.filter((l) => l.vence < diaDe(agoraJogo())); if (!v.length) throw new Error('Não há lote vencido.'); e.frig.lotes = e.frig.lotes.filter((l) => !v.includes(l)); },
@@ -354,6 +438,12 @@
       chapeiro: { lanche(e) { return atenderNaMao(e, 'chapeiro'); } },
       caixa: { atender(e) { return atenderNaMao(e, 'caixa'); } },
       gerente: {
+        // Mudar alguém de posto: caixa (registra), chapa (faz o lanche) ou salão (cuida da fila e da limpeza)
+        posto(e, { id, posto }) {
+          const t = e.loja.equipe.find((x) => x.id === id); if (!t) throw new Error('Essa pessoa não trabalha aqui.');
+          if (!POSTOS[posto]) throw new Error('Escolha caixa, chapa ou salão.');
+          t.posto = posto;
+        },
         preco(e, { valor }) { e.loja.preco = lim(arred(Number(valor) || PRECO_REF, 1), 8, 40); },
         abrir(e, { aberta }) { e.loja.aberta = !!aberta; },
         promocao(e, { ligar }) { e.loja.promocao = !!ligar; },
@@ -365,19 +455,40 @@
           e.escritorio.marketing = { tipo, ate: agoraJogo() + 72 };
           if (tipo === 'enganosa' && acaso() < 0.6) e.escritorio.procon = agoraJogo() + 24;
         },
+        dialogar(e, { grupo }) { return dialogar(e, grupo); },
         responder(e, { id, resposta }) {
           const a = e.escritorio.avaliacoes.find((x) => x.id === id); if (!a) throw new Error('Avaliação não encontrada.');
           if (a.respondida) throw new Error('Essa avaliação já foi respondida.');
           a.respondida = resposta === 'educada' ? 'educada' : 'grossa';
-          e.fama = lim(e.fama + (a.respondida === 'educada' ? 6 : -12), 0, 100);
+          e.fama = lim(e.fama + (a.respondida === 'educada' ? 6 : -12), 0, 100); pressao(e, 'saude', a.respondida === 'educada' ? -5 : 10);
         },
       },
       rh: {
-        contratar(e) { if (e.loja.atendentes >= 8) throw new Error('A lanchonete não cabe mais atendentes.'); custo(e, 400); e.loja.atendentes++; },
-        demitir(e) { if (e.loja.atendentes <= 1) throw new Error('A lanchonete precisa de pelo menos 1 atendente.'); custo(e, 800); e.loja.atendentes--; e.moral = lim(e.moral - 8, 0, 100); },
-        treinar(e) { custo(e, 700); e.loja.treino = Math.min(3, e.loja.treino + 1); e.moral = lim(e.moral + 6, 0, 100); },
+        contratar(e, { posto } = {}) {
+          if (e.loja.equipe.length >= 8) throw new Error('A lanchonete não cabe mais atendentes.');
+          const c = capacidadeLoja(e), onde = POSTOS[posto] ? posto : c.caixa <= c.chapa ? 'caixa' : 'chapa';
+          custo(e, 400); const t = novoAtendente(e.nomes, onde); e.loja.equipe.push(t); e.loja.atendentes = e.loja.equipe.length;
+          registrar(e, `👋 ${t.nome} foi contratado(a) para ${POSTOS[onde].nome.toLowerCase() === 'salão' ? 'o salão' : `a ${POSTOS[onde].nome.toLowerCase()}`}.`);
+          return { id: t.id, nome: t.nome };
+        },
+        demitir(e, { id } = {}) {
+          if (e.loja.equipe.length <= 1) throw new Error('A lanchonete precisa de pelo menos 1 atendente.');
+          const t = id ? e.loja.equipe.find((x) => x.id === id) : e.loja.equipe.slice().sort((a, b) => animoDe(e, a) - animoDe(e, b))[0];
+          if (!t) throw new Error('Essa pessoa não trabalha aqui.');
+          custo(e, 800); e.loja.equipe = e.loja.equipe.filter((x) => x !== t); e.loja.atendentes = e.loja.equipe.length;
+          e.moral = lim(e.moral - 8, 0, 100); pressao(e, 'trabalho', 12);
+          registrar(e, `📤 ${t.nome} foi demitido(a). A equipe ficou abalada.`);
+        },
+        // Elogiar alguém (com um bônus e a medalha de destaque): o ânimo dessa pessoa sobe bastante; uma vez por dia.
+        elogiar(e, { id } = {}) {
+          const t = e.loja.equipe.find((x) => x.id === id); if (!t) throw new Error('Essa pessoa não trabalha aqui.');
+          const dia = diaDe(agoraJogo());
+          if (t.elogioDia === dia) throw new Error(`${t.nome} já foi elogiado(a) hoje.`);
+          custo(e, 150); t.elogioDia = dia; t.ajuste = Math.min(40, t.ajuste + 25); e.moral = lim(e.moral + 2, 0, 100);
+        },
+        treinar(e) { custo(e, 700); e.loja.treino = Math.min(3, e.loja.treino + 1); e.moral = lim(e.moral + 6, 0, 100); pressao(e, 'trabalho', -8); },
         horaExtra(e) { custo(e, 300); e.loja.horaExtraAte = agoraJogo() + 2; e.moral = lim(e.moral + 2, 0, 100); },
-        folga(e) { custo(e, 500); e.moral = lim(e.moral + 12, 0, 100); },
+        folga(e) { custo(e, 500); e.moral = lim(e.moral + 12, 0, 100); pressao(e, 'trabalho', -8); },
       },
       qualidade: {
         combater(e, { id }) {
@@ -401,8 +512,17 @@
         emprestimo(e, { valor }) { const v = lim(Math.round(Number(valor) || 10000), 1000, 50000); if (e.emprestimo + v > 60000) throw new Error('O banco não empresta mais que R$ 60.000.'); e.emprestimo += v; e.caixa += v; },
         quitar(e, { valor }) { const v = Math.min(e.emprestimo, lim(Math.round(Number(valor) || e.emprestimo), 1, 1e9)); if (!v) throw new Error('Não há empréstimo.'); if (e.caixa < v) throw new Error('Não tem dinheiro para pagar agora.'); e.caixa -= v; e.emprestimo -= v; },
       },
-      diretor: { meta(e, { texto }) { e.escritorio.meta = limpo(texto).slice(0, 120); } },
+      diretor: { meta(e, { texto }) { e.escritorio.meta = limpo(texto).slice(0, 120); }, dialogar(e, { grupo }) { return dialogar(e, grupo); } },
     };
+    // Conversar com um grupo da cidade: uma reunião (R$ 500) acalma o protesto, mas se o motivo continuar, eles voltam.
+    function dialogar(e, grupo) {
+      const gr = GRUPOS[grupo]; if (!gr) throw new Error('Com qual grupo?');
+      if (e.vozes[grupo] < 30 && !protestando(e, grupo)) throw new Error(`${gr.nome} estão tranquilos agora.`);
+      custo(e, 500); pressao(e, grupo, -30);
+      for (const ev of e.eventos) if (ev.tipo === 'protesto' && ev.grupo === grupo && !ev.resolvido) { ev.resolvido = true; ev.ate = Math.min(ev.ate, agoraJogo()); }
+      registrar(e, `🤝 Reunião com ${gr.icone} ${gr.nome}: a empresa ouviu e prometeu melhorar (${gr.causa}). Se nada mudar, eles voltam!`);
+      return { grupo };
+    }
     // Caixa e chapeiro "na mão": cada pedido digitado (ou lanche montado) atende um cliente da fila.
     function atenderNaMao(e, quem) {
       if (!e.loja.aberta || agoraJogo() < e.loja.fechadaAte) throw new Error('A lanchonete está fechada.');
@@ -427,7 +547,7 @@
       e.escritorio.passouMalEm = agoraJogo();
       e.fama = lim(e.fama - 25, 0, 100);
       e.loja.fechadaAte = Math.max(e.loja.fechadaAte, agoraJogo() + 24);
-      custo(e, 5000);
+      custo(e, 5000); pressao(e, 'saude', 40);
       e.avisos.push({ id: novoId('a'), texto: '🤢 Um cliente passou mal com hambúrguer vencido! A Vigilância Sanitária fechou a lanchonete por 1 dia e multou em R$ 5.000.', para: null, nivel: 'urgente', em: agoraJogo(), professor: true });
     }
 
@@ -450,8 +570,23 @@
       if (e.roca.irrigacao) custo(e, 8);
       // Pasto: o capim cresce (muito na chuva, quase nada na seca) e o rebanho come o do piquete ativo
       const pq = e.pasto.piquetes, ativo = pq[e.pasto.ativo] || pq[0];
-      pq.forEach((x) => { if (!x.foco) x.capim = Math.min(100, x.capim + (seca ? 0.06 : 0.45) * (forte ? 0.3 : 1)); });
+      // O solo (fertilidade): o capim cresce menos e chega a menos no solo cansado. Pisoteado no pelado, cansa;
+      // descansando (sem gado), recupera devagar; a reforma devolve a força de uma vez.
       const nBois = e.pasto.bois.length;
+      pq.forEach((x, i) => {
+        if (x.reformaAte && h >= x.reformaAte) { x.reformaAte = 0; x.fert = Math.min(100, x.fert + 50); x.capim = Math.max(x.capim, 35); registrar(e, `🌱 A reforma do piquete ${i + 1} terminou: solo forte e capim novo.`); }
+        if (x.foco) return;
+        const teto = 30 + 0.7 * x.fert;
+        if (x.capim < teto) x.capim = Math.min(teto, x.capim + (seca ? 0.06 : 0.45) * (forte ? 0.3 : 1) * (0.3 + 0.7 * x.fert / 100) * (x.reformaAte ? 0.5 : 1));
+        if (i === e.pasto.ativo && nBois) {
+          if (x.capim < 15) x.fert -= 0.35 * (x.novo ? 1.6 : 1) * Math.max(0.5, nBois / 14);
+          if (nBois > 24) x.fert -= 0.012 * (nBois - 24);
+          if (x.capim >= 40) x.fert += 0.02;
+        } else x.fert += seca ? 0.03 : 0.12;
+        x.fert = lim(x.fert, 5, 100);
+        if (x.fert < 30 && !x.degradado) { x.degradado = true; e.natureza = lim(e.natureza - 5, 0, 100); pressao(e, 'ambiente', 10); e.avisos.push({ id: novoId('a'), texto: `🏜️ O solo do piquete ${i + 1} cansou (pasto degradado): o capim quase não volta. Tire o gado e faça a reforma (adubo e semente).`, para: 'pecuarista', nivel: 'urgente', em: h, professor: true }); }
+        else if (x.fert >= 50 && x.degradado) x.degradado = false;
+      });
       let comeu = Math.min(ativo.capim, nBois * 0.07);
       ativo.capim -= comeu;
       let alimentados = nBois ? Math.min(nBois, Math.floor(comeu / 0.07 + 1e-6)) : 0;
@@ -472,7 +607,7 @@
       // Caminhão
       const v = e.caminhao.viagem;
       if (v && h >= v.chega) {
-        if (v.rota === 'pasto_frig') e.frig.bois += v.carga;
+        if (v.rota === 'pasto_frig') { e.frig.bois += v.carga; e.frig.arrobas = arred((e.frig.arrobas || 0) + (v.arrobas || v.carga * 18), 1); }
         else for (const l of v.carga) e.loja.lotes.push(l);
         e.caminhao.viagem = null;
         registrar(e, v.rota === 'pasto_frig' ? `🚚 Chegaram ${v.carga} boi(s) no frigorífico.` : `🚚 Chegaram ${v.carga.reduce((s, l) => s + l.qtd, 0)} hambúrgueres na lanchonete.`);
@@ -494,27 +629,56 @@
         let fator = (0.4 + e.fama / 100) * lim((26 - e.loja.preco * (e.loja.promocao ? 0.85 : 1)) / 8, 0.15, 1.6);
         const m = e.escritorio.marketing; if (m && h < m.ate) fator *= m.tipo === 'honesta' ? 1.25 : 1.4;
         if (ativa(e, 'concorrente')) fator *= 0.75;
+        const protestos = e.eventos.filter((x) => x.tipo === 'protesto' && !x.resolvido && h >= x.em && h < x.ate).length;
+        if (protestos) fator *= Math.pow(0.75, Math.min(2, protestos));
+        if (e.eventos.some((x) => x.tipo === 'boicote' && h >= x.em && h < x.ate)) fator *= 0.5;
         if (e.eventos.some((x) => x.tipo === 'feriado' && h >= x.em && h < x.ate)) fator *= 2;
         if (e.eventos.some((x) => x.tipo === 'jogo_brasil' && h >= x.em && h < x.ate)) fator *= 3;
         if ((dia % 7 === 6) || (dia % 7 === 0)) fator *= 1.3; // sábado e domingo
         const chegam = Math.max(0, Math.round(MOVIMENTO[hh] * fator * (0.85 + acaso() * 0.3)));
-        const capacidade = Math.round(e.loja.atendentes * (10 + e.loja.treino * 2) * (h < e.loja.horaExtraAte ? 1.5 : 1) * (e.moral < 30 ? 0.7 : 1));
+        const cap = capacidadeLoja(e);
+        const capacidade = Math.round(cap.total * (h < e.loja.horaExtraAte ? 1.5 : 1));
         const querem = e.loja.fila + chegam;
         const tem = Math.min(estoqueLoja(e), e.loja.pao, e.loja.queijo, e.loja.embalagem);
         const atende = Math.min(querem, capacidade, tem);
         vender(e, atende);
         const sobram = querem - atende;
-        e.loja.fila = Math.min(15, sobram);
+        e.loja.fila = Math.min(15 + 5 * noSalao(e), sobram);
         const perdidos = sobram - e.loja.fila;
         e.hoje.perdidos += perdidos;
         if (tem < querem && atende < capacidade) e.hoje.faltou += querem - atende;
-        e.fama = lim(e.fama + (atende ? 0.25 : 0) - perdidos * 0.04 - (e.loja.preco > 24 ? 0.15 : 0), 0, 100);
+        e.fama = lim(e.fama + (atende ? 0.25 : 0) + noSalao(e) * 0.05 - perdidos * 0.04 - (e.loja.preco > 24 ? 0.15 : 0), 0, 100);
+        if (e.loja.fila >= 12) pressao(e, 'vizinhos', 0.7);
+        if (cap.gargalo && sobram > capacidade * 0.5) avisar(e, 'gargalo', 'gerente', cap.gargalo === 'chapa' ? `🔥 A chapa não dá conta às ${hh}h: tem mais gente no caixa do que na chapa (o pedido fica esperando o lanche). Gerente: equilibre caixa e chapa; quem sobrar pode cuidar do salão!` : `🧾 O caixa não dá conta às ${hh}h: tem mais gente na chapa do que no caixa (a chapa fica esperando pedido). Gerente: equilibre caixa e chapa; quem sobrar pode cuidar do salão!`, 'importante', 8);
         if (sobram > capacidade) e.moral = lim(e.moral - 0.6, 0, 100);
         if (tem < querem && tem < capacidade) avisar(e, 'faltou', null, `🍔 Faltou ${estoqueLoja(e) < 1 ? 'hambúrguer' : 'pão, queijo ou embalagem'} na lanchonete às ${hh}h: os clientes foram embora. Frigorífico, Logística e Compras: combinem a reposição!`, 'urgente', 6);
         else if (sobram > capacidade * 0.8 && e.loja.atendentes < 4) avisar(e, 'fila', 'rh', `🧍 Fila grande na lanchonete às ${hh}h: falta atendente. RH: contrate ou pague hora extra; Caixa e Chapeiro: atendam na mão!`, 'importante', 8);
       }
+      // A equipe: o ânimo de cada um anda junto com o da equipe; o elogio passa devagar; muito triste, pede as contas.
+      for (const t of e.loja.equipe) t.ajuste += t.ajuste > 0 ? -Math.min(t.ajuste, 0.4) : Math.min(-t.ajuste, 0.4);
+      const tristes = e.loja.equipe.filter((t) => animoDe(e, t) < 12);
+      if (tristes.length && e.loja.equipe.length > 1 && acaso() < 0.04) {
+        const t = tristes[0]; e.loja.equipe = e.loja.equipe.filter((x) => x !== t); e.loja.atendentes = e.loja.equipe.length; pressao(e, 'trabalho', 8);
+        e.avisos.push({ id: novoId('a'), texto: `🚪 ${t.nome} pediu demissão: estava muito desanimado(a). RH: elogie, dê folga e treine a equipe antes que outros saiam.`, para: 'rh', nivel: 'urgente', em: h, professor: true });
+      }
+      // As vozes da cidade: a pressão sobe com o que vai mal e desce sozinha; em 80, protesto; em 100, boicote.
+      if (e.natureza < 50) pressao(e, 'ambiente', ((50 - e.natureza) / 50) * 0.8);
+      if (!e.frig.higiene) pressao(e, 'saude', 0.4);
+      if (e.escritorio.vencidaNaLoja) pressao(e, 'saude', 0.5);
+      if (e.moral < 40) pressao(e, 'trabalho', ((40 - e.moral) / 40) * 0.8);
+      if (noSalao(e)) pressao(e, 'vizinhos', -0.3 * noSalao(e));
+      for (const k of Object.keys(GRUPOS)) {
+        const gr = GRUPOS[k];
+        if (!protestando(e, k, h)) pressao(e, k, -0.25);
+        // boicote: só se protestaram e ninguém conversou com eles (e no máximo um a cada 2 dias)
+        const semResposta = e.eventos.some((x) => x.tipo === 'protesto' && x.grupo === k && !x.resolvido && h - x.em < 24);
+        if (e.vozes[k] >= 100 && semResposta && !e.eventos.some((x) => x.tipo === 'boicote' && x.grupo === k && h - x.em < 48)) { novoEvento(e, 'boicote', { grupo: k }); e.vozes[k] = 50; e.fama = lim(e.fama - 10, 0, 100); }
+        else if (e.vozes[k] >= 80 && !protestando(e, k, h) && !e.eventos.some((x) => x.tipo === 'protesto' && x.grupo === k && h - x.em < 24)) novoEvento(e, 'protesto', { grupo: k });
+        else if (e.vozes[k] >= 50) avisar(e, `voz-${k}`, gr.para, `${gr.icone} ${gr.nome} estão reclamando (${gr.causa}). Se não melhorar, vão protestar na porta!`, 'importante', 24);
+        if (protestando(e, k, h)) pressao(e, k, 0.3);
+      }
       // Escritório: contas, marketing enganoso, IBAMA, processos, propina
-      if (e.escritorio.procon && h >= e.escritorio.procon) { e.escritorio.procon = 0; custo(e, 6000); e.fama = lim(e.fama - 20, 0, 100); e.avisos.push({ id: novoId('a'), texto: '📢 O PROCON multou a propaganda enganosa ("100% natural" não era verdade): R$ 6.000 e a fama caiu.', para: 'marketing', nivel: 'urgente', em: h, professor: true }); }
+      if (e.escritorio.procon && h >= e.escritorio.procon) { e.escritorio.procon = 0; custo(e, 6000); pressao(e, 'saude', 25); e.fama = lim(e.fama - 20, 0, 100); e.avisos.push({ id: novoId('a'), texto: '📢 O PROCON multou a propaganda enganosa ("100% natural" não era verdade): R$ 6.000 e a fama caiu.', para: 'marketing', nivel: 'urgente', em: h, professor: true }); }
       if (e.escritorio.ibamaEm && h >= e.escritorio.ibamaEm) { e.escritorio.ibamaEm = 0; custo(e, 8000); if (p.falencia) e.pasto.embargoAte = h + 48; e.fama = lim(e.fama - 10, 0, 100); e.avisos.push({ id: novoId('a'), texto: `🛰️ O satélite viu a mata derrubada: o IBAMA multou em R$ 8.000${p.falencia ? ' e embargou o pasto por 2 dias' : ''}.`, para: 'qualidade', nivel: 'urgente', em: h, professor: true }); }
       if (e.escritorio.processoEm && h >= e.escritorio.processoEm) { e.escritorio.processoEm = 0; custo(e, 3000); e.avisos.push({ id: novoId('a'), texto: '⚖️ Processo trabalhista: a hora extra que não foi paga custou R$ 3.000 na Justiça.', para: 'rh', nivel: 'urgente', em: h, professor: true }); }
       if (e.escritorio.propinaEm && h >= e.escritorio.propinaEm) { e.escritorio.propinaEm = 0; custo(e, 15000); e.fama = lim(e.fama - 40, 0, 100); e.avisos.push({ id: novoId('a'), texto: '🚓 O "jeitinho" foi descoberto: corrupção é crime. Multa de R$ 15.000 e a fama da empresa despencou.', para: null, nivel: 'urgente', em: h, professor: true }); }
@@ -522,9 +686,9 @@
       for (const a of e.escritorio.avaliacoes) if (!a.respondida && !a.perdeu && h > a.prazo) { a.perdeu = true; e.fama = lim(e.fama - 10, 0, 100); }
       for (const ev of e.eventos) {
         if (ev.tipo === 'queimada' && !ev.resolvido && !ev.espalhou && h >= ev.ate) {
-          ev.espalhou = true; e.natureza = lim(e.natureza - 15, 0, 100);
+          ev.espalhou = true; e.natureza = lim(e.natureza - 15, 0, 100); pressao(e, 'ambiente', 20);
           const alvo = ev.onde === 'piquete' ? e.pasto.piquetes[ev.i] : e.roca.talhoes[ev.i];
-          alvo.foco = false; if (ev.onde === 'piquete') alvo.capim = 0; else Object.assign(alvo, { estado: 'vazio', cresc: 0 });
+          alvo.foco = false; if (ev.onde === 'piquete') { alvo.capim = 0; alvo.fert = Math.max(5, alvo.fert - 25); } else Object.assign(alvo, { estado: 'vazio', cresc: 0 });
           e.avisos.push({ id: novoId('a'), texto: `🔥 Ninguém apagou o foco: a queimada destruiu o ${ev.onde === 'piquete' ? `piquete ${ev.i + 1}` : `talhão ${ev.i + 1}`} e a natureza sofreu.`, para: 'qualidade', nivel: 'urgente', em: h, professor: true });
         }
         if (ev.tipo === 'fiscalizacao' && !ev.feito && h >= ev.ate) {
@@ -533,7 +697,7 @@
           const alvara = e.escritorio.alvara >= dia;
           if (e.frig.higiene && !vencidos && alvara) { e.fama = lim(e.fama + 4, 0, 100); registrar(e, '✅ A fiscalização aprovou: higiene em dia, nada vencido e alvará válido.'); }
           else if (p.jeitinho) novoDilema(e, 'jeitinho');
-          else { custo(e, 3000); e.loja.fechadaAte = Math.max(e.loja.fechadaAte, h + 4); e.avisos.push({ id: novoId('a'), texto: `📋 Reprovado na fiscalização (${[!e.frig.higiene && 'sem higiene', vencidos && 'produto vencido', !alvara && 'alvará vencido'].filter(Boolean).join(', ')}): multa de R$ 3.000 e loja fechada por 4 horas.`, para: 'qualidade', nivel: 'urgente', em: h, professor: true }); }
+          else { custo(e, 3000); pressao(e, 'saude', 20); e.loja.fechadaAte = Math.max(e.loja.fechadaAte, h + 4); e.avisos.push({ id: novoId('a'), texto: `📋 Reprovado na fiscalização (${[!e.frig.higiene && 'sem higiene', vencidos && 'produto vencido', !alvara && 'alvará vencido'].filter(Boolean).join(', ')}): multa de R$ 3.000 e loja fechada por 4 horas.`, para: 'qualidade', nivel: 'urgente', em: h, professor: true }); }
         }
       }
       if (e.moral <= 10 && !ativa(e, 'greve')) { e.eventos.push({ id: novoId('v'), tipo: 'greve', titulo: '✊ Greve', texto: 'A equipe está desanimada demais e parou: a lanchonete fica fechada por 1 dia.', em: h, ate: h + 24 }); e.moral = 35; e.avisos.push({ id: novoId('a'), texto: '✊ Greve! A equipe parou por 1 dia. RH: folga, treino e salário em dia evitam isso.', para: 'rh', nivel: 'urgente', em: h, professor: true }); }
@@ -573,6 +737,14 @@
       else if (e.hoje.perdidos > 40) resumo += ' Muita fila: mais atendentes ou atender na mão.';
       e.avisos.push({ id: novoId('a'), texto: resumo, para: null, nivel: 'dia', em: agoraJogo(), professor: true });
       e.total.perdidos += e.hoje.perdidos;
+      // Reunião dos sócios: o balanço da semana (o que entrou, o que saiu, o que sobrou e se melhorou)
+      if (diaQueAcabou % 7 === 0) {
+        const sem = e.dias.slice(-7), ent = sem.reduce((s, d) => s + d.vendas, 0), sai = sem.reduce((s, d) => s + d.custos, 0), ant = e.semanas[e.semanas.length - 1];
+        const b = { semana: e.semanas.length + 1, entrou: ent, saiu: sai, sobrou: ent - sai, clientes: sem.reduce((s, d) => s + d.clientes, 0), perdidos: sem.reduce((s, d) => s + d.perdidos, 0) };
+        e.semanas.push(b);
+        const R = (v) => `R$ ${Math.abs(Math.round(v)).toLocaleString('pt-BR')}`;
+        e.avisos.push({ id: novoId('a'), texto: `📊 Reunião dos sócios (semana ${b.semana}): entraram ${R(ent)}, saíram ${R(sai)}, ${b.sobrou >= 0 ? 'sobraram' : 'faltaram'} ${R(b.sobrou)}.${ant ? (b.sobrou >= ant.sobrou ? ' Melhor que a semana passada: os sócios estão contentes!' : ' Pior que a semana passada: os sócios querem um plano. Conversem sobre o que deu errado.') : ''}`, para: null, nivel: 'dia', em: agoraJogo(), professor: true });
+      }
       e.hoje = { vendas: 0, clientes: 0, perdidos: 0, faltou: 0, custos: 0 };
       // Juros do empréstimo (1% ao dia do jogo)
       if (e.emprestimo > 0) custo(e, Math.round(e.emprestimo * 0.01));
@@ -585,7 +757,7 @@
       // Conta atrasada: salário atrasado desanima; luz atrasada corta
       for (const c of e.escritorio.contas) {
         if (c.paga || c.recusada || c.falsa || c.vence >= dia) continue;
-        if (c.tipo === 'salarios') { e.moral = lim(e.moral - 15, 0, 100); e.avisos.push({ id: novoId('a'), texto: '😠 O salário atrasou: a equipe está revoltada.', para: 'financeiro', nivel: 'urgente', em: agoraJogo(), professor: true }); }
+        if (c.tipo === 'salarios') { e.moral = lim(e.moral - 15, 0, 100); pressao(e, 'trabalho', 25); e.avisos.push({ id: novoId('a'), texto: '😠 O salário atrasou: a equipe está revoltada.', para: 'financeiro', nivel: 'urgente', em: agoraJogo(), professor: true }); }
         if (/luz/i.test(c.nome) && dia - c.vence >= 2 && !c.cortou) { c.cortou = true; novoEvento(e, 'falta_luz'); }
       }
       for (const c of e.escritorio.contas) if (c.falsa && !c.paga && !c.recusada && c.vence < dia) c.recusada = true;
@@ -648,7 +820,7 @@
       partida.verdes = verde ? (partida.verdes || 0) + 1 : 0;
       partida.sugestao = partida.verdes >= 2 && partida.nivel < 10 ? 'subir' : vermelho && partida.nivel > 1 ? 'baixar' : null;
     }
-    const valorDe = (x) => x.caixa - x.emprestimo + x.pasto.bois.reduce((s, b) => s + b.peso * 170, 0) + (estoqueLoja(x) + estoqueFrig(x) + x.frig.carne) * 6 + x.roca.silagem * 60;
+    const valorDe = (x) => x.caixa - x.emprestimo + x.pasto.bois.reduce((s, b) => s + b.peso * 170, 0) + (x.frig.arrobas || 0) * 170 + (estoqueLoja(x) + estoqueFrig(x) + x.frig.carne) * 6 + x.roca.silagem * 60;
     const dinheiroMedidor = (c) => Math.round(lim(20 + c / 500, 0, 100));
     function rodar() {
       const ids = partida.participantes.map((p) => p.id);
@@ -686,15 +858,19 @@
         medidores: { caixa: dinheiroMedidor(e.caixa), clientes: Math.round(e.fama), equipe: Math.round(e.moral), natureza: Math.round(e.natureza) },
         meta: e.escritorio.meta,
         roca: ve('roca') ? { talhoes: e.roca.talhoes.map((t) => ({ estado: t.estado, cresc: Math.round(t.cresc), foco: t.foco, passou: !!t.passou })), silagem: arred(e.roca.silagem, 1), irrigacao: e.roca.irrigacao } : null,
-        pasto: ve('pasto') ? { piquetes: e.pasto.piquetes.map((x) => ({ capim: Math.round(x.capim), foco: x.foco, novo: x.novo })), ativo: e.pasto.ativo, cocho: e.pasto.cocho, gta: e.pasto.gta, embargo: e.pasto.embargoAte > h,
+        pasto: ve('pasto') ? { piquetes: e.pasto.piquetes.map((x) => ({ capim: Math.round(x.capim), foco: x.foco, novo: x.novo, solo: Math.round(x.fert), reforma: x.reformaAte > h ? x.reformaAte : 0, degradado: !!x.degradado })), ativo: e.pasto.ativo, cocho: e.pasto.cocho, gta: e.pasto.gta, embargo: e.pasto.embargoAte > h,
           bois: e.pasto.bois.length, prontos: prontos(e).length, doentes: e.pasto.bois.filter((b) => b.doente).length, semVacina: e.pasto.bois.filter((b) => !b.vacinado).length,
-          pesoMedio: e.pasto.bois.length ? arred(e.pasto.bois.reduce((s, b) => s + b.peso, 0) / e.pasto.bois.length, 1) : 0, rebanho: e.pasto.bois.map((b) => ({ peso: arred(b.peso, 1), doente: b.doente, vacinado: b.vacinado })) } : null,
-        frig: ve('frig') ? { bois: e.frig.bois, carne: e.frig.carne, estoque: estoqueFrig(e), lotes: e.frig.lotes.map((l) => ({ qtd: l.qtd, vence: l.vence, vencido: l.vence < dia })), producao: e.frig.producao, higiene: e.frig.higiene } : null,
-        caminhao: ve('caminhao') ? { combustivel: Math.round(e.caminhao.combustivel), viagem: e.caminhao.viagem ? { rota: e.caminhao.viagem.rota, nome: ROTAS[e.caminhao.viagem.rota].nome, sai: e.caminhao.viagem.sai, chega: e.caminhao.viagem.chega, carga: Array.isArray(e.caminhao.viagem.carga) ? `${e.caminhao.viagem.carga.reduce((s, l) => s + l.qtd, 0)} hambúrgueres` : `${e.caminhao.viagem.carga} boi(s)` } : null, br364: ativa(e, 'br364') } : null,
+          pesoMedio: e.pasto.bois.length ? arred(e.pasto.bois.reduce((s, b) => s + b.peso, 0) / e.pasto.bois.length, 1) : 0, rebanho: e.pasto.bois.map((b) => ({ id: b.id, nome: b.nome, peso: arred(b.peso, 1), doente: b.doente, vacinado: b.vacinado, separado: !!b.separado })), separados: e.pasto.bois.filter((b) => b.separado).length } : null,
+        frig: ve('frig') ? { bois: e.frig.bois, arrobas: e.frig.arrobas, carne: e.frig.carne, estoque: estoqueFrig(e), lotes: e.frig.lotes.map((l) => ({ qtd: l.qtd, vence: l.vence, vencido: l.vence < dia })), producao: e.frig.producao, higiene: e.frig.higiene } : null,
+        caminhao: ve('caminhao') ? { combustivel: Math.round(e.caminhao.combustivel), viagem: e.caminhao.viagem ? { rota: e.caminhao.viagem.rota, nome: ROTAS[e.caminhao.viagem.rota].nome, sai: e.caminhao.viagem.sai, chega: e.caminhao.viagem.chega, carga: Array.isArray(e.caminhao.viagem.carga) ? `${e.caminhao.viagem.carga.reduce((s, l) => s + l.qtd, 0)} hambúrgueres` : `${e.caminhao.viagem.carga} boi(s)${e.caminhao.viagem.nomes ? ` (${e.caminhao.viagem.nomes.join(', ')})` : ''}` } : null, br364: ativa(e, 'br364') } : null,
         loja: ve('loja') ? { estoque: estoqueLoja(e), lotes: e.loja.lotes.map((l) => ({ qtd: l.qtd, vence: l.vence, vencido: l.vence < dia })), pao: e.loja.pao, queijo: e.loja.queijo, embalagem: e.loja.embalagem, preco: e.loja.preco, aberta: e.loja.aberta, fechadaAte: e.loja.fechadaAte, fechada: h < e.loja.fechadaAte || ativa(e, 'greve'),
-          atendentes: e.loja.atendentes, treino: e.loja.treino, fila: e.loja.fila, promocao: e.loja.promocao, horaExtra: h < e.loja.horaExtraAte, hoje: { ...e.hoje, vendas: Math.round(e.hoje.vendas) } } : null,
+          atendentes: e.loja.atendentes, treino: e.loja.treino, equipe: e.loja.equipe.map((t) => ({ id: t.id, nome: t.nome, icone: t.icone, posto: t.posto, animo: animoDe(e, t), elogiado: t.elogioDia === dia })),
+          capacidade: Math.round(capacidadeLoja(e).total), gargalo: capacidadeLoja(e).gargalo, salao: noSalao(e), fila: e.loja.fila, promocao: e.loja.promocao, horaExtra: h < e.loja.horaExtraAte, hoje: { ...e.hoje, vendas: Math.round(e.hoje.vendas) } } : null,
         escritorio: ve('escritorio') ? { contas: e.escritorio.contas.filter((c) => !c.paga && !c.recusada).map((c) => ({ id: c.id, nome: c.nome, valor: c.valor, vence: c.vence, suspeita: !!c.falsa })), compras: e.escritorio.compras.filter((c) => !c.chegou).map((c) => ({ qtd: c.qtd, chega: c.chega })),
           marketing: e.escritorio.marketing && h < e.escritorio.marketing.ate ? e.escritorio.marketing : null, avaliacoes: e.escritorio.avaliacoes.filter((a) => !a.respondida && !a.perdeu).map((a) => ({ id: a.id, estrelas: a.estrelas, texto: a.texto, prazo: a.prazo })), alvara: e.escritorio.alvara } : null,
+        vozes: Object.fromEntries(Object.keys(GRUPOS).map((k) => [k, Math.round(e.vozes[k])])),
+        protestos: e.eventos.filter((x) => (x.tipo === 'protesto' || x.tipo === 'boicote') && !x.resolvido && h >= x.em && h < x.ate).map((x) => ({ id: x.id, tipo: x.tipo, grupo: x.grupo, ate: x.ate })),
+        semanas: e.semanas.slice(-4),
         queimadas: e.eventos.filter((x) => x.tipo === 'queimada' && !x.resolvido && !x.espalhou).map((x) => ({ id: x.id, onde: x.onde, i: x.i, ate: x.ate })),
         eventos: e.eventos.filter((x) => x.ate > h && x.em <= h + 24).map((x) => ({ tipo: x.tipo, titulo: x.titulo, texto: x.texto, ate: x.ate })),
         avisos: e.avisos.filter((a) => meus(a.para)).slice(-25),
@@ -740,7 +916,7 @@
 
     // ---------- A API ----------
     return {
-      FUNCOES, FASES, NIVEIS, EVENTOS, ITENS_PEDIDO, ROTAS, CARDAPIO, RECEITAS, params, repartir, nomeNivel,
+      FUNCOES, FASES, NIVEIS, EVENTOS, GRUPOS, POSTOS, ITENS_PEDIDO, ROTAS, CARDAPIO, RECEITAS, params, repartir, nomeNivel,
       // O professor abre o jogo: modo, nível, duração, funções que a turma faz (o resto, a IA), como distribuir e rodízio.
       criar(usuario, c = {}) {
         if (partida && partida.estado !== 'fim') throw new Error('Já tem um jogo aberto. Encerre antes de abrir outro.');

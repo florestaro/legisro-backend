@@ -115,6 +115,13 @@ const estadoDe = (p) => p.evaluate(() => CE.api.chamar('negocio:estado'));
   ok(/não é sua/.test(preco), 'a Ana não consegue mudar o preço da lanchonete (função do Bruno)');
   const precoB = await p2.evaluate(() => CE.api.chamar('negocio:acao', { funcao: 'gerente', tipo: 'preco', valor: 17 }).then((r) => r.empresa.loja.preco));
   ok(precoB === 17, 'o Bruno (gerente) muda o preço para R$ 17');
+  // As mecânicas novas: o gerente muda alguém de posto; a pecuarista separa um boi pelo nome
+  const eqB = (await estadoDe(p2)).empresa.loja.equipe;
+  const salao = await p2.evaluate((id) => CE.api.chamar('negocio:acao', { funcao: 'gerente', tipo: 'posto', id, posto: 'salao' }).then((r) => r.empresa.loja.salao), eqB[0].id);
+  ok(salao === 1 && eqB.every((x) => x.nome && x.posto), `o Bruno (gerente) manda ${eqB[0].nome} para o salão (a equipe tem nome e posto)`);
+  const boi = (await estadoDe(p1)).empresa.pasto.rebanho.find((x) => x.peso >= 15 && !x.doente);
+  const separados = await p1.evaluate((id) => CE.api.chamar('negocio:acao', { funcao: 'pecuarista', tipo: 'separar', id }).then((r) => r.empresa.pasto.separados), boi.id);
+  ok(separados === 1, `a Ana (pecuarista) separa o boi ${boi.nome} para o frigorífico`);
   // Pedido entre setores e conversa
   await p2.evaluate(() => CE.api.chamar('negocio:pedido', { de: 'gerente', para: 'logistica', item: 'hamburgueres', qtd: 500, prazo: 1, texto: 'Antes do almoço!' }));
   ok(await ate(async () => (await estadoDe(p1)).empresa.pedidos.some((x) => x.para === 'logistica' && x.qtd === 500 && x.status === 'aberto')), 'a Ana (Logística) recebe o pedido do Bruno: 500 hambúrgueres até hoje');
