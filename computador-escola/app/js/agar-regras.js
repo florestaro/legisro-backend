@@ -353,7 +353,7 @@
         eu: { vivo: p.vivo, espectador: esp, massa: Math.round(massaDe(p)), melhor: Math.round(p.melhor), comeu: p.comeu, comidoPor: p.comidoPor, x: Math.round(cx), y: Math.round(cy) },
         p: pessoas, f: comida, v: virus,
         rk: lista.slice(0, 10).map((x) => [x.p.nome, x.p.avatar, Math.round(x.m), x.p.robo ? 1 : 0, x.p === p ? 1 : 0]),
-        pos: pos >= 0 ? pos + 1 : null, total: lista.length, gente: jogando(s).length, recorde: s.recorde,
+        pos: pos >= 0 ? pos + 1 : null, total: lista.length, gente: jogando(s).length, robosVivos: lista.filter((x) => x.p.robo).length, recorde: s.recorde,
       };
     }
 

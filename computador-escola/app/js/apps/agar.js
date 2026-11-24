@@ -223,7 +223,7 @@ window.CE = window.CE || {};
         for (const id of [...bolinhas.keys()]) if (!vistas.has(id)) bolinhas.delete(id);
         massaEl.textContent = r.eu.espectador ? 'assistindo' : numero(r.eu.massa);
         posicaoEl.textContent = r.eu.espectador
-          ? `👀 Arena da turma ${r.turma || '(sem turma)'}: ${r.gente === 1 ? '1 aluno' : `${r.gente} alunos`} e ${r.total - r.gente} robôs`
+          ? `👀 Arena da turma ${r.turma || '(sem turma)'}: ${r.gente === 1 ? '1 aluno' : `${r.gente} alunos`} e ${r.robosVivos === 1 ? '1 robô' : `${r.robosVivos} robôs`}`
           : r.pos ? `${r.pos}º lugar de ${r.total}` : '';
         desenharRanking(r);
         if (!r.eu.vivo && !r.eu.espectador && tela === 'jogo') mostrarMorte(r.eu);
@@ -379,10 +379,10 @@ window.CE = window.CE || {};
           const zoom = esp ? base / (mundo + 120) : Math.max(0.15, Math.min(2, (base / 900) * 1.6 / (1 + Math.sqrt(massa) / 20)));
           cam.s += (zoom - cam.s) * Math.min(1, k * 0.6);
         }
-        desenhar();
         const j = janelaEl();
         const minimizada = !!j && j.classList.contains('minimizada');
         const ativa = !!j && j.classList.contains('ativa');
+        if (!minimizada) desenhar(); // minimizada, ninguém vê: não gasta o computador do aluno desenhando
         const ritmo = tela === 'entrada' ? RITMO_ESPERA : minimizada ? RITMO_LONGE : ativa ? RITMO : RITMO_ATRAS;
         if (agora - ultimaRede > ritmo) { ultimaRede = agora; rede(); }
         quadroId = requestAnimationFrame(quadro);
