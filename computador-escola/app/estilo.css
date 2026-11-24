@@ -2790,3 +2790,54 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .ng-cena-menu .botao { text-align: left; font-size: 12.5px; padding: 6px 8px; }
 .ng-cab-curto h3 { font-size: 15px; } .ng-cab-curto p { margin: 0 0 6px; font-size: 12.5px; }
 .ng-detalhes { margin-top: 4px; } .ng-detalhes summary { cursor: pointer; font-weight: 700; padding: 4px 0; }
+
+/* ===== Agar da Turma (app/js/apps/agar.js): a arena das bolinhas, aberta pelo prédio do Agar na Praça ===== */
+.ag-app { display: flex; flex-direction: column; height: 100%; overflow: hidden; background: #f2f5f7; color: var(--texto); }
+.ag-topo { flex: none; display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: #fff; border-bottom: 1px solid #dde3ea; flex-wrap: wrap; }
+.ag-marca { font-weight: 700; color: #1e7a3a; }
+.ag-massa { font-variant-numeric: tabular-nums; }
+.ag-massa strong { color: var(--azul-escuro); }
+.ag-pos { font-size: 14px; color: var(--texto-suave); }
+.ag-espaco { flex: 1; }
+.ag-topo kbd, .ag-como kbd { font: 600 12px/1 var(--fonte); background: #eef1f5; border: 1px solid #c8ced6; border-bottom-width: 3px; border-radius: 5px; padding: 3px 6px; color: #333; }
+.ag-topo.ag-fora .ag-so-jogando, .ag-topo.ag-fora .ag-massa, .ag-topo.ag-fora .ag-pos, .ag-topo.ag-assistindo .ag-so-jogando { display: none; }
+.ag-palco { position: relative; flex: 1; min-height: 0; overflow: hidden; container-type: size; }
+.ag-tela { display: block; cursor: crosshair; outline: none; }
+.ag-ranking { position: absolute; top: 10px; right: 10px; width: 210px; background: rgba(20, 24, 32, .62); color: #fff; border-radius: 8px; padding: 8px 12px; font-size: 14px; pointer-events: none; }
+.ag-ranking h3 { margin: 0 0 4px; font-size: 15px; text-align: center; }
+.ag-ranking ol { margin: 0; padding-left: 22px; }
+.ag-ranking li { padding: 1px 0; }
+.ag-ranking .ag-rk-nome { display: inline-block; vertical-align: bottom; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ag-ranking .ag-rk-massa { float: right; opacity: .8; font-variant-numeric: tabular-nums; }
+.ag-ranking li.robo { opacity: .78; }
+.ag-ranking li small { font-size: 11px; opacity: .8; }
+.ag-ranking .eu { color: #ffd24a; font-weight: 700; }
+.ag-ranking p { margin: 6px 0 0; font-size: 12.5px; }
+.ag-rk-recorde { opacity: .85; }
+.ag-aviso { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); background: var(--vermelho); color: #fff; padding: 6px 14px; border-radius: 6px; font-weight: 600; z-index: 3; }
+.ag-capa { position: absolute; inset: 0; display: grid; place-items: center; overflow: auto; padding: 16px; background: rgba(11, 61, 110, .28); z-index: 2; }
+.ag-capa[hidden] { display: none; }
+.ag-cartao { background: #fff; border-radius: 12px; box-shadow: var(--sombra); padding: 20px 26px; width: min(620px, 100%); display: grid; gap: 10px; }
+.ag-cartao h2 { margin: 0; font-size: 26px; }
+.ag-lema { margin: 0; font-size: 17px; }
+.ag-como { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ag-como li { display: flex; align-items: center; gap: 12px; font-size: 15px; line-height: 1.35; }
+.ag-como li > :first-child { flex: none; min-width: 58px; text-align: center; }
+.ag-ic { font-size: 24px; }
+.ag-gente, .ag-recorde, .ag-recado, .ag-fechada, .ag-dica { margin: 0; }
+.ag-gente { color: var(--texto-suave); }
+.ag-recorde { font-weight: 600; color: #8a5300; }
+.ag-recado { background: #fff8e1; border-left: 4px solid var(--amarelo); padding: 8px 12px; font-weight: 600; }
+.ag-fechada { background: #fde7e9; border-left: 4px solid var(--vermelho); padding: 8px 12px; font-weight: 600; }
+.ag-dica { background: #effaef; border-left: 4px solid var(--verde); padding: 8px 12px; }
+.ag-professor { border: 1px dashed #c7d3e0; border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; background: #f7f9fc; }
+.ag-professor h3 { margin: 0; font-size: 15px; }
+.ag-professor .campo { width: auto; padding: 6px 8px; }
+.ag-opcao { display: flex; align-items: center; gap: 6px; font-size: 15px; }
+.ag-nota { margin: 0; font-size: 13px; color: var(--texto-suave); }
+.ag-botoes { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 4px; }
+.ag-morte { text-align: center; justify-items: center; }
+.ag-morte .ag-botoes { justify-content: center; }
+.ag-rosto { font-size: 56px; line-height: 1; }
+/* Janela pequena: o ranking encolhe e mostra só os 5 primeiros */
+@container (max-width: 720px) { .ag-ranking { width: 158px; font-size: 12.5px; padding: 6px 9px; } .ag-ranking li:nth-child(n+6) { display: none; } .ag-ranking .ag-rk-nome { max-width: 92px; } }

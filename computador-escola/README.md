@@ -500,6 +500,26 @@ o boneco vai até a porta e o jogo abre (o aluno também recebe o convite na tel
   mais ganha o **Selo Empresa Saudável**; o professor vê a participação de cada aluno (ações, lanches atendidos,
   pedidos e mensagens). O professor também pausa (reunião), pula para o dia seguinte e acelera.
 
+### 🟢 Agar da Turma: a arena das bolinhas (na rede da sala)
+Um jogo de mouse, rápido e em tempo real: cada aluno é uma bolinha que **segue a setinha do mouse**, come as bolinhas
+coloridas do chão para crescer e pode comer quem for bem menor (até 80% do seu tamanho); quem é maior come você. Entra
+pelo prédio do Agar na Praça Escola (🟢, entre a estação e a lanchonete): clicando nele, o boneco vai até a porta e o
+jogo abre.
+- **Teclas**: `Espaço` divide a bolinha em duas (o pedaço da frente dá um pulo; depois de uns segundos, eles se juntam)
+  e `W` solta um pouco de massa. Também há os botões ✂️ Dividir e 💨 Soltar. O **vírus verde de espinhos** estoura quem
+  já está grande; com 7 tiros de massa, nasce outro vírus.
+- **Na rede da sala**: a arena anda no computador do instrutor (25 passos por segundo) e cada computador de aluno manda
+  o mouse 10 vezes por segundo e recebe só o pedaço da arena que aparece na tela dele (respostas de poucos KB): ninguém
+  aumenta o próprio tamanho pelo computador dele. **Cada turma tem a sua arena**. Com poucos alunos, **robôs** (bichos da
+  Amazônia: Boto, Jacaré, Arara...) completam até 10 bolinhas; eles são fracos de propósito (mais lentos, não caçam
+  alunos e encolhem quando ficam grandes). Quem fecha a janela (ou fica 15 s sem dar sinal) sai; a arena sem ninguém
+  some depois de 1 minuto. Nada fica guardado no disco.
+- **O professor**: abre ou fecha a arena para os alunos (fechar tira todos na hora), liga ou desliga os robôs, escolhe
+  a arena de qual turma e pode **assistir à arena inteira** (bom para projetar no quadro: cada aluno aparece com o nome),
+  ou jogar junto.
+- Ranking ao vivo (os 10 maiores), recorde da arena, mapinha e, quando alguém é comido, quem comeu, a maior massa e uma
+  dica para a próxima vez.
+
 ### 💰 Moedas de cada aluno
 Todo aluno começa com **zero moedas** e ganha com o que faz: aula concluída (10), prova de nível (50), missão da semana
 (30), exercício de digitação aprovado (5), medalha nova (10), ajudar um colega como monitor (15), gincana (10, e o
@@ -607,6 +627,8 @@ npm run teste:sala -- 5       # o mesmo com 5 alunos
 npm run teste:fase2           # novidades da fase 2: o aluno troca de computador e encontra tudo (uns 3 minutos)
 npm run teste:fase3           # novidades da fase 3: MEI, anúncio e PDF em outro computador, e a monitoria (uns 3 minutos)
 npm run teste:negocio         # o jogo Do Campo ao Balcão em 3 computadores: convite, funções, relógio, pedidos, conversa, caixa, eventos, termômetro, pausa e resultado
+npm run teste:agar            # o Agar da Turma em 3 computadores: o prédio na Praça, a mesma arena para a turma, o mouse, o Espaço, o professor assistindo, robôs e arena fechada
+npm run teste:agar-regras     # as regras do Agar da Turma, sem tela e sem rede (1 segundo): comer, dividir, soltar massa, vírus, robôs, turmas e 20 alunos jogando
 npm run teste:praca           # a Praça Escola em 3 computadores: a abertura (maquete), a cidade em 3D e em 2D, andar, conversar, a cidade que cresce, tarefas, novela, eventos urgentes e especiais, Hora da Praça, moedas, jogar, mural, votação e comandos do instrutor
 npm run teste:perigos         # os eventos urgentes no mapa, sem tela e sem rede (1 segundo): o fogo pulando e os Bombeiros, a enchente subindo e a areia, as árvores caindo e a Defesa Civil
 npm run teste:emojis          # todos os emojis aparecem direito no Windows 10 (sem tela, segundos)
@@ -753,6 +775,9 @@ app/js/negocio-regras.js as regras do jogo Do Campo ao Balcão (o mundo que anda
                          os eventos e o termômetro), usadas pelo servidor da sala e pelo modo navegador;
                          negocio-cenas.js: as cenas animadas de cada setor (clicar nas coisas);
                          apps/negocio.js: a janela do jogo (professor e alunos)
+app/js/agar-regras.js    as regras do Agar da Turma (a arena de cada turma, os robôs, dividir, soltar massa e o
+                         vírus), usadas pelo servidor da sala e pelo modo navegador; apps/agar.js: a janela do jogo
+                         (desenho num canvas, suavizado entre uma resposta e outra)
 testes/                  testes automáticos do modo sala de aula (servidor, turma de 20 alunos, as novidades das
                          fases 2 e 3 e a Praça Escola em 3 computadores) e o dos emojis do Windows 10
 ```

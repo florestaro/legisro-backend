@@ -38,6 +38,7 @@ window.CE = window.CE || {};
     'sua-casa': { texto: 'A sua casa na Rua da Turma, com as medalhas que você ganhou na parede.' },
     empregos: { texto: 'Vagas de emprego de treino, currículo e entrevista.', botao: 'Ver as vagas (Emprega Já)', abrir: navegar('https://empregaja.com.br') },
     lanchonete: { texto: 'A hamburgueria da turma! Aqui é o jogo Do Campo ao Balcão: da roça e do pasto até o balcão, cada um cuida de um setor e todos conversam.' },
+    arena: { texto: 'A arena das bolinhas! Aqui é o Agar da Turma: cada um é uma bolinha que segue o mouse, come as bolinhas do chão para crescer e foge de quem é maior.' },
     lote: { texto: 'Terreno da turma. Todos votam no que construir aqui; as moedas vêm das aulas concluídas.' },
     banco: { texto: 'O banco de treino: Pix, boleto, cartão e empréstimo, sem dinheiro de verdade.', botao: 'Entrar no Banco Escola', abrir: navegar('https://bancoescola.com.br') },
     correios: { texto: 'Mande uma carta para um colega: ela chega no E-mail dele.', botao: 'Escrever uma carta (E-mail)', abrir: () => CE.janelas.abrir('email') },
@@ -368,9 +369,10 @@ window.CE = window.CE || {};
           g.fillStyle = tom(L.parede, -50); g.fillRect(cx - 12, topo + 29, 24, 2.5);
         }
       }
-      // A lanchonete: o toldo amarelo em cima da fachada e o letreiro redondo com o lanche no telhado
+      // A lanchonete e a arena: o toldo em cima da fachada e o letreiro redondo no telhado (o fundo dele é vermelho,
+      // menos onde o lugar escolhe outro: a arena é azul).
       if (L.faixa) { g.fillStyle = L.faixa; g.fillRect(X - 2, topo, PW + 4, 6); g.fillStyle = 'rgba(0, 0, 0, .15)'; g.fillRect(X - 2, topo + 6, PW + 4, 2); }
-      if (L.placa) { const cx = X + PW / 2, cy = Y + telhadoH / 2; circulo(cx, cy, 16, L.faixa || '#F2B705'); circulo(cx, cy, 13, '#C62828'); emoji(L.placa, cx, cy + 1, 17); }
+      if (L.placa) { const cx = X + PW / 2, cy = Y + telhadoH / 2; circulo(cx, cy, 16, L.faixa || '#F2B705'); circulo(cx, cy, 13, L.placaFundo || '#C62828'); emoji(L.placa, cx, cy + 1, 17); }
       if (L.cruz) { const cx = X + PW - 28, cy = Y + telhadoH / 2; circulo(cx, cy, 14, '#FFFFFF'); g.fillStyle = '#2E8B57'; g.fillRect(cx - 3, cy - 9, 6, 18); g.fillRect(cx - 9, cy - 3, 18, 6); }
     }
     // Árvores, ipês e palmeiras (na Praça em 3D, elas ficam em pé; aqui no chão fica só a sombra)
@@ -552,7 +554,7 @@ window.CE = window.CE || {};
       for (const L of M.LUGARES) {
         const [x, y, w, h] = L.r;
         const pos = { feira: [5.5 * T, 24.6 * T], rio: [18 * T, 28.5 * T], lote: [33 * T, 1.3 * T] }[L.id]
-          || [(x + w / 2) * T, L.telhado ? y * T + (h * T - Math.round(T * 1.1)) / 2 : (y + h / 2) * T];
+          || [(x + w / 2 + (L.rotuloDx || 0)) * T, L.telhado ? y * T + (h * T - Math.round(T * 1.1)) / 2 : (y + h / 2) * T];
         rotuloDe[L.id] = rotulo(`${L.emoji} ${nomeNoRotulo(L)}`, pos[0], pos[1], L.casa ? 'pequeno' : '');
         rotuloDe[L.id].dataset.lugar = L.id;
       }
@@ -1932,6 +1934,12 @@ window.CE = window.CE || {};
             nota: souInstrutor ? 'Você escolhe o modo, o nível e quem faz o quê. Os alunos entram por aqui ou pelo convite.' : 'Se o professor ainda não abriu o jogo, a janela avisa.',
             opcoes: [{ rotulo: souInstrutor ? '🍔 Abrir o jogo para a turma' : '🍔 Entrar no jogo', principal: true, id: 'entrar-negocio', acao: () => { CE.janelas.abrir('negocio'); CE.emitir('praca:entrou-lugar', { lugar: L.id }); } }, { rotulo: 'Fechar' }] });
         }
+        if (L.id === 'arena') {
+          // O Agar da Turma: cada turma tem a sua arena; com pouca gente, robôs completam. O professor abre ou fecha.
+          return abrirDialogo({ tipo: 'lugar', rosto: '🟢', titulo: 'Agar da Turma', subtitulo: 'A arena das bolinhas', fala: info.texto,
+            nota: souInstrutor ? 'Lá dentro você abre ou fecha a arena para os alunos, liga os robôs e pode assistir à arena inteira de uma turma.' : 'Mova o mouse para guiar a sua bolinha. Espaço divide; W solta massa.',
+            opcoes: [{ rotulo: '🟢 Entrar na arena', principal: true, id: 'entrar-agar', acao: () => { CE.janelas.abrir('agar'); CE.emitir('praca:entrou-lugar', { lugar: L.id }); } }, { rotulo: 'Fechar' }] });
+        }
         if (L.id === 'fonte') {
           return abrirDialogo({ tipo: 'lugar', rosto: '⛲', titulo: 'Fonte', subtitulo: 'No meio da praça', fala: info.texto,
             opcoes: [{ rotulo: 'Jogar uma moedinha e fazer um pedido', principal: true, acao: () => falar('✨ Fiz um pedido na fonte!') }, { rotulo: 'Fechar' }] });
@@ -2941,7 +2949,7 @@ window.CE = window.CE || {};
           const L = r.dataset.lugar && M.porLugar[r.dataset.lugar];
           if (iso && cena && L && (L.telhado || L.casa)) {
             const [x, y, w, h] = L.r, alto = obras[L.id] ? 1.2 : M.alturaDe(L) + M.bicoDe(L) + (L.placa ? 1.25 : 0);
-            r.style.left = `${(x + w / 2) * T}px`; r.style.top = `${(y + h / 2) * T}px`;
+            r.style.left = `${(x + w / 2 + (L.rotuloDx || 0)) * T}px`; r.style.top = `${(y + h / 2) * T}px`;
             r.style.setProperty('--sobe', `${-Math.round(alto * cena.HZ * T + 18)}px`);
           } else {
             r.style.left = `${r.dataset.x}px`; r.style.top = `${r.dataset.y}px`;

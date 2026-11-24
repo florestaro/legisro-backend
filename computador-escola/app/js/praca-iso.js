@@ -112,13 +112,13 @@ window.CE = window.CE || {};
       for (let i = 0; i < n; i++) if (i % 2) poli([[x0 + (i / n) * w, y0, h + 0.005], [x0 + ((i + 1) / n) * w, y0, h + 0.005], [x0 + ((i + 1) / n) * w, y0 + d, h + 0.005], [x0 + (i / n) * w, y0 + d, h + 0.005]], '#FFFFFF');
     }
     if (e.placa && !e.obra) {
-      // a placa da lanchonete em cima do telhado: um poste e o letreiro redondo com o lanche
+      // a placa da lanchonete (e da arena) em cima do telhado: um poste e o letreiro redondo com o emoji
       const cx = x0 + w / 2, cy = y0 + d / 2;
       const [Xb, Yb] = P([cx, cy, h]), [Xt, Yt] = P([cx, cy, h + 0.55]);
       g.strokeStyle = '#6B6B6B'; g.lineWidth = Math.max(2, T * 0.08); g.beginPath(); g.moveTo(Xb, Yb); g.lineTo(Xt, Yt); g.stroke();
       const r = T * 0.42;
-      g.fillStyle = '#C62828'; g.beginPath(); g.arc(Xt, Yt - r * 0.6, r, 0, Math.PI * 2); g.fill();
-      g.lineWidth = Math.max(2, T * 0.07); g.strokeStyle = '#F2B705'; g.stroke();
+      g.fillStyle = e.placaFundo || '#C62828'; g.beginPath(); g.arc(Xt, Yt - r * 0.6, r, 0, Math.PI * 2); g.fill();
+      g.lineWidth = Math.max(2, T * 0.07); g.strokeStyle = e.placaBorda || '#F2B705'; g.stroke();
       g.font = `${Math.round(r * 1.15)}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
       g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#000';
       g.fillText(e.placa, Xt, Yt - r * 0.55);
@@ -297,7 +297,8 @@ window.CE = window.CE || {};
       return {
         h: M.alturaDe(L), bico: M.bicoDe(L), parede: L.parede, teto: L.telhado, platibanda: !M.bicoDe(L),
         janelas: true, portas: L.portas || [], colunas: !!L.colunas, cruz: !!L.cruz, chamine: !!L.casa,
-        placa: L.placa || null, listras: L.faixa ? [[0, 1, M.alturaDe(L) - 0.4, M.alturaDe(L) - 0.1, L.faixa]] : null,
+        placa: L.placa || null, placaFundo: L.placaFundo || null, placaBorda: L.faixa || null,
+        listras: L.faixa ? [[0, 1, M.alturaDe(L) - 0.4, M.alturaDe(L) - 0.1, L.faixa]] : null,
       };
     }
     function montarPredio(L, subir) {

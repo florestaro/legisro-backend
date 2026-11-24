@@ -7,6 +7,7 @@ const criarGincanas = require('../app/js/gincana-regras');
 const jornalRegras = require('../app/js/jornal-regras');
 const criarPraca = require('../app/js/praca-regras');
 const criarNegocio = require('../app/js/negocio-regras');
+const criarAgar = require('../app/js/agar-regras');
 
 // Chaves que a tela pode usar: "progresso:<id>", "arquivos:<id>", "email:<id>" (a caixa de e-mail do aluno) e
 // "empresa:<id>" (a empresa de treino do Gestão Fácil).
@@ -88,6 +89,7 @@ function criarCanais(dados) {
   const corridas = criarCorridas(); // corrida de digitação da turma (só na memória, como a sala ao vivo)
   const gincanas = criarGincanas(); // gincana ao vivo (na memória; o resultado final fica guardado para o jornal)
   const negocio = criarNegocio(); // Do Campo ao Balcão: o jogo da hamburgueria (na memória; o resultado final fica guardado)
+  const agar = criarAgar(); // Agar da Turma: a arena das bolinhas de cada turma (só na memória)
   const ajudasContadas = new Set(); // monitor > colega : pedido (cada ajuda conta uma vez só)
   const exigirMonitor = (s) => {
     exigirSessao(s);
@@ -159,7 +161,7 @@ function criarCanais(dados) {
       s.motivo = null;
       return s.usuario;
     },
-    'sessao:sair': (s) => { if (s.usuario) { presencas.delete(s.usuario.id); praca.sair(s.usuario); } s.usuario = null; s.motivo = null; return true; },
+    'sessao:sair': (s) => { if (s.usuario) { presencas.delete(s.usuario.id); praca.sair(s.usuario); agar.sair(s.usuario); } s.usuario = null; s.motivo = null; return true; },
     'dados:ler': (s, chave, padrao) => dados.ler(conferirChave(s, chave), padrao),
     'dados:salvar': (s, chave, valor) => {
       const arquivo = conferirChave(s, chave);
@@ -421,6 +423,17 @@ function criarCanais(dados) {
     'negocio:pedido': (s, d = {}) => { exigirSessao(s); return negocio.pedido(s.usuario, d); },
     'negocio:responder': (s, d = {}) => { exigirSessao(s); return negocio.responderPedido(s.usuario, d); },
     'negocio:falar': (s, d = {}) => { exigirSessao(s); return negocio.falar(s.usuario, d); },
+    // ---------- Agar da Turma (regras em app/js/agar-regras.js) ----------
+    'agar:estado': (s) => { exigirSessao(s); return agar.estado(s.usuario); },
+    'agar:entrar': (s, d = {}) => { exigirSessao(s); return agar.entrar(s.usuario, d); },
+    // A janela do jogo manda o mouse 10 vezes por segundo: a conta (que fica no disco) é conferida no máximo a cada
+    // 5 s. Conta removida ou senha trocada continuam tirando o aluno, em até 5 s.
+    'agar:jogar': (s, d = {}) => {
+      if (!s.usuario || !s.agarConferidoEm || Date.now() - s.agarConferidoEm > 5000) { exigirSessao(s); s.agarConferidoEm = Date.now(); }
+      return agar.jogar(s.usuario, d);
+    },
+    'agar:sair': (s) => { exigirSessao(s); return agar.sair(s.usuario); },
+    'agar:configurar': (s, d = {}) => { exigirInstrutor(s); return agar.configurar(s.usuario, d); },
 
     // ---------- Monitoria: alunos que ajudam os colegas que apertaram "🙋 Não entendi" ----------
     'monitor:definir': (s, ids, ligar) => {

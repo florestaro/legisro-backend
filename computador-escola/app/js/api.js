@@ -47,6 +47,9 @@ window.CE = window.CE || {};
   let negocioTeste = null;
   const negocio = () => (negocioTeste = negocioTeste || CE.negocioRegras());
   const soInstrutor = () => { if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.'); };
+  // Agar da Turma no navegador de teste: só este computador, com os robôs completando a arena.
+  let agarTeste = null;
+  const agar = () => (agarTeste = agarTeste || CE.agarRegras());
   const guardarResumoGincana = (estado) => { if (estado && estado.fase === 'fim') { const r = gincanas().resumo(); if (r && r.participantes) gravar('gincana-ultima', r); } return estado; };
 
   async function simulado(canal, ...a) {
@@ -72,7 +75,7 @@ window.CE = window.CE || {};
           if (!u || u.segredo !== a[1]) throw new Error('Senha incorreta. Tente de novo.');
           return (atual = publico(u));
         },
-        'sessao:sair': () => { atual = null; return true; },
+        'sessao:sair': () => { if (agarTeste && atual) agarTeste.sair(atual); atual = null; return true; },
         'email:endereco-livre': () => !usuarios.some((u) => u.id !== (atual && atual.id) && (ler('email:' + u.id, {}).conta || {}).endereco === String(a[0]).toLowerCase()),
         'email:contatos': () => usuarios.filter((u) => u.id !== (atual && atual.id) && (ler('email:' + u.id, {}).conta))
           .map((u) => ({ nome: ler('email:' + u.id).conta.nome, endereco: ler('email:' + u.id).conta.endereco })),
@@ -207,6 +210,12 @@ window.CE = window.CE || {};
         'negocio:pedido': () => negocio().pedido(atual, a[0] || {}),
         'negocio:responder': () => negocio().responderPedido(atual, a[0] || {}),
         'negocio:falar': () => negocio().falar(atual, a[0] || {}),
+        // Agar da Turma (regras em agar-regras.js)
+        'agar:estado': () => agar().estado(atual),
+        'agar:entrar': () => agar().entrar(atual, a[0] || {}),
+        'agar:jogar': () => agar().jogar(atual, a[0] || {}),
+        'agar:sair': () => (agarTeste ? agarTeste.sair(atual) : true),
+        'agar:configurar': () => { soInstrutor(); return agar().configurar(atual, a[0] || {}); },
         // Monitoria (no navegador de teste, os pedidos vêm das presenças guardadas aqui).
         'monitor:definir': () => {
           if (!atual || atual.papel !== 'instrutor') throw new Error('Apenas o instrutor pode fazer isso.');

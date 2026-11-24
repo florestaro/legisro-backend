@@ -187,6 +187,35 @@ A instrutora e dois alunos (Ana e Bruno), com o programa de verdade:
 
 Leva uns 2 minutos e usa a porta 47124 (ou outra: `PORTA=47131 npm run teste:negocio`).
 
+## Teste do Agar da Turma em 3 computadores
+
+```
+npm run teste:agar
+```
+
+A instrutora e dois alunos (Ana e Bruno, da turma Manhã), com o programa de verdade:
+- o prédio do Agar (🟢) aparece na Praça da Ana; ela clica nele, o boneco vai até a porta e ela entra na arena;
+- o Bruno entra também: os dois estão na mesma arena (a da Manhã), com 8 robôs, e o ranking dos dois mostra os dois;
+- a bolinha da Ana anda atrás do mouse (a arena anda no computador da instrutora) e a tecla Espaço chega no jogo;
+- a instrutora vê "Manhã: 2 alunos jogando", assiste à arena inteira e vê os dois; desliga os robôs (só gente);
+- a instrutora fecha a arena: os dois saem e veem "fechada" (o botão Jogar apaga e o Bruno não consegue entrar); ela
+  abre de novo e a Ana volta;
+- quem fecha a janela sai da arena; nada fica guardado nos computadores dos alunos; sem erros nas telas.
+
+Leva uns 2 minutos e usa a porta 47126 (ou outra: `PORTA=47132 npm run teste:agar`).
+
+## As regras do Agar da Turma (rápido, sem tela e sem rede)
+
+```
+npm run teste:agar-regras
+```
+
+As regras sozinhas, com um relógio de mentira (1 segundo): andar atrás do mouse, comer a comida, dividir (Espaço),
+soltar massa (W), o vírus, comer um colega (e quase do mesmo tamanho, ninguém come ninguém), os robôs (completam até 10,
+não caçam aluno e encolhem quando ficam grandes), as arenas separadas por turma, a arena fechada pelo instrutor, o
+instrutor assistindo, quem some sai e a arena vazia some. No fim, 20 alunos jogando 10 vezes por segundo: confere que o
+computador do instrutor dá conta e que cada resposta é pequena.
+
 ## Eventos urgentes no mapa (rápido, sem tela e sem rede)
 
 ```

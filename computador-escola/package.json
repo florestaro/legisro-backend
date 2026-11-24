@@ -16,6 +16,8 @@
     "teste:praca": "node testes/sala-praca.js",
     "teste:perigos": "node testes/praca-perigos.js",
     "teste:negocio": "node testes/sala-negocio.js",
+    "teste:agar": "node testes/sala-agar.js",
+    "teste:agar-regras": "node testes/agar-regras.js",
     "teste:emojis": "node testes/emojis-windows10.js"
   },
   "dependencies": {
