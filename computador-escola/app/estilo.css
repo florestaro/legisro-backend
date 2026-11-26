@@ -2167,6 +2167,12 @@ button.gc-opcao { cursor: pointer; } button.gc-opcao:hover:not([disabled]) { bor
 .pr-rotulo.obra { background: rgba(240, 235, 224, .95); color: #6b5530; }
 .pr-rotulo.destaque { box-shadow: 0 0 0 3px #b4502c, 0 2px 8px rgba(0, 0, 0, .35); }
 .pr-mapa.longe .so-perto { display: none; }
+/* Nomes limpos: de perto, cada nome só aparece quando o boneco chega perto ou o mouse passa por cima (o botão 🏷️ mostra todos) */
+.pr-rotulo, .pr-p .nome { transition: opacity .25s; }
+.pr-mapa.nomes-limpos .pr-rotulo.rua,
+.pr-mapa.nomes-limpos .pr-rotulo:not(.visto):not(.destaque),
+.pr-mapa.nomes-limpos .pr-p:not(.eu):not(.visto):not(:hover) .nome { opacity: 0; }
+.pr-pilula.ligado { background: #2e7d32; }
 .pr-obj { position: absolute; transform: translate(-50%, -50%); font-size: 30px; line-height: 1; pointer-events: none; }
 .pr-obj.barco { animation: pr-boia 3s ease-in-out infinite alternate; }
 .pr-obj.trem { font-size: 32px; letter-spacing: -5px; }

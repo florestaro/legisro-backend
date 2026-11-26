@@ -323,6 +323,9 @@ curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela red
 - **Andar**: clicando no chão (treina o mouse) ou com as setas (treina o teclado; no 3D, a seta para cima anda para
   cima na tela, mesmo com a cidade girada). "Ver a cidade inteira" mostra o mapa todo; clicar num prédio leva o boneco
   até a porta.
+- **Nomes sem poluição**: de perto, só aparece o nome do que está perto do boneco (lugares, mesas e pessoas) ou embaixo
+  do mouse (no 3D, basta passar o mouse no prédio); o botão 🏷️ mostra o nome de tudo, e "Ver a cidade inteira" mostra o
+  nome de todos os lugares.
 - **Conversar**: frases prontas ("Bom dia!", "Vamos jogar?"...) ou escrevendo; a fala aparece num balão em cima do
   boneco e, no registro da conversa, só para quem está perto. Gestos: 👋 acenar, 👏 aplaudir e 🙋 pedir ajuda (a mão
   levantada aparece para todos, inclusive para o instrutor e os monitores). Palavrões viram asteriscos.

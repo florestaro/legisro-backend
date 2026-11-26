@@ -482,7 +482,9 @@ window.CE = window.CE || {};
       const botaoGiroEsq = CE.el('button', { class: 'pr-pilula escura pr-giro', type: 'button', 'data-acao': 'girar-esq', title: 'Girar a cidade', 'aria-label': 'Girar a cidade para a esquerda' }, '↺');
       const botaoGiroDir = CE.el('button', { class: 'pr-pilula escura pr-giro', type: 'button', 'data-acao': 'girar-dir', title: 'Girar a cidade', 'aria-label': 'Girar a cidade para a direita' }, '↻');
       const giros = CE.el('div', { class: 'pr-giros' }, botaoGiroEsq, botaoGiroDir);
-      const topoDir = CE.el('div', { class: 'pr-hud pr-topo-dir' }, CE.el('div', { class: 'pr-topo-dir-linha' }, giros, botaoMapa), comandos);
+      // De perto, só aparece o nome do que está perto do boneco ou embaixo do mouse; este botão mostra todos.
+      const botaoNomes = CE.el('button', { class: 'pr-pilula escura pr-giro', type: 'button', 'data-acao': 'todos-nomes', title: 'Mostrar o nome de tudo', 'aria-label': 'Mostrar o nome de tudo', 'aria-pressed': 'false' }, '🏷️');
+      const topoDir = CE.el('div', { class: 'pr-hud pr-topo-dir' }, CE.el('div', { class: 'pr-topo-dir-linha' }, giros, botaoNomes, botaoMapa), comandos);
 
       // No meio, no alto: o megafone e os avisos da praça (somem sozinhos).
       const megafoneEl = CE.el('div', { class: 'pr-megafone', role: 'status' }); megafoneEl.hidden = true;
@@ -3019,6 +3021,39 @@ window.CE = window.CE || {};
       botaoGiroEsq.addEventListener('click', () => girar(-1));
       botaoGiroDir.addEventListener('click', () => girar(1));
 
+      // ---------- Nomes limpos: de perto, aparece só o nome do que está perto do boneco ou embaixo do mouse ----------
+      let mouseChao = null, mouseLugar = null, todosNomes = false;
+      const PERTO_DO_NOME = 4.5;
+      mapa.addEventListener('mousemove', (e) => {
+        const r = mapa.getBoundingClientRect(); mouseChao = planoDaTela(e.clientX - r.left, e.clientY - r.top);
+        // no 3D, o mouse em cima do desenho do prédio (telhado, parede) mostra o nome dele
+        const predio = iso && cena && e.target.closest && e.target.closest('.pr-iso[data-lugar]');
+        const antes = mouseLugar; mouseLugar = predio && pontoOpaco(predio, e) ? predio.dataset.lugar : null;
+        if (mouseLugar !== antes) atualizarNomes();
+      });
+      mapa.addEventListener('mouseleave', () => { mouseChao = null; mouseLugar = null; atualizarNomes(); });
+      botaoNomes.addEventListener('click', () => { todosNomes = !todosNomes; botaoNomes.setAttribute('aria-pressed', String(todosNomes)); botaoNomes.classList.toggle('ligado', todosNomes); atualizarNomes(); });
+      function atualizarNomes() {
+        const limpo = perto && !todosNomes;
+        mapa.classList.toggle('nomes-limpos', limpo);
+        if (!limpo) return;
+        const [mx, my] = mouseChao || [-99, -99];
+        for (const r of camadaRotulos.querySelectorAll('.pr-rotulo')) {
+          if (r.classList.contains('rua')) continue;
+          const L = r.dataset.lugar && M.porLugar[r.dataset.lugar];
+          let ver;
+          if (L) {
+            const [x, y, w, h] = L.r, dx = Math.max(x - eu.x, 0, eu.x - (x + w - 1)), dy = Math.max(y - eu.y, 0, eu.y - (y + h - 1));
+            ver = L.id === mouseLugar || Math.hypot(dx, dy) <= 2.5 || (mx >= x - 0.5 && mx <= x + w + 0.5 && my >= y - 0.5 && my <= y + h + 0.5);
+          } else {
+            const ax = Number(r.dataset.x) / T, ay = Number(r.dataset.y) / T;
+            ver = Math.hypot(ax - eu.x - 0.5, ay - eu.y - 0.5) <= PERTO_DO_NOME || Math.hypot(ax - mx, ay - my) <= 1.6;
+          }
+          r.classList.toggle('visto', !!ver);
+        }
+        for (const p of [...moradores, professorEl, ...outros.values()]) if (p && p.el) p.el.classList.toggle('visto', Math.hypot(p.x - eu.x, p.y - eu.y) <= PERTO_DO_NOME || Math.hypot(p.x + 0.5 - mx, p.y + 0.5 - my) <= 1.2);
+      }
+
       // ---------- Laço ----------
       let antes = performance.now(), ultimoPerto = 0, ultimaSincronia = 0, quadroId = 0;
       function quadro(agora) {
@@ -3027,7 +3062,7 @@ window.CE = window.CE || {};
         if (!bloqueado()) mover(dt);
         moverOutros(dt);
         if (perto) enquadrar();
-        if (agora - ultimoPerto > 200) { ultimoPerto = agora; verPerto(); andarRelogio(); profundidadesIso(); }
+        if (agora - ultimoPerto > 200) { ultimoPerto = agora; verPerto(); andarRelogio(); profundidadesIso(); atualizarNomes(); }
         posicionarAcao();
         const minimizada = janela.elemento ? janela.elemento.classList.contains('minimizada') : corpo.closest('.janela') && corpo.closest('.janela').classList.contains('minimizada');
         if (agora - ultimaSincronia > (minimizada ? SINCRONIA_LONGE : SINCRONIA)) { ultimaSincronia = agora; sincronizar(); }
