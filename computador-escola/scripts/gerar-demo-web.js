@@ -25,5 +25,14 @@ fs.writeFileSync(saida, [
 ].join('\n'));
 // Os jogos grandes (o Restaurante do Digão: o Flash e o Ruffle) não cabem dentro do HTML: vão numa pasta "jogos" ao
 // lado dele, no mesmo caminho que o programa usa (publique os dois juntos).
-fs.cpSync(path.join(pastaApp, 'jogos'), path.join(path.dirname(path.resolve(saida)), 'jogos'), { recursive: true });
+const pastaJogos = path.join(path.dirname(path.resolve(saida)), 'jogos');
+fs.cpSync(path.join(pastaApp, 'jogos'), pastaJogos, { recursive: true });
+// O site da demonstração não serve .swf: o jogo vai embutido num .js, carregado antes do jogo.js.
+const rd = path.join(pastaJogos, 'restaurante-do-digao');
+if (fs.existsSync(path.join(rd, 'restaurante-do-digao.swf'))) {
+  fs.writeFileSync(path.join(rd, 'restaurante-do-digao-swf.js'), `window.RD_SWF_BASE64 = "${fs.readFileSync(path.join(rd, 'restaurante-do-digao.swf')).toString('base64')}";\n`);
+  fs.rmSync(path.join(rd, 'restaurante-do-digao.swf'));
+  const pagina = path.join(rd, 'index.html');
+  fs.writeFileSync(pagina, fs.readFileSync(pagina, 'utf8').replace('<script src="jogo.js"></script>', '<script src="restaurante-do-digao-swf.js"></script>\n  <script src="jogo.js"></script>'));
+}
 console.log('Demonstração gerada em', saida, '(com a pasta jogos ao lado)');

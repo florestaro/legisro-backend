@@ -18,7 +18,9 @@
   let abriu = false;
   player.addEventListener('loadedmetadata', () => { abriu = true; aviso.hidden = true; avisar('carregou'); });
   player.addEventListener('loadeddata', () => { aviso.hidden = true; avisar('pronto'); });
-  Promise.resolve(api.load({ url: new URL('restaurante-do-digao.swf', location.href).href }))
+  // Na versão de navegador publicada, o jogo vem embutido num .js (window.RD_SWF_BASE64), porque o site não serve .swf.
+  const embutido = typeof window.RD_SWF_BASE64 === 'string' ? Uint8Array.from(atob(window.RD_SWF_BASE64), (c) => c.charCodeAt(0)) : null;
+  Promise.resolve(api.load(embutido ? { data: embutido, swfFileName: 'restaurante-do-digao.swf' } : { url: new URL('restaurante-do-digao.swf', location.href).href }))
     .catch((erro) => { mostrarErro(String((erro && erro.message) || erro)); avisar('erro', String((erro && erro.message) || erro)); });
   // Se demorar demais (computador muito lento), avisa sem travar: o jogo continua tentando.
   setTimeout(() => { if (!abriu) avisar('demorando'); }, 45000);
