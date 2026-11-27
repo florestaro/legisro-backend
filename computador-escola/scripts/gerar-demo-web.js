@@ -17,9 +17,13 @@ const estilo = fs.readFileSync(path.join(pastaApp, 'estilo.css'), 'utf8');
 scripts.push(`<script>\n${fs.readFileSync(path.join(__dirname, 'demo-artifact.js'), 'utf8')}\n</script>`);
 
 fs.writeFileSync(saida, [
+  '<meta charset="utf-8">',
   '<title>Computador Escola</title>',
   `<style>\n${estilo}\n</style>`,
   marcacao.trim(),
   ...scripts,
 ].join('\n'));
-console.log('Demonstração gerada em', saida);
+// Os jogos grandes (o Restaurante do Digão: o Flash e o Ruffle) não cabem dentro do HTML: vão numa pasta "jogos" ao
+// lado dele, no mesmo caminho que o programa usa (publique os dois juntos).
+fs.cpSync(path.join(pastaApp, 'jogos'), path.join(path.dirname(path.resolve(saida)), 'jogos'), { recursive: true });
+console.log('Demonstração gerada em', saida, '(com a pasta jogos ao lado)');

@@ -39,8 +39,8 @@
     { id: 'feira', nome: 'Feira', emoji: '🧺', area: true, r: [0, 22, 11, 3], morador: 'raimundo' },
     { id: 'horta', nome: 'Horta comunitária', emoji: '🥬', area: true, r: [12, 22, 5, 3], entradas: [[13, 21], [14, 21], [15, 21]] },
     { id: 'estacao', nome: 'Estação Madeira-Mamoré', emoji: '🚂', r: [19, 22, 9, 2], portas: [23], telhado: '#A13A2C', parede: '#E7C26A' },
-    // A hamburgueria da turma: clicando nela, o jogo "Do Campo ao Balcão" (app/js/apps/negocio.js).
-    { id: 'lanchonete', nome: 'Do Campo ao Balcão', emoji: '🍔', r: [33, 22, 3, 2], portas: [34], telhado: '#C62828', parede: '#FFF3D6', faixa: '#F2B705', placa: '🍔' },
+    // A lanchonete: clicando nela, o jogo "Restaurante do Digão" (app/js/apps/restaurante.js).
+    { id: 'lanchonete', nome: 'Restaurante do Digão', emoji: '🍔', r: [33, 22, 3, 2], portas: [34], telhado: '#C62828', parede: '#FFF3D6', faixa: '#F2B705', placa: '🍔' },
     // A arena das bolinhas: clicando nela, o jogo "Agar da Turma" (app/js/apps/agar.js). O nome no mapa é curto e o
     // rótulo vai um pouco para a esquerda (rotuloDx, em quadrinhos): na cidade inteira, ele cabe entre o da estação
     // e o da lanchonete.

@@ -3,3 +3,4 @@ dist/
 dados/
 modelos/*.gguf
 demo-web.html
+__pycache__/

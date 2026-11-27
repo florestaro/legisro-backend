@@ -166,6 +166,21 @@ Abre o programa de verdade em 3 computadores (a instrutora e dois alunos, a Ana 
 
 Leva uns 3 minutos e usa a porta 47123 (ou outra: `PORTA=47130 npm run teste:praca`).
 
+## Teste do Restaurante do Digão (1 computador)
+
+```
+npm run teste:restaurante
+```
+
+A instrutora, com o programa de verdade:
+- na Praça, o prédio da lanchonete se chama "Restaurante do Digão"; clicando nele, o boneco vai até a porta e aparece
+  "Jogar", com o crédito à Molleindustria (licença CC BY-NC-SA 3.0); o jogo vem com o arquivo de licença;
+- a janela abre o jogo (o Flash roda com o Ruffle, sem internet, num quadro à parte) e ele desenha na tela; os créditos
+  ficam embaixo; passa da abertura, chega ao menu e começa um jogo novo (a fazenda aparece);
+- minimizada, a janela pausa o jogo; de volta, ele continua; fechada, o jogo some; sem erros na tela.
+
+Leva menos de 1 minuto. As fotos ficam na pasta indicada no fim (a porta, a abertura, o menu, a fazenda e a sede).
+
 ## Teste do jogo Do Campo ao Balcão em 3 computadores
 
 ```

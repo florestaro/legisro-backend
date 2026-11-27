@@ -37,7 +37,7 @@ window.CE = window.CE || {};
     'casa-bruno': { texto: 'Uma casa da Rua da Turma: cada aluno tem a sua.' },
     'sua-casa': { texto: 'A sua casa na Rua da Turma, com as medalhas que você ganhou na parede.' },
     empregos: { texto: 'Vagas de emprego de treino, currículo e entrevista.', botao: 'Ver as vagas (Emprega Já)', abrir: navegar('https://empregaja.com.br') },
-    lanchonete: { texto: 'A hamburgueria da turma! Aqui é o jogo Do Campo ao Balcão: da roça e do pasto até o balcão, cada um cuida de um setor e todos conversam.' },
+    lanchonete: { texto: 'O Restaurante do Digão! Aqui você comanda uma rede de lanchonetes inteira: o pasto e a plantação, o abatedouro, as lojas e a sede da marca. Cada decisão tem consequência: o lucro, as pessoas e a natureza.' },
     arena: { texto: 'A arena das bolinhas! Aqui é o Agar da Turma: cada um é uma bolinha que segue o mouse, come as bolinhas do chão para crescer e foge de quem é maior.' },
     lote: { texto: 'Terreno da turma. Todos votam no que construir aqui; as moedas vêm das aulas concluídas.' },
     banco: { texto: 'O banco de treino: Pix, boleto, cartão e empréstimo, sem dinheiro de verdade.', botao: 'Entrar no Banco Escola', abrir: navegar('https://bancoescola.com.br') },
@@ -1931,10 +1931,10 @@ window.CE = window.CE || {};
         if (L.id === 'sua-casa') return abrirCasa();
         if (L.id === 'coreto') return abrirNovela();
         if (L.id === 'lanchonete') {
-          // O jogo Do Campo ao Balcão: o professor abre para a turma; o aluno entra (quando o professor já abriu).
-          return abrirDialogo({ tipo: 'lugar', rosto: '🍔', titulo: 'Do Campo ao Balcão', subtitulo: 'A hamburgueria da turma', fala: info.texto,
-            nota: souInstrutor ? 'Você escolhe o modo, o nível e quem faz o quê. Os alunos entram por aqui ou pelo convite.' : 'Se o professor ainda não abriu o jogo, a janela avisa.',
-            opcoes: [{ rotulo: souInstrutor ? '🍔 Abrir o jogo para a turma' : '🍔 Entrar no jogo', principal: true, id: 'entrar-negocio', acao: () => { CE.janelas.abrir('negocio'); CE.emitir('praca:entrou-lugar', { lugar: L.id }); } }, { rotulo: 'Fechar' }] });
+          // O Restaurante do Digão: cada aluno joga no seu computador (um jogo pronto, em Flash, rodando com o Ruffle).
+          return abrirDialogo({ tipo: 'lugar', rosto: '🍔', titulo: 'Restaurante do Digão', subtitulo: 'O jogo de gerenciar a rede de lanchonetes', fala: info.texto,
+            nota: 'Baseado em "The McDonald\'s Videogame", de Molleindustria (licença CC BY-NC-SA 3.0, uso sem fins comerciais). Comece pelo Tutorial.',
+            opcoes: [{ rotulo: '🍔 Jogar', principal: true, id: 'entrar-restaurante', acao: () => { CE.janelas.abrir('restaurante'); CE.emitir('praca:entrou-lugar', { lugar: L.id }); } }, { rotulo: 'Fechar' }] });
         }
         if (L.id === 'arena') {
           // O Agar da Turma: cada turma tem a sua arena; com pouca gente, robôs completam. O professor abre ou fecha.

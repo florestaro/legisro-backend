@@ -1,0 +1,25 @@
+RESTAURANTE DO DIGÃO
+====================
+
+O jogo (o arquivo restaurante-do-digao.swf) é uma adaptação de "The McDonald's Videogame", de Molleindustria
+(2005/2006): https://www.molleindustria.org/mcdonalds/
+
+O original é licenciado sob a licença Creative Commons Atribuição-NãoComercial-CompartilhaIgual 3.0
+(CC BY-NC-SA 3.0): https://creativecommons.org/licenses/by-nc-sa/3.0/deed.pt_BR
+
+Esta adaptação é distribuída sob a mesma licença (CC BY-NC-SA 3.0). Isso quer dizer:
+  - pode ser usada, copiada e modificada, mas SOMENTE SEM FINS COMERCIAIS (não pode ser vendida nem cobrada);
+  - é preciso dar o crédito a Molleindustria e indicar o que foi mudado;
+  - quem modificar precisa manter esta mesma licença.
+
+O que mudou em relação ao original:
+  - os textos foram traduzidos para o português do Brasil;
+  - o nome da empresa, o logotipo e os personagens da marca foram trocados pelo "Digão" (inclusive o "M" do botão da
+    sede e do tutorial, e o palhaço da cena da diretoria, que foi recolorido);
+  - a mecânica do jogo (o pasto, o abatedouro, as lojas e a sede) é a do original.
+
+"McDonald's" é marca registrada de seus donos. Este jogo não tem nenhuma ligação com a empresa: o original é uma
+sátira feita pela Molleindustria.
+
+O jogo roda com o Ruffle (https://ruffle.rs), emulador de Flash de código aberto, sob as licenças MIT ou Apache 2.0
+(veja ruffle/LICENSE_MIT e ruffle/LICENSE_APACHE).

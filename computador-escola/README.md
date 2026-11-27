@@ -438,12 +438,33 @@ curso. Cada boneco é um aluno de verdade, em outro computador da sala, pela red
   das tarefas e das pistas são conferidas no computador do instrutor); as medalhas, no progresso de cada aluno. No modo de
   teste pelo navegador, a praça tem **colegas de demonstração** andando e conversando.
 
+### 🍔 Restaurante do Digão: o jogo da lanchonete da Praça
+O prédio da lanchonete na Praça Escola (🍔, no canto de baixo, perto da estação) abre o **Restaurante do Digão**, um jogo
+de gerenciar uma rede de lanchonetes inteira: a plantação e o pasto, o confinamento e o abatedouro, as lojas e a sede da
+marca. Clicando no prédio, o boneco vai até a porta e aparece **🍔 Jogar**; cada aluno joga no seu computador.
+- É a adaptação em português de **"The McDonald's Videogame"**, da Molleindustria (2005/06), licenciado sob **Creative
+  Commons CC BY-NC-SA 3.0**: pode ser usado e adaptado **sem fins comerciais**, com crédito à Molleindustria e mantendo a
+  mesma licença. O crédito aparece na porta, embaixo da janela e na tela de abertura do jogo; os detalhes estão em
+  `app/jogos/restaurante-do-digao/LICENCA.txt`. **Por isso, o Computador Escola não pode ser vendido com este jogo dentro.**
+- A tradução veio do repositório `florestaro/restaurante-do-digao`, que já trocou o nome, o logotipo e o palhaço pelo
+  Digão. Ainda tinham sobrado o "M" dourado (no botão da sede e no esquema do tutorial) e o palhaço numa cena da
+  diretoria: as ferramentas de `scripts/restaurante-do-digao` trocaram o "M" pelo "D" e recoloriram o palhaço direto no
+  arquivo do jogo, sem mudar mais nada.
+- O jogo é um Flash e roda com o **Ruffle** (emulador de código aberto, licenças MIT ou Apache 2.0), **sem internet**, num
+  quadro à parte com regra de segurança própria: só ali o WebAssembly do Ruffle é liberado, e o jogo não abre links nem
+  acessa a rede. Os dois motores do Ruffle vão juntos: o comum e o de computadores antigos, sem as instruções mais novas
+  do processador. Minimizada, a janela **pausa** o jogo; fechada, o jogo some. Os textos das barras ficam sem acento,
+  porque a fonte do jogo não tem.
+- Na versão de navegador (`node scripts/gerar-demo-web.js saida.html`), a pasta `jogos` vai ao lado do HTML: publique os
+  dois juntos.
+
 ### 🍔 Do Campo ao Balcão: o jogo da hamburgueria da turma (na rede da sala)
 Um jogo de gerenciar uma hamburgueria com a cadeia inteira: a **roça** planta o milho e guarda a silagem, o **pasto**
 engorda o boi, o **veterinário** vacina e faz a guia (GTA), o **caminhão** leva o boi ao **frigorífico** e o hambúrguer
 à **lanchonete**, que vende; o **escritório** compra pão e queijo, paga as contas, faz propaganda, contrata e cuida do
-meio ambiente. Entra pelo prédio da lanchonete na Praça Escola (🍔, no canto de baixo, perto da estação): clicando nele,
-o boneco vai até a porta e o jogo abre (o aluno também recebe o convite na tela).
+meio ambiente. **Desde novembro de 2026, o prédio da lanchonete abre o Restaurante do Digão (acima) no lugar deste jogo.**
+O código continua no programa, e o teste `npm run teste:negocio` continua passando. Para voltar com ele, basta ligar a
+lanchonete de novo a `CE.janelas.abrir('negocio')` em `app/js/apps/praca.js`; o aluno entra também pelo convite na tela.
 - **Cenas animadas, clicando nas coisas**: cada setor é um lugar desenhado que se mexe: a **roça** (o milho cresce e
   balança, o trator, o silo enchendo, a irrigação pingando), o **pasto** (os bois andando no piquete, o capim verde ou
   seco, o cocho, o boi pronto 🐂 e o doente 🤒), o **mapa** (fazenda, BR-364, frigorífico soltando fumaça, posto e o
@@ -632,6 +653,7 @@ npm run teste:fase3           # novidades da fase 3: MEI, anúncio e PDF em outr
 npm run teste:negocio         # o jogo Do Campo ao Balcão em 3 computadores: convite, funções, relógio, pedidos, conversa, caixa, eventos, termômetro, pausa e resultado
 npm run teste:agar            # o Agar da Turma em 3 computadores: o prédio na Praça, a mesma arena para a turma, o mouse, o Espaço, o professor assistindo, robôs e arena fechada
 npm run teste:agar-regras     # as regras do Agar da Turma, sem tela e sem rede (1 segundo): comer, dividir, soltar massa, vírus, robôs, turmas e 20 alunos jogando
+npm run teste:restaurante     # o Restaurante do Digão: o prédio na Praça, o jogo abre (Ruffle, sem internet) e desenha, menu e jogo novo, pausa ao minimizar e fecha
 npm run teste:praca           # a Praça Escola em 3 computadores: a abertura (maquete), a cidade em 3D e em 2D, andar, conversar, a cidade que cresce, tarefas, novela, eventos urgentes e especiais, Hora da Praça, moedas, jogar, mural, votação e comandos do instrutor
 npm run teste:perigos         # os eventos urgentes no mapa, sem tela e sem rede (1 segundo): o fogo pulando e os Bombeiros, a enchente subindo e a areia, as árvores caindo e a Defesa Civil
 npm run teste:emojis          # todos os emojis aparecem direito no Windows 10 (sem tela, segundos)
@@ -781,6 +803,9 @@ app/js/negocio-regras.js as regras do jogo Do Campo ao Balcão (o mundo que anda
 app/js/agar-regras.js    as regras do Agar da Turma (a arena de cada turma, os robôs, dividir, soltar massa e o
                          vírus), usadas pelo servidor da sala e pelo modo navegador; apps/agar.js: a janela do jogo
                          (desenho num canvas, suavizado entre uma resposta e outra)
+app/jogos/               jogos prontos que rodam num quadro à parte: restaurante-do-digao (o Flash traduzido de "The
+                         McDonald's Videogame", o Ruffle e a LICENCA.txt); a janela dele é apps/restaurante.js, e as
+                         ferramentas que tiraram as marcas que sobraram ficam em scripts/restaurante-do-digao
 testes/                  testes automáticos do modo sala de aula (servidor, turma de 20 alunos, as novidades das
                          fases 2 e 3 e a Praça Escola em 3 computadores) e o dos emojis do Windows 10
 ```
