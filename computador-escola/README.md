@@ -544,6 +544,22 @@ jogo abre.
 - Ranking ao vivo (os 10 maiores), recorde da arena, mapinha e, quando alguém é comido, quem comeu, a maior massa e uma
   dica para a próxima vez.
 
+### 🐍 Cobrinha da Turma: a arena das cobrinhas (na rede da sala)
+O irmão do Agar da Turma, no estilo das cobrinhas online: cada aluno é uma cobrinha que **vai para onde o mouse
+aponta**, come as bolinhas do chão e fica mais comprida. Quem **bate a cabeça no corpo** de outra cobrinha perde e o corpo
+vira comida; por isso a jogada é passar na frente dos outros (cabeça com cabeça, a menor perde). Entra pelo prédio da
+Cobrinha na Praça Escola (🐍, entre a horta e a estação): clicando nele, o boneco vai até a porta e o jogo abre.
+- **Acelerar**: segurando o `Espaço`, o botão do mouse ou o botão ⚡ Acelerar, a cobrinha anda mais que o dobro, mas vai
+  ficando menor e deixa bolinhas da sua cor para trás.
+- **Na rede da sala**, igual ao Agar: a arena anda no computador do instrutor (25 passos por segundo), cada computador
+  de aluno manda o mouse 10 vezes por segundo e recebe só o que aparece na tela dele (até uns 11 KB). Cada turma tem a sua
+  arena; com poucos alunos, **robôs** (Sucuri, Jiboia, Jacaré...) completam até 8 cobrinhas. Eles são fracos de
+  propósito: viram mais devagar, desviam antes de bater, quase nunca aceleram e não perseguem alunos. Nada fica
+  guardado no disco.
+- **O professor**: abre ou fecha a arena (fechar tira todos na hora), liga ou desliga os robôs, escolhe a turma e
+  **assiste à arena inteira** (cada aluno aparece com o nome), ou joga junto.
+- Ranking dos maiores ao vivo, recorde da arena, mapinha e, quando alguém bate, em quem bateu, o maior tamanho e uma dica.
+
 ### 💰 Moedas de cada aluno
 Todo aluno começa com **zero moedas** e ganha com o que faz: aula concluída (10), prova de nível (50), missão da semana
 (30), exercício de digitação aprovado (5), medalha nova (10), ajudar um colega como monitor (15), gincana (10, e o
@@ -653,6 +669,8 @@ npm run teste:fase3           # novidades da fase 3: MEI, anúncio e PDF em outr
 npm run teste:negocio         # o jogo Do Campo ao Balcão em 3 computadores: convite, funções, relógio, pedidos, conversa, caixa, eventos, termômetro, pausa e resultado
 npm run teste:agar            # o Agar da Turma em 3 computadores: o prédio na Praça, a mesma arena para a turma, o mouse, o Espaço, o professor assistindo, robôs e arena fechada
 npm run teste:agar-regras     # as regras do Agar da Turma, sem tela e sem rede (1 segundo): comer, dividir, soltar massa, vírus, robôs, turmas e 20 alunos jogando
+npm run teste:cobrinha        # a Cobrinha da Turma em 3 computadores: o prédio na Praça, a mesma arena para a turma, virar com o mouse, acelerar, o professor assistindo, robôs e arena fechada
+npm run teste:cobrinha-regras # as regras da Cobrinha, sem tela e sem rede (1 segundo): virar, comer, acelerar, bater no corpo, cabeça com cabeça, robôs, turmas e 20 alunos
 npm run teste:restaurante     # o Restaurante do Digão: o prédio na Praça, o jogo abre (Ruffle, sem internet) e desenha, menu e jogo novo, pausa ao minimizar e fecha
 npm run teste:praca           # a Praça Escola em 3 computadores: a abertura (maquete), a cidade em 3D e em 2D, andar, conversar, a cidade que cresce, tarefas, novela, eventos urgentes e especiais, Hora da Praça, moedas, jogar, mural, votação e comandos do instrutor
 npm run teste:perigos         # os eventos urgentes no mapa, sem tela e sem rede (1 segundo): o fogo pulando e os Bombeiros, a enchente subindo e a areia, as árvores caindo e a Defesa Civil
@@ -803,6 +821,9 @@ app/js/negocio-regras.js as regras do jogo Do Campo ao Balcão (o mundo que anda
 app/js/agar-regras.js    as regras do Agar da Turma (a arena de cada turma, os robôs, dividir, soltar massa e o
                          vírus), usadas pelo servidor da sala e pelo modo navegador; apps/agar.js: a janela do jogo
                          (desenho num canvas, suavizado entre uma resposta e outra)
+app/js/cobrinha-regras.js as regras da Cobrinha da Turma (a arena de cada turma, o corpo que segue a cabeça,
+                         acelerar, bater no corpo e os robôs), usadas pelo servidor da sala e pelo modo navegador;
+                         apps/cobrinha.js: a janela do jogo (o mesmo visual do Agar)
 app/jogos/               jogos prontos que rodam num quadro à parte: restaurante-do-digao (o Flash traduzido de "The
                          McDonald's Videogame", o Ruffle e a LICENCA.txt); a janela dele é apps/restaurante.js, e as
                          ferramentas que tiraram as marcas que sobraram ficam em scripts/restaurante-do-digao

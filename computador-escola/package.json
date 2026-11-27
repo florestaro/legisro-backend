@@ -18,6 +18,8 @@
     "teste:negocio": "node testes/sala-negocio.js",
     "teste:agar": "node testes/sala-agar.js",
     "teste:agar-regras": "node testes/agar-regras.js",
+    "teste:cobrinha": "node testes/sala-cobrinha.js",
+    "teste:cobrinha-regras": "node testes/cobrinha-regras.js",
     "teste:restaurante": "node testes/restaurante.js",
     "teste:emojis": "node testes/emojis-windows10.js"
   },

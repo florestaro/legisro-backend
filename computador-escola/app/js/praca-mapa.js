@@ -45,6 +45,9 @@
     // rótulo vai um pouco para a esquerda (rotuloDx, em quadrinhos): na cidade inteira, ele cabe entre o da estação
     // e o da lanchonete.
     { id: 'arena', nome: 'Agar', emoji: '🟢', r: [29, 22, 2, 2], portas: [30], telhado: '#4B3A8C', parede: '#EAF6EE', faixa: '#2EAD5B', placa: '🟢', placaFundo: '#1B4F8C', rotuloDx: -0.9 },
+    // A arena das cobrinhas: clicando nela, o jogo "Cobrinha da Turma" (app/js/apps/cobrinha.js), no último terreno
+    // livre (entre a horta e a estação; saiu a árvore [17, 23]). O rótulo também é curto, como o do Agar.
+    { id: 'cobrinha', nome: 'Cobrinha', emoji: '🐍', r: [17, 22, 2, 2], portas: [17], telhado: '#2E7D32', parede: '#F4F1DE', faixa: '#F9A825', placa: '🐍', placaFundo: '#1B5E20' },
     { id: 'rio', nome: 'Cais do Rio Madeira', emoji: '⛵', area: true, r: [29, 26, 7, 4], morador: 'bene', entradas: [[31, 26], [32, 26], [31, 27], [32, 27], [31, 28]] },
   ];
   // Coisas da praça.
@@ -101,14 +104,14 @@
   const BARRACAS = [[1, 22, '#D9483B'], [3, 22, '#2F7DC0'], [5, 22, '#3B9A57'], [7, 22, '#E2A02A'], [9, 22, '#B65AA8']];
   const IPES = [[12, 8, 'amarelo'], [23, 8, 'roxo'], [12, 17, 'roxo'], [23, 17, 'amarelo']];
   const ARVORES = [[0, 0], [7, 0], [11, 0], [24, 0], [29, 0], [35, 0], [4, 2], [8, 2], [12, 2], [23, 2], [30, 2], [35, 2],
-    [0, 9], [0, 16], [35, 10], [35, 16], [11, 23], [17, 23]];
+    [0, 9], [0, 16], [35, 10], [35, 16], [11, 23]];
   const PALMEIRAS = [[3, 26], [15, 26], [26, 26]];
   // O poste de luz na calçada da praça, perto da lata de lixo (no incêndio, o fogo pode chegar nele: água, não!).
   const POSTE = [24, 14];
 
   // A altura de cada prédio (em quadrinhos) na Praça em 3D (isométrica) e na abertura (a maquete): a Escola e a
   // Prefeitura são as mais altas, as casas baixas. "bico" é o telhado de duas águas (casas e estação).
-  const ALTURAS = { escola: 3, prefeitura: 3, banco: 2.3, empregos: 2.1, correios: 2, posto: 2, estacao: 1.5, lanchonete: 1.4, arena: 1.3 };
+  const ALTURAS = { escola: 3, prefeitura: 3, banco: 2.3, empregos: 2.1, correios: 2, posto: 2, estacao: 1.5, lanchonete: 1.4, arena: 1.3, cobrinha: 1.3 };
   const alturaDe = (L) => (L.casa ? 1.25 : ALTURAS[L.id] || 2);
   const bicoDe = (L) => (L.casa || L.id === 'estacao' ? 0.45 : 0);
 

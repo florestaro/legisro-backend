@@ -39,6 +39,7 @@ window.CE = window.CE || {};
     empregos: { texto: 'Vagas de emprego de treino, currículo e entrevista.', botao: 'Ver as vagas (Emprega Já)', abrir: navegar('https://empregaja.com.br') },
     lanchonete: { texto: 'O Restaurante do Digão! Aqui você comanda uma rede de lanchonetes inteira: o pasto e a plantação, o abatedouro, as lojas e a sede da marca. Cada decisão tem consequência: o lucro, as pessoas e a natureza.' },
     arena: { texto: 'A arena das bolinhas! Aqui é o Agar da Turma: cada um é uma bolinha que segue o mouse, come as bolinhas do chão para crescer e foge de quem é maior.' },
+    cobrinha: { texto: 'A arena das cobrinhas! Aqui é a Cobrinha da Turma: cada um é uma cobrinha que segue o mouse, come as bolinhas para ficar comprida e quem bate a cabeça no corpo de outra perde.' },
     lote: { texto: 'Terreno da turma. Todos votam no que construir aqui; as moedas vêm das aulas concluídas.' },
     banco: { texto: 'O banco de treino: Pix, boleto, cartão e empréstimo, sem dinheiro de verdade.', botao: 'Entrar no Banco Escola', abrir: navegar('https://bancoescola.com.br') },
     correios: { texto: 'Mande uma carta para um colega: ela chega no E-mail dele.', botao: 'Escrever uma carta (E-mail)', abrir: () => CE.janelas.abrir('email') },
@@ -1941,6 +1942,12 @@ window.CE = window.CE || {};
           return abrirDialogo({ tipo: 'lugar', rosto: '🟢', titulo: 'Agar da Turma', subtitulo: 'A arena das bolinhas', fala: info.texto,
             nota: souInstrutor ? 'Lá dentro você abre ou fecha a arena para os alunos, liga os robôs e pode assistir à arena inteira de uma turma.' : 'Mova o mouse para guiar a sua bolinha. Espaço divide; W solta massa.',
             opcoes: [{ rotulo: '🟢 Entrar na arena', principal: true, id: 'entrar-agar', acao: () => { CE.janelas.abrir('agar'); CE.emitir('praca:entrou-lugar', { lugar: L.id }); } }, { rotulo: 'Fechar' }] });
+        }
+        if (L.id === 'cobrinha') {
+          // A Cobrinha da Turma: igual à arena do Agar (cada turma tem a sua; robôs completam; o professor abre ou fecha).
+          return abrirDialogo({ tipo: 'lugar', rosto: '🐍', titulo: 'Cobrinha da Turma', subtitulo: 'A arena das cobrinhas', fala: info.texto,
+            nota: souInstrutor ? 'Lá dentro você abre ou fecha a arena para os alunos, liga os robôs e pode assistir à arena inteira de uma turma.' : 'Mova o mouse para guiar a sua cobrinha. Segure o Espaço para acelerar.',
+            opcoes: [{ rotulo: '🐍 Entrar na arena', principal: true, id: 'entrar-cobrinha', acao: () => { CE.janelas.abrir('cobrinha'); CE.emitir('praca:entrou-lugar', { lugar: L.id }); } }, { rotulo: 'Fechar' }] });
         }
         if (L.id === 'fonte') {
           return abrirDialogo({ tipo: 'lugar', rosto: '⛲', titulo: 'Fonte', subtitulo: 'No meio da praça', fala: info.texto,

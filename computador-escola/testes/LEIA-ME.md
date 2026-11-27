@@ -231,6 +231,30 @@ não caçam aluno e encolhem quando ficam grandes), as arenas separadas por turm
 instrutor assistindo, quem some sai e a arena vazia some. No fim, 20 alunos jogando 10 vezes por segundo: confere que o
 computador do instrutor dá conta e que cada resposta é pequena.
 
+
+## Teste da Cobrinha da Turma em 3 computadores
+
+```
+npm run teste:cobrinha
+```
+
+Igual ao do Agar, com a Ana e o Bruno (turma Manhã): o prédio da Cobrinha (🐍) aparece na Praça e a Ana entra por ele;
+os dois ficam na mesma arena (com 6 robôs); a cobrinha da Ana vira para onde o mouse aponta e segurar o Espaço acelera;
+a instrutora assiste à arena inteira, desliga os robôs, fecha a arena (os dois saem e veem "fechada") e abre de novo;
+quem fecha a janela sai; nada fica nos computadores dos alunos; sem erros nas telas. Leva uns 2 minutos e usa a porta
+47127 (ou outra: `PORTA=47133 npm run teste:cobrinha`).
+
+## As regras da Cobrinha da Turma (rápido, sem tela e sem rede)
+
+```
+npm run teste:cobrinha-regras
+```
+
+As regras sozinhas, com um relógio de mentira (1 segundo): virar atrás do mouse, o corpo seguindo a cabeça, comer e
+crescer, acelerar (anda mais, fica menor e deixa bolinhas; pequena demais não acelera), bater a cabeça no corpo de outra
+(morre, conta o abate e vira comida), cabeça com cabeça (a menor perde), os robôs (desviam e não perseguem aluno), as
+arenas por turma, a arena fechada, o instrutor assistindo, quem some e 20 alunos grandes jogando.
+
 ## Eventos urgentes no mapa (rápido, sem tela e sem rede)
 
 ```
